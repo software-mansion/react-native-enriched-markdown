@@ -16,7 +16,7 @@ import {
   type EnrichedMarkdownTextInputInstance,
   type StyleState,
 } from 'react-native-enriched-markdown';
-import { LinkModal } from '../common/LinkModal';
+import { FormattingToolbar } from '../../components/FormattingToolbar';
 
 const MARKDOWN_STYLE = {
   link: { color: '#2563EB', underline: true as const },
@@ -53,203 +53,121 @@ export default function PlaygroundScreen() {
   const [markdown, setMarkdown] = useState('');
   const [sizeMode, setSizeMode] = useState<'base' | 'max'>('base');
   const [hasSelection, setHasSelection] = useState(false);
-  const [linkModalVisible, setLinkModalVisible] = useState(false);
-
   const handleGetMarkdown = useCallback(async () => {
     const md = await inputRef.current?.getMarkdown();
     Alert.alert('Markdown', md ?? '(empty)', [{ text: 'OK' }]);
   }, []);
 
-  const openLinkModal = useCallback(() => {
-    setLinkModalVisible(true);
-  }, []);
-
-  const handleLinkSubmit = useCallback(
-    (text: string, url: string) => {
-      setLinkModalVisible(false);
-      if (!url) return;
-      if (hasSelection) {
-        inputRef.current?.setLink(url);
-      } else {
-        inputRef.current?.insertLink(text, url);
-      }
-    },
-    [hasSelection]
-  );
-
   return (
-    <>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={headerHeight}
-        testID="playground-screen"
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={headerHeight}
+      testID="playground-screen"
+    >
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => inputRef.current?.focus()}
-              testID="focus-button"
-            >
-              <Text style={styles.buttonText}>Focus</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => inputRef.current?.blur()}
-              testID="blur-button"
-            >
-              <Text style={styles.buttonText}>Blur</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
-                inputRef.current?.setValue('');
-                setMarkdown('');
-              }}
-              testID="clear-button"
-            >
-              <Text style={styles.buttonText}>Clear</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => setSizeMode((m) => (m === 'max' ? 'base' : 'max'))}
-              testID="size-button"
-            >
-              <Text style={styles.buttonText}>
-                {sizeMode === 'max' ? 'Base' : 'Max'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.editorContainer} testID="editor-container">
-            <EnrichedMarkdownTextInput
-              ref={inputRef}
-              placeholder="Type markdown here..."
-              placeholderTextColor="#9CA3AF"
-              style={
-                sizeMode === 'max'
-                  ? { ...styles.input, ...styles.inputMax }
-                  : styles.input
-              }
-              markdownStyle={MARKDOWN_STYLE}
-              onChangeState={setState}
-              onChangeMarkdown={setMarkdown}
-              onChangeSelection={(sel) =>
-                setHasSelection(sel.start !== sel.end)
-              }
-            />
-            <View style={styles.toolbar} testID="formatting-toolbar">
-              {(
-                [
-                  { label: 'B', key: 'bold', action: 'toggleBold' },
-                  { label: 'I', key: 'italic', action: 'toggleItalic' },
-                  { label: 'U', key: 'underline', action: 'toggleUnderline' },
-                  {
-                    label: 'S',
-                    key: 'strikethrough',
-                    action: 'toggleStrikethrough',
-                  },
-                  { label: '||', key: 'spoiler', action: 'toggleSpoiler' },
-                ] as const
-              ).map(({ label, key, action }) => (
-                <TouchableOpacity
-                  key={label}
-                  style={[
-                    styles.toolbarButton,
-                    state?.[key].isActive && styles.toolbarButtonActive,
-                  ]}
-                  onPress={() => inputRef.current?.[action]()}
-                  testID={`toolbar-${key}`}
-                >
-                  <Text
-                    style={[
-                      styles.toolbarButtonText,
-                      state?.[key].isActive && styles.toolbarButtonTextActive,
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity
-                style={[
-                  styles.toolbarButton,
-                  state?.link.isActive && styles.toolbarButtonActive,
-                ]}
-                onPress={() => {
-                  if (state?.link.isActive) {
-                    inputRef.current?.removeLink();
-                  } else {
-                    openLinkModal();
-                  }
-                }}
-                testID="toolbar-link"
-              >
-                <Text
-                  style={[
-                    styles.toolbarButtonText,
-                    state?.link.isActive && styles.toolbarButtonTextActive,
-                  ]}
-                >
-                  Link
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
+        <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={styles.getMarkdownButton}
-            onPress={handleGetMarkdown}
-            testID="get-markdown-button"
+            style={styles.button}
+            onPress={() => inputRef.current?.focus()}
+            testID="focus-button"
           >
-            <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
+            <Text style={styles.buttonText}>Focus</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => inputRef.current?.blur()}
+            testID="blur-button"
+          >
+            <Text style={styles.buttonText}>Blur</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              inputRef.current?.setValue('');
+              setMarkdown('');
+            }}
+            testID="clear-button"
+          >
+            <Text style={styles.buttonText}>Clear</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => setSizeMode((m) => (m === 'max' ? 'base' : 'max'))}
+            testID="size-button"
+          >
+            <Text style={styles.buttonText}>
+              {sizeMode === 'max' ? 'Base' : 'Max'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.divider} />
+        <View style={styles.editorContainer} testID="editor-container">
+          <EnrichedMarkdownTextInput
+            ref={inputRef}
+            placeholder="Type markdown here..."
+            placeholderTextColor="#9CA3AF"
+            style={
+              sizeMode === 'max'
+                ? { ...styles.input, ...styles.inputMax }
+                : styles.input
+            }
+            markdownStyle={MARKDOWN_STYLE}
+            onChangeState={setState}
+            onChangeMarkdown={setMarkdown}
+            onChangeSelection={(sel) => setHasSelection(sel.start !== sel.end)}
+          />
+          <FormattingToolbar
+            state={state}
+            inputRef={inputRef}
+            hasSelection={hasSelection}
+            testID="formatting-toolbar"
+          />
+        </View>
 
-          <Text style={styles.previewLabel}>Preview</Text>
-          <View style={styles.previewContainer} testID="preview-container">
-            {markdown.length > 0 ? (
-              <EnrichedMarkdownText
-                markdown={markdown}
-                markdownStyle={MARKDOWN_STYLE}
-                flavor="github"
-                spoilerOverlay="solid"
-                md4cFlags={{ underline: true }}
-                onLinkPress={({ url }) =>
-                  Alert.alert('Link', url, [{ text: 'OK' }])
-                }
-                onTaskListItemPress={({ checked, index }) =>
-                  Alert.alert(
-                    'Task item',
-                    `Item ${index} is now ${checked ? 'checked' : 'unchecked'}`,
-                    [{ text: 'OK' }]
-                  )
-                }
-                testID="preview-text"
-              />
-            ) : (
-              <Text style={styles.previewEmpty} testID="preview-empty">
-                Preview will appear here
-              </Text>
-            )}
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <TouchableOpacity
+          style={styles.getMarkdownButton}
+          onPress={handleGetMarkdown}
+          testID="get-markdown-button"
+        >
+          <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
+        </TouchableOpacity>
 
-      <LinkModal
-        visible={linkModalVisible}
-        initialText=""
-        initialUrl=""
-        onClose={() => setLinkModalVisible(false)}
-        onSubmit={handleLinkSubmit}
-      />
-    </>
+        <View style={styles.divider} />
+
+        <Text style={styles.previewLabel}>Preview</Text>
+        <View style={styles.previewContainer} testID="preview-container">
+          {markdown.length > 0 ? (
+            <EnrichedMarkdownText
+              markdown={markdown}
+              markdownStyle={MARKDOWN_STYLE}
+              flavor="github"
+              spoilerOverlay="solid"
+              md4cFlags={{ underline: true }}
+              onLinkPress={({ url }) =>
+                Alert.alert('Link', url, [{ text: 'OK' }])
+              }
+              onTaskListItemPress={({ checked, index }) =>
+                Alert.alert(
+                  'Task item',
+                  `Item ${index} is now ${checked ? 'checked' : 'unchecked'}`,
+                  [{ text: 'OK' }]
+                )
+              }
+              testID="preview-text"
+            />
+          ) : (
+            <Text style={styles.previewEmpty} testID="preview-empty">
+              Preview will appear here
+            </Text>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -299,44 +217,16 @@ const styles = StyleSheet.create({
   inputMax: {
     maxHeight: 400,
   },
-  toolbar: {
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-  },
-  toolbarButton: {
-    minWidth: 34,
-    height: 30,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-  },
-  toolbarButtonActive: {
-    backgroundColor: '#DBEAFE',
-  },
-  toolbarButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  toolbarButtonTextActive: {
-    color: '#2563EB',
-  },
   getMarkdownButton: {
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#BEEBD0',
     alignItems: 'center',
   },
   getMarkdownText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#001A72',
   },
   divider: {
     height: StyleSheet.hairlineWidth,

@@ -13,9 +13,9 @@ export default function App() {
         initialRouteName="Home"
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#007AFF',
+            backgroundColor: '#BEEBD0',
           },
-          headerTintColor: '#fff',
+          headerTintColor: '#001A72',
           headerTitleStyle: {
             fontWeight: 'bold',
           },

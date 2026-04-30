@@ -17,7 +17,7 @@ import {
   type EnrichedMarkdownTextInputInstance,
   type StyleState,
 } from 'react-native-enriched-markdown';
-import { LinkModal } from '../common/LinkModal';
+import { FormattingToolbar } from '../../components/FormattingToolbar';
 
 interface Message {
   id: number;
@@ -71,13 +71,10 @@ let nextId = 6;
 
 export default function InputScreen() {
   const inputRef = useRef<EnrichedMarkdownTextInputInstance>(null);
-  const scrollRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const [state, setState] = useState<StyleState | null>(null);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
-  const [linkModalVisible, setLinkModalVisible] = useState(false);
-  const [linkModalText, setLinkModalText] = useState('');
-  const [linkModalUrl, setLinkModalUrl] = useState('');
-  const hasSelectionRef = useRef(false);
+  const [hasSelection, setHasSelection] = useState(false);
   const navHeaderHeight = useHeaderHeight();
   const [chatHeaderHeight, setChatHeaderHeight] = useState(0);
   const { bottom: bottomInset } = useSafeAreaInsets();
@@ -96,23 +93,6 @@ export default function InputScreen() {
 
     inputRef.current?.setValue('');
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
-  }, []);
-
-  const openLinkModal = useCallback(() => {
-    setLinkModalText('');
-    setLinkModalUrl('');
-    setLinkModalVisible(true);
-  }, []);
-
-  const handleLinkSubmit = useCallback((text: string, url: string) => {
-    setLinkModalVisible(false);
-    if (url.length === 0) return;
-
-    if (hasSelectionRef.current) {
-      inputRef.current?.setLink(url);
-    } else {
-      inputRef.current?.insertLink(text, url);
-    }
   }, []);
 
   const bubbleContextMenuItems = useMemo(
@@ -235,68 +215,11 @@ export default function InputScreen() {
             </View>
           ))}
         </ScrollView>
-        <View style={styles.toolbar}>
-          {(
-            [
-              { label: 'B', style: 'bold', action: 'toggleBold' },
-              { label: 'I', style: 'italic', action: 'toggleItalic' },
-              { label: 'U', style: 'underline', action: 'toggleUnderline' },
-              {
-                label: 'S',
-                style: 'strikethrough',
-                action: 'toggleStrikethrough',
-              },
-              {
-                label: '||',
-                style: 'spoiler',
-                action: 'toggleSpoiler',
-              },
-            ] as const
-          ).map(({ label, style, action }) => (
-            <TouchableOpacity
-              key={label}
-              style={[
-                styles.toolbarButton,
-                state?.[style].isActive && styles.toolbarButtonActive,
-              ]}
-              onPress={() => inputRef.current?.[action]()}
-            >
-              <Text
-                style={[
-                  styles.toolbarButtonText,
-                  style === 'italic' && styles.italic,
-                  style === 'underline' && styles.underline,
-                  style === 'strikethrough' && styles.strikethrough,
-                  state?.[style].isActive && styles.toolbarButtonTextActive,
-                ]}
-              >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity
-            style={[
-              styles.toolbarButton,
-              state?.link.isActive && styles.toolbarButtonActive,
-            ]}
-            onPress={() => {
-              if (state?.link.isActive) {
-                inputRef.current?.removeLink();
-              } else {
-                openLinkModal();
-              }
-            }}
-          >
-            <Text
-              style={[
-                styles.toolbarButtonText,
-                state?.link.isActive && styles.toolbarButtonTextActive,
-              ]}
-            >
-              Link
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <FormattingToolbar
+          state={state}
+          inputRef={inputRef}
+          hasSelection={hasSelection}
+        />
         <View style={[styles.inputRow, { paddingBottom: 12 + bottomInset }]}>
           <EnrichedMarkdownTextInput
             ref={inputRef}
@@ -305,9 +228,7 @@ export default function InputScreen() {
             style={styles.input}
             markdownStyle={MARKDOWN_STYLE}
             onChangeState={setState}
-            onChangeSelection={(sel) => {
-              hasSelectionRef.current = sel.start !== sel.end;
-            }}
+            onChangeSelection={(sel) => setHasSelection(sel.start !== sel.end)}
             contextMenuItems={inputContextMenuItems}
           />
           <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
@@ -315,13 +236,6 @@ export default function InputScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-      <LinkModal
-        visible={linkModalVisible}
-        initialText={linkModalText}
-        initialUrl={linkModalUrl}
-        onClose={() => setLinkModalVisible(false)}
-        onSubmit={handleLinkSubmit}
-      />
     </View>
   );
 }
@@ -422,44 +336,6 @@ const styles = StyleSheet.create({
   },
   bubbleTimeOther: {
     color: '#9CA3AF',
-  },
-  toolbar: {
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 4,
-    backgroundColor: '#F9FAFB',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
-  },
-  toolbarButton: {
-    width: 34,
-    height: 30,
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  toolbarButtonActive: {
-    backgroundColor: '#DBEAFE',
-  },
-  toolbarButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  toolbarButtonTextActive: {
-    color: '#2563EB',
-  },
-  italic: {
-    fontStyle: 'italic',
-  },
-  underline: {
-    textDecorationLine: 'underline',
-  },
-  strikethrough: {
-    textDecorationLine: 'line-through',
   },
   inputRow: {
     flexDirection: 'row',
