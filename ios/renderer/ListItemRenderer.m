@@ -21,7 +21,7 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
 @end
 
 @implementation ListItemRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 

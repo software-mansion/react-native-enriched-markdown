@@ -6,7 +6,7 @@
 #import "StyleConfig.h"
 
 @implementation ParagraphRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 

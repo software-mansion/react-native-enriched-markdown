@@ -10,7 +10,7 @@ static NSString *const kNestedInfoDepthKey = @"depth";
 static NSString *const kNestedInfoRangeKey = @"range";
 
 @implementation BlockquoteRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 

@@ -5,7 +5,7 @@
 #import "RendererFactory.h"
 
 @implementation ENRMSpoilerRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
 }
 
 - (instancetype)initWithRendererFactory:(id)rendererFactory config:(__unused id)config

@@ -9,7 +9,7 @@ static const unichar kLineBreak = '\n';
 static const unichar kZeroWidthSpace = 0x200B;
 
 @implementation ENRMImageRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 

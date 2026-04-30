@@ -20,7 +20,7 @@ static NSString *const kHeadingTypes[] = {nil,          @"heading-1", @"heading-
                                           @"heading-4", @"heading-5", @"heading-6"};
 
 @implementation HeadingRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 
