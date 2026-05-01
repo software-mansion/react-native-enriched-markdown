@@ -81,6 +81,7 @@ using namespace facebook::react;
 
   NSArray<NSString *> *_contextMenuItemTexts;
   NSArray<NSString *> *_contextMenuItemIcons;
+  ENRMSelectionMenuConfig _selectionMenuConfig;
 
   ENRMSpoilerOverlayManager *_spoilerManager;
 }
@@ -145,6 +146,7 @@ using namespace facebook::react;
     _allowTrailingMargin = NO;
     _enableLinkPreview = YES;
     _forceHeightUpdateOnNextRender = NO;
+    _selectionMenuConfig = (ENRMSelectionMenuConfig){.copyAsMarkdown = YES, .copyImageURL = YES};
 
     _fontScaleObserver = [[FontScaleObserver alloc] init];
     __weak EnrichedMarkdownText *weakSelf = self;
@@ -204,7 +206,8 @@ using namespace facebook::react;
           }
         });
     return buildEditMenuForSelection(textView.textStorage, textView.selectedRange, strongSelf->_cachedMarkdown,
-                                     strongSelf->_config, @[ baseMenu ], customItems);
+                                     strongSelf->_config, @[ baseMenu ], customItems,
+                                     strongSelf -> _selectionMenuConfig);
   };
 #endif
 
@@ -474,6 +477,11 @@ using namespace facebook::react;
     _contextMenuItemIcons = ENRMContextMenuIconsFromItems(newViewProps.contextMenuItems);
   }
 
+  _selectionMenuConfig = (ENRMSelectionMenuConfig){
+      .copyAsMarkdown = newViewProps.selectionMenuConfig.copyAsMarkdown,
+      .copyImageURL = newViewProps.selectionMenuConfig.copyImageUrl,
+  };
+
   if (newViewProps.streamingAnimation != oldViewProps.streamingAnimation) {
     _streamingAnimation = newViewProps.streamingAnimation;
     if (_streamingAnimation) {
@@ -621,7 +629,7 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
       ENRMBuildContextMenuActions(_contextMenuItemTexts, _contextMenuItemIcons, textView, range, handler);
 
   return buildEditMenuForSelection(textView.attributedText, range, _cachedMarkdown, _config, suggestedActions,
-                                   customActions);
+                                   customActions, _selectionMenuConfig);
 }
 #endif
 

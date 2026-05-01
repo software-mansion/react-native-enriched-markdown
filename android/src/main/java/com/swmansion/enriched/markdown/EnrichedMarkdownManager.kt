@@ -20,6 +20,7 @@ import com.swmansion.enriched.markdown.utils.common.emitTaskListItemPress
 import com.swmansion.enriched.markdown.utils.common.markdownEventTypeConstants
 import com.swmansion.enriched.markdown.utils.common.parseContextMenuItems
 import com.swmansion.enriched.markdown.utils.common.parseMd4cFlags
+import com.swmansion.enriched.markdown.utils.common.parseSelectionMenuConfig
 import com.swmansion.enriched.markdown.utils.text.interaction.TaskListToggleUtils
 
 @ReactModule(name = EnrichedMarkdownManager.NAME)
@@ -184,6 +185,15 @@ class EnrichedMarkdownManager :
   ) {
     if (view == null) return
     view.setContextMenuItems(parseContextMenuItems(value))
+  }
+
+  @ReactProp(name = "selectionMenuConfig")
+  override fun setSelectionMenuConfig(
+    view: EnrichedMarkdown?,
+    value: ReadableMap?,
+  ) {
+    if (view == null) return
+    view.setSelectionMenuConfig(parseSelectionMenuConfig(value))
   }
 
   override fun setPadding(

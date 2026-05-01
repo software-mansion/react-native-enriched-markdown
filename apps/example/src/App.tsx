@@ -104,6 +104,10 @@ export default function App() {
             contextMenuItems={contextMenuItems}
             selectionColor={Platform.OS === 'ios' ? '#5A52FA' : '#DCDDFE'}
             selectionHandleColor="#5A52FA"
+            selectionMenuConfig={{
+              copyAsMarkdown: true,
+              copyImageUrl: true,
+            }}
           />
         </ScrollView>
       )}

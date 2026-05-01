@@ -84,6 +84,10 @@ export default function App() {
               markdownStyle={markdownStyle}
               contextMenuItems={contextMenuItems}
               selectionColor="#DCDDFE"
+              selectionMenuConfig={{
+                copyAsMarkdown: true,
+                copyImageUrl: true,
+              }}
             />
           </ScrollView>
           {lastLink != null && (

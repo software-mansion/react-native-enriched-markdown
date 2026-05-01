@@ -20,6 +20,19 @@ export interface ContextMenuItem {
   visible?: boolean;
 }
 
+export interface SelectionMenuConfig {
+  /**
+   * Shows the built-in "Copy as Markdown" action for text selections.
+   * @default true
+   */
+  copyAsMarkdown?: boolean;
+  /**
+   * Shows the built-in "Copy Image URL" action when selected content contains images.
+   * @default true
+   */
+  copyImageUrl?: boolean;
+}
+
 export interface StreamingConfig {
   /**
    * Controls how incomplete tables are handled during streaming.
@@ -186,6 +199,13 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    * @platform ios, android
    */
   contextMenuItems?: ContextMenuItem[];
+  /**
+   * Controls built-in items added to the native text selection menu.
+   * Custom app-provided actions are controlled separately with `contextMenuItems`.
+   * @default { copyAsMarkdown: true, copyImageUrl: true }
+   * @platform ios, android, macos
+   */
+  selectionMenuConfig?: SelectionMenuConfig;
   /**
    * Sets the text direction on the root container.
    * Useful for RTL languages — CSS logical properties in the renderers

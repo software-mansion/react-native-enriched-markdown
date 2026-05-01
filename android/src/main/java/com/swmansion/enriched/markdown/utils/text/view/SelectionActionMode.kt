@@ -22,6 +22,11 @@ private const val MENU_ITEM_COPY_IMAGE_URL = 1001
 private const val MENU_ITEM_CUSTOM_BASE = 2000
 private const val MENU_ITEM_CUSTOM_GROUP = 2001
 
+data class SelectionMenuConfig(
+  val copyAsMarkdown: Boolean = true,
+  val copyImageUrl: Boolean = true,
+)
+
 /**
  * Creates an ActionMode.Callback that adds custom copy options and
  * overrides the default "Copy" action to include HTML for rich text support.
@@ -29,7 +34,9 @@ private const val MENU_ITEM_CUSTOM_GROUP = 2001
 fun createSelectionActionModeCallback(
   textView: TextView,
   getCustomItemTexts: () -> List<String> = { emptyList() },
-  onCustomItemPress: (itemText: String, selectedText: String, selectionStart: Int, selectionEnd: Int) -> Unit = { _, _, _, _ -> },
+  getSelectionMenuConfig: () -> SelectionMenuConfig = { SelectionMenuConfig() },
+  onCustomItemPress: (itemText: String, selectedText: String, selectionStart: Int, selectionEnd: Int) -> Unit =
+    { _, _, _, _ -> },
 ): ActionMode.Callback =
   object : ActionMode.Callback {
     override fun onCreateActionMode(
@@ -47,9 +54,17 @@ fun createSelectionActionModeCallback(
       menu.removeItem(MENU_ITEM_COPY_IMAGE_URL)
       menu.removeGroup(MENU_ITEM_CUSTOM_GROUP)
 
-      if (textView.selectionStart >= 0 && textView.selectionEnd > textView.selectionStart) {
-        menu.add(Menu.NONE, MENU_ITEM_COPY_MARKDOWN, Menu.NONE, "Copy as Markdown")
+      val selectionMenuConfig = getSelectionMenuConfig()
 
+      if (
+        selectionMenuConfig.copyAsMarkdown &&
+        textView.selectionStart >= 0 &&
+        textView.selectionEnd > textView.selectionStart
+      ) {
+        menu.add(Menu.NONE, MENU_ITEM_COPY_MARKDOWN, Menu.NONE, "Copy as Markdown")
+      }
+
+      if (textView.selectionStart >= 0 && textView.selectionEnd > textView.selectionStart) {
         val customItems = getCustomItemTexts()
         customItems.forEachIndexed { index, text ->
           menu
@@ -58,7 +73,12 @@ fun createSelectionActionModeCallback(
         }
       }
 
-      val imageUrls = textView.getImageUrlsInSelection()
+      val imageUrls =
+        if (selectionMenuConfig.copyImageUrl) {
+          textView.getImageUrlsInSelection()
+        } else {
+          emptyList()
+        }
       if (imageUrls.isNotEmpty()) {
         val title =
           if (imageUrls.size == 1) {

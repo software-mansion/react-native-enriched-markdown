@@ -9,6 +9,7 @@ import com.swmansion.enriched.markdown.events.LinkLongPressEvent
 import com.swmansion.enriched.markdown.events.LinkPressEvent
 import com.swmansion.enriched.markdown.events.TaskListItemPressEvent
 import com.swmansion.enriched.markdown.parser.Md4cFlags
+import com.swmansion.enriched.markdown.utils.text.view.SelectionMenuConfig
 
 fun markdownEventTypeConstants(): MutableMap<String, Any> {
   val map = mutableMapOf<String, Any>()
@@ -86,3 +87,11 @@ fun parseMd4cFlags(flags: ReadableMap?): Md4cFlags =
 
 fun parseContextMenuItems(value: ReadableArray?): List<String> =
   (0 until (value?.size() ?: 0)).mapNotNull { value?.getMap(it)?.getString("text") }
+
+fun parseSelectionMenuConfig(value: ReadableMap?): SelectionMenuConfig {
+  if (value == null) return SelectionMenuConfig()
+  return SelectionMenuConfig(
+    copyAsMarkdown = value.getBoolean("copyAsMarkdown"),
+    copyImageUrl = value.getBoolean("copyImageUrl"),
+  )
+}

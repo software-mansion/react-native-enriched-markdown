@@ -12,6 +12,7 @@ import com.swmansion.enriched.markdown.spoiler.SpoilerOverlay
 import com.swmansion.enriched.markdown.spoiler.SpoilerOverlayDrawer
 import com.swmansion.enriched.markdown.utils.text.interaction.CheckboxTouchHelper
 import com.swmansion.enriched.markdown.utils.text.view.LinkLongPressMovementMethod
+import com.swmansion.enriched.markdown.utils.text.view.SelectionMenuConfig
 import com.swmansion.enriched.markdown.utils.text.view.applySelectableState
 import com.swmansion.enriched.markdown.utils.text.view.cancelJSTouchForCheckboxTap
 import com.swmansion.enriched.markdown.utils.text.view.cancelJSTouchForLinkTap
@@ -45,6 +46,7 @@ class EnrichedMarkdownInternalText
     var spoilerOverlay: SpoilerOverlay = SpoilerOverlay.PARTICLES
     private var contextMenuItemTexts: List<String> = emptyList()
     private var onContextMenuItemPress: ((itemText: String, selectedText: String, selectionStart: Int, selectionEnd: Int) -> Unit)? = null
+    var selectionMenuConfig: SelectionMenuConfig = SelectionMenuConfig()
 
     init {
       setupAsMarkdownTextView()
@@ -52,6 +54,7 @@ class EnrichedMarkdownInternalText
         createSelectionActionModeCallback(
           this,
           getCustomItemTexts = { contextMenuItemTexts },
+          getSelectionMenuConfig = { selectionMenuConfig },
           onCustomItemPress = { itemText, selectedText, start, end ->
             onContextMenuItemPress?.invoke(itemText, selectedText, start, end)
           },

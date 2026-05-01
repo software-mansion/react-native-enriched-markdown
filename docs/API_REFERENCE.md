@@ -285,6 +285,37 @@ interface ContextMenuItem {
 />
 ```
 
+### `selectionMenuConfig`
+
+Controls built-in actions added to the native text selection menu. Custom app-provided actions are controlled separately with `contextMenuItems`.
+
+| Type                 | Default Value                                  | Platform |
+| -------------------- | ---------------------------------------------- | -------- |
+| `SelectionMenuConfig` | `{ copyAsMarkdown: true, copyImageUrl: true }` | iOS, Android, macOS |
+
+**`SelectionMenuConfig` shape:**
+
+```ts
+interface SelectionMenuConfig {
+  /** Shows the built-in "Copy as Markdown" action for text selections. */
+  copyAsMarkdown?: boolean;
+  /** Shows the built-in "Copy Image URL" action when selected content contains images. */
+  copyImageUrl?: boolean;
+}
+```
+
+**Example:**
+
+```tsx
+<EnrichedMarkdownText
+  markdown={content}
+  selectionMenuConfig={{
+    copyAsMarkdown: false,
+    copyImageUrl: false,
+  }}
+/>
+```
+
 > **Note:** When using `flavor="github"`, `selection.start` and `selection.end` are relative to the text segment the selection is in, not the full markdown string. With `flavor="commonmark"` (default) they are always absolute within the full rendered text.
 
 ---

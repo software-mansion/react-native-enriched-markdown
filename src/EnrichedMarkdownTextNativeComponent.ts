@@ -199,6 +199,11 @@ export interface ContextMenuItemConfig {
   icon?: string;
 }
 
+export interface SelectionMenuConfig {
+  copyAsMarkdown: boolean;
+  copyImageUrl: boolean;
+}
+
 export interface OnContextMenuItemPressEvent {
   itemText: string;
   selectedText: string;
@@ -341,6 +346,10 @@ export interface NativeProps extends ViewProps {
    * Custom items to show in the text selection context menu.
    */
   contextMenuItems?: ReadonlyArray<Readonly<ContextMenuItemConfig>>;
+  /**
+   * Built-in items to show in the text selection context menu.
+   */
+  selectionMenuConfig: Readonly<SelectionMenuConfig>;
   /**
    * Fired when a custom context menu item is pressed.
    * Receives the item label, the currently selected text, and the selection range.

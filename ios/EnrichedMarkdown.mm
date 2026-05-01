@@ -92,6 +92,7 @@ static char kENRMSegmentFadeAnimatorKey;
 
   NSArray<NSString *> *_contextMenuItemTexts;
   NSArray<NSString *> *_contextMenuItemIcons;
+  ENRMSelectionMenuConfig _selectionMenuConfig;
 
   ENRMSpoilerOverlay _spoilerOverlay;
 }
@@ -124,6 +125,7 @@ static char kENRMSegmentFadeAnimatorKey;
     _enableLinkPreview = YES;
     _streamingAnimation = NO;
     _tableStreamingMode = ENRMTableStreamingModeHidden;
+    _selectionMenuConfig = (ENRMSelectionMenuConfig){.copyAsMarkdown = YES, .copyImageURL = YES};
 
     _fontScaleObserver = [[FontScaleObserver alloc] init];
     __weak EnrichedMarkdown *weakSelf = self;
@@ -517,7 +519,7 @@ static char kENRMSegmentFadeAnimatorKey;
           }
         });
     return buildEditMenuForSelection(textView.textStorage, textView.selectedRange, segmentMarkdown, strongSelf->_config,
-                                     @[ baseMenu ], customItems);
+                                     @[ baseMenu ], customItems, strongSelf -> _selectionMenuConfig);
   }];
 #endif
 
@@ -721,6 +723,11 @@ static char kENRMSegmentFadeAnimatorKey;
     _contextMenuItemIcons = ENRMContextMenuIconsFromItems(newViewProps.contextMenuItems);
   }
 
+  _selectionMenuConfig = (ENRMSelectionMenuConfig){
+      .copyAsMarkdown = newViewProps.selectionMenuConfig.copyAsMarkdown,
+      .copyImageURL = newViewProps.selectionMenuConfig.copyImageUrl,
+  };
+
   if (newViewProps.spoilerOverlay != oldViewProps.spoilerOverlay) {
     NSString *modeStr = [[NSString alloc] initWithUTF8String:newViewProps.spoilerOverlay.c_str()];
     _spoilerOverlay = ENRMSpoilerOverlayFromString(modeStr);
@@ -913,7 +920,7 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
 
   NSString *segmentMarkdown = extractMarkdownFromAttributedString(textView.attributedText, range);
   return buildEditMenuForSelection(textView.attributedText, range, segmentMarkdown, _config, suggestedActions,
-                                   customActions);
+                                   customActions, _selectionMenuConfig);
 }
 
 - (BOOL)textView:(UITextView *)textView
