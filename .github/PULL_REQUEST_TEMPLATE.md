@@ -27,4 +27,6 @@
 - [ ] Code compiles and runs on Android
 - [ ] Updated documentation/README if applicable
 - [ ] Ran example app to verify changes
+- [ ] E2E tests are passing
+- [ ] Required E2E tests have been added (if applicable)
 

@@ -84,6 +84,23 @@ Remember to add tests for your change if possible. Run the unit tests by:
 yarn test
 ```
 
+To run the E2E tests with [Maestro](https://maestro.mobile.dev/), use:
+
+```sh
+yarn test:e2e:ios
+yarn test:e2e:android
+yarn test:e2e:mobile   # both platforms sequentially
+```
+
+If your change affects visual output, update the screenshot baselines:
+
+```sh
+yarn test:e2e:ios:update-screenshots
+yarn test:e2e:android:update-screenshots
+```
+
+> Maestro must be installed and a simulator/emulator must be available. Pass `-- --rebuild` to force a fresh build of the example app.
+
 ### Commit message convention
 
 We follow the [conventional commits specification](https://www.conventionalcommits.org/en) for our commit messages:
@@ -126,6 +143,12 @@ The `package.json` file contains various scripts for common tasks:
 - `yarn example start`: start the Metro server for the example app.
 - `yarn example android`: run the example app on Android.
 - `yarn example ios`: run the example app on iOS.
+- `yarn test:e2e:ios`: run E2E tests on iOS simulator.
+- `yarn test:e2e:android`: run E2E tests on Android emulator.
+- `yarn test:e2e:mobile`: run E2E tests on both platforms sequentially.
+- `yarn test:e2e:ios:update-screenshots`: refresh iOS screenshot baselines.
+- `yarn test:e2e:android:update-screenshots`: refresh Android screenshot baselines.
+- `yarn test:e2e:mobile:update-screenshots`: refresh screenshot baselines for both platforms.
 
 ### Sending a pull request
 
