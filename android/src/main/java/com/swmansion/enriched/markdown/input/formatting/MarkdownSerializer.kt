@@ -12,8 +12,10 @@ object MarkdownSerializer {
 
     val events = ArrayList<BoundaryEvent>(ranges.size * 2)
     for (range in ranges) {
-      var start = range.start
-      var end = range.end
+      var start = range.start.coerceIn(0, text.length)
+      var end = range.end.coerceIn(0, text.length)
+
+      if (start >= end) continue
 
       // Trim leading/trailing whitespace so delimiters hug non-whitespace content
       while (start < end && text[start].isWhitespace()) start++

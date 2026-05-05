@@ -11,6 +11,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (CGSize)measureSize:(CGFloat)maxWidth;
 - (nullable NSString *)markdownForSelectedRange;
 - (void)pasteMarkdown:(NSString *)markdown;
+- (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray *)ranges;
 - (void)scheduleRelayoutIfNeeded;
 @end
 

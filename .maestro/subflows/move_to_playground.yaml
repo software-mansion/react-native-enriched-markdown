@@ -1,0 +1,4 @@
+appId: enrichedmarkdown.example
+---
+- tapOn:
+    id: home-block-playground

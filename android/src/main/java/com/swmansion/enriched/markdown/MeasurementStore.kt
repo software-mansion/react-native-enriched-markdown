@@ -385,7 +385,7 @@ object MeasurementStore {
         }
       }
 
-      val widthPx = width.toInt().coerceAtLeast(1)
+      val widthPx = ceil(width).toInt().coerceAtLeast(1)
       val lastIndex = renderedSegments.lastIndex
       var totalHeightPx = 0f
       var maxContentWidthPx = 0f

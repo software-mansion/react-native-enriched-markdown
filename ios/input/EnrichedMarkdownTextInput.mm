@@ -41,7 +41,6 @@ using namespace facebook::react;
 - (void)applyFormatting;
 - (void)toggleInlineStyle:(ENRMInputStyleType)styleType;
 - (void)resetBaseTypingAttributes;
-- (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges;
 @end
 
 @implementation EnrichedMarkdownTextInput {
@@ -1091,8 +1090,10 @@ using namespace facebook::react;
 
   [self applyFormatting];
 
+  NSUInteger clampedEditLocation = MIN(editLocation, newLength);
+  NSUInteger clampedInsertedLength = MIN(insertedLength, newLength - clampedEditLocation);
   [_detectorPipeline processTextChange:ENRMGetPlainText(_textView)
-                     modificationRange:NSMakeRange(editLocation, insertedLength)];
+                     modificationRange:NSMakeRange(clampedEditLocation, clampedInsertedLength)];
 
   [self updatePlaceholderVisibility];
   [self emitOnChangeText];
@@ -1184,14 +1185,16 @@ using namespace facebook::react;
 
 - (void)textViewDidChangeSelection:(UITextView *)textView
 {
+  NSRange newSelection = textView.selectedRange;
+  NSRange previousSelection = _lastSelectedRange;
+  _lastSelectedRange = newSelection;
+
   if (_isApplyingFormatting || _isTextChanging) {
     return;
   }
 
-  NSRange newSelection = textView.selectedRange;
   BOOL selectionMoved =
-      newSelection.location != _lastSelectedRange.location || newSelection.length != _lastSelectedRange.length;
-  _lastSelectedRange = newSelection;
+      newSelection.location != previousSelection.location || newSelection.length != previousSelection.length;
 
   if (selectionMoved) {
     [_pendingStyles removeAllObjects];
@@ -1263,10 +1266,11 @@ using namespace facebook::react;
 
 - (void)textInputDidChangeSelection
 {
+  _lastSelectedRange = _textView.selectedRange;
+
   if (_isApplyingFormatting || _isTextChanging) {
     return;
   }
-  _lastSelectedRange = _textView.selectedRange;
 
   [_pendingStyles removeAllObjects];
   [_pendingStyleRemovals removeAllObjects];

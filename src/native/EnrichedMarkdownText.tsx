@@ -9,6 +9,7 @@ import type {
   EnrichedMarkdownTextProps,
   StreamingConfig,
   ContextMenuItem,
+  SelectionMenuConfig,
 } from '../types/MarkdownTextProps';
 import type {
   LinkPressEvent,
@@ -18,7 +19,12 @@ import type {
 } from '../types/events';
 
 export type { MarkdownStyle, Md4cFlags };
-export type { EnrichedMarkdownTextProps, StreamingConfig, ContextMenuItem };
+export type {
+  EnrichedMarkdownTextProps,
+  StreamingConfig,
+  ContextMenuItem,
+  SelectionMenuConfig,
+};
 export type { LinkPressEvent, LinkLongPressEvent, TaskListItemPressEvent };
 
 const defaultMd4cFlags: Md4cFlags = {
@@ -46,6 +52,7 @@ export const EnrichedMarkdownText = ({
   streamingConfig,
   spoilerOverlay = 'particles',
   contextMenuItems,
+  selectionMenuConfig,
   selectionColor,
   selectionHandleColor,
   ...rest
@@ -130,6 +137,13 @@ export const EnrichedMarkdownText = ({
 
   const tableMode = streamingConfig?.tableMode ?? 'hidden';
   const normalizedStreamingConfig = useMemo(() => ({ tableMode }), [tableMode]);
+  const normalizedSelectionMenuConfig = useMemo(
+    () => ({
+      copyAsMarkdown: selectionMenuConfig?.copyAsMarkdown ?? true,
+      copyImageUrl: selectionMenuConfig?.copyImageUrl ?? true,
+    }),
+    [selectionMenuConfig]
+  );
 
   const sharedProps = {
     markdown,
@@ -148,6 +162,7 @@ export const EnrichedMarkdownText = ({
     spoilerOverlay,
     style: containerStyle,
     contextMenuItems: nativeContextMenuItems,
+    selectionMenuConfig: normalizedSelectionMenuConfig,
     onContextMenuItemPress: handleContextMenuItemPress,
     selectionColor,
     selectionHandleColor,

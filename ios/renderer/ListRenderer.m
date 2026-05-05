@@ -7,7 +7,7 @@
 #import "StyleConfig.h"
 
 @implementation ListRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
   BOOL _isOrdered;
 }

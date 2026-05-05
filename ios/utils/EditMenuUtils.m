@@ -73,15 +73,16 @@ static void insertOptionalAction(NSMutableArray<UIMenuElement *> *array, UIActio
 // TODO: Remove API_AVAILABLE(ios(16.0)) guard when the minimum iOS deployment target in RN is bumped to 16.
 UIMenu *buildEditMenuForSelection(NSAttributedString *attributedText, NSRange range, NSString *_Nullable cachedMarkdown,
                                   StyleConfig *styleConfig, NSArray<UIMenuElement *> *suggestedActions,
-                                  NSArray<UIAction *> *_Nullable customActions) API_AVAILABLE(ios(16.0))
+                                  NSArray<UIAction *> *_Nullable customActions,
+                                  ENRMSelectionMenuConfig selectionMenuConfig) API_AVAILABLE(ios(16.0))
 {
   NSAttributedString *selectedText = [attributedText attributedSubstringFromRange:range];
   NSString *markdown = markdownForRange(attributedText, range, cachedMarkdown);
   NSArray<NSString *> *imageURLs = imageURLsInRange(attributedText, range);
 
   UIAction *copyAction = createCopyAction(selectedText, markdown, styleConfig);
-  UIAction *copyMarkdownAction = createCopyMarkdownAction(markdown);
-  UIAction *copyImageURLAction = createCopyImageURLAction(imageURLs);
+  UIAction *copyMarkdownAction = selectionMenuConfig.copyAsMarkdown ? createCopyMarkdownAction(markdown) : nil;
+  UIAction *copyImageURLAction = selectionMenuConfig.copyImageURL ? createCopyImageURLAction(imageURLs) : nil;
 
   NSMutableArray<UIMenuElement *> *result = [NSMutableArray array];
   BOOL foundStandardEditMenu = NO;

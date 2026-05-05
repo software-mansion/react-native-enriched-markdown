@@ -34,7 +34,7 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 - (void)cut:(id)sender
 {
   [self copy:sender];
-  [self replaceRange:self.selectedTextRange withText:@""];
+  [self.markdownTextInput replaceSelectedTextWith:@"" formattingRanges:@[]];
 }
 
 - (void)paste:(id)sender
@@ -111,9 +111,7 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 - (void)cut:(id)sender
 {
   [self copy:sender];
-  if (self.selectedRange.length > 0) {
-    [self insertText:@"" replacementRange:self.selectedRange];
-  }
+  [self.markdownTextInput replaceSelectedTextWith:@"" formattingRanges:@[]];
 }
 
 - (void)paste:(id)sender

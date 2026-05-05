@@ -5,6 +5,7 @@ export type {
   MarkdownStyle,
   Md4cFlags,
   ContextMenuItem as TextContextMenuItem,
+  SelectionMenuConfig as TextSelectionMenuConfig,
 } from './native/EnrichedMarkdownText';
 export type {
   LinkPressEvent,

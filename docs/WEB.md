@@ -40,6 +40,7 @@ The web implementation also exports `WebMarkdownTextProps` which extends `Enrich
 | `streamingAnimation` | Native-only tail fade-in animation. Not yet implemented on web. |
 | `streamingConfig` | Native-only streaming table configuration. Not yet implemented on web. |
 | `contextMenuItems` | Not supported — browsers don't allow extending the native context menu. |
+| `selectionMenuConfig` | Not supported — native-only built-in selection menu actions. |
 | `selectionHandleColor` | Android-only — desktop browsers don't render selection handles. |
 
 ## Not supported on web

@@ -6,7 +6,7 @@
 #import <React/RCTFont.h>
 
 @implementation LinkRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 

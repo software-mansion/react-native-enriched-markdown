@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { EnrichedMarkdownText } from 'react-native-enriched-markdown';
-import { customMarkdownStyle } from './markdownStyles';
+import { customMarkdownStyle } from '../../markdownStyles';
 
 const STREAM_SOURCE = `Here is a longer streamed answer used to stress GitHub-flavored markdown streaming on iOS.
 
@@ -114,7 +114,11 @@ export default function StreamingMarkdownSimulator() {
   }, [isStreaming, isComplete, step]);
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      testID="stream-screen"
+    >
       <Text style={styles.title}>Streaming markdown simulator</Text>
       <Text style={styles.subtitle}>
         JS-only stream: longer text, several tables, and several block LaTeX

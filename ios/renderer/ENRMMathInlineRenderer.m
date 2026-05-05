@@ -10,7 +10,7 @@
 #if ENRICHED_MARKDOWN_MATH
 
 @implementation ENRMMathInlineRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 

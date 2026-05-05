@@ -29,3 +29,17 @@ A dedicated **Copy as Markdown** option is available in the context menu on both
 ## Copy Image URL
 
 When selecting text that contains images, a **Copy Image URL** option appears to copy the image's source URL. On Android, if multiple images are selected, all URLs are copied (one per line).
+
+## Controlling Built-in Menu Items
+
+Use `selectionMenuConfig` to hide built-in selection menu actions while keeping the native menu and any `contextMenuItems` intact:
+
+```tsx
+<EnrichedMarkdownText
+  markdown={content}
+  selectionMenuConfig={{
+    copyAsMarkdown: false,
+    copyImageUrl: false,
+  }}
+/>
+```

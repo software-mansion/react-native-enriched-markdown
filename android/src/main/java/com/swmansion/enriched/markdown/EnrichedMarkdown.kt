@@ -22,6 +22,7 @@ import com.swmansion.enriched.markdown.utils.common.StreamingMarkdownFilter
 import com.swmansion.enriched.markdown.utils.common.TableStreamingMode
 import com.swmansion.enriched.markdown.utils.common.splitASTIntoSegments
 import com.swmansion.enriched.markdown.utils.text.TailFadeInAnimator
+import com.swmansion.enriched.markdown.utils.text.view.SelectionMenuConfig
 import com.swmansion.enriched.markdown.utils.text.view.applySelectionColors
 import com.swmansion.enriched.markdown.views.BlockSegmentView
 import com.swmansion.enriched.markdown.views.TableContainerView
@@ -78,6 +79,7 @@ class EnrichedMarkdown
     private var selectable: Boolean = true
     private var selectionColor: Int? = null
     private var selectionHandleColor: Int? = null
+    private var selectionMenuConfig = SelectionMenuConfig()
 
     private var onLinkPressCallback: ((String) -> Unit)? = null
     private var onLinkLongPressCallback: ((String) -> Unit)? = null
@@ -204,6 +206,14 @@ class EnrichedMarkdown
       contextMenuItemTexts = items
       segmentViews.filterIsInstance<EnrichedMarkdownInternalText>().forEach {
         it.setContextMenuItems(items, ::forwardContextMenuItemPress)
+      }
+    }
+
+    fun setSelectionMenuConfig(config: SelectionMenuConfig) {
+      if (selectionMenuConfig == config) return
+      selectionMenuConfig = config
+      segmentViews.filterIsInstance<EnrichedMarkdownInternalText>().forEach {
+        it.selectionMenuConfig = config
       }
     }
 
@@ -405,6 +415,7 @@ class EnrichedMarkdown
     private fun createTextView(segment: RenderedSegment.Text) =
       EnrichedMarkdownInternalText(context).apply {
         spoilerOverlay = this@EnrichedMarkdown.spoilerOverlay
+        selectionMenuConfig = this@EnrichedMarkdown.selectionMenuConfig
         setIsSelectable(selectable)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && segment.needsJustify) {
           justificationMode = android.text.Layout.JUSTIFICATION_MODE_INTER_WORD

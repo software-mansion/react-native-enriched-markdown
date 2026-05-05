@@ -78,6 +78,7 @@
   [_textView.layoutManager invalidateLayoutForCharacterRange:NSMakeRange(0, text.length) actualCharacterRange:NULL];
 
   [_spoilerManager setNeedsUpdate];
+  [self setNeedsLayout];
 
 #if !TARGET_OS_OSX
   [_textView setNeedsLayout];

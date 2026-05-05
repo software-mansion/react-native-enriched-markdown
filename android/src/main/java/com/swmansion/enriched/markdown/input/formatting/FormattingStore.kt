@@ -140,7 +140,7 @@ class FormattingStore {
         }
       } else {
         when {
-          range.start > editLocation -> {
+          range.start >= editLocation -> {
             range.start += insertedLength
             range.end += insertedLength
           }

@@ -5,7 +5,7 @@
 #import "StyleConfig.h"
 
 @implementation StrikethroughRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 

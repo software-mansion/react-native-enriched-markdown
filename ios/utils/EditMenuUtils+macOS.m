@@ -9,7 +9,8 @@
 
 NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, NSRange range,
                                             NSString *_Nullable cachedMarkdown, StyleConfig *styleConfig,
-                                            NSArray *suggestedActions, NSArray<NSMenuItem *> *_Nullable customItems)
+                                            NSArray *suggestedActions, NSArray<NSMenuItem *> *_Nullable customItems,
+                                            ENRMSelectionMenuConfig selectionMenuConfig)
 {
   NSMenu *menu = ([suggestedActions.firstObject isKindOfClass:[NSMenu class]]) ? (NSMenu *)suggestedActions.firstObject
                                                                                : [[NSMenu alloc] initWithTitle:@""];
@@ -37,11 +38,11 @@ NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, 
     [menu addItem:enhancedCopy];
   }
 
-  if (markdown.length > 0) {
+  if (selectionMenuConfig.copyAsMarkdown && markdown.length > 0) {
     [menu addItem:ENRMCreateMenuItem(@"Copy as Markdown", ^{ copyStringToPasteboard(markdown); })];
   }
 
-  if (imageURLs.count > 0) {
+  if (selectionMenuConfig.copyImageURL && imageURLs.count > 0) {
     NSString *title = (imageURLs.count == 1)
                           ? @"Copy Image URL"
                           : [NSString stringWithFormat:@"Copy %lu Image URLs", (unsigned long)imageURLs.count];

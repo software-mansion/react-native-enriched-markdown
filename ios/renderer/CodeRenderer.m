@@ -9,7 +9,7 @@
 #import <React/RCTFont.h>
 
 @implementation CodeRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 

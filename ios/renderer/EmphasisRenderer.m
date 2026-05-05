@@ -7,7 +7,7 @@
 #import <React/RCTFont.h>
 
 @implementation EmphasisRenderer {
-  RendererFactory *_rendererFactory;
+  __weak RendererFactory *_rendererFactory;
   StyleConfig *_config;
 }
 
