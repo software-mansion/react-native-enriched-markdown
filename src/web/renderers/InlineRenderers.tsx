@@ -31,12 +31,12 @@ function UnderlineRenderer({ node, styles, renderChildren }: RendererProps) {
   return <u style={styles.underline}>{renderChildren(node)}</u>;
 }
 
-function SuperscriptRenderer({ node, renderChildren }: RendererProps) {
-  return <sup>{renderChildren(node)}</sup>;
+function SuperscriptRenderer({ node, styles, renderChildren }: RendererProps) {
+  return <sup style={styles.superscript}>{renderChildren(node)}</sup>;
 }
 
-function SubscriptRenderer({ node, renderChildren }: RendererProps) {
-  return <sub>{renderChildren(node)}</sub>;
+function SubscriptRenderer({ node, styles, renderChildren }: RendererProps) {
+  return <sub style={styles.subscript}>{renderChildren(node)}</sub>;
 }
 
 function CodeRenderer({ node, styles, renderChildren }: RendererProps) {

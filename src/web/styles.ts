@@ -258,6 +258,24 @@ function underlineStyle(style: MarkdownStyleInternal): CSSProperties {
   };
 }
 
+function superscriptStyle(style: MarkdownStyleInternal): CSSProperties {
+  const { fontScale, baselineOffsetScale } = style.superscript;
+  return {
+    fontSize: `${fontScale}em`,
+    verticalAlign: `${baselineOffsetScale}em`,
+    lineHeight: 0,
+  };
+}
+
+function subscriptStyle(style: MarkdownStyleInternal): CSSProperties {
+  const { fontScale, baselineOffsetScale } = style.subscript;
+  return {
+    fontSize: `${fontScale}em`,
+    verticalAlign: `-${baselineOffsetScale}em`,
+    lineHeight: 0,
+  };
+}
+
 function mathInlineStyle(style: MarkdownStyleInternal): CSSProperties {
   return { color: style.inlineMath.color };
 }
@@ -403,6 +421,8 @@ export interface Styles {
   link: CSSProperties;
   strikethrough: CSSProperties;
   underline: CSSProperties;
+  superscript: CSSProperties;
+  subscript: CSSProperties;
   mathInline: CSSProperties;
   mathDisplay: CSSProperties;
   table: CSSProperties;
@@ -445,6 +465,8 @@ export function buildStyles(style: MarkdownStyleInternal): Styles {
     link: linkStyle(style),
     strikethrough: strikethroughStyle(style),
     underline: underlineStyle(style),
+    superscript: superscriptStyle(style),
+    subscript: subscriptStyle(style),
     mathInline: mathInlineStyle(style),
     mathDisplay: mathDisplayStyle(style),
     table: tableStyle(style),
