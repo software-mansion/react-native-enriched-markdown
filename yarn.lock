@@ -6646,6 +6646,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@rnrepo/build-tools@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "@rnrepo/build-tools@npm:0.2.1"
+  checksum: 10c0/60d33086b376cb80dcc8e1b96e67fe12e1c5ab68461d5d4ad44946919894aee13913c062ca7c8f582f78abd1cf930bfca1618fd336ccc58b94486ff3e50e53e0
+  languageName: node
+  linkType: hard
+
 "@sideway/address@npm:^4.1.5":
   version: 4.1.5
   resolution: "@sideway/address@npm:4.1.5"
@@ -15910,6 +15917,7 @@ __metadata:
     "@react-native/typescript-config": "npm:0.86.0"
     "@react-navigation/native": "npm:^7.2.2"
     "@react-navigation/native-stack": "npm:^7.14.12"
+    "@rnrepo/build-tools": "npm:^0.2.1"
     "@storybook/addon-ondevice-actions": "npm:^10.4.4"
     "@storybook/addon-ondevice-controls": "npm:^10.4.4"
     "@storybook/react-native": "npm:^10.4.4"
