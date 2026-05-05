@@ -97,6 +97,7 @@ Lcom/swmansion/enriched/markdown/parser/MarkdownASTNode$NodeType;
 Lcom/swmansion/enriched/markdown/parser/Parser;
 
 # Renderer Classes
+Lcom/swmansion/enriched/markdown/renderer/BaselineShiftRenderer;
 Lcom/swmansion/enriched/markdown/renderer/BlockStyle;
 Lcom/swmansion/enriched/markdown/renderer/BlockStyleContext;
 Lcom/swmansion/enriched/markdown/renderer/BlockType;
@@ -127,6 +128,7 @@ Lcom/swmansion/enriched/markdown/renderer/ThematicBreakRenderer;
 Lcom/swmansion/enriched/markdown/renderer/UnderlineRenderer;
 
 # Spans
+Lcom/swmansion/enriched/markdown/spans/BaselineShiftSpan;
 Lcom/swmansion/enriched/markdown/spans/BaseListSpan;
 Lcom/swmansion/enriched/markdown/spans/BlockquoteSpan;
 Lcom/swmansion/enriched/markdown/spans/CodeBackgroundSpan;
@@ -184,6 +186,8 @@ Lcom/swmansion/enriched/markdown/styles/MathStyle;
 Lcom/swmansion/enriched/markdown/styles/ParagraphStyle;
 Lcom/swmansion/enriched/markdown/styles/SpoilerStyle;
 Lcom/swmansion/enriched/markdown/styles/StrikethroughStyle;
+Lcom/swmansion/enriched/markdown/styles/SubscriptStyle;
+Lcom/swmansion/enriched/markdown/styles/SuperscriptStyle;
 Lcom/swmansion/enriched/markdown/styles/StrongStyle;
 Lcom/swmansion/enriched/markdown/styles/StyleConfig;
 Lcom/swmansion/enriched/markdown/styles/StyleParser;
