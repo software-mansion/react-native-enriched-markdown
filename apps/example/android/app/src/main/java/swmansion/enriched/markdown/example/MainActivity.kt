@@ -1,4 +1,4 @@
-package enrichedmarkdown.example
+package swmansion.enriched.markdown.example
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
