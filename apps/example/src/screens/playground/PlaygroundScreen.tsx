@@ -10,7 +10,6 @@ import {
   Alert,
   Image,
 } from 'react-native';
-
 import { useHeaderHeight } from '@react-navigation/elements';
 import {
   EnrichedMarkdownTextInput,
