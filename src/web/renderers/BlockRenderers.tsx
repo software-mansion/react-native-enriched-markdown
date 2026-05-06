@@ -75,7 +75,6 @@ function LatexMathDisplayRenderer({
       katex={capabilities.katex}
       displayMode
       style={styles.mathDisplay}
-      fallbackTag="pre"
     />
   );
 }

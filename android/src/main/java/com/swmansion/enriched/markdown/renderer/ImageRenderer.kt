@@ -25,7 +25,7 @@ class ImageRenderer : NodeRenderer {
     val altText = extractTextFromNode(node)
 
     val span =
-      factory.getOrCreateImageSpan(
+      factory.createImageSpan(
         imageUrl = imageUrl,
         isInline = isInline,
         altText = altText,

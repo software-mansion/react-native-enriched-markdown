@@ -43,6 +43,22 @@ static inline CGSize ENRMMeasureMarkdownText(ENRMPlatformTextView *textView, CGF
   CGFloat measuredWidth = layout.usedRect.size.width;
   CGFloat measuredHeight = layout.usedRect.size.height;
 
+  // Detect multiline content by checking if the layout produced more than one
+  // line fragment. When text wraps, returning the tight usedRect width lets
+  // flexShrink narrow the view below maxWidth, causing re-wrap at the narrower
+  // width and a height mismatch. Pin to maxWidth for multiline content so Yoga
+  // assigns the width the text was actually measured at. Single-line content
+  // keeps its tight width for shrink-to-fit behavior.
+  NSLayoutManager *layoutManager = textView.layoutManager;
+  NSUInteger glyphCount = [layoutManager numberOfGlyphs];
+  if (glyphCount > 0) {
+    NSRange firstLineRange;
+    [layoutManager lineFragmentRectForGlyphAtIndex:0 effectiveRange:&firstLineRange];
+    if (NSMaxRange(firstLineRange) < glyphCount) {
+      measuredWidth = maxWidth;
+    }
+  }
+
   if (!CGRectIsEmpty(layout.extraLineFragmentRect)) {
     measuredHeight -= layout.extraLineFragmentRect.size.height;
   }

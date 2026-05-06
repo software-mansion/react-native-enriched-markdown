@@ -304,10 +304,6 @@ class EnrichedMarkdownText
       checkboxTouchHelper.onCheckboxTap = callback
     }
 
-    fun clearActiveImageSpans() {
-      renderer.clearActiveImageSpans()
-    }
-
     override fun onDetachedFromWindow() {
       stopSpoilerAnimations()
       super.onDetachedFromWindow()

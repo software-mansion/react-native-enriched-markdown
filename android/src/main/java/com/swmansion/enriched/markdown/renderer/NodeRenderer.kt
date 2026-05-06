@@ -8,7 +8,6 @@ import com.swmansion.enriched.markdown.spans.ImageSpan
 import com.swmansion.enriched.markdown.styles.StyleConfig
 import com.swmansion.enriched.markdown.utils.common.FeatureFlags
 import com.swmansion.enriched.markdown.utils.text.span.SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE
-import java.lang.ref.WeakReference
 
 interface NodeRenderer {
   fun render(
@@ -32,8 +31,6 @@ class RendererFactory(
   val blockStyleContext = BlockStyleContext()
 
   val styleCache = SpanStyleCache(config.style)
-
-  private val activeImageSpans = HashMap<String, WeakReference<ImageSpan>>()
 
   /**
    * Spans registered here are applied after the full document tree is rendered, so they
@@ -68,31 +65,18 @@ class RendererFactory(
     deferredSpans.clear()
   }
 
-  fun getOrCreateImageSpan(
+  fun createImageSpan(
     imageUrl: String,
     isInline: Boolean,
     altText: String,
-  ): ImageSpan {
-    val key = "${imageUrl}_$isInline"
-    val existing = activeImageSpans[key]?.get()
-    if (existing != null && existing.imageUrl == imageUrl) {
-      return existing
-    }
-    val span =
-      ImageSpan(
-        context = context,
-        imageUrl = imageUrl,
-        styleConfig = config.style,
-        isInline = isInline,
-        altText = altText,
-      )
-    activeImageSpans[key] = WeakReference(span)
-    return span
-  }
-
-  fun clearActiveImageSpans() {
-    activeImageSpans.clear()
-  }
+  ): ImageSpan =
+    ImageSpan(
+      context = context,
+      imageUrl = imageUrl,
+      styleConfig = config.style,
+      isInline = isInline,
+      altText = altText,
+    )
 
   private val textRenderer = TextRenderer()
   private val lineBreakRenderer = LineBreakRenderer()

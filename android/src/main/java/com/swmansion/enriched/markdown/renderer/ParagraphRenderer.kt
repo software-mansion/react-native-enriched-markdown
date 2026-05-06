@@ -6,9 +6,9 @@ import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.styles.ParagraphStyle
 import com.swmansion.enriched.markdown.utils.text.extensions.containsBlockImage
 import com.swmansion.enriched.markdown.utils.text.span.SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE
+import com.swmansion.enriched.markdown.utils.text.span.applyLineHeightSkippingImages
 import com.swmansion.enriched.markdown.utils.text.span.applyMarginBottom
 import com.swmansion.enriched.markdown.utils.text.span.applyMarginTop
-import com.swmansion.enriched.markdown.utils.text.span.createLineHeightSpan
 
 class ParagraphRenderer(
   private val config: RendererConfig,
@@ -51,15 +51,7 @@ class ParagraphRenderer(
   ) {
     val end = length
 
-    // LineHeightSpan is avoided for block images to prevent clipping/overlapping
-    if (!node.containsBlockImage()) {
-      setSpan(
-        createLineHeightSpan(style.lineHeight),
-        start,
-        end,
-        SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE,
-      )
-    }
+    applyLineHeightSkippingImages(this, start, end, style.lineHeight)
 
     // Only apply AlignmentSpan for non-default alignments (Center/Right)
     if (style.textAlign.needsAlignmentSpan) {

@@ -96,7 +96,6 @@ function LatexMathInlineRenderer({
       katex={capabilities.katex}
       displayMode={false}
       style={styles.mathInline}
-      fallbackTag="code"
     />
   );
 }

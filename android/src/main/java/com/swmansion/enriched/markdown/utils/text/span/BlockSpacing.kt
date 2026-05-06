@@ -1,12 +1,55 @@
 package com.swmansion.enriched.markdown.utils.text.span
 
 import android.text.SpannableStringBuilder
+import com.swmansion.enriched.markdown.spans.ImageSpan
 import com.swmansion.enriched.markdown.spans.LineHeightSpan
 import com.swmansion.enriched.markdown.spans.MarginBottomSpan
 import com.swmansion.enriched.markdown.utils.text.span.SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE
 import android.text.style.LineHeightSpan as AndroidLineHeightSpan
 
 fun createLineHeightSpan(lineHeight: Float): AndroidLineHeightSpan = LineHeightSpan(lineHeight)
+
+/**
+ * Applies [LineHeightSpan] to [start]..[end] but skips ranges occupied by
+ * block [ImageSpan]s (and their trailing '\n'). Without this, the fixed line
+ * height would re-clamp the metrics that [ImageSpan.chooseHeight] expanded,
+ * causing the image to overflow downward and overlap subsequent content.
+ */
+fun applyLineHeightSkippingImages(
+  builder: SpannableStringBuilder,
+  start: Int,
+  end: Int,
+  lineHeight: Float,
+) {
+  val blockImageRanges =
+    builder
+      .getSpans(start, end, ImageSpan::class.java)
+      .filter { !it.isInline }
+      .map { builder.getSpanStart(it) to builder.getSpanEnd(it) }
+      .sortedBy { it.first }
+
+  var pos = start
+  for ((imgStart, imgEnd) in blockImageRanges) {
+    if (pos < imgStart) {
+      builder.setSpan(
+        createLineHeightSpan(lineHeight),
+        pos,
+        imgStart,
+        SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE,
+      )
+    }
+    val skipEnd = if (imgEnd < end && builder[imgEnd] == '\n') imgEnd + 1 else imgEnd
+    pos = maxOf(pos, skipEnd)
+  }
+  if (pos < end) {
+    builder.setSpan(
+      createLineHeightSpan(lineHeight),
+      pos,
+      end,
+      SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE,
+    )
+  }
+}
 
 fun applyMarginTop(
   builder: SpannableStringBuilder,

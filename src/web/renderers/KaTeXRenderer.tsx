@@ -6,7 +6,6 @@ interface KaTeXRendererProps {
   katex: KaTeXInstance | null;
   displayMode: boolean;
   style: CSSProperties;
-  fallbackTag: 'code' | 'pre';
 }
 
 export function KaTeXRenderer({
@@ -14,7 +13,6 @@ export function KaTeXRenderer({
   katex,
   displayMode,
   style,
-  fallbackTag: FallbackTag,
 }: KaTeXRendererProps) {
   const delimiter = displayMode ? '$$' : '$';
 
@@ -28,21 +26,23 @@ export function KaTeXRenderer({
     });
   }, [katex, content, displayMode]);
 
+  const displayStyle = displayMode
+    ? { ...style, display: 'block' as const, whiteSpace: 'pre-wrap' as const }
+    : style;
+
   if (!html) {
     return (
-      <FallbackTag role="math" aria-label={content} style={style}>
+      <span role="math" aria-label={content} style={displayStyle}>
         {`${delimiter}${content}${delimiter}`}
-      </FallbackTag>
+      </span>
     );
   }
 
-  const WrapperTag = displayMode ? 'div' : 'span';
-
   return (
-    <WrapperTag
+    <span
       role="math"
       aria-label={content}
-      style={style}
+      style={displayStyle}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

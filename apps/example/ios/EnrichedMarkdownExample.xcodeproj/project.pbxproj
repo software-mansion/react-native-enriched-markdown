@@ -306,7 +306,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = enrichedmarkdown.example;
+				PRODUCT_BUNDLE_IDENTIFIER = swmansion.enriched.markdown.example;
 				PRODUCT_NAME = EnrichedMarkdownExample;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -335,7 +335,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = enrichedmarkdown.example;
+				PRODUCT_BUNDLE_IDENTIFIER = swmansion.enriched.markdown.example;
 				PRODUCT_NAME = EnrichedMarkdownExample;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;

@@ -110,8 +110,4 @@ class Renderer {
    * Provides the EnrichedMarkdownText with the exact list of spans that need registration.
    */
   fun getCollectedImageSpans(): List<ImageSpan> = collectedImageSpans
-
-  fun clearActiveImageSpans() {
-    cachedFactory?.clearActiveImageSpans()
-  }
 }
