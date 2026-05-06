@@ -1,6 +1,6 @@
 appId: swmansion.enriched.markdown.example
 ---
-# checks the parsing of Markdown nested lists (list inside a list item)
+# checks the parsing of Markdown mixed nested lists (unordered and ordered combined)
 - launchApp
 
 - runFlow:
@@ -24,4 +24,4 @@ appId: swmansion.enriched.markdown.example
 - runFlow:
     file: '../subflows/capture_or_assert_screenshot.yaml'
     env:
-      SCREENSHOT_NAME: 'nested_list_display'
+      SCREENSHOT_NAME: 'mixed_nested_list_display'
