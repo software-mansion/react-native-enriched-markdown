@@ -51,6 +51,9 @@ class ParagraphRenderer(
   ) {
     val end = length
 
+    // TODO: LineHeightSpan may also clip superscript/subscript glyphs that extend
+    // outside the normal line bounds. A similar "skip" strategy as for images may
+    // be needed here once super/subscript usage in practice is better understood.
     applyLineHeightSkippingImages(this, start, end, style.lineHeight)
 
     // Only apply AlignmentSpan for non-default alignments (Center/Right)

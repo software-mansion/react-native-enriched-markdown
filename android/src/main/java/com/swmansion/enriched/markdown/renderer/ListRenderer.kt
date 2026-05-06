@@ -55,6 +55,9 @@ class ListRenderer(
     depth: Int,
     style: com.swmansion.enriched.markdown.styles.BaseBlockStyle,
   ) {
+    // TODO: LineHeightSpan may also clip superscript/subscript glyphs that extend
+    // outside the normal line bounds. A similar "skip" strategy as for images may
+    // be needed here once super/subscript usage in practice is better understood.
     applyLineHeightSkippingImages(builder, start, builder.length, style.lineHeight)
 
     // External bottom margin is only handled by the root-level list
