@@ -302,8 +302,8 @@ object MarkdownExtractor {
     val hasStrikethrough = spannable.getSpans(start, end, StrikethroughSpan::class.java).isNotEmpty()
     val hasUnderline = spannable.getSpans(start, end, UnderlineSpan::class.java).isNotEmpty()
     val baselineShiftSpans = spannable.getSpans(start, end, BaselineShiftSpan::class.java)
-    val hasSuperscript = baselineShiftSpans.any { it.baselineOffsetScale > 0f }
-    val hasSubscript = baselineShiftSpans.any { it.baselineOffsetScale < 0f }
+    val hasSuperscript = baselineShiftSpans.any { it.spanType == BaselineShiftSpan.SpanType.SUPERSCRIPT }
+    val hasSubscript = baselineShiftSpans.any { it.spanType == BaselineShiftSpan.SpanType.SUBSCRIPT }
     val linkSpans = spannable.getSpans(start, end, LinkSpan::class.java)
 
     var result = text

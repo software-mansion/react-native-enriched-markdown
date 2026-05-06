@@ -6,8 +6,11 @@ import kotlin.math.roundToInt
 
 class BaselineShiftSpan(
   private val fontScale: Float,
-  val baselineOffsetScale: Float,
+  private val baselineOffsetScale: Float,
+  val spanType: SpanType,
 ) : MetricAffectingSpan() {
+  enum class SpanType { SUPERSCRIPT, SUBSCRIPT }
+
   override fun updateDrawState(tp: TextPaint) {
     applyShift(tp)
   }

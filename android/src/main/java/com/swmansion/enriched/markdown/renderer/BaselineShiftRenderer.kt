@@ -9,6 +9,8 @@ abstract class BaselineShiftRenderer : NodeRenderer {
 
   abstract fun baselineOffsetScale(factory: RendererFactory): Float
 
+  abstract fun spanType(): BaselineShiftSpan.SpanType
+
   override fun render(
     node: MarkdownASTNode,
     builder: SpannableStringBuilder,
@@ -33,7 +35,7 @@ abstract class BaselineShiftRenderer : NodeRenderer {
       // so block spans stay first and inline spans naturally follow. Once done, remove
       // the deferredSpans mechanism.
       factory.registerDeferredSpan(
-        BaselineShiftSpan(fontScale(factory), baselineOffsetScale(factory)),
+        BaselineShiftSpan(fontScale(factory), baselineOffsetScale(factory), spanType()),
         start,
         end,
       )
