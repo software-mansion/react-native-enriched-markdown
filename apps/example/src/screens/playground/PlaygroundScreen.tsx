@@ -8,7 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Image,
 } from 'react-native';
+
 import { useHeaderHeight } from '@react-navigation/elements';
 import {
   EnrichedMarkdownTextInput,
@@ -45,6 +47,13 @@ const MARKDOWN_STYLE = {
     checkedStrikethrough: true,
   },
 };
+
+const BLOCK_IMAGE_URI = Image.resolveAssetSource(
+  require('../../assets/logo.png')
+).uri;
+const INLINE_IMAGE_URI = Image.resolveAssetSource(
+  require('../../assets/logo_icon.png')
+).uri;
 
 export default function PlaygroundScreen() {
   const headerHeight = useHeaderHeight();
@@ -103,6 +112,30 @@ export default function PlaygroundScreen() {
             <Text style={styles.buttonText}>
               {sizeMode === 'max' ? 'Base' : 'Max'}
             </Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              const md = `![logo](${BLOCK_IMAGE_URI})`;
+              inputRef.current?.setValue(md);
+              setMarkdown(md);
+            }}
+            testID="insert-image-button"
+          >
+            <Text style={styles.buttonText}>Insert Image</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              const md = `Enriched Markdown is a library for ![icon](${INLINE_IMAGE_URI}) React Native.`;
+              inputRef.current?.setValue(md);
+              setMarkdown(md);
+            }}
+            testID="insert-inline-image-button"
+          >
+            <Text style={styles.buttonText}>Insert Inline Image</Text>
           </TouchableOpacity>
         </View>
 
