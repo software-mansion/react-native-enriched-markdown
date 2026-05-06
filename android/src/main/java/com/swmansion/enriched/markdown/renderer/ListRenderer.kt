@@ -4,8 +4,8 @@ import android.text.SpannableStringBuilder
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.spans.MarginBottomSpan
 import com.swmansion.enriched.markdown.utils.text.span.SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE
+import com.swmansion.enriched.markdown.utils.text.span.applyLineHeightSkippingImages
 import com.swmansion.enriched.markdown.utils.text.span.applyMarginTop
-import com.swmansion.enriched.markdown.utils.text.span.createLineHeightSpan
 
 class ListRenderer(
   private val config: RendererConfig,
@@ -55,12 +55,7 @@ class ListRenderer(
     depth: Int,
     style: com.swmansion.enriched.markdown.styles.BaseBlockStyle,
   ) {
-    builder.setSpan(
-      createLineHeightSpan(style.lineHeight),
-      start,
-      builder.length,
-      SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE,
-    )
+    applyLineHeightSkippingImages(builder, start, builder.length, style.lineHeight)
 
     // External bottom margin is only handled by the root-level list
     if (depth == 0) {

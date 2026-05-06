@@ -9,6 +9,8 @@ import android.graphics.Path
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.text.Spannable
+import android.text.Spanned
+import android.text.style.LeadingMarginSpan
 import android.util.Log
 import android.widget.TextView
 import androidx.core.graphics.createBitmap
@@ -138,7 +140,20 @@ class ImageSpan(
     }
   }
 
-  private fun getAvailableWidth(view: TextView): Int = view.layout?.width ?: view.width
+  private fun getAvailableWidth(view: TextView): Int {
+    val baseWidth = (view.layout?.width ?: view.width).coerceAtLeast(0)
+    val text = view.text as? Spanned ?: return baseWidth
+    val start = text.getSpanStart(this).takeIf { it >= 0 } ?: return baseWidth
+    val end = text.getSpanEnd(this).coerceAtLeast(start)
+    // Subtract leading margins (list bullet/indent, blockquote bar) that consume
+    // horizontal space on the image's line. first=true is correct because a block
+    // image sits on its own line — the "first line" from the layout's perspective.
+    val totalMargin =
+      text
+        .getSpans(start, end, LeadingMarginSpan::class.java)
+        .sumOf { it.getLeadingMargin(true) }
+    return (baseWidth - totalMargin).coerceAtLeast(0)
+  }
 
   override fun getDrawable(): Drawable {
     val drawable = loadedDrawable ?: transparentDrawable
