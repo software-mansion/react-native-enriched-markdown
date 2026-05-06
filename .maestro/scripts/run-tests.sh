@@ -17,6 +17,7 @@
 # Examples:
 #   ./run-tests.sh --platform ios .maestro/enrichedMarkdownTest/flows
 #   ./run-tests.sh --platform android --update-screenshots --rebuild
+# TODO: fix rebuilding skill issues + fix android skill issues
 
 set -euo pipefail
 
@@ -39,7 +40,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 MAESTRO_ROOT="$REPO_ROOT/.maestro"
 SCREENSHOT_ROOT="$MAESTRO_ROOT"
-BUNDLE_ID="enrichedmarkdown.example"
+BUNDLE_ID="swmansion.enriched.markdown.example"
 
 PLATFORM=""
 UPDATE_SCREENSHOTS=""
@@ -64,6 +65,15 @@ case "$PLATFORM" in
 esac
 
 DEVICE_ID=$("$SETUP" | tee /dev/tty | grep "^DEVICE_ID=" | cut -d= -f2)
+
+shutdown_device() {
+  if [ "$PLATFORM" = ios ]; then
+    xcrun simctl shutdown "$DEVICE_ID" 2>/dev/null || true
+  else
+    adb -s "$DEVICE_ID" emu kill 2>/dev/null || true
+  fi
+}
+trap shutdown_device EXIT
 
 app_installed() {
   if [ "$PLATFORM" = ios ]; then

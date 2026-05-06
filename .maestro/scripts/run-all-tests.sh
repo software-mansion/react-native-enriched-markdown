@@ -15,5 +15,7 @@ echo "=== iOS ==="
 "$SCRIPT_DIR/run-tests.sh" --platform ios "$@"
 
 echo ""
+maestro kill-server 2>/dev/null || true
+
 echo "=== Android ==="
 "$SCRIPT_DIR/run-tests.sh" --platform android "$@"
