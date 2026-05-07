@@ -33,10 +33,11 @@ typedef struct {
 
 - (void)dealloc
 {
-  [self cleanupEntries];
 #if !TARGET_OS_OSX
   [_displayLink invalidate];
+  _displayLink = nil;
 #endif
+  [self cleanupEntries];
 }
 
 - (void)animateFrom:(NSUInteger)tailStart to:(NSUInteger)tailEnd
