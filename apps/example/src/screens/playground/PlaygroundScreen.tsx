@@ -9,6 +9,8 @@ import {
   Platform,
   Alert,
   Image,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import {
@@ -61,6 +63,9 @@ export default function PlaygroundScreen() {
   const [markdown, setMarkdown] = useState('');
   const [sizeMode, setSizeMode] = useState<'base' | 'max'>('base');
   const [hasSelection, setHasSelection] = useState(false);
+  const [underlineEnabled, setUnderlineEnabled] = useState(true);
+  const [setMarkdownModalVisible, setSetMarkdownModalVisible] = useState(false);
+  const [rawInput, setRawInput] = useState('');
   const handleGetMarkdown = useCallback(async () => {
     const md = await inputRef.current?.getMarkdown();
     Alert.alert('Markdown', md ?? '(empty)', [{ text: 'OK' }]);
@@ -110,6 +115,20 @@ export default function PlaygroundScreen() {
           >
             <Text style={styles.buttonText}>
               {sizeMode === 'max' ? 'Base' : 'Max'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, underlineEnabled && styles.buttonActive]}
+            onPress={() => setUnderlineEnabled((v) => !v)}
+            testID="underline-button"
+          >
+            <Text
+              style={[
+                styles.buttonText,
+                underlineEnabled && styles.buttonTextActive,
+              ]}
+            >
+              Underline
             </Text>
           </TouchableOpacity>
         </View>
@@ -163,11 +182,72 @@ export default function PlaygroundScreen() {
 
         <TouchableOpacity
           style={styles.getMarkdownButton}
+          onPress={() => {
+            setRawInput('');
+            setSetMarkdownModalVisible(true);
+          }}
+          testID="set-markdown-button"
+        >
+          <Text style={styles.getMarkdownText}>Set Raw Markdown</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.getMarkdownButton}
           onPress={handleGetMarkdown}
           testID="get-markdown-button"
         >
           <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
         </TouchableOpacity>
+
+        <Modal
+          visible={setMarkdownModalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setSetMarkdownModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Set Raw Markdown</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={rawInput}
+                onChangeText={setRawInput}
+                multiline
+                autoFocus
+                placeholder="Paste or type markdown..."
+                placeholderTextColor="#9CA3AF"
+                autoCorrect={false}
+                autoCapitalize="none"
+                testID="set-markdown-input"
+              />
+              <View style={styles.modalButtonRow}>
+                <TouchableOpacity
+                  style={[styles.button, styles.modalCancelButton]}
+                  onPress={() => setSetMarkdownModalVisible(false)}
+                  testID="set-markdown-cancel"
+                >
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonActive]}
+                  onPress={() => {
+                    inputRef.current?.setValue(rawInput);
+                    setMarkdown(rawInput);
+                    setSetMarkdownModalVisible(false);
+                  }}
+                  testID="set-markdown-confirm"
+                >
+                  <Text style={[styles.buttonText, styles.buttonTextActive]}>
+                    Set
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
 
         <View style={styles.divider} />
 
@@ -179,7 +259,7 @@ export default function PlaygroundScreen() {
               markdownStyle={MARKDOWN_STYLE}
               flavor="github"
               spoilerOverlay="solid"
-              md4cFlags={{ underline: true }}
+              md4cFlags={{ underline: underlineEnabled }}
               onLinkPress={({ url }) =>
                 Alert.alert('Link', url, [{ text: 'OK' }])
               }
@@ -230,6 +310,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#374151',
+  },
+  buttonActive: {
+    backgroundColor: '#BEEBD0',
+  },
+  buttonTextActive: {
+    color: '#001A72',
   },
   editorContainer: {
     borderRadius: 10,
@@ -284,5 +370,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  modalInput: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#111827',
+    minHeight: 160,
+    textAlignVertical: 'top',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 8,
+  },
+  modalCancelButton: {
+    flex: 1,
   },
 });
