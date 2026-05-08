@@ -55,7 +55,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -z "$FLOWS" ] && FLOWS="$MAESTRO_ROOT/enrichedMarkdownText/flows $MAESTRO_ROOT/enrichedMarkdownInput/flows"
+[ -z "$FLOWS" ] && FLOWS=$(find "$MAESTRO_ROOT/enrichedMarkdownText/flows" "$MAESTRO_ROOT/enrichedMarkdownInput/flows" -name "*.yaml" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ' ')
 
 case "$PLATFORM" in
   ios)      SETUP="$SCRIPT_DIR/setup-ios-simulator.sh" ;;

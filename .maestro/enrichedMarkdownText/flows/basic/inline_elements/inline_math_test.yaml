@@ -1,0 +1,18 @@
+appId: swmansion.enriched.markdown.example
+---
+# checks the parsing of inline math spans ($...$)
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        The formula $E = mc^2$ and $a^2 + b^2 = c^2$ are famous.
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'inline_math_display'

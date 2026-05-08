@@ -1,0 +1,18 @@
+appId: swmansion.enriched.markdown.example
+---
+# checks the parsing of underline inline markdown (__text__, requires underline flag enabled)
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        __Underlined text__ and normal text.
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'underline_display'

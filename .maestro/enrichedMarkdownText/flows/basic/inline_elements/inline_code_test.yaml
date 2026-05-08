@@ -1,0 +1,18 @@
+appId: swmansion.enriched.markdown.example
+---
+# checks the parsing of inline code spans (`code`)
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        Use `console.log()` to debug and `null` to clear.
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'inline_code_display'

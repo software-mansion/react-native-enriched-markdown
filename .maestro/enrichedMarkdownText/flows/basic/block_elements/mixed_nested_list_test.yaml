@@ -4,10 +4,10 @@ appId: swmansion.enriched.markdown.example
 - launchApp
 
 - runFlow:
-    file: '../../subflows/move_to_playground.yaml'
+    file: '../../../../subflows/move_to_playground.yaml'
 
 - runFlow:
-    file: '../subflows/set_enriched_text_value.yaml'
+    file: '../../../subflows/set_enriched_text_value.yaml'
     env:
       VALUE: |
         - Frontend
@@ -22,6 +22,6 @@ appId: swmansion.enriched.markdown.example
             2. FastAPI
 
 - runFlow:
-    file: '../subflows/capture_or_assert_screenshot.yaml'
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
     env:
       SCREENSHOT_NAME: 'mixed_nested_list_display'

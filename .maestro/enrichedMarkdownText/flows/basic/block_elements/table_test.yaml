@@ -4,10 +4,10 @@ appId: swmansion.enriched.markdown.example
 - launchApp
 
 - runFlow:
-    file: '../../subflows/move_to_playground.yaml'
+    file: '../../../../subflows/move_to_playground.yaml'
 
 - runFlow:
-    file: '../subflows/set_enriched_text_value.yaml'
+    file: '../../../subflows/set_enriched_text_value.yaml'
     env:
       VALUE: |
         | col1 | col2 | looooooooong col | a |
@@ -17,6 +17,6 @@ appId: swmansion.enriched.markdown.example
         | third | Row | to test trailing | symbols | |asdf|||||blabla|
 
 - runFlow:
-    file: '../subflows/capture_or_assert_screenshot.yaml'
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
     env:
       SCREENSHOT_NAME: 'table_display'

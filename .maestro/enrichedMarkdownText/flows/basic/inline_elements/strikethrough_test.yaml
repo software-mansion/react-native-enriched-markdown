@@ -1,0 +1,18 @@
+appId: swmansion.enriched.markdown.example
+---
+# checks the parsing of strikethrough inline markdown (~~text~~)
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        ~~Strikethrough text~~ and normal text.
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'strikethrough_display'
