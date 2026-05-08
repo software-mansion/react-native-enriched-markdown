@@ -1,4 +1,5 @@
 #import "StyleConfig.h"
+#import "ENRMFontSlot.h"
 #import "FontUtils.h"
 #import <React/RCTFont.h>
 #import <React/RCTUtils.h>
@@ -21,8 +22,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   NSNumber *_primaryFontSize;
   NSString *_primaryFontWeight;
   NSString *_primaryFontFamily;
-  UIFont *_primaryFont;
-  BOOL _primaryFontNeedsRecreation;
+  ENRMFontSlot *_primaryFont;
   // Paragraph properties
   CGFloat _paragraphFontSize;
   NSString *_paragraphFontFamily;
@@ -32,8 +32,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _paragraphMarginBottom;
   CGFloat _paragraphLineHeight;
   NSTextAlignment _paragraphTextAlign;
-  UIFont *_paragraphFont;
-  BOOL _paragraphFontNeedsRecreation;
+  ENRMFontSlot *_paragraphFont;
   // H1 properties
   CGFloat _h1FontSize;
   NSString *_h1FontFamily;
@@ -43,8 +42,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _h1MarginBottom;
   CGFloat _h1LineHeight;
   NSTextAlignment _h1TextAlign;
-  UIFont *_h1Font;
-  BOOL _h1FontNeedsRecreation;
+  ENRMFontSlot *_h1Font;
   // H2 properties
   CGFloat _h2FontSize;
   NSString *_h2FontFamily;
@@ -54,8 +52,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _h2MarginBottom;
   CGFloat _h2LineHeight;
   NSTextAlignment _h2TextAlign;
-  UIFont *_h2Font;
-  BOOL _h2FontNeedsRecreation;
+  ENRMFontSlot *_h2Font;
   // H3 properties
   CGFloat _h3FontSize;
   NSString *_h3FontFamily;
@@ -65,8 +62,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _h3MarginBottom;
   CGFloat _h3LineHeight;
   NSTextAlignment _h3TextAlign;
-  UIFont *_h3Font;
-  BOOL _h3FontNeedsRecreation;
+  ENRMFontSlot *_h3Font;
   // H4 properties
   CGFloat _h4FontSize;
   NSString *_h4FontFamily;
@@ -76,8 +72,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _h4MarginBottom;
   CGFloat _h4LineHeight;
   NSTextAlignment _h4TextAlign;
-  UIFont *_h4Font;
-  BOOL _h4FontNeedsRecreation;
+  ENRMFontSlot *_h4Font;
   // H5 properties
   CGFloat _h5FontSize;
   NSString *_h5FontFamily;
@@ -87,8 +82,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _h5MarginBottom;
   CGFloat _h5LineHeight;
   NSTextAlignment _h5TextAlign;
-  UIFont *_h5Font;
-  BOOL _h5FontNeedsRecreation;
+  ENRMFontSlot *_h5Font;
   // H6 properties
   CGFloat _h6FontSize;
   NSString *_h6FontFamily;
@@ -98,8 +92,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _h6MarginBottom;
   CGFloat _h6LineHeight;
   NSTextAlignment _h6TextAlign;
-  UIFont *_h6Font;
-  BOOL _h6FontNeedsRecreation;
+  ENRMFontSlot *_h6Font;
   // Link properties
   NSString *_linkFontFamily;
   RCTUIColor *_linkColor;
@@ -141,6 +134,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _blockquoteBorderWidth;
   CGFloat _blockquoteGapWidth;
   RCTUIColor *_blockquoteBackgroundColor;
+  ENRMFontSlot *_blockquoteFont;
   // List style properties (combined for both ordered and unordered lists)
   CGFloat _listStyleFontSize;
   NSString *_listStyleFontFamily;
@@ -156,10 +150,8 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   NSString *_listStyleMarkerFontWeight;
   CGFloat _listStyleGapWidth;
   CGFloat _listStyleMarginLeft;
-  UIFont *_listMarkerFont;
-  BOOL _listMarkerFontNeedsRecreation;
-  UIFont *_listStyleFont;
-  BOOL _listStyleFontNeedsRecreation;
+  ENRMFontSlot *_listMarkerFont;
+  ENRMFontSlot *_listStyleFont;
   // Code block properties
   CGFloat _codeBlockFontSize;
   NSString *_codeBlockFontFamily;
@@ -173,10 +165,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _codeBlockBorderRadius;
   CGFloat _codeBlockBorderWidth;
   CGFloat _codeBlockPadding;
-  UIFont *_codeBlockFont;
-  BOOL _codeBlockFontNeedsRecreation;
-  UIFont *_blockquoteFont;
-  BOOL _blockquoteFontNeedsRecreation;
+  ENRMFontSlot *_codeBlockFont;
   // Thematic break properties
   RCTUIColor *_thematicBreakColor;
   CGFloat _thematicBreakHeight;
@@ -190,11 +179,9 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _tableMarginTop;
   CGFloat _tableMarginBottom;
   CGFloat _tableLineHeight;
-  UIFont *_tableFont;
-  BOOL _tableFontNeedsRecreation;
+  ENRMFontSlot *_tableFont;
   NSString *_tableHeaderFontFamily;
-  UIFont *_tableHeaderFont;
-  BOOL _tableHeaderFontNeedsRecreation;
+  ENRMFontSlot *_tableHeaderFont;
   RCTUIColor *_tableHeaderBackgroundColor;
   RCTUIColor *_tableHeaderTextColor;
   RCTUIColor *_tableRowEvenBackgroundColor;
@@ -231,6 +218,8 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _superscriptBaselineOffsetScale;
   CGFloat _subscriptFontScale;
   CGFloat _subscriptBaselineOffsetScale;
+  // All font cache entries — used for bulk invalidation
+  NSArray<ENRMFontSlot *> *_allFontEntries;
 }
 
 - (instancetype)init
@@ -238,29 +227,40 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   self = [super init];
   _allowFontScaling = YES;
   _maxFontSizeMultiplier = 0;
-  _primaryFontNeedsRecreation = YES;
-  _paragraphFontNeedsRecreation = YES;
   _paragraphTextAlign = NSTextAlignmentNatural;
-  _h1FontNeedsRecreation = YES;
   _h1TextAlign = NSTextAlignmentNatural;
-  _h2FontNeedsRecreation = YES;
   _h2TextAlign = NSTextAlignmentNatural;
-  _h3FontNeedsRecreation = YES;
   _h3TextAlign = NSTextAlignmentNatural;
-  _h4FontNeedsRecreation = YES;
   _h4TextAlign = NSTextAlignmentNatural;
-  _h5FontNeedsRecreation = YES;
   _h5TextAlign = NSTextAlignmentNatural;
-  _h6FontNeedsRecreation = YES;
   _h6TextAlign = NSTextAlignmentNatural;
-  _listMarkerFontNeedsRecreation = YES;
-  _listStyleFontNeedsRecreation = YES;
-  _codeBlockFontNeedsRecreation = YES;
-  _blockquoteFontNeedsRecreation = YES;
-  _tableFontNeedsRecreation = YES;
-  _tableHeaderFontNeedsRecreation = YES;
   _linkUnderline = YES;
+  _primaryFont = [[ENRMFontSlot alloc] init];
+  _paragraphFont = [[ENRMFontSlot alloc] init];
+  _h1Font = [[ENRMFontSlot alloc] init];
+  _h2Font = [[ENRMFontSlot alloc] init];
+  _h3Font = [[ENRMFontSlot alloc] init];
+  _h4Font = [[ENRMFontSlot alloc] init];
+  _h5Font = [[ENRMFontSlot alloc] init];
+  _h6Font = [[ENRMFontSlot alloc] init];
+  _listMarkerFont = [[ENRMFontSlot alloc] init];
+  _listStyleFont = [[ENRMFontSlot alloc] init];
+  _codeBlockFont = [[ENRMFontSlot alloc] init];
+  _blockquoteFont = [[ENRMFontSlot alloc] init];
+  _tableFont = [[ENRMFontSlot alloc] init];
+  _tableHeaderFont = [[ENRMFontSlot alloc] init];
+  _allFontEntries = @[
+    _primaryFont, _paragraphFont, _h1Font, _h2Font, _h3Font, _h4Font, _h5Font, _h6Font, _listMarkerFont, _listStyleFont,
+    _codeBlockFont, _blockquoteFont, _tableFont, _tableHeaderFont
+  ];
   return self;
+}
+
+- (void)invalidateAllFonts
+{
+  for (ENRMFontSlot *entry in _allFontEntries) {
+    [entry invalidate];
+  }
 }
 
 - (CGFloat)fontScaleMultiplier
@@ -273,20 +273,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   BOOL newAllowFontScaling = (newValue != 1.0);
   if (_allowFontScaling != newAllowFontScaling) {
     _allowFontScaling = newAllowFontScaling;
-    // Invalidate all cached fonts when scale changes
-    _primaryFontNeedsRecreation = YES;
-    _paragraphFontNeedsRecreation = YES;
-    _h1FontNeedsRecreation = YES;
-    _h2FontNeedsRecreation = YES;
-    _h3FontNeedsRecreation = YES;
-    _h4FontNeedsRecreation = YES;
-    _h5FontNeedsRecreation = YES;
-    _h6FontNeedsRecreation = YES;
-    _listMarkerFontNeedsRecreation = YES;
-    _listStyleFontNeedsRecreation = YES;
-    _codeBlockFontNeedsRecreation = YES;
-    _blockquoteFontNeedsRecreation = YES;
-    _tableFontNeedsRecreation = YES;
+    [self invalidateAllFonts];
   }
 }
 
@@ -307,25 +294,14 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 {
   if (_maxFontSizeMultiplier != newValue) {
     _maxFontSizeMultiplier = newValue;
-    // Invalidate all cached fonts when max multiplier changes
-    _primaryFontNeedsRecreation = YES;
-    _paragraphFontNeedsRecreation = YES;
-    _h1FontNeedsRecreation = YES;
-    _h2FontNeedsRecreation = YES;
-    _h3FontNeedsRecreation = YES;
-    _h4FontNeedsRecreation = YES;
-    _h5FontNeedsRecreation = YES;
-    _h6FontNeedsRecreation = YES;
-    _listMarkerFontNeedsRecreation = YES;
-    _listStyleFontNeedsRecreation = YES;
-    _codeBlockFontNeedsRecreation = YES;
-    _blockquoteFontNeedsRecreation = YES;
-    _tableFontNeedsRecreation = YES;
+    [self invalidateAllFonts];
   }
 }
 
 - (id)copyWithZone:(NSZone *)zone
 {
+  // -init creates fresh ENRMFontSlot instances with needsRecreation = YES,
+  // so all cached fonts will be rebuilt from the copied params below.
   StyleConfig *copy = [[[self class] allocWithZone:zone] init];
   copy->_allowFontScaling = _allowFontScaling;
   copy->_maxFontSizeMultiplier = _maxFontSizeMultiplier;
@@ -333,8 +309,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_primaryFontSize = [_primaryFontSize copy];
   copy->_primaryFontWeight = [_primaryFontWeight copy];
   copy->_primaryFontFamily = [_primaryFontFamily copy];
-  copy->_primaryFontNeedsRecreation = YES;
-
   copy->_paragraphFontSize = _paragraphFontSize;
   copy->_paragraphFontFamily = [_paragraphFontFamily copy];
   copy->_paragraphFontWeight = [_paragraphFontWeight copy];
@@ -343,7 +317,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_paragraphMarginBottom = _paragraphMarginBottom;
   copy->_paragraphLineHeight = _paragraphLineHeight;
   copy->_paragraphTextAlign = _paragraphTextAlign;
-  copy->_paragraphFontNeedsRecreation = YES;
   copy->_h1FontSize = _h1FontSize;
   copy->_h1FontFamily = [_h1FontFamily copy];
   copy->_h1FontWeight = [_h1FontWeight copy];
@@ -352,7 +325,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_h1MarginBottom = _h1MarginBottom;
   copy->_h1LineHeight = _h1LineHeight;
   copy->_h1TextAlign = _h1TextAlign;
-  copy->_h1FontNeedsRecreation = YES;
   copy->_h2FontSize = _h2FontSize;
   copy->_h2FontFamily = [_h2FontFamily copy];
   copy->_h2FontWeight = [_h2FontWeight copy];
@@ -361,7 +333,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_h2MarginBottom = _h2MarginBottom;
   copy->_h2LineHeight = _h2LineHeight;
   copy->_h2TextAlign = _h2TextAlign;
-  copy->_h2FontNeedsRecreation = YES;
   copy->_h3FontSize = _h3FontSize;
   copy->_h3FontFamily = [_h3FontFamily copy];
   copy->_h3FontWeight = [_h3FontWeight copy];
@@ -370,7 +341,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_h3MarginBottom = _h3MarginBottom;
   copy->_h3LineHeight = _h3LineHeight;
   copy->_h3TextAlign = _h3TextAlign;
-  copy->_h3FontNeedsRecreation = YES;
   copy->_h4FontSize = _h4FontSize;
   copy->_h4FontFamily = [_h4FontFamily copy];
   copy->_h4FontWeight = [_h4FontWeight copy];
@@ -379,7 +349,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_h4MarginBottom = _h4MarginBottom;
   copy->_h4LineHeight = _h4LineHeight;
   copy->_h4TextAlign = _h4TextAlign;
-  copy->_h4FontNeedsRecreation = YES;
   copy->_h5FontSize = _h5FontSize;
   copy->_h5FontFamily = [_h5FontFamily copy];
   copy->_h5FontWeight = [_h5FontWeight copy];
@@ -388,7 +357,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_h5MarginBottom = _h5MarginBottom;
   copy->_h5LineHeight = _h5LineHeight;
   copy->_h5TextAlign = _h5TextAlign;
-  copy->_h5FontNeedsRecreation = YES;
   copy->_h6FontSize = _h6FontSize;
   copy->_h6FontFamily = [_h6FontFamily copy];
   copy->_h6FontWeight = [_h6FontWeight copy];
@@ -397,7 +365,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_h6MarginBottom = _h6MarginBottom;
   copy->_h6LineHeight = _h6LineHeight;
   copy->_h6TextAlign = _h6TextAlign;
-  copy->_h6FontNeedsRecreation = YES;
   copy->_linkFontFamily = [_linkFontFamily copy];
   copy->_linkColor = [_linkColor copy];
   copy->_linkUnderline = _linkUnderline;
@@ -444,7 +411,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_listStyleMarkerFontWeight = [_listStyleMarkerFontWeight copy];
   copy->_listStyleGapWidth = _listStyleGapWidth;
   copy->_listStyleMarginLeft = _listStyleMarginLeft;
-  copy->_listStyleFontNeedsRecreation = YES;
   copy->_codeBlockFontSize = _codeBlockFontSize;
   copy->_codeBlockFontFamily = [_codeBlockFontFamily copy];
   copy->_codeBlockFontWeight = [_codeBlockFontWeight copy];
@@ -457,8 +423,6 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_codeBlockBorderRadius = _codeBlockBorderRadius;
   copy->_codeBlockBorderWidth = _codeBlockBorderWidth;
   copy->_codeBlockPadding = _codeBlockPadding;
-  copy->_codeBlockFontNeedsRecreation = YES;
-  copy->_blockquoteFontNeedsRecreation = YES;
   copy->_thematicBreakColor = [_thematicBreakColor copy];
   copy->_thematicBreakHeight = _thematicBreakHeight;
   copy->_thematicBreakMarginTop = _thematicBreakMarginTop;
@@ -470,9 +434,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_tableMarginTop = _tableMarginTop;
   copy->_tableMarginBottom = _tableMarginBottom;
   copy->_tableLineHeight = _tableLineHeight;
-  copy->_tableFontNeedsRecreation = YES;
   copy->_tableHeaderFontFamily = [_tableHeaderFontFamily copy];
-  copy->_tableHeaderFontNeedsRecreation = YES;
   copy->_tableHeaderBackgroundColor = [_tableHeaderBackgroundColor copy];
   copy->_tableHeaderTextColor = [_tableHeaderTextColor copy];
   copy->_tableRowEvenBackgroundColor = [_tableRowEvenBackgroundColor copy];
@@ -527,7 +489,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setPrimaryFontSize:(NSNumber *)newValue
 {
   _primaryFontSize = newValue;
-  _primaryFontNeedsRecreation = YES;
+  [_primaryFont invalidate];
 }
 
 - (NSString *)primaryFontWeight
@@ -538,7 +500,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setPrimaryFontWeight:(NSString *)newValue
 {
   _primaryFontWeight = newValue;
-  _primaryFontNeedsRecreation = YES;
+  [_primaryFont invalidate];
 }
 
 - (NSString *)primaryFontFamily
@@ -549,22 +511,23 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setPrimaryFontFamily:(NSString *)newValue
 {
   _primaryFontFamily = newValue;
-  _primaryFontNeedsRecreation = YES;
+  [_primaryFont invalidate];
 }
 
 - (UIFont *)primaryFont
 {
-  if (_primaryFontNeedsRecreation || !_primaryFont) {
-    _primaryFont = [RCTFont updateFont:nil
-                            withFamily:_primaryFontFamily
-                                  size:_primaryFontSize
-                                weight:normalizedFontWeight(_primaryFontWeight)
-                                 style:nil
-                               variant:nil
-                       scaleMultiplier:[self effectiveScaleMultiplierForFontSize:[_primaryFontSize floatValue]]];
-    _primaryFontNeedsRecreation = NO;
+  if (_primaryFont.needsRecreation || !_primaryFont.cachedFont) {
+    _primaryFont.cachedFont =
+        [RCTFont updateFont:nil
+                 withFamily:_primaryFontFamily
+                       size:_primaryFontSize
+                     weight:normalizedFontWeight(_primaryFontWeight)
+                      style:nil
+                    variant:nil
+            scaleMultiplier:[self effectiveScaleMultiplierForFontSize:[_primaryFontSize floatValue]]];
+    _primaryFont.needsRecreation = NO;
   }
-  return _primaryFont;
+  return _primaryFont.cachedFont;
 }
 
 // Paragraph properties
@@ -576,7 +539,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setParagraphFontSize:(CGFloat)newValue
 {
   _paragraphFontSize = newValue;
-  _paragraphFontNeedsRecreation = YES;
+  [_paragraphFont invalidate];
 }
 
 - (NSString *)paragraphFontFamily
@@ -587,7 +550,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setParagraphFontFamily:(NSString *)newValue
 {
   _paragraphFontFamily = newValue;
-  _paragraphFontNeedsRecreation = YES;
+  [_paragraphFont invalidate];
 }
 
 - (NSString *)paragraphFontWeight
@@ -598,7 +561,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setParagraphFontWeight:(NSString *)newValue
 {
   _paragraphFontWeight = newValue;
-  _paragraphFontNeedsRecreation = YES;
+  [_paragraphFont invalidate];
 }
 
 - (RCTUIColor *)paragraphColor
@@ -656,17 +619,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)paragraphFont
 {
-  if (_paragraphFontNeedsRecreation || !_paragraphFont) {
-    _paragraphFont = [RCTFont updateFont:nil
-                              withFamily:_paragraphFontFamily
-                                    size:@(_paragraphFontSize)
-                                  weight:normalizedFontWeight(_paragraphFontWeight)
-                                   style:nil
-                                 variant:nil
-                         scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_paragraphFontSize]];
-    _paragraphFontNeedsRecreation = NO;
+  if (_paragraphFont.needsRecreation || !_paragraphFont.cachedFont) {
+    _paragraphFont.cachedFont = [RCTFont updateFont:nil
+                                         withFamily:_paragraphFontFamily
+                                               size:@(_paragraphFontSize)
+                                             weight:normalizedFontWeight(_paragraphFontWeight)
+                                              style:nil
+                                            variant:nil
+                                    scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_paragraphFontSize]];
+    _paragraphFont.needsRecreation = NO;
   }
-  return _paragraphFont;
+  return _paragraphFont.cachedFont;
 }
 
 - (CGFloat)h1FontSize
@@ -677,7 +640,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH1FontSize:(CGFloat)newValue
 {
   _h1FontSize = newValue;
-  _h1FontNeedsRecreation = YES;
+  [_h1Font invalidate];
 }
 
 - (NSString *)h1FontFamily
@@ -688,7 +651,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH1FontFamily:(NSString *)newValue
 {
   _h1FontFamily = newValue;
-  _h1FontNeedsRecreation = YES;
+  [_h1Font invalidate];
 }
 
 - (NSString *)h1FontWeight
@@ -699,7 +662,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH1FontWeight:(NSString *)newValue
 {
   _h1FontWeight = newValue;
-  _h1FontNeedsRecreation = YES;
+  [_h1Font invalidate];
 }
 
 - (RCTUIColor *)h1Color
@@ -757,17 +720,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)h1Font
 {
-  if (_h1FontNeedsRecreation || !_h1Font) {
-    _h1Font = [RCTFont updateFont:nil
-                       withFamily:_h1FontFamily
-                             size:@(_h1FontSize)
-                           weight:normalizedFontWeight(_h1FontWeight)
-                            style:nil
-                          variant:nil
-                  scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h1FontSize]];
-    _h1FontNeedsRecreation = NO;
+  if (_h1Font.needsRecreation || !_h1Font.cachedFont) {
+    _h1Font.cachedFont = [RCTFont updateFont:nil
+                                  withFamily:_h1FontFamily
+                                        size:@(_h1FontSize)
+                                      weight:normalizedFontWeight(_h1FontWeight)
+                                       style:nil
+                                     variant:nil
+                             scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h1FontSize]];
+    _h1Font.needsRecreation = NO;
   }
-  return _h1Font;
+  return _h1Font.cachedFont;
 }
 
 - (CGFloat)h2FontSize
@@ -778,7 +741,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH2FontSize:(CGFloat)newValue
 {
   _h2FontSize = newValue;
-  _h2FontNeedsRecreation = YES;
+  [_h2Font invalidate];
 }
 
 - (NSString *)h2FontFamily
@@ -789,7 +752,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH2FontFamily:(NSString *)newValue
 {
   _h2FontFamily = newValue;
-  _h2FontNeedsRecreation = YES;
+  [_h2Font invalidate];
 }
 
 - (NSString *)h2FontWeight
@@ -800,7 +763,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH2FontWeight:(NSString *)newValue
 {
   _h2FontWeight = newValue;
-  _h2FontNeedsRecreation = YES;
+  [_h2Font invalidate];
 }
 
 - (RCTUIColor *)h2Color
@@ -858,17 +821,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)h2Font
 {
-  if (_h2FontNeedsRecreation || !_h2Font) {
-    _h2Font = [RCTFont updateFont:nil
-                       withFamily:_h2FontFamily
-                             size:@(_h2FontSize)
-                           weight:normalizedFontWeight(_h2FontWeight)
-                            style:nil
-                          variant:nil
-                  scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h2FontSize]];
-    _h2FontNeedsRecreation = NO;
+  if (_h2Font.needsRecreation || !_h2Font.cachedFont) {
+    _h2Font.cachedFont = [RCTFont updateFont:nil
+                                  withFamily:_h2FontFamily
+                                        size:@(_h2FontSize)
+                                      weight:normalizedFontWeight(_h2FontWeight)
+                                       style:nil
+                                     variant:nil
+                             scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h2FontSize]];
+    _h2Font.needsRecreation = NO;
   }
-  return _h2Font;
+  return _h2Font.cachedFont;
 }
 
 - (CGFloat)h3FontSize
@@ -879,7 +842,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH3FontSize:(CGFloat)newValue
 {
   _h3FontSize = newValue;
-  _h3FontNeedsRecreation = YES;
+  [_h3Font invalidate];
 }
 
 - (NSString *)h3FontFamily
@@ -890,7 +853,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH3FontFamily:(NSString *)newValue
 {
   _h3FontFamily = newValue;
-  _h3FontNeedsRecreation = YES;
+  [_h3Font invalidate];
 }
 
 - (NSString *)h3FontWeight
@@ -901,7 +864,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH3FontWeight:(NSString *)newValue
 {
   _h3FontWeight = newValue;
-  _h3FontNeedsRecreation = YES;
+  [_h3Font invalidate];
 }
 
 - (RCTUIColor *)h3Color
@@ -959,17 +922,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)h3Font
 {
-  if (_h3FontNeedsRecreation || !_h3Font) {
-    _h3Font = [RCTFont updateFont:nil
-                       withFamily:_h3FontFamily
-                             size:@(_h3FontSize)
-                           weight:normalizedFontWeight(_h3FontWeight)
-                            style:nil
-                          variant:nil
-                  scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h3FontSize]];
-    _h3FontNeedsRecreation = NO;
+  if (_h3Font.needsRecreation || !_h3Font.cachedFont) {
+    _h3Font.cachedFont = [RCTFont updateFont:nil
+                                  withFamily:_h3FontFamily
+                                        size:@(_h3FontSize)
+                                      weight:normalizedFontWeight(_h3FontWeight)
+                                       style:nil
+                                     variant:nil
+                             scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h3FontSize]];
+    _h3Font.needsRecreation = NO;
   }
-  return _h3Font;
+  return _h3Font.cachedFont;
 }
 
 - (CGFloat)h4FontSize
@@ -980,7 +943,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH4FontSize:(CGFloat)newValue
 {
   _h4FontSize = newValue;
-  _h4FontNeedsRecreation = YES;
+  [_h4Font invalidate];
 }
 
 - (NSString *)h4FontFamily
@@ -991,7 +954,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH4FontFamily:(NSString *)newValue
 {
   _h4FontFamily = newValue;
-  _h4FontNeedsRecreation = YES;
+  [_h4Font invalidate];
 }
 
 - (NSString *)h4FontWeight
@@ -1002,7 +965,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH4FontWeight:(NSString *)newValue
 {
   _h4FontWeight = newValue;
-  _h4FontNeedsRecreation = YES;
+  [_h4Font invalidate];
 }
 
 - (RCTUIColor *)h4Color
@@ -1060,17 +1023,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)h4Font
 {
-  if (_h4FontNeedsRecreation || !_h4Font) {
-    _h4Font = [RCTFont updateFont:nil
-                       withFamily:_h4FontFamily
-                             size:@(_h4FontSize)
-                           weight:normalizedFontWeight(_h4FontWeight)
-                            style:nil
-                          variant:nil
-                  scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h4FontSize]];
-    _h4FontNeedsRecreation = NO;
+  if (_h4Font.needsRecreation || !_h4Font.cachedFont) {
+    _h4Font.cachedFont = [RCTFont updateFont:nil
+                                  withFamily:_h4FontFamily
+                                        size:@(_h4FontSize)
+                                      weight:normalizedFontWeight(_h4FontWeight)
+                                       style:nil
+                                     variant:nil
+                             scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h4FontSize]];
+    _h4Font.needsRecreation = NO;
   }
-  return _h4Font;
+  return _h4Font.cachedFont;
 }
 
 - (CGFloat)h5FontSize
@@ -1081,7 +1044,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH5FontSize:(CGFloat)newValue
 {
   _h5FontSize = newValue;
-  _h5FontNeedsRecreation = YES;
+  [_h5Font invalidate];
 }
 
 - (NSString *)h5FontFamily
@@ -1092,7 +1055,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH5FontFamily:(NSString *)newValue
 {
   _h5FontFamily = newValue;
-  _h5FontNeedsRecreation = YES;
+  [_h5Font invalidate];
 }
 
 - (NSString *)h5FontWeight
@@ -1103,7 +1066,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH5FontWeight:(NSString *)newValue
 {
   _h5FontWeight = newValue;
-  _h5FontNeedsRecreation = YES;
+  [_h5Font invalidate];
 }
 
 - (RCTUIColor *)h5Color
@@ -1161,17 +1124,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)h5Font
 {
-  if (_h5FontNeedsRecreation || !_h5Font) {
-    _h5Font = [RCTFont updateFont:nil
-                       withFamily:_h5FontFamily
-                             size:@(_h5FontSize)
-                           weight:normalizedFontWeight(_h5FontWeight)
-                            style:nil
-                          variant:nil
-                  scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h5FontSize]];
-    _h5FontNeedsRecreation = NO;
+  if (_h5Font.needsRecreation || !_h5Font.cachedFont) {
+    _h5Font.cachedFont = [RCTFont updateFont:nil
+                                  withFamily:_h5FontFamily
+                                        size:@(_h5FontSize)
+                                      weight:normalizedFontWeight(_h5FontWeight)
+                                       style:nil
+                                     variant:nil
+                             scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h5FontSize]];
+    _h5Font.needsRecreation = NO;
   }
-  return _h5Font;
+  return _h5Font.cachedFont;
 }
 
 - (CGFloat)h6FontSize
@@ -1182,7 +1145,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH6FontSize:(CGFloat)newValue
 {
   _h6FontSize = newValue;
-  _h6FontNeedsRecreation = YES;
+  [_h6Font invalidate];
 }
 
 - (NSString *)h6FontFamily
@@ -1193,7 +1156,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH6FontFamily:(NSString *)newValue
 {
   _h6FontFamily = newValue;
-  _h6FontNeedsRecreation = YES;
+  [_h6Font invalidate];
 }
 
 - (NSString *)h6FontWeight
@@ -1204,7 +1167,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setH6FontWeight:(NSString *)newValue
 {
   _h6FontWeight = newValue;
-  _h6FontNeedsRecreation = YES;
+  [_h6Font invalidate];
 }
 
 - (RCTUIColor *)h6Color
@@ -1262,17 +1225,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)h6Font
 {
-  if (_h6FontNeedsRecreation || !_h6Font) {
-    _h6Font = [RCTFont updateFont:nil
-                       withFamily:_h6FontFamily
-                             size:@(_h6FontSize)
-                           weight:normalizedFontWeight(_h6FontWeight)
-                            style:nil
-                          variant:nil
-                  scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h6FontSize]];
-    _h6FontNeedsRecreation = NO;
+  if (_h6Font.needsRecreation || !_h6Font.cachedFont) {
+    _h6Font.cachedFont = [RCTFont updateFont:nil
+                                  withFamily:_h6FontFamily
+                                        size:@(_h6FontSize)
+                                      weight:normalizedFontWeight(_h6FontWeight)
+                                       style:nil
+                                     variant:nil
+                             scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_h6FontSize]];
+    _h6Font.needsRecreation = NO;
   }
-  return _h6Font;
+  return _h6Font.cachedFont;
 }
 
 - (NSString *)linkFontFamily
@@ -1494,7 +1457,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setBlockquoteFontSize:(CGFloat)newValue
 {
   _blockquoteFontSize = newValue;
-  _blockquoteFontNeedsRecreation = YES;
+  [_blockquoteFont invalidate];
 }
 
 - (NSString *)blockquoteFontFamily
@@ -1505,7 +1468,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setBlockquoteFontFamily:(NSString *)newValue
 {
   _blockquoteFontFamily = newValue;
-  _blockquoteFontNeedsRecreation = YES;
+  [_blockquoteFont invalidate];
 }
 
 - (NSString *)blockquoteFontWeight
@@ -1516,7 +1479,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setBlockquoteFontWeight:(NSString *)newValue
 {
   _blockquoteFontWeight = newValue;
-  _blockquoteFontNeedsRecreation = YES;
+  [_blockquoteFont invalidate];
 }
 
 - (RCTUIColor *)blockquoteColor
@@ -1564,17 +1527,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)blockquoteFont
 {
-  if (_blockquoteFontNeedsRecreation || !_blockquoteFont) {
-    _blockquoteFont = [RCTFont updateFont:nil
-                               withFamily:_blockquoteFontFamily
-                                     size:@(_blockquoteFontSize)
-                                   weight:normalizedFontWeight(_blockquoteFontWeight)
-                                    style:nil
-                                  variant:nil
-                          scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_blockquoteFontSize]];
-    _blockquoteFontNeedsRecreation = NO;
+  if (_blockquoteFont.needsRecreation || !_blockquoteFont.cachedFont) {
+    _blockquoteFont.cachedFont = [RCTFont updateFont:nil
+                                          withFamily:_blockquoteFontFamily
+                                                size:@(_blockquoteFontSize)
+                                              weight:normalizedFontWeight(_blockquoteFontWeight)
+                                               style:nil
+                                             variant:nil
+                                     scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_blockquoteFontSize]];
+    _blockquoteFont.needsRecreation = NO;
   }
-  return _blockquoteFont;
+  return _blockquoteFont.cachedFont;
 }
 
 - (RCTUIColor *)blockquoteBorderColor
@@ -1626,8 +1589,8 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setListStyleFontSize:(CGFloat)newValue
 {
   _listStyleFontSize = newValue;
-  _listMarkerFontNeedsRecreation = YES;
-  _listStyleFontNeedsRecreation = YES;
+  [_listMarkerFont invalidate];
+  [_listStyleFont invalidate];
 }
 
 - (NSString *)listStyleFontFamily
@@ -1638,8 +1601,8 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setListStyleFontFamily:(NSString *)newValue
 {
   _listStyleFontFamily = newValue;
-  _listMarkerFontNeedsRecreation = YES;
-  _listStyleFontNeedsRecreation = YES;
+  [_listMarkerFont invalidate];
+  [_listStyleFont invalidate];
 }
 
 - (NSString *)listStyleFontWeight
@@ -1650,7 +1613,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setListStyleFontWeight:(NSString *)newValue
 {
   _listStyleFontWeight = newValue;
-  _listStyleFontNeedsRecreation = YES;
+  [_listStyleFont invalidate];
 }
 
 - (RCTUIColor *)listStyleColor
@@ -1744,7 +1707,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setListStyleMarkerFontWeight:(NSString *)newValue
 {
   _listStyleMarkerFontWeight = newValue;
-  _listMarkerFontNeedsRecreation = YES;
+  [_listMarkerFont invalidate];
 }
 
 - (CGFloat)listStyleGapWidth
@@ -1769,32 +1732,32 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (UIFont *)listMarkerFont
 {
-  if (_listMarkerFontNeedsRecreation || !_listMarkerFont) {
-    _listMarkerFont = [RCTFont updateFont:nil
-                               withFamily:_listStyleFontFamily
-                                     size:@(_listStyleFontSize)
-                                   weight:normalizedFontWeight(_listStyleMarkerFontWeight)
-                                    style:nil
-                                  variant:nil
-                          scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_listStyleFontSize]];
-    _listMarkerFontNeedsRecreation = NO;
+  if (_listMarkerFont.needsRecreation || !_listMarkerFont.cachedFont) {
+    _listMarkerFont.cachedFont = [RCTFont updateFont:nil
+                                          withFamily:_listStyleFontFamily
+                                                size:@(_listStyleFontSize)
+                                              weight:normalizedFontWeight(_listStyleMarkerFontWeight)
+                                               style:nil
+                                             variant:nil
+                                     scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_listStyleFontSize]];
+    _listMarkerFont.needsRecreation = NO;
   }
-  return _listMarkerFont;
+  return _listMarkerFont.cachedFont;
 }
 
 - (UIFont *)listStyleFont
 {
-  if (_listStyleFontNeedsRecreation || !_listStyleFont) {
-    _listStyleFont = [RCTFont updateFont:nil
-                              withFamily:_listStyleFontFamily
-                                    size:@(_listStyleFontSize)
-                                  weight:normalizedFontWeight(_listStyleFontWeight)
-                                   style:nil
-                                 variant:nil
-                         scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_listStyleFontSize]];
-    _listStyleFontNeedsRecreation = NO;
+  if (_listStyleFont.needsRecreation || !_listStyleFont.cachedFont) {
+    _listStyleFont.cachedFont = [RCTFont updateFont:nil
+                                         withFamily:_listStyleFontFamily
+                                               size:@(_listStyleFontSize)
+                                             weight:normalizedFontWeight(_listStyleFontWeight)
+                                              style:nil
+                                            variant:nil
+                                    scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_listStyleFontSize]];
+    _listStyleFont.needsRecreation = NO;
   }
-  return _listStyleFont;
+  return _listStyleFont.cachedFont;
 }
 
 static const CGFloat kDefaultMinGap = 4.0;
@@ -1831,7 +1794,7 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setCodeBlockFontSize:(CGFloat)newValue
 {
   _codeBlockFontSize = newValue;
-  _codeBlockFontNeedsRecreation = YES;
+  [_codeBlockFont invalidate];
 }
 
 - (NSString *)codeBlockFontFamily
@@ -1842,7 +1805,7 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setCodeBlockFontFamily:(NSString *)newValue
 {
   _codeBlockFontFamily = newValue;
-  _codeBlockFontNeedsRecreation = YES;
+  [_codeBlockFont invalidate];
 }
 
 - (NSString *)codeBlockFontWeight
@@ -1853,7 +1816,7 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setCodeBlockFontWeight:(NSString *)newValue
 {
   _codeBlockFontWeight = newValue;
-  _codeBlockFontNeedsRecreation = YES;
+  [_codeBlockFont invalidate];
 }
 
 - (RCTUIColor *)codeBlockColor
@@ -1951,17 +1914,17 @@ static const CGFloat kDefaultMinGap = 4.0;
 
 - (UIFont *)codeBlockFont
 {
-  if (_codeBlockFontNeedsRecreation || !_codeBlockFont) {
-    _codeBlockFont = [RCTFont updateFont:nil
-                              withFamily:_codeBlockFontFamily
-                                    size:@(_codeBlockFontSize)
-                                  weight:normalizedFontWeight(_codeBlockFontWeight)
-                                   style:nil
-                                 variant:nil
-                         scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_codeBlockFontSize]];
-    _codeBlockFontNeedsRecreation = NO;
+  if (_codeBlockFont.needsRecreation || !_codeBlockFont.cachedFont) {
+    _codeBlockFont.cachedFont = [RCTFont updateFont:nil
+                                         withFamily:_codeBlockFontFamily
+                                               size:@(_codeBlockFontSize)
+                                             weight:normalizedFontWeight(_codeBlockFontWeight)
+                                              style:nil
+                                            variant:nil
+                                    scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_codeBlockFontSize]];
+    _codeBlockFont.needsRecreation = NO;
   }
-  return _codeBlockFont;
+  return _codeBlockFont.cachedFont;
 }
 
 // Thematic break properties
@@ -2014,8 +1977,8 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setTableFontSize:(CGFloat)newValue
 {
   _tableFontSize = newValue;
-  _tableFontNeedsRecreation = YES;
-  _tableHeaderFontNeedsRecreation = YES;
+  [_tableFont invalidate];
+  [_tableHeaderFont invalidate];
 }
 
 - (NSString *)tableFontFamily
@@ -2026,8 +1989,8 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setTableFontFamily:(NSString *)newValue
 {
   _tableFontFamily = newValue;
-  _tableFontNeedsRecreation = YES;
-  _tableHeaderFontNeedsRecreation = YES;
+  [_tableFont invalidate];
+  [_tableHeaderFont invalidate];
 }
 
 - (NSString *)tableFontWeight
@@ -2038,7 +2001,7 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setTableFontWeight:(NSString *)newValue
 {
   _tableFontWeight = newValue;
-  _tableFontNeedsRecreation = YES;
+  [_tableFont invalidate];
 }
 
 - (RCTUIColor *)tableColor
@@ -2086,17 +2049,17 @@ static const CGFloat kDefaultMinGap = 4.0;
 
 - (UIFont *)tableFont
 {
-  if (_tableFontNeedsRecreation || !_tableFont) {
-    _tableFont = [RCTFont updateFont:nil
-                          withFamily:_tableFontFamily
-                                size:@(_tableFontSize)
-                              weight:normalizedFontWeight(_tableFontWeight)
-                               style:nil
-                             variant:nil
-                     scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_tableFontSize]];
-    _tableFontNeedsRecreation = NO;
+  if (_tableFont.needsRecreation || !_tableFont.cachedFont) {
+    _tableFont.cachedFont = [RCTFont updateFont:nil
+                                     withFamily:_tableFontFamily
+                                           size:@(_tableFontSize)
+                                         weight:normalizedFontWeight(_tableFontWeight)
+                                          style:nil
+                                        variant:nil
+                                scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_tableFontSize]];
+    _tableFont.needsRecreation = NO;
   }
-  return _tableFont;
+  return _tableFont.cachedFont;
 }
 
 - (NSString *)tableHeaderFontFamily
@@ -2107,23 +2070,23 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setTableHeaderFontFamily:(NSString *)newValue
 {
   _tableHeaderFontFamily = newValue;
-  _tableHeaderFontNeedsRecreation = YES;
+  [_tableHeaderFont invalidate];
 }
 
 - (UIFont *)tableHeaderFont
 {
-  if (_tableHeaderFontNeedsRecreation || !_tableHeaderFont) {
+  if (_tableHeaderFont.needsRecreation || !_tableHeaderFont.cachedFont) {
     NSString *family = (_tableHeaderFontFamily.length > 0) ? _tableHeaderFontFamily : _tableFontFamily;
-    _tableHeaderFont = [RCTFont updateFont:nil
-                                withFamily:family
-                                      size:@(_tableFontSize)
-                                    weight:normalizedFontWeight(@"bold")
-                                     style:nil
-                                   variant:nil
-                           scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_tableFontSize]];
-    _tableHeaderFontNeedsRecreation = NO;
+    _tableHeaderFont.cachedFont = [RCTFont updateFont:nil
+                                           withFamily:family
+                                                 size:@(_tableFontSize)
+                                               weight:normalizedFontWeight(@"bold")
+                                                style:nil
+                                              variant:nil
+                                      scaleMultiplier:[self effectiveScaleMultiplierForFontSize:_tableFontSize]];
+    _tableHeaderFont.needsRecreation = NO;
   }
-  return _tableHeaderFont;
+  return _tableHeaderFont.cachedFont;
 }
 
 - (RCTUIColor *)tableHeaderBackgroundColor
