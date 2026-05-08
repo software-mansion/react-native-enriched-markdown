@@ -35,5 +35,27 @@ target 'EnrichedMarkdownExample' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # Codegen output for third-party Fabric components (e.g. rnscreens, rnsvg) lives under
+    # ios/build/generated/ios/ReactCodegen. CocoaPods may not symlink all component headers into
+    # Pods/Headers/Public/ReactCodegen, which breaks angled imports like
+    # <react/renderer/components/rnscreens/EventEmitters.h>.
+    react_codegen_generated = '"$(PODS_ROOT)/../build/generated/ios/ReactCodegen"'
+    installer.pods_project.targets.each do |target|
+      next unless ['RNScreens', 'RNSVG'].include?(target.name)
+
+      target.build_configurations.each do |cfg|
+        existing = cfg.build_settings['HEADER_SEARCH_PATHS']
+        next if existing.to_s.include?('build/generated/ios/ReactCodegen')
+
+        if existing.nil? || existing == ''
+          cfg.build_settings['HEADER_SEARCH_PATHS'] = "$(inherited) #{react_codegen_generated}"
+        elsif existing.is_a?(Array)
+          cfg.build_settings['HEADER_SEARCH_PATHS'] = existing + [react_codegen_generated]
+        else
+          cfg.build_settings['HEADER_SEARCH_PATHS'] = "#{existing} #{react_codegen_generated}"
+        end
+      end
+    end
   end
 end
