@@ -4,6 +4,7 @@
 #import "ENRMImageAttachment.h"
 #import "ENRMMarkdownParser.h"
 #import "ENRMTailFadeInAnimator.h"
+#import "ENRMTextInteractionUtils.h"
 #import "ENRMTextRenderer.h"
 #import "ENRMTextViewSetup.h"
 #import "ENRMUIKit.h"
@@ -61,6 +62,13 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 static char kENRMSegmentFadeAnimatorKey;
 
 @interface EnrichedMarkdown () <RCTEnrichedMarkdownViewProtocol, UITextViewDelegate>
+- (void)emitLinkPress:(NSString *)url;
+- (void)emitLinkLongPress:(NSString *)url;
+- (void)emitTaskListItemPress:(NSInteger)index checked:(BOOL)checked text:(NSString *)text;
+- (void)emitContextMenuItemPress:(NSString *)itemText
+                    selectedText:(NSString *)selectedText
+                  selectionStart:(NSUInteger)selectionStart
+                    selectionEnd:(NSUInteger)selectionEnd;
 @end
 
 @implementation EnrichedMarkdown {
@@ -492,15 +500,10 @@ static char kENRMSegmentFadeAnimatorKey;
     NSArray<NSMenuItem *> *customItems = ENRMBuildContextMenuItems(
         strongSelf->_contextMenuItemTexts, strongSelf->_contextMenuItemIcons, textView,
         ^(NSString *itemText, NSString *selectedText, NSUInteger selectionStart, NSUInteger selectionEnd) {
-          auto eventEmitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(strongSelf->_eventEmitter);
-          if (eventEmitter) {
-            eventEmitter->onContextMenuItemPress({
-                .itemText = std::string(itemText.UTF8String),
-                .selectedText = std::string(selectedText.UTF8String),
-                .selectionStart = (int)selectionStart,
-                .selectionEnd = (int)selectionEnd,
-            });
-          }
+          [strongSelf emitContextMenuItemPress:itemText
+                                  selectedText:selectedText
+                                selectionStart:selectionStart
+                                  selectionEnd:selectionEnd];
         });
     return buildEditMenuForSelection(textView.textStorage, textView.selectedRange, segmentMarkdown, strongSelf->_config,
                                      @[ baseMenu ], customItems, strongSelf -> _selectionMenuConfig);
@@ -522,24 +525,14 @@ static char kENRMSegmentFadeAnimatorKey;
 
   tableView.onLinkPress = ^(NSString *url) {
     EnrichedMarkdown *strongSelf = weakSelf;
-    if (!strongSelf || !url)
-      return;
-
-    auto eventEmitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(strongSelf->_eventEmitter);
-    if (eventEmitter) {
-      eventEmitter->onLinkPress({.url = std::string([url UTF8String])});
-    }
+    if (strongSelf && url)
+      [strongSelf emitLinkPress:url];
   };
 
   tableView.onLinkLongPress = ^(NSString *url) {
     EnrichedMarkdown *strongSelf = weakSelf;
-    if (!strongSelf || !url)
-      return;
-
-    auto eventEmitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(strongSelf->_eventEmitter);
-    if (eventEmitter) {
-      eventEmitter->onLinkLongPress({.url = std::string([url UTF8String])});
-    }
+    if (strongSelf && url)
+      [strongSelf emitLinkLongPress:url];
   };
 
   [tableView applyTableNode:tableSegment.tableNode];
@@ -844,6 +837,42 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
 }
 #endif
 
+- (void)emitLinkPress:(NSString *)url
+{
+  auto emitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(_eventEmitter);
+  if (emitter)
+    emitter->onLinkPress({.url = std::string(url.UTF8String)});
+}
+
+- (void)emitLinkLongPress:(NSString *)url
+{
+  auto emitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(_eventEmitter);
+  if (emitter)
+    emitter->onLinkLongPress({.url = std::string(url.UTF8String)});
+}
+
+- (void)emitTaskListItemPress:(NSInteger)index checked:(BOOL)checked text:(NSString *)text
+{
+  auto emitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(_eventEmitter);
+  if (emitter)
+    emitter->onTaskListItemPress({.index = (int)index, .checked = checked, .text = std::string(text.UTF8String ?: "")});
+}
+
+- (void)emitContextMenuItemPress:(NSString *)itemText
+                    selectedText:(NSString *)selectedText
+                  selectionStart:(NSUInteger)selectionStart
+                    selectionEnd:(NSUInteger)selectionEnd
+{
+  auto emitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(_eventEmitter);
+  if (emitter)
+    emitter->onContextMenuItemPress({
+        .itemText = std::string(itemText.UTF8String),
+        .selectedText = std::string(selectedText.UTF8String),
+        .selectionStart = (int)selectionStart,
+        .selectionEnd = (int)selectionEnd,
+    });
+}
+
 - (void)textTapped:(ENRMTapRecognizer *)recognizer
 {
   ENRMPlatformTextView *textView = (ENRMPlatformTextView *)recognizer.view;
@@ -851,14 +880,7 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
   if (handleTaskListTapWithSharedLogic(
           textView, recognizer, &self->_cachedMarkdown, self->_config,
           ^(NSInteger index, BOOL checked, NSString *itemText) {
-            auto eventEmitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(self->_eventEmitter);
-            if (eventEmitter) {
-              eventEmitter->onTaskListItemPress({
-                  .index = (int)index,
-                  .checked = checked,
-                  .text = std::string([itemText UTF8String] ?: ""),
-              });
-            }
+            [self emitTaskListItemPress:index checked:checked text:itemText];
           },
           ^(NSString *updatedMarkdown) { [self renderMarkdownContent:updatedMarkdown]; })) {
     return;
@@ -875,16 +897,7 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
     }
   }
 
-  NSString *url = linkURLAtTapLocation(textView, recognizer);
-  if (url) {
-    auto eventEmitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(_eventEmitter);
-    if (eventEmitter) {
-      eventEmitter->onLinkPress({.url = std::string([url UTF8String])});
-    }
-    return;
-  }
-
-  ENRMClearSelection(textView);
+  ENRMHandleTapOnTextView(textView, recognizer, ^(NSString *url) { [self emitLinkPress:url]; });
 }
 
 // TODO: Remove API_AVAILABLE(ios(16.0)) guard when the minimum iOS deployment target in RN is bumped to 16.
@@ -897,17 +910,11 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
   ENRMContextMenuPressHandler handler =
       ^(NSString *itemText, NSString *selectedText, NSUInteger selectionStart, NSUInteger selectionEnd) {
         EnrichedMarkdown *strongSelf = weakSelf;
-        if (!strongSelf)
-          return;
-        auto eventEmitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(strongSelf->_eventEmitter);
-        if (eventEmitter) {
-          eventEmitter->onContextMenuItemPress({
-              .itemText = std::string(itemText.UTF8String),
-              .selectedText = std::string(selectedText.UTF8String),
-              .selectionStart = (int)selectionStart,
-              .selectionEnd = (int)selectionEnd,
-          });
-        }
+        if (strongSelf)
+          [strongSelf emitContextMenuItemPress:itemText
+                                  selectedText:selectedText
+                                selectionStart:selectionStart
+                                  selectionEnd:selectionEnd];
       };
   NSMutableArray<UIAction *> *customActions =
       ENRMBuildContextMenuActions(_contextMenuItemTexts, _contextMenuItemIcons, textView, range, handler);
@@ -932,10 +939,7 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
     return YES;
   }
 
-  auto eventEmitter = std::static_pointer_cast<EnrichedMarkdownEventEmitter const>(_eventEmitter);
-  if (eventEmitter) {
-    eventEmitter->onLinkLongPress({.url = std::string([urlString UTF8String])});
-  }
+  [self emitLinkLongPress:urlString];
   return NO;
 }
 #endif
