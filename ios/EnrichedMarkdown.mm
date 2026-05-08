@@ -48,7 +48,6 @@
 #import "RCTFabricComponentsPlugins.h"
 #import <React/RCTConversions.h>
 #import <React/RCTFont.h>
-#import <react/utils/ManagedObjectWrapper.h>
 
 using namespace facebook::react;
 
@@ -327,13 +326,7 @@ static char kENRMSegmentFadeAnimatorKey;
 
 - (void)requestHeightUpdate
 {
-  if (_state == nullptr) {
-    return;
-  }
-
-  _heightUpdateCounter++;
-  auto selfRef = wrapManagedObjectWeakly(self);
-  _state->updateState(EnrichedMarkdownState(_heightUpdateCounter, selfRef));
+  ENRMRequestHeightUpdate<EnrichedMarkdownState>(_state, _heightUpdateCounter, self);
 }
 
 - (void)renderMarkdownContent:(NSString *)markdownString

@@ -32,7 +32,6 @@
 #import "RCTFabricComponentsPlugins.h"
 #import <React/RCTConversions.h>
 #import <React/RCTFont.h>
-#import <react/utils/ManagedObjectWrapper.h>
 
 using namespace facebook::react;
 
@@ -120,13 +119,7 @@ using namespace facebook::react;
 
 - (void)requestHeightUpdate
 {
-  if (_state == nullptr) {
-    return;
-  }
-
-  _heightUpdateCounter++;
-  auto selfRef = wrapManagedObjectWeakly(self);
-  _state->updateState(EnrichedMarkdownTextState(_heightUpdateCounter, selfRef));
+  ENRMRequestHeightUpdate<EnrichedMarkdownTextState>(_state, _heightUpdateCounter, self);
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
