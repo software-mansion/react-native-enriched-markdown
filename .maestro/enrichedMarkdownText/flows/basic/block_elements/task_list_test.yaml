@@ -10,7 +10,7 @@ appId: swmansion.enriched.markdown.example
     file: '../../../subflows/set_enriched_text_value.yaml'
     env:
       VALUE: |
-        - [x] Dice 2 onions, 3 carrots, and celery stalks
+        - [x] Dice 2 onions, 3 celery stalks, and parsnips
         - [x] Add vegetables to the pot
         - [ ] Add ground pork and beef
         - [ ] Saute for 10 minutes

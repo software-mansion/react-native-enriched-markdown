@@ -6,6 +6,10 @@ appId: swmansion.enriched.markdown.example
 - runFlow:
     file: '../../../../subflows/move_to_playground.yaml'
 
+# underline flag is ON by default; tap to disable it so _text_ renders as italic
+- tapOn:
+    id: underline-button
+
 - runFlow:
     file: '../../../subflows/set_enriched_text_value.yaml'
     env:

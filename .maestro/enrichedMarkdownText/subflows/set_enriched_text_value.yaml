@@ -2,7 +2,10 @@ appId: swmansion.enriched.markdown.example
 ---
 
 - tapOn:
-    id: editor-container
+    id: set-markdown-button
+
+- tapOn:
+    id: set-markdown-input
 
 - runFlow:
     when:
@@ -31,4 +34,4 @@ appId: swmansion.enriched.markdown.example
             - pressKey: Enter
 
 - tapOn:
-    id: blur-button
+    id: set-markdown-confirm

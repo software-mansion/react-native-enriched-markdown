@@ -12,9 +12,9 @@ appId: swmansion.enriched.markdown.example
       VALUE: |
         - Apples
         - Bananas
-        - Cherries
+        - Mango
         * Dragonfruit
-        * Elderberry
+        * Guava
         * Fig
 
 - runFlow:
