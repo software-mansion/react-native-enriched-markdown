@@ -57,9 +57,13 @@
   },
   "keywords": [
     "react-native",
+    "expo",
     "ios",
     "android",
-    "markdown"
+    "macos",
+    "web",
+    "markdown",
+    "rich-editor"
   ],
   "repository": {
     "type": "git",
