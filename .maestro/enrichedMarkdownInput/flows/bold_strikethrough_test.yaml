@@ -1,0 +1,25 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - input
+  - advanced
+---
+- launchApp
+
+- runFlow:
+    file: '../../subflows/move_to_playground.yaml'
+
+- tapOn:
+    id: toolbar-bold
+
+- tapOn:
+    id: toolbar-strikethrough
+
+- runFlow:
+    file: '../subflows/set_enriched_input_value.yaml'
+    env:
+      VALUE: "Bold strikethrough text"
+
+- runFlow:
+    file: '../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'bold_strikethrough_input'

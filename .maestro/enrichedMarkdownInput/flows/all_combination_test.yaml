@@ -1,0 +1,34 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - input
+  - smoke
+---
+- launchApp
+
+- runFlow:
+    file: '../../subflows/move_to_playground.yaml'
+
+- tapOn:
+    id: toolbar-bold
+
+- tapOn:
+    id: toolbar-italic
+
+- tapOn:
+    id: toolbar-underline
+
+- tapOn:
+    id: toolbar-strikethrough
+
+- tapOn:
+    id: toolbar-spoiler
+
+- runFlow:
+    file: '../subflows/set_enriched_input_value.yaml'
+    env:
+      VALUE: "All styles applied"
+
+- runFlow:
+    file: '../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'all_combination_input'
