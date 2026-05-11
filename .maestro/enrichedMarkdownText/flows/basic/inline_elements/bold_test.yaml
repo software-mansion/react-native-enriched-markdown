@@ -1,4 +1,7 @@
 appId: swmansion.enriched.markdown.example
+tags:
+  - smoke
+  - inline
 ---
 # checks the parsing of bold/strong inline markdown (**text**)
 - launchApp
@@ -10,7 +13,7 @@ appId: swmansion.enriched.markdown.example
     file: '../../../subflows/set_enriched_text_value.yaml'
     env:
       VALUE: |
-        **Bold text** and normal text and **more bold**.
+        **Bold text** and normal text and __more bold__.
 
 - runFlow:
     file: '../../../subflows/capture_or_assert_screenshot.yaml'
