@@ -1,0 +1,37 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - block
+  - advanced
+---
+# checks the combination of code blocks and math display (technical content side by side)
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        ```python
+        def square(x):
+            return x * x
+        ```
+
+        $$
+        f(x) = x^2
+        $$
+
+        ```python
+        def cube(x):
+            return x ** 3
+        ```
+
+        $$
+        g(x) = x^3
+        $$
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'code_block_math_combo_display'

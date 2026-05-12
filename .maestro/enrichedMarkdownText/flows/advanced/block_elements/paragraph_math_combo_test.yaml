@@ -1,0 +1,33 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - block
+  - advanced
+---
+# checks the combination of paragraphs and math display blocks
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        Energy-mass equivalence:
+
+        $$
+        E = mc^2
+        $$
+
+        The quadratic formula:
+
+        $$
+        x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+        $$
+
+        These are two fundamental equations.
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'paragraph_math_combo_display'
