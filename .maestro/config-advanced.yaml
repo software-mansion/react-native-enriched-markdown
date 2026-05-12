@@ -1,0 +1,5 @@
+flows:
+  - "enrichedMarkdownText/flows/**"
+  - "enrichedMarkdownInput/flows/**"
+includeTags:
+  - advanced

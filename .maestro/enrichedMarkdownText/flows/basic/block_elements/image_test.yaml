@@ -1,5 +1,7 @@
 appId: swmansion.enriched.markdown.example
 tags:
+  - smoke
+  - block
   - image
 ---
 # checks the parsing of Markdown block images (![alt](url))

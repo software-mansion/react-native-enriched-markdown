@@ -95,6 +95,22 @@ yarn test:e2e:android
 yarn test:e2e:mobile   # both platforms sequentially
 ```
 
+The test script names follow the pattern `test:e2e[:<config>]:<platform>[:update-screenshots]`:
+
+- **`<platform>`** — `ios`, `android`, or `mobile` (both sequentially).
+- **`<config>`** — optional tag filter. Omitting it runs all tests. Named configs:
+  - `smoke` — quick sanity check covering all basic elements.
+  - `advanced` — extended tests for advanced functionality.
+- **`update-screenshots`** — instead of asserting, refreshes the stored screenshot baselines. Not available for config-filtered runs.
+
+Examples:
+
+```sh
+yarn test:e2e:smoke:ios          # smoke tests on iOS only
+yarn test:e2e:smoke:mobile       # smoke tests on both platforms
+yarn test:e2e:advanced:android   # advanced tests on Android only
+```
+
 If your change affects visual output, update the screenshot baselines:
 
 ```sh
@@ -147,9 +163,15 @@ The `package.json` file contains various scripts for common tasks:
 - `yarn example start`: start the Metro server for the example app.
 - `yarn example android`: run the example app on Android.
 - `yarn example ios`: run the example app on iOS.
-- `yarn test:e2e:ios`: run E2E tests on iOS simulator.
-- `yarn test:e2e:android`: run E2E tests on Android emulator.
-- `yarn test:e2e:mobile`: run E2E tests on both platforms sequentially.
+- `yarn test:e2e:ios`: run all E2E tests on iOS simulator.
+- `yarn test:e2e:android`: run all E2E tests on Android emulator.
+- `yarn test:e2e:mobile`: run all E2E tests on both platforms sequentially.
+- `yarn test:e2e:smoke:ios`: run smoke tests on iOS simulator.
+- `yarn test:e2e:smoke:android`: run smoke tests on Android emulator.
+- `yarn test:e2e:smoke:mobile`: run smoke tests on both platforms sequentially.
+- `yarn test:e2e:advanced:ios`: run advanced tests on iOS simulator.
+- `yarn test:e2e:advanced:android`: run advanced tests on Android emulator.
+- `yarn test:e2e:advanced:mobile`: run advanced tests on both platforms sequentially.
 - `yarn test:e2e:ios:update-screenshots`: refresh iOS screenshot baselines.
 - `yarn test:e2e:android:update-screenshots`: refresh Android screenshot baselines.
 - `yarn test:e2e:mobile:update-screenshots`: refresh screenshot baselines for both platforms.

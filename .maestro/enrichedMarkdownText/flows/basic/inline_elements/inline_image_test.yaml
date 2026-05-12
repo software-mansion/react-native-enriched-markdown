@@ -1,4 +1,7 @@
 appId: swmansion.enriched.markdown.example
+tags:
+  - smoke
+  - inline
 ---
 # checks the parsing of Markdown inline images (image inside a paragraph)
 - launchApp

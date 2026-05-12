@@ -1,0 +1,3 @@
+flows:
+  - "enrichedMarkdownText/flows/**"
+  - "enrichedMarkdownInput/flows/**"

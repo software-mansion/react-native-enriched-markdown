@@ -3,20 +3,38 @@
 # run-tests.sh - script to set up device, build example app, and run Maestro flows.
 #
 # Usage:
-#   ./run-tests.sh --platform <ios|android> [--update-screenshots] [--rebuild] [flows]
+#   ./run-tests.sh --platform <ios|android> [--config <file>] [--update-screenshots] [--rebuild] [--include-tags <tags>] [--exclude-tags <tags>] [flows]
 #
 # Opts:
 #   --platform            Required. Target platform, either ios or android.
+#
+#   --config              Path to a Maestro config.yaml to use for tag filtering and
+#                           flow discovery. When set, defaults to the enrichedMarkdownText
+#                           workspace root if no explicit flows are given.
+#                           Pre-built configs in .maestro/:
+#                             config.yaml          – all tests
+#                             config-smoke.yaml    – smoke tag only
+#                             config-advanced.yaml – advanced tag only
+#
 #   --update-screenshots  Instead of running tests, refresh baselines.
-#   --rebuild             Force a rebuild and install, even if the app is aleady
+#
+#   --rebuild             Force a rebuild and install, even if the app is already
 #                           installed on the device.
 #
-#   flows                 One or more Maestro flow files (or directories) to run
-#                           Defaults to all component suites if omited
+#   --include-tags        Comma-separated tags to include (passed to maestro as-is).
+#
+#   --exclude-tags        Comma-separated tags to exclude. Merged with the automatic
+#                           platform exclusion (ios-only / android-only).
+#
+#   flows                 One or more Maestro flow files (or directories) to run.
+#                           Defaults to all component suites if omitted.
 #
 # Examples:
-#   ./run-tests.sh --platform ios .maestro/enrichedMarkdownTest/flows
+#   ./run-tests.sh --platform ios .maestro/enrichedMarkdownText/flows
 #   ./run-tests.sh --platform android --update-screenshots --rebuild
+#   ./run-tests.sh --platform ios --config .maestro/config-smoke.yaml
+#   ./run-tests.sh --platform ios --include-tags block
+#   ./run-tests.sh --platform ios --include-tags smoke --exclude-tags image,header
 
 set -euo pipefail
 
@@ -42,6 +60,9 @@ SCREENSHOT_ROOT="$MAESTRO_ROOT"
 BUNDLE_ID="swmansion.enriched.markdown.example"
 
 PLATFORM=""
+CONFIG_FILE=""
+INCLUDE_TAGS=""
+EXCLUDE_TAGS=""
 UPDATE_SCREENSHOTS=""
 REBUILD=""
 FLOWS=""
@@ -49,13 +70,23 @@ FLOWS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --platform)           PLATFORM="$2"; shift 2 ;;
+    --config)             CONFIG_FILE="$2"; shift 2 ;;
+    --include-tags)       INCLUDE_TAGS="$2"; shift 2 ;;
+    --exclude-tags)       EXCLUDE_TAGS="$2"; shift 2 ;;
     --update-screenshots) UPDATE_SCREENSHOTS="true"; shift ;;
     --rebuild)            REBUILD="true"; shift ;;
     *)                    FLOWS="${FLOWS:+$FLOWS }$1"; shift ;;
   esac
 done
 
-[ -z "$FLOWS" ] && FLOWS=$(find "$MAESTRO_ROOT/enrichedMarkdownText/flows" "$MAESTRO_ROOT/enrichedMarkdownInput/flows" -name "*.yaml" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ' ')
+if [ -z "$FLOWS" ]; then
+  if [ -n "$CONFIG_FILE" ]; then
+    # Config file drives discovery — point at the maestro workspace root
+    FLOWS="$MAESTRO_ROOT"
+  else
+    FLOWS=$(find "$MAESTRO_ROOT/enrichedMarkdownText/flows" "$MAESTRO_ROOT/enrichedMarkdownInput/flows" -name "*.yaml" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ' ')
+  fi
+fi
 
 case "$PLATFORM" in
   ios)      SETUP="$SCRIPT_DIR/setup-ios-simulator.sh" ;;
@@ -96,11 +127,12 @@ fi
 
 EXTRA_FLAGS="--env SCREENSHOT_ROOT=$SCREENSHOT_ROOT"
 [ -n "$UPDATE_SCREENSHOTS" ] && EXTRA_FLAGS="$EXTRA_FLAGS --env UPDATE_SCREENSHOTS=true"
-
-# Exclude platform-specific tests for other platform
+[ -n "$CONFIG_FILE" ]        && EXTRA_FLAGS="$EXTRA_FLAGS --config $CONFIG_FILE"
+[ -n "$INCLUDE_TAGS" ]       && EXTRA_FLAGS="$EXTRA_FLAGS --include-tags $INCLUDE_TAGS"
+# Exclude platform-specific tests for other platform, merged with any user exclusions
 case "$PLATFORM" in
-  ios)      EXTRA_FLAGS="$EXTRA_FLAGS --exclude-tags android-only" ;;
-  android)  EXTRA_FLAGS="$EXTRA_FLAGS --exclude-tags ios-only" ;;
+  ios)      EXTRA_FLAGS="$EXTRA_FLAGS --exclude-tags ${EXCLUDE_TAGS:+$EXCLUDE_TAGS,}android-only" ;;
+  android)  EXTRA_FLAGS="$EXTRA_FLAGS --exclude-tags ${EXCLUDE_TAGS:+$EXCLUDE_TAGS,}ios-only" ;;
 esac
 
 # Maestro resolves addMedia paths by walking the workspace inputs. Since assets
