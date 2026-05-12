@@ -3,10 +3,11 @@
 # run-tests.sh - script to set up device, build example app, and run Maestro flows.
 #
 # Usage:
-#   ./run-tests.sh --platform <ios|android> [--config <file>] [--update-screenshots] [--rebuild] [flows]
+#   ./run-tests.sh --platform <ios|android> [--config <file>] [--update-screenshots] [--rebuild] [--include-tags <tags>] [--exclude-tags <tags>] [flows]
 #
 # Opts:
 #   --platform            Required. Target platform, either ios or android.
+#
 #   --config              Path to a Maestro config.yaml to use for tag filtering and
 #                           flow discovery. When set, defaults to the enrichedMarkdownText
 #                           workspace root if no explicit flows are given.
@@ -14,24 +15,26 @@
 #                             config.yaml          – all tests
 #                             config-smoke.yaml    – smoke tag only
 #                             config-advanced.yaml – advanced tag only
+#
 #   --update-screenshots  Instead of running tests, refresh baselines.
-#   --rebuild             Force a rebuild and install, even if the app is aleady
+#
+#   --rebuild             Force a rebuild and install, even if the app is already
 #                           installed on the device.
 #
-#   flows                 One or more Maestro flow files (or directories) to run.
-#                           Defaults to all component suites if omited.
-#
-# Examples:
 #   --include-tags        Comma-separated tags to include (passed to maestro as-is).
+#
 #   --exclude-tags        Comma-separated tags to exclude. Merged with the automatic
 #                           platform exclusion (ios-only / android-only).
+#
+#   flows                 One or more Maestro flow files (or directories) to run.
+#                           Defaults to all component suites if omitted.
 #
 # Examples:
 #   ./run-tests.sh --platform ios .maestro/enrichedMarkdownText/flows
 #   ./run-tests.sh --platform android --update-screenshots --rebuild
 #   ./run-tests.sh --platform ios --config .maestro/config-smoke.yaml
 #   ./run-tests.sh --platform ios --include-tags block
-#   ./run-tests.sh --platform ios --include-tags smoke --exclude-tags flaky
+#   ./run-tests.sh --platform ios --include-tags smoke --exclude-tags image,header
 
 set -euo pipefail
 
@@ -138,9 +141,6 @@ ASSETS_DIR="$MAESTRO_ROOT/assets"
 [ -d "$ASSETS_DIR" ] && FLOWS="$ASSETS_DIR $FLOWS"
 
 echo "=== Running maestro tests ==="
-echo "
-maestro test --device "$DEVICE_ID" $EXTRA_FLAGS $FLOWS
-"
 # shellcheck disable=SC2086
 maestro test --device "$DEVICE_ID" $EXTRA_FLAGS $FLOWS
 
