@@ -1,0 +1,31 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - block
+  - advanced
+---
+# checks the combination of task lists, ordered lists, and unordered lists in sequence
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        - [x] Buy groceries
+        - [ ] Cook dinner
+        - [x] Wash dishes
+
+        1. Prep
+        2. Cook
+        3. Serve
+
+        - Pasta
+        - Sauce
+        - Cheese
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'task_list_ordered_list_combo_display'

@@ -135,8 +135,11 @@ export default function PlaygroundScreen() {
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => {
-              const md = `![logo](${BLOCK_IMAGE_URI})`;
+            onPress={async () => {
+              const current = (await inputRef.current?.getMarkdown()) ?? '';
+              const md = current
+                ? `${current}\n\n![logo](${BLOCK_IMAGE_URI})`
+                : `![logo](${BLOCK_IMAGE_URI})`;
               inputRef.current?.setValue(md);
               setMarkdown(md);
             }}

@@ -1,0 +1,31 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - block
+  - advanced
+---
+# checks the combination of headers and tables (section headers above tabular data)
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        ## Results
+
+        | Name  | Value |
+        | ----- | ----- |
+        | Alpha | 10    |
+        | Beta  | 20    |
+
+        ## Summary
+
+        | Total | 30 |
+        | ----- | -- |
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'header_table_combo_display'

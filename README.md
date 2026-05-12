@@ -62,6 +62,7 @@ We can help you build your next dream product –
 - [API Reference](#api-reference)
 - [Web Support](docs/WEB.md)
 - [macOS Support](docs/MACOS.md)
+- [Compatibility Table](#compatibility-table)
 - [Contributing](#contributing)
 - [Future Plans](#future-plans)
 - [License](#license)
@@ -71,7 +72,7 @@ We can help you build your next dream product –
 **Native (iOS / Android / macOS)**
 
 - Requires [the React Native New Architecture (Fabric)](https://reactnative.dev/architecture/landing-page)
-- Supported React Native releases: `0.81`, `0.82`, `0.83`, and `0.84`
+- See [Compatibility Table](#compatibility-table) for supported React Native versions
 - macOS support via [react-native-macos](https://github.com/microsoft/react-native-macos) `0.81+`
 
 **Web**
@@ -181,6 +182,16 @@ We're actively working on expanding the capabilities of `react-native-enriched-m
 - `EnrichedMarkdownTextInput` web support
 - macOS: block math rendering, VoiceOver accessibility, tail fade-in animation
 - Web: spoiler text, streaming animation, configurable link `target`, copy options (Copy as Markdown, multi-format clipboard)
+
+## Compatibility Table
+
+| | 0.81 | 0.82 | 0.83 | 0.84 | 0.85 |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **nightly** | ⛔ | ⛔ | ✅ | ✅ | ✅ |
+| **0.5.0** | ⛔ | ⛔ | ✅ | ✅ | ✅ |
+| **0.4.x** | ✅ | ✅ | ✅ | ✅ | ⛔ |
+| **0.3.0** | ✅ | ✅ | ✅ | ✅ | ⛔ |
+| **0.2.x** | ✅ | ✅ | ✅ | ✅ | ⛔ |
 
 ## Contributing
 
