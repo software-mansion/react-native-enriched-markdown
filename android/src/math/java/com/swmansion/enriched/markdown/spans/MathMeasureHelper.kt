@@ -1,18 +1,27 @@
 package com.swmansion.enriched.markdown.spans
 
 import android.content.Context
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
-import android.view.View.MeasureSpec
-import com.agog.mathdisplay.MTMathView
+import com.swmansion.enriched.markdown.engines.MathEngineRegistry
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+/**
+ * Synchronous formula measurement used by the shadow tree to size math rows
+ * before the spans are constructed on the UI thread.
+ *
+ * Delegates to the active [com.swmansion.enriched.markdown.engines.MathEngine].
+ * Some engines (AndroidMath) need to touch view-system primitives that are
+ * main-thread only, so we keep the main-thread bounce + timeout that the
+ * previous AndroidMath-specific helper used; engines that are thread-safe
+ * (RaTeX) still benefit from the per-request error isolation.
+ */
 object MathMeasureHelper {
   private const val BASE_TIMEOUT_MS = 500L
   private const val PER_ITEM_TIMEOUT_MS = 50L
   private val mainHandler = Handler(Looper.getMainLooper())
-  private var sharedMathView: MTMathView? = null
 
   @JvmStatic
   fun measureOnMainThread(
@@ -51,34 +60,27 @@ object MathMeasureHelper {
     context: Context,
     request: MathMeasureRequest,
   ): MathMetrics {
-    val mathView =
-      (
-        sharedMathView ?: MTMathView(context.applicationContext).also {
-          sharedMathView = it
-        }
-      ).apply {
-        labelMode =
-          when (request.mode) {
-            MathRenderMode.Display -> MTMathView.MTMathViewMode.KMTMathViewModeDisplay
-            else -> MTMathView.MTMathViewMode.KMTMathViewModeText
-          }
-        textAlignment = MTMathView.MTTextAlignment.KMTTextAlignmentLeft
-        fontSize = request.fontSize
-        latex = request.latex
-      }
+    val engine = MathEngineRegistry.get()
+    val displayMode = request.mode == MathRenderMode.Display
+    val layout =
+      engine.layout(
+        context = context,
+        latex = request.latex,
+        displayMode = displayMode,
+        fontSize = request.fontSize,
+        // Color doesn't affect measurement; use opaque black as a safe default.
+        color = Color.BLACK,
+      ) ?: return estimateFallback(request)
 
-    val spec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-    mathView.measure(spec, spec)
-
-    val width = mathView.measuredWidth.coerceAtLeast(1)
-    val height = mathView.measuredHeight.coerceAtLeast(1).toFloat()
-
-    return runCatching {
-      val dl = displayListField?.get(mathView) ?: throw Exception()
-      val ascent = getAscentMethod?.invoke(dl) as Float
-      val descent = getDescentMethod?.invoke(dl) as Float
-      MathMetrics(width, ascent, descent)
-    }.getOrDefault(MathMetrics(width, height * 0.7f, height * 0.3f))
+    return MathMetrics(
+      width =
+        kotlin.math
+          .ceil(layout.widthPx)
+          .toInt()
+          .coerceAtLeast(1),
+      ascent = layout.ascentPx,
+      descent = layout.descentPx,
+    )
   }
 
   private fun estimateFallback(request: MathMeasureRequest): MathMetrics {
@@ -92,12 +94,4 @@ object MathMeasureHelper {
       descent = h * 0.3f,
     )
   }
-
-  private val displayListField =
-    runCatching {
-      MTMathView::class.java.getDeclaredField("displayList").apply { isAccessible = true }
-    }.getOrNull()
-
-  private val getAscentMethod = runCatching { displayListField?.type?.getMethod("getAscent") }.getOrNull()
-  private val getDescentMethod = runCatching { displayListField?.type?.getMethod("getDescent") }.getOrNull()
 }

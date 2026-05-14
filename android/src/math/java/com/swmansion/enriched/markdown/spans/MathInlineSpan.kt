@@ -1,80 +1,47 @@
 package com.swmansion.enriched.markdown.spans
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.style.ReplacementSpan
-import android.view.View.MeasureSpec
-import com.agog.mathdisplay.MTMathView
+import com.swmansion.enriched.markdown.engines.LaidOutMath
+import com.swmansion.enriched.markdown.engines.MathEngineRegistry
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
+/**
+ * Inline math attachment. Participates in Android's text layout as a single
+ * replacement character; the surrounding `TextView` handles line breaking,
+ * baseline alignment, justification and bidi.
+ *
+ * The actual parse + layout is delegated to the selected [com.swmansion.enriched.markdown.engines.MathEngine]
+ * (either AndroidMath, the default, or RaTeX when `enrichedMarkdown.mathEngine=ratex`).
+ * If the engine fails to parse the input we collapse to zero width so the
+ * paragraph still flows cleanly — host apps are expected to pre-process the
+ * markdown source for known-unsupported macros if they want a visible
+ * indicator.
+ */
 class MathInlineSpan(
   private val context: Context,
   internal val latex: String,
   internal val fontSize: Float,
   private val textColor: Int,
 ) : ReplacementSpan() {
-  private var cachedBitmap: Bitmap? = null
-  private var cachedWidth = 0
-  private var mathAscent = 0f
-  private var mathDescent = 0f
-  private var renderFailed = false
+  private var layout: LaidOutMath? = null
+  private var didAttemptLayout: Boolean = false
 
-  private fun prepareResources() {
-    if (cachedBitmap != null && !cachedBitmap!!.isRecycled) return
-    if (renderFailed) return
+  private fun prepareIfNeeded() {
+    if (didAttemptLayout) return
+    didAttemptLayout = true
 
-    try {
-      val mathView =
-        MTMathView(context).apply {
-          labelMode = MTMathView.MTMathViewMode.KMTMathViewModeText
-          textAlignment = MTMathView.MTTextAlignment.KMTTextAlignmentLeft
-          this.fontSize = this@MathInlineSpan.fontSize
-          this.textColor = this@MathInlineSpan.textColor
-          this.latex = this@MathInlineSpan.latex
-        }
-
-      val spec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-      mathView.measure(spec, spec)
-
-      val width = mathView.measuredWidth.coerceAtLeast(1)
-      val height = mathView.measuredHeight.coerceAtLeast(1)
-
-      cachedWidth = width
-      calculateMetrics(mathView, height)
-
-      mathView.layout(0, 0, width, height)
-
-      val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-      mathView.draw(Canvas(bitmap))
-      cachedBitmap = bitmap
-    } catch (_: Exception) {
-      renderFailed = true
-      val estimatedHeight = fontSize * 1.2f
-      cachedWidth = (fontSize * latex.length * 0.6f).toInt().coerceAtLeast(1)
-      mathAscent = estimatedHeight * 0.7f
-      mathDescent = estimatedHeight * 0.3f
-    }
-  }
-
-  private fun calculateMetrics(
-    view: MTMathView,
-    height: Int,
-  ) {
-    try {
-      val dl = DISPLAY_LIST_FIELD?.get(view)
-      if (dl != null) {
-        mathAscent = GET_ASCENT_METHOD?.invoke(dl) as? Float ?: (height * 0.7f)
-        mathDescent = GET_DESCENT_METHOD?.invoke(dl) as? Float ?: (height * 0.3f)
-      } else {
-        mathAscent = height * 0.7f
-        mathDescent = height * 0.3f
-      }
-    } catch (e: Exception) {
-      mathAscent = height * 0.7f
-      mathDescent = height * 0.3f
-    }
+    layout =
+      MathEngineRegistry.get().layout(
+        context = context,
+        latex = latex,
+        displayMode = false,
+        fontSize = fontSize,
+        color = textColor,
+      )
   }
 
   override fun getSize(
@@ -84,16 +51,26 @@ class MathInlineSpan(
     end: Int,
     fm: Paint.FontMetricsInt?,
   ): Int {
-    prepareResources()
+    prepareIfNeeded()
 
-    fm?.apply {
-      ascent = -mathAscent.roundToInt()
-      top = ascent
-      descent = mathDescent.roundToInt()
-      bottom = descent
+    val l = layout
+    if (l == null) {
+      fm?.apply {
+        ascent = 0
+        top = 0
+        descent = 0
+        bottom = 0
+      }
+      return 0
     }
 
-    return cachedWidth
+    fm?.apply {
+      ascent = -ceil(l.ascentPx).toInt()
+      top = ascent
+      descent = ceil(l.descentPx).toInt()
+      bottom = descent
+    }
+    return ceil(l.widthPx).roundToInt()
   }
 
   override fun draw(
@@ -107,27 +84,15 @@ class MathInlineSpan(
     bottom: Int,
     paint: Paint,
   ) {
-    prepareResources()
-    cachedBitmap?.let {
-      val bitmapY = y - mathAscent
-      canvas.drawBitmap(it, x, bitmapY, paint)
-    }
-  }
+    prepareIfNeeded()
+    val l = layout ?: return
 
-  companion object {
-    private val DISPLAY_LIST_FIELD =
-      runCatching {
-        MTMathView::class.java.getDeclaredField("displayList").apply { isAccessible = true }
-      }.getOrNull()
-
-    private val GET_ASCENT_METHOD =
-      runCatching {
-        DISPLAY_LIST_FIELD?.type?.getMethod("getAscent")
-      }.getOrNull()
-
-    private val GET_DESCENT_METHOD =
-      runCatching {
-        DISPLAY_LIST_FIELD?.type?.getMethod("getDescent")
-      }.getOrNull()
+    canvas.save()
+    // `y` is the text baseline. The engine paints from the top-left of its
+    // bounding box, so translate so that top sits `ascentPx` above the
+    // baseline.
+    canvas.translate(x, y - l.ascentPx)
+    l.drawOn(canvas)
+    canvas.restore()
   }
 }

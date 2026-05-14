@@ -8,26 +8,17 @@
 
 - (void)prepareIfNeeded
 {
-  if (_displayList)
+  if (_layout)
     return;
 
-  MTMathUILabel *mathLabel = [[MTMathUILabel alloc] init];
-  mathLabel.labelMode = kMTMathUILabelModeText;
-  mathLabel.textAlignment = kMTTextAlignmentLeft;
-  mathLabel.fontSize = self.fontSize;
-  mathLabel.latex = self.latex;
-
-  if (self.mathTextColor) {
-    mathLabel.textColor = self.mathTextColor;
-  }
-
-  [mathLabel layoutIfNeeded];
-
-  _displayList = mathLabel.displayList;
-  if (_displayList) {
-    _mathAscent = _displayList.ascent;
-    _mathDescent = _displayList.descent;
-    _cachedSize = CGSizeMake(_displayList.width, _mathAscent + _mathDescent);
+  _layout = [ENRMSharedMathEngine() layoutLatex:self.latex
+                                    displayMode:NO
+                                       fontSize:self.fontSize
+                                          color:self.mathTextColor];
+  if (_layout) {
+    _mathAscent = _layout.ascent;
+    _mathDescent = _layout.descent;
+    _cachedSize = CGSizeMake(_layout.width, _mathAscent + _mathDescent);
   }
 }
 
@@ -47,7 +38,7 @@
 {
   [self prepareIfNeeded];
 
-  if (!_displayList)
+  if (!_layout)
     return nil;
 
   UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat preferredFormat];
@@ -55,18 +46,12 @@
 
   UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:_cachedSize format:format];
 
+  id<ENRMLaidOutMath> layout = _layout;
   return [renderer imageWithActions:^(UIGraphicsImageRendererContext *rendererContext) {
-    CGContextRef ctx = rendererContext.CGContext;
-
-    CGContextSaveGState(ctx);
-
-    CGContextTranslateCTM(ctx, 0, _cachedSize.height);
-    CGContextScaleCTM(ctx, 1.0, -1.0);
-    _displayList.position = CGPointMake(0, _mathDescent);
-
-    [_displayList draw:ctx];
-
-    CGContextRestoreGState(ctx);
+    // UIGraphicsImageRenderer's context is already top-left flipped (UIKit
+    // convention); the engine's `drawInContext:` contract expects exactly
+    // that, so hand the context off directly.
+    [layout drawInContext:rendererContext.CGContext];
   }];
 }
 

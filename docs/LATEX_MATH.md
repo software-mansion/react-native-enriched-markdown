@@ -66,6 +66,73 @@ Pass `latexMath: false` in `md4cFlags` to skip parsing and treat `$` as plain te
 
 This also prevents KaTeX from being loaded at runtime.
 
+## Choosing a math engine
+
+Two native math engines are supported. iosMath / AndroidMath is the default and covers the surface most apps need; [RaTeX](https://github.com/erweixin/RaTeX) is an opt-in alternative with broader command coverage.
+
+| Command | iosMath / AndroidMath | RaTeX |
+|---|:-:|:-:|
+| `\frac`, `\sqrt`, `\binom` | ✅ | ✅ |
+| `\sum`, `\int`, `\lim`, Greek letters, accents | ✅ | ✅ |
+| `\overline`, `\underline`, matrix environments | ✅ | ✅ |
+| `\color`, `\colorbox`, `\mathrm`, `\mathbf`, `\text` | ✅ | ✅ |
+| `\dfrac`, `\tfrac`, `\cfrac` | ❌ | ✅ |
+| `\boxed`, `\operatorname`, `\operatorname*` | ❌ | ✅ |
+| `\implies`, `\iff` | ❌ | ✅ |
+| `\bigl`/`\Bigl`/…/`\Biggr` | ❌ | ✅ |
+| `\overrightarrow`, `\overbrace`, `\underbrace` | ❌ | ✅ |
+| mhchem (`\ce`, `\pu`) | ❌ | ✅ |
+
+### Opting into RaTeX
+
+RaTeX ships native bindings and the KaTeX font bundle via the [`ratex-react-native`](https://www.npmjs.com/package/ratex-react-native) package. Add it as a peer dependency, then switch the engine.
+
+```sh
+npm install ratex-react-native
+# or
+yarn add ratex-react-native
+```
+
+#### iOS (Podfile)
+
+```ruby
+ENV['ENRICHED_MARKDOWN_MATH_ENGINE'] = 'ratex'
+```
+
+Re-run `pod install`. The podspec depends on `ratex-react-native` instead of `iosMath` and only compiles the RaTeX engine source set.
+
+#### Android (`gradle.properties`)
+
+```properties
+enrichedMarkdown.mathEngine=ratex
+```
+
+The autolinked `:ratex-react-native` gradle project is added as a compile-time dependency in place of `AndroidMath`.
+
+#### Expo config plugin
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "react-native-enriched-markdown",
+        { "mathEngine": "ratex" }
+      ]
+    ]
+  }
+}
+```
+
+Run `npx expo prebuild --clean` after switching engines.
+
+### Trade-offs
+
+- **Binary size.** RaTeX adds about ~1 MB on iOS (XCFramework + KaTeX fonts) and ~700 KB × 3 ABIs on Android, versus ~2.5 MB for iosMath on iOS and a smaller AndroidMath payload.
+- **Visual style.** RaTeX uses KaTeX fonts; iosMath uses Latin Modern. Formula metrics differ slightly.
+- **macOS.** RaTeX targets iOS 14+ only with no macOS slice today. On macOS the library stays on iosMath even when the engine is set to `ratex`.
+- **Error rendering.** Engines differ on how they handle unparseable input — iosMath shows an inline error message; RaTeX returns nothing and leaves the attachment empty. Strip or pre-process unsupported macros in JS for the cleanest UX.
+
 ## Disabling LaTeX Math (reducing bundle size)
 
 LaTeX math rendering relies on native third-party libraries — **iosMath** (~2.5 MB) on iOS and **AndroidMath** on Android. These are included by default but can be excluded to reduce your app's binary size.

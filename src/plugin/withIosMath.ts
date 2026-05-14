@@ -4,15 +4,19 @@ import path from 'path';
 
 const { withDangerousMod } = configPlugins;
 
-const IOS_MATH_OPTION = "ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0'";
+const ENABLE_ENV = "ENV['ENRICHED_MARKDOWN_ENABLE_MATH']";
+const ENGINE_ENV = "ENV['ENRICHED_MARKDOWN_MATH_ENGINE']";
 
-export const withIosMath: ConfigPlugin<{ enableMath?: boolean }> = (
-  config,
-  { enableMath = true }
-) => {
-  if (enableMath) {
+export const withIosMath: ConfigPlugin<{
+  enableMath?: boolean;
+  mathEngine?: 'iosmath' | 'ratex';
+}> = (config, { enableMath = true, mathEngine = 'iosmath' } = {}) => {
+  // Nothing to write when math is enabled with the default engine — that's
+  // already how the podspec behaves with no env overrides.
+  if (enableMath && mathEngine === 'iosmath') {
     return config;
   }
+
   return withDangerousMod(config, [
     'ios',
     async (modConfig) => {
@@ -22,14 +26,26 @@ export const withIosMath: ConfigPlugin<{ enableMath?: boolean }> = (
       );
       const contents = fs.readFileSync(file, 'utf8');
 
-      const lines = contents.split('\n');
-      const filteredLines = lines.filter(
-        (line) => !line.includes('ENRICHED_MARKDOWN_ENABLE_MATH')
-      );
+      // Strip any env lines this plugin previously wrote so re-runs stay
+      // idempotent.
+      const filteredLines = contents
+        .split('\n')
+        .filter(
+          (line) =>
+            !line.includes('ENRICHED_MARKDOWN_ENABLE_MATH') &&
+            !line.includes('ENRICHED_MARKDOWN_MATH_ENGINE')
+        );
 
-      filteredLines.unshift(IOS_MATH_OPTION);
+      const prepend: string[] = [];
+      if (!enableMath) {
+        prepend.push(`${ENABLE_ENV} = '0'`);
+      }
+      if (enableMath && mathEngine !== 'iosmath') {
+        prepend.push(`${ENGINE_ENV} = '${mathEngine}'`);
+      }
 
-      fs.writeFileSync(file, filteredLines.join('\n'));
+      const out = [...prepend, ...filteredLines].join('\n');
+      fs.writeFileSync(file, out);
 
       return modConfig;
     },

@@ -18,48 +18,37 @@
 
 - (void)renderForMacOS
 {
-  // MTMathUILabel is an NSView — must be created and laid out on the main thread.
+  // The active engine may need to be touched on the main thread (e.g. the
+  // iosMath engine creates an MTMathUILabel, an NSView). Bounce if needed.
   if (![NSThread isMainThread]) {
     dispatch_sync(dispatch_get_main_queue(), ^{ [self renderForMacOS]; });
     return;
   }
 
-  MTMathUILabel *mathLabel = [[MTMathUILabel alloc] init];
-  mathLabel.labelMode = kMTMathUILabelModeText;
-  mathLabel.textAlignment = kMTTextAlignmentLeft;
-  mathLabel.fontSize = self.fontSize;
-  mathLabel.latex = self.latex;
-
-  if (self.mathTextColor) {
-    mathLabel.textColor = self.mathTextColor;
-  }
-
-  CGSize labelSize = mathLabel.intrinsicContentSize;
-  mathLabel.frame = CGRectMake(0, 0, labelSize.width, labelSize.height);
-  [mathLabel layout];
-
-  _displayList = mathLabel.displayList;
-  if (!_displayList) {
+  _layout = [ENRMSharedMathEngine() layoutLatex:self.latex
+                                    displayMode:NO
+                                       fontSize:self.fontSize
+                                          color:self.mathTextColor];
+  if (!_layout) {
     return;
   }
 
-  _mathAscent = _displayList.ascent;
-  _mathDescent = _displayList.descent;
-  _cachedSize = CGSizeMake(_displayList.width, _mathAscent + _mathDescent);
+  _mathAscent = _layout.ascent;
+  _mathDescent = _layout.descent;
+  _cachedSize = CGSizeMake(_layout.width, _mathAscent + _mathDescent);
 
-  // Render the formula into an NSImage. NSLayoutManager draws self.image
-  // automatically when attachmentCell is nil, so this is the reliable
-  // macOS rendering path instead of imageForBounds:textContainer:characterIndex:.
-  //
-  // NSImage.lockFocus creates a bottom-left origin Quartz context, which matches
-  // CoreText's coordinate system — no CTM flip is needed here (unlike iOS where
-  // UIGraphicsImageRenderer uses top-left origin and requires a flip).
+  // NSImage.lockFocus produces a bottom-left origin Quartz context. The
+  // engine `drawInContext:` contract expects top-left (UIKit-flipped), so
+  // flip the CTM before delegating. NSLayoutManager draws self.image when
+  // attachmentCell is nil — this is the reliable macOS rendering path
+  // instead of imageForBounds:textContainer:characterIndex:.
   NSImage *image = [[NSImage alloc] initWithSize:_cachedSize];
   [image lockFocus];
   CGContextRef ctx = [[NSGraphicsContext currentContext] CGContext];
   CGContextSaveGState(ctx);
-  _displayList.position = CGPointMake(0, _mathDescent);
-  [_displayList draw:ctx];
+  CGContextTranslateCTM(ctx, 0, _cachedSize.height);
+  CGContextScaleCTM(ctx, 1.0, -1.0);
+  [_layout drawInContext:ctx];
   CGContextRestoreGState(ctx);
   [image unlockFocus];
 

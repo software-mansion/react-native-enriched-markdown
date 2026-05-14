@@ -24,6 +24,12 @@ def getExtOrIntegerDefault(name) {
 }
 
 def enableMath = (rootProject.findProperty("enrichedMarkdown.enableMath") ?: findProperty("enrichedMarkdown.enableMath") ?: "true").toString().toBoolean()
+def mathEngine = (rootProject.findProperty("enrichedMarkdown.mathEngine") ?: findProperty("enrichedMarkdown.mathEngine") ?: "androidmath").toString().toLowerCase()
+
+if (enableMath && !["androidmath", "ratex"].contains(mathEngine)) {
+  throw new GradleException(
+    "enrichedMarkdown.mathEngine must be 'androidmath' or 'ratex' (got: '${mathEngine}')")
+}
 
 android {
   namespace "com.swmansion.enriched.markdown"
@@ -63,7 +69,20 @@ android {
         "generated/jni"
       ]
       if (enableMath) {
-        java.srcDirs += ["src/math/java"]
+        // Engine-agnostic math glue (spans, container view, measurement
+        // helper) plus the engine API.
+        java.srcDirs += [
+          "src/math/java",
+          "src/math/engines/common/java",
+        ]
+        // Engine-specific implementation. Only one source set is included so
+        // the published binary doesn't carry both engines (or both
+        // dependencies).
+        if (mathEngine == "ratex") {
+          java.srcDirs += ["src/math/engines/ratex/java"]
+        } else {
+          java.srcDirs += ["src/math/engines/iosmath/java"]
+        }
       }
     }
   }
@@ -82,10 +101,32 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   // Baseline Profile installer for AOT compilation hints
   implementation "androidx.profileinstaller:profileinstaller:1.3.1"
-  // LaTeX math rendering (optional — set enrichedMarkdown.enableMath=false in gradle.properties to exclude)
+  // LaTeX math rendering. Disable entirely with `enrichedMarkdown.enableMath=false`
+  // in gradle.properties, or switch the engine via `enrichedMarkdown.mathEngine`:
+  //   - androidmath (default) — Kotlin port of iosMath, broad-enough coverage,
+  //     no extra setup beyond this gradle dep.
+  //   - ratex — Rust-backed KaTeX port shipped by the `ratex-react-native`
+  //     npm package. The package's android module is autolinked into the host
+  //     app's settings.gradle, so we declare a compile-time project dependency
+  //     on it in `afterEvaluate` (the project isn't visible until autolinking
+  //     has run).
   if (enableMath) {
-    implementation("com.github.gregcockroft:AndroidMath:v1.1.0") {
-      exclude group: 'com.google.guava', module: 'guava'
+    if (mathEngine == "ratex") {
+      afterEvaluate {
+        def ratexProject = rootProject.findProject(":ratex-react-native")
+        if (ratexProject != null) {
+          dependencies.add("implementation", ratexProject)
+        } else {
+          logger.warn(
+            "[react-native-enriched-markdown] enrichedMarkdown.mathEngine=ratex " +
+            "but :ratex-react-native is not autolinked. Install ratex-react-native " +
+            "(npm i ratex-react-native) or switch back to androidmath.")
+        }
+      }
+    } else {
+      implementation("com.github.gregcockroft:AndroidMath:v1.1.0") {
+        exclude group: 'com.google.guava', module: 'guava'
+      }
     }
   }
 }
