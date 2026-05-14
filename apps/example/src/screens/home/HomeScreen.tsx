@@ -44,6 +44,13 @@ const SCREENS: ScreenItem[] = [
     testID: 'home-block-stream',
     color: '#AF52DE',
   },
+  {
+    route: 'Storybook',
+    label: 'Storybook',
+    subtext: 'component stories',
+    testID: 'home-block-storybook',
+    color: '#FF2D55',
+  },
 ];
 
 export default function HomeScreen({ navigation }: Props) {

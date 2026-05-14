@@ -30,7 +30,6 @@
     "example": "yarn workspace react-native-enriched-markdown-example",
     "macos-example": "yarn workspace react-native-enriched-markdown-macos-example",
     "web-example": "yarn workspace react-native-enriched-markdown-web-example",
-    "storybook": "yarn workspace react-native-enriched-markdown-storybook",
     "build:wasm": "bash cpp/wasm/build.sh",
     "android:build:release": "cd apps/example && npx react-native build-android --mode=release",
     "android:test:release": "cd apps/example && yarn android --mode release",
@@ -130,8 +129,7 @@
   "workspaces": [
     "apps/example",
     "apps/macos-example",
-    "apps/web-example",
-    "apps/storybook"
+    "apps/web-example"
   ],
   "packageManager": "yarn@4.11.0",
   "jest": {
