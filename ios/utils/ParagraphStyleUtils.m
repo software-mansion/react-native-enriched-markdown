@@ -118,7 +118,6 @@ void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat l
   NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location);
 
   style.minimumLineHeight = lineHeight;
-  style.maximumLineHeight = lineHeight;
 
   [output addAttribute:NSParagraphStyleAttributeName value:style range:range];
 }
