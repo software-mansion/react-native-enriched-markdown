@@ -4198,15 +4198,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-async-storage/async-storage@npm:^3.0.2":
-  version: 3.0.2
-  resolution: "@react-native-async-storage/async-storage@npm:3.0.2"
+"@react-native-async-storage/async-storage@npm:1.23.1":
+  version: 1.23.1
+  resolution: "@react-native-async-storage/async-storage@npm:1.23.1"
   dependencies:
-    idb: "npm:8.0.3"
+    merge-options: "npm:^3.0.4"
   peerDependencies:
-    react: "*"
-    react-native: "*"
-  checksum: 10c0/afcc9805d15c644a0390e806a2d663bd9ce44f73f15d279b707581677d3a51b985e93a7bb64e301c6f970c3dae531ac7a40bb94e5773bc3515ae54afe59d9d77
+    react-native: ^0.0.0-0 || >=0.60 <1.0
+  checksum: 10c0/6cfdcab91f0e04f80f4aa91397eb4aedcd1124bf2a997cb730c7f2c70dad75d2aa0ca0f41576ed4e34544a1f79e090169f566366c32a89a41b74bf74bea1c1db
   languageName: node
   linkType: hard
 
@@ -11017,13 +11016,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"idb@npm:8.0.3":
-  version: 8.0.3
-  resolution: "idb@npm:8.0.3"
-  checksum: 10c0/421cd9a3281b7564528857031cc33fd9e95753f8191e483054cb25d1ceea7303a0d1462f4f69f5b41606f0f066156999e067478abf2460dfcf9cab80dae2a2b2
-  languageName: node
-  linkType: hard
-
 "ieee754@npm:^1.1.13":
   version: 1.2.1
   resolution: "ieee754@npm:1.2.1"
@@ -11476,6 +11468,13 @@ __metadata:
   version: 4.0.0
   resolution: "is-path-inside@npm:4.0.0"
   checksum: 10c0/51188d7e2b1d907a9a5f7c18d99a90b60870b951ed87cf97595d9aaa429d4c010652c3350bcbf31182e7f4b0eab9a1860b43e16729b13cb1a44baaa6cdb64c46
+  languageName: node
+  linkType: hard
+
+"is-plain-obj@npm:^2.1.0":
+  version: 2.1.0
+  resolution: "is-plain-obj@npm:2.1.0"
+  checksum: 10c0/e5c9814cdaa627a9ad0a0964ded0e0491bfd9ace405c49a5d63c88b30a162f1512c069d5b80997893c4d0181eadc3fed02b4ab4b81059aba5620bfcdfdeb9c53
   languageName: node
   linkType: hard
 
@@ -13097,6 +13096,15 @@ __metadata:
   version: 13.2.0
   resolution: "meow@npm:13.2.0"
   checksum: 10c0/d5b339ae314715bcd0b619dd2f8a266891928e21526b4800d49b4fba1cc3fff7e2c1ff5edd3344149fac841bc2306157f858e8c4d5eaee4d52ce52ad925664ce
+  languageName: node
+  linkType: hard
+
+"merge-options@npm:^3.0.4":
+  version: 3.0.4
+  resolution: "merge-options@npm:3.0.4"
+  dependencies:
+    is-plain-obj: "npm:^2.1.0"
+  checksum: 10c0/02b5891ceef09b0b497b5a0154c37a71784e68ed71b14748f6fd4258ffd3fe4ecd5cb0fd6f7cae3954fd11e7686c5cb64486daffa63c2793bbe8b614b61c7055
   languageName: node
   linkType: hard
 
@@ -15468,7 +15476,7 @@ __metadata:
     "@babel/preset-env": "npm:^7.25.3"
     "@babel/runtime": "npm:^7.25.0"
     "@gorhom/bottom-sheet": "npm:^5.2.14"
-    "@react-native-async-storage/async-storage": "npm:^3.0.2"
+    "@react-native-async-storage/async-storage": "npm:1.23.1"
     "@react-native-community/cli": "npm:20.1.0"
     "@react-native-community/cli-platform-android": "npm:20.1.0"
     "@react-native-community/cli-platform-ios": "npm:20.1.0"

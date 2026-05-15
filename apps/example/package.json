@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.14",
-    "@react-native-async-storage/async-storage": "^3.0.2",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/datetimepicker": "^9.1.0",
     "@react-native-community/slider": "^5.2.0",
     "@react-navigation/native": "^7.2.2",
