@@ -14,6 +14,17 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   return fontWeight;
 }
 
+@implementation LinkVariantConfig
+@end
+
+@interface LinkVariantRegexEntry : NSObject
+@property (nonatomic, strong) NSRegularExpression *regex;
+@property (nonatomic, strong) LinkVariantConfig *variant;
+@end
+
+@implementation LinkVariantRegexEntry
+@end
+
 @implementation StyleConfig {
   BOOL _allowFontScaling;
   CGFloat _maxFontSizeMultiplier;
@@ -97,6 +108,9 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   NSString *_linkFontFamily;
   RCTUIColor *_linkColor;
   BOOL _linkUnderline;
+  RCTUIColor *_linkBackgroundColor;
+  NSArray<LinkVariantConfig *> *_linkVariants;
+  NSArray<LinkVariantRegexEntry *> *_compiledVariantRegexes;
   // Strong properties
   NSString *_strongFontFamily;
   NSString *_strongFontWeight;
@@ -235,6 +249,8 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   _h5TextAlign = NSTextAlignmentNatural;
   _h6TextAlign = NSTextAlignmentNatural;
   _linkUnderline = YES;
+  _linkVariants = @[];
+  _compiledVariantRegexes = @[];
   _primaryFont = [[ENRMFontSlot alloc] init];
   _paragraphFont = [[ENRMFontSlot alloc] init];
   _h1Font = [[ENRMFontSlot alloc] init];
@@ -368,6 +384,9 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_linkFontFamily = [_linkFontFamily copy];
   copy->_linkColor = [_linkColor copy];
   copy->_linkUnderline = _linkUnderline;
+  copy->_linkBackgroundColor = [_linkBackgroundColor copy];
+  copy->_linkVariants = [_linkVariants copy];
+  copy->_compiledVariantRegexes = [_compiledVariantRegexes copy];
   copy->_strongFontFamily = [_strongFontFamily copy];
   copy->_strongFontWeight = [_strongFontWeight copy];
   copy->_strongColor = [_strongColor copy];
@@ -1266,6 +1285,57 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setLinkUnderline:(BOOL)newValue
 {
   _linkUnderline = newValue;
+}
+
+- (RCTUIColor *)linkBackgroundColor
+{
+  return _linkBackgroundColor;
+}
+
+- (void)setLinkBackgroundColor:(RCTUIColor *)newValue
+{
+  _linkBackgroundColor = newValue;
+}
+
+- (NSArray<LinkVariantConfig *> *)linkVariants
+{
+  return _linkVariants;
+}
+
+/// The JS normalizer validates patterns before they reach native, but iOS and JS
+/// regex dialects still differ. Keep each compiled regex paired with its source
+/// variant so an unsupported pattern cannot shift later matches.
+- (void)setLinkVariants:(NSArray<LinkVariantConfig *> *)newValue
+{
+  _linkVariants = newValue;
+  NSMutableArray<LinkVariantRegexEntry *> *compiledEntries = [NSMutableArray arrayWithCapacity:newValue.count];
+  for (LinkVariantConfig *variant in newValue) {
+    NSError *error = nil;
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:variant.pattern
+                                                                           options:0
+                                                                             error:&error];
+    if (regex) {
+      LinkVariantRegexEntry *entry = [[LinkVariantRegexEntry alloc] init];
+      entry.regex = regex;
+      entry.variant = variant;
+      [compiledEntries addObject:entry];
+    }
+  }
+  _compiledVariantRegexes = [compiledEntries copy];
+}
+
+- (nullable LinkVariantConfig *)effectiveLinkVariantForURL:(NSString *)url
+{
+  if (_linkVariants.count == 0)
+    return nil;
+  NSUInteger len = url.length;
+  for (NSUInteger i = 0; i < _compiledVariantRegexes.count; i++) {
+    LinkVariantRegexEntry *entry = _compiledVariantRegexes[i];
+    if ([entry.regex rangeOfFirstMatchInString:url options:0 range:NSMakeRange(0, len)].location != NSNotFound) {
+      return entry.variant;
+    }
+  }
+  return nil;
 }
 
 - (NSString *)strongFontFamily

@@ -44,6 +44,13 @@ const SCREENS: ScreenItem[] = [
     testID: 'home-block-stream',
     color: '#AF52DE',
   },
+  {
+    route: 'Mentions',
+    label: 'Mentions & Link Variants',
+    subtext: 'per-scheme link styling with linkVariants',
+    testID: 'home-block-mentions',
+    color: '#F59E0B',
+  },
 ];
 
 export default function HomeScreen({ navigation }: Props) {

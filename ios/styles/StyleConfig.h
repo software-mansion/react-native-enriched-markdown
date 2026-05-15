@@ -1,6 +1,23 @@
 #pragma once
 #import "ENRMUIKit.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
+/**
+ * Resolved style for a single URL-pattern variant (e.g. "^user:", "^channel:", "app\\.example\\.com/user/").
+ * The `pattern` field is a regex tested against the full URL in normalized order.
+ * Populated from the JS `linkVariants` map by StylePropsUtils and consumed by LinkRenderer.
+ */
+@interface LinkVariantConfig : NSObject
+@property (nonatomic, copy) NSString *pattern;
+@property (nonatomic, strong) RCTUIColor *color;
+@property (nonatomic, copy) NSString *fontFamily;
+@property (nonatomic, assign) BOOL underline;
+@property (nonatomic, strong, nullable) RCTUIColor *backgroundColor;
+@end
+
+NS_ASSUME_NONNULL_END
+
 @interface StyleConfig : NSObject <NSCopying>
 - (instancetype)init;
 - (CGFloat)fontScaleMultiplier;
@@ -150,6 +167,12 @@
 - (void)setLinkColor:(RCTUIColor *)newValue;
 - (BOOL)linkUnderline;
 - (void)setLinkUnderline:(BOOL)newValue;
+- (nullable RCTUIColor *)linkBackgroundColor;
+- (void)setLinkBackgroundColor:(nullable RCTUIColor *)newValue;
+- (NSArray<LinkVariantConfig *> *)linkVariants;
+- (void)setLinkVariants:(NSArray<LinkVariantConfig *> *)newValue;
+/** Returns the resolved variant for the full URL, or nil if no variant matches. */
+- (nullable LinkVariantConfig *)effectiveLinkVariantForURL:(NSString *)url;
 // Strong properties
 - (NSString *)strongFontFamily;
 - (void)setStrongFontFamily:(NSString *)newValue;

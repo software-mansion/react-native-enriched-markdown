@@ -53,6 +53,16 @@ interface LinkStyleInternal {
   fontFamily: string;
   color: ColorValue;
   underline: boolean;
+  backgroundColor: ColorValue;
+}
+
+// Mirrors EnrichedMarkdownTextNativeComponent.ts — kept in sync manually (codegen spec files must be self-contained).
+interface LinkVariantEntryInternal {
+  pattern: string;
+  fontFamily: string;
+  color: ColorValue;
+  underline: boolean;
+  backgroundColor: ColorValue;
 }
 
 interface StrongStyleInternal {
@@ -175,6 +185,7 @@ export interface MarkdownStyleInternal {
   list: ListStyleInternal;
   codeBlock: CodeBlockStyleInternal;
   link: LinkStyleInternal;
+  linkVariants: ReadonlyArray<Readonly<LinkVariantEntryInternal>>;
   strong: StrongStyleInternal;
   em: EmphasisStyleInternal;
   strikethrough: StrikethroughStyleInternal;

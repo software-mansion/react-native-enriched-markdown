@@ -1,6 +1,7 @@
 package com.swmansion.enriched.markdown.renderer
 
 import android.graphics.Typeface
+import com.swmansion.enriched.markdown.styles.LinkVariantEntry
 import com.swmansion.enriched.markdown.styles.StyleConfig
 
 /** Shared style cache for spans to avoid redundant calculations. */
@@ -20,6 +21,18 @@ class SpanStyleCache(
   val linkFontFamily: String = style.linkStyle.fontFamily
   val linkColor: Int = style.linkStyle.color
   val linkUnderline: Boolean = style.linkStyle.underline
+  val linkBackgroundColor: Int = style.linkStyle.backgroundColor
+  val linkVariants: List<LinkVariantEntry> = style.linkVariants
+
+  private val compiledVariantPatterns: List<Pair<Regex, LinkVariantEntry>> =
+    linkVariants.mapNotNull { entry ->
+      try {
+        Regex(entry.pattern) to entry
+      } catch (_: Exception) {
+        null
+      }
+    }
+
   val codeFontFamily: String = style.codeStyle.fontFamily
   val codeFontSize: Float = style.codeStyle.fontSize
   val codeColor: Int = style.codeStyle.color
@@ -44,6 +57,11 @@ class SpanStyleCache(
       style.linkStyle.color
         .takeIf { it != 0 && it != paragraphColor }
         ?.let { add(it) }
+      style.linkVariants.forEach { variant ->
+        variant.color
+          .takeIf { it != 0 && it != paragraphColor }
+          ?.let { add(it) }
+      }
       style
         .codeStyle
         .color
@@ -66,6 +84,11 @@ class SpanStyleCache(
     } else {
       currentColor
     }
+
+  fun resolvedVariantForUrl(url: String): LinkVariantEntry? {
+    if (compiledVariantPatterns.isEmpty()) return null
+    return compiledVariantPatterns.firstOrNull { (regex, _) -> regex.containsMatchIn(url) }?.second
+  }
 
   companion object {
     private val typefaceCache = mutableMapOf<String, Typeface>()

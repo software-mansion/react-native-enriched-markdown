@@ -2,9 +2,11 @@ import type { MarkdownStyle } from './types/MarkdownStyle';
 import type {
   BlockTextAlign,
   EmphasisFontStyle,
+  LinkVariantEntryInternal,
   MarkdownStyleInternal,
 } from './types/MarkdownStyleInternal';
 import { isStyleEqual, mergeSubStyle } from './styleUtils';
+import { normalizeLinkVariantEntries } from './linkVariantUtils';
 
 const SYSTEM_FONT =
   'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -118,7 +120,13 @@ const DEFAULT_NORMALIZED_STYLE: MarkdownStyleInternal = Object.freeze({
     borderWidth: 1,
     padding: 16,
   },
-  link: { fontFamily: '', color: '#2563EB', underline: true },
+  link: {
+    fontFamily: '',
+    color: '#2563EB',
+    underline: true,
+    backgroundColor: 'transparent',
+  },
+  linkVariants: [],
   strong: { fontFamily: '', fontWeight: 'bold', color: undefined },
   em: {
     fontFamily: '',
@@ -222,6 +230,7 @@ export const normalizeMarkdownStyle = (
   (
     Object.keys(DEFAULT_NORMALIZED_STYLE) as (keyof MarkdownStyleInternal)[]
   ).forEach((key) => {
+    if (Array.isArray(DEFAULT_NORMALIZED_STYLE[key])) return;
     const userValue = style[key] as unknown as
       | Record<string, unknown>
       | undefined;
@@ -230,6 +239,20 @@ export const normalizeMarkdownStyle = (
       userValue as Record<string, unknown> | undefined
     );
   });
+
+  // Normalize variants longest-pattern-first so specific patterns win.
+  const linkBase = result.link as MarkdownStyleInternal['link'];
+  result.linkVariants = normalizeLinkVariantEntries(style.linkVariants).map(
+    ([pattern, override]): LinkVariantEntryInternal => {
+      return {
+        pattern,
+        fontFamily: override.fontFamily ?? linkBase.fontFamily,
+        color: override.color ?? linkBase.color,
+        underline: override.underline ?? linkBase.underline,
+        backgroundColor: override.backgroundColor ?? 'transparent',
+      };
+    }
+  );
 
   if (style.taskList?.checkboxSize === undefined) {
     const listSize = (result.list as { fontSize: number }).fontSize;

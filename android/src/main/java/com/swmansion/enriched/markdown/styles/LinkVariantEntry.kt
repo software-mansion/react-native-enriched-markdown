@@ -1,0 +1,31 @@
+package com.swmansion.enriched.markdown.styles
+
+import com.facebook.react.bridge.ReadableMap
+
+/**
+ * Resolved style for a single URL-pattern variant.
+ * The `pattern` field is a regex tested against the full URL in normalized order.
+ * Fields are pre-merged with the base link style by the JS normalizer — native code
+ * uses them directly without any additional fallback logic.
+ */
+data class LinkVariantEntry(
+  val pattern: String,
+  val fontFamily: String,
+  val color: Int,
+  val underline: Boolean,
+  val backgroundColor: Int,
+) {
+  companion object {
+    fun fromReadableMap(
+      map: ReadableMap,
+      parser: StyleParser,
+    ): LinkVariantEntry =
+      LinkVariantEntry(
+        pattern = map.getString("pattern") ?: "",
+        fontFamily = parser.parseString(map, "fontFamily"),
+        color = parser.parseColor(map, "color"),
+        underline = parser.parseBoolean(map, "underline"),
+        backgroundColor = parser.parseColor(map, "backgroundColor"),
+      )
+  }
+}

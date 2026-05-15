@@ -506,6 +506,43 @@ BOOL applyMarkdownStyleToConfig(StyleConfig *config, const MarkdownStyle &newSty
     }
   }
 
+  if (newStyle.link.backgroundColor != oldStyle.link.backgroundColor) {
+    RCTUIColor *color = RCTUIColorFromSharedColor(newStyle.link.backgroundColor);
+    [config setLinkBackgroundColor:CGColorGetAlpha(color.CGColor) > 0 ? color : nil];
+    changed = YES;
+  }
+
+  {
+    BOOL linkVariantsChanged = newStyle.linkVariants.size() != oldStyle.linkVariants.size();
+    if (!linkVariantsChanged) {
+      for (size_t i = 0; i < newStyle.linkVariants.size(); i++) {
+        const auto &newVariant = newStyle.linkVariants[i];
+        const auto &oldVariant = oldStyle.linkVariants[i];
+        if (newVariant.pattern != oldVariant.pattern || newVariant.fontFamily != oldVariant.fontFamily ||
+            newVariant.color != oldVariant.color || newVariant.underline != oldVariant.underline ||
+            newVariant.backgroundColor != oldVariant.backgroundColor) {
+          linkVariantsChanged = YES;
+          break;
+        }
+      }
+    }
+    if (linkVariantsChanged) {
+      NSMutableArray<LinkVariantConfig *> *variants = [NSMutableArray array];
+      for (const auto &entry : newStyle.linkVariants) {
+        LinkVariantConfig *variant = [[LinkVariantConfig alloc] init];
+        variant.pattern = [[NSString alloc] initWithUTF8String:entry.pattern.c_str()];
+        variant.fontFamily = [[NSString alloc] initWithUTF8String:entry.fontFamily.c_str()];
+        variant.color = RCTUIColorFromSharedColor(entry.color);
+        variant.underline = entry.underline;
+        RCTUIColor *backgroundColor = RCTUIColorFromSharedColor(entry.backgroundColor);
+        variant.backgroundColor = CGColorGetAlpha(backgroundColor.CGColor) > 0 ? backgroundColor : nil;
+        [variants addObject:variant];
+      }
+      [config setLinkVariants:variants];
+      changed = YES;
+    }
+  }
+
   // ── Strong ─────────────────────────────────────────────────────────────────
 
   if (newStyle.strong.fontFamily != oldStyle.strong.fontFamily) {

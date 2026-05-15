@@ -244,6 +244,52 @@ function linkStyle(style: MarkdownStyleInternal): CSSProperties {
   };
 }
 
+/** Compiled variant regexes keyed by the normalized style object. Avoids recompiling on every link render. */
+const _variantRegexCache = new WeakMap<
+  MarkdownStyleInternal['linkVariants'],
+  Array<RegExp | null>
+>();
+
+function getCompiledVariantRegexes(
+  variants: MarkdownStyleInternal['linkVariants']
+): Array<RegExp | null> {
+  let compiled = _variantRegexCache.get(variants);
+  if (!compiled) {
+    compiled = variants.map((variant) => {
+      try {
+        return new RegExp(variant.pattern);
+      } catch {
+        return null;
+      }
+    });
+    _variantRegexCache.set(variants, compiled);
+  }
+  return compiled;
+}
+
+export function linkStyleForUrl(
+  style: MarkdownStyleInternal,
+  url: string
+): CSSProperties {
+  const base = style.link;
+  const compiledVariantRegexes = getCompiledVariantRegexes(style.linkVariants);
+  const variantIndex = compiledVariantRegexes.findIndex(
+    (regex) => regex !== null && regex.test(url)
+  );
+  const resolved =
+    variantIndex !== -1 ? style.linkVariants[variantIndex]! : base;
+
+  const backgroundColor = resolved.backgroundColor;
+  return {
+    color: resolved.color,
+    fontFamily: normalizeFontFamily(resolved.fontFamily),
+    textDecoration: resolved.underline ? 'underline' : 'none',
+    ...(backgroundColor && backgroundColor !== 'transparent'
+      ? { backgroundColor }
+      : undefined),
+  };
+}
+
 function strikethroughStyle(style: MarkdownStyleInternal): CSSProperties {
   return {
     textDecorationLine: 'line-through',

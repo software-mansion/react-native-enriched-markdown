@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react';
 import type { RendererProps, RendererMap } from '../types';
 import { extractNodeText } from '../utils';
 import { KaTeXRenderer } from './KaTeXRenderer';
+import { linkStyleForUrl } from '../styles';
 
 function TextRenderer({ node }: RendererProps) {
   return <>{node.content ?? ''}</>;
@@ -47,7 +48,7 @@ function CodeRenderer({ node, styles, renderChildren }: RendererProps) {
 
 function LinkRenderer({
   node,
-  styles,
+  style,
   callbacks,
   renderChildren,
 }: RendererProps) {
@@ -72,7 +73,7 @@ function LinkRenderer({
   return (
     <a
       href={url}
-      style={styles.link}
+      style={linkStyleForUrl(style, url)}
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}

@@ -47,10 +47,11 @@ interface CodeBlockStyle extends BaseBlockStyle {
   padding?: number;
 }
 
-interface LinkStyle {
+export interface LinkStyle {
   fontFamily?: string;
   color?: string;
   underline?: boolean;
+  backgroundColor?: string;
 }
 
 interface StrongStyle {
@@ -225,6 +226,25 @@ export interface MarkdownStyle {
   list?: ListStyle;
   codeBlock?: CodeBlockStyle;
   link?: LinkStyle;
+  /**
+   * Per-URL-pattern link style overrides. Each key is a regex string tested
+   * against the full URL. Patterns are normalized longest-first so more
+   * specific patterns take precedence.
+   *
+   * `color`, `fontFamily`, and `underline` inherit from the base `link` style
+   * when omitted. `backgroundColor` defaults to `transparent`
+   * (they do **not** inherit from the base link) so each variant is self-contained.
+   *
+   * @example
+   * linkVariants: {
+   *   '^user:':    { color: '#1A73E8', backgroundColor: '#E8F0FE' },
+   *   '^channel:': { color: '#137333', backgroundColor: '#E6F4EA' },
+   *   '^cite:':    { color: '#B06000', backgroundColor: '#FEF3C7' },
+   *   // path-based: matches any https URL with /user/ in the path
+   *   '\\/user\\/': { color: '#4F46E5', backgroundColor: '#EEF2FF' },
+   * }
+   */
+  linkVariants?: Record<string, LinkStyle>;
   strong?: StrongStyle;
   em?: EmphasisStyle;
   strikethrough?: StrikethroughStyle;

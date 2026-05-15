@@ -22,9 +22,14 @@
 
   // 2. Extract configuration
   NSString *url = node.attributes[@"url"] ?: @"";
-  RCTUIColor *linkColor = [_config linkColor];
-  NSNumber *underlineStyle = @([_config linkUnderline] ? NSUnderlineStyleSingle : NSUnderlineStyleNone);
-  NSString *linkFontFamily = [_config linkFontFamily];
+  LinkVariantConfig *variant = [_config effectiveLinkVariantForURL:url];
+
+  RCTUIColor *linkColor = variant.color ?: [_config linkColor];
+  BOOL linkUnderline = variant ? variant.underline : [_config linkUnderline];
+  NSString *linkFontFamily = (variant && variant.fontFamily.length > 0) ? variant.fontFamily : [_config linkFontFamily];
+  RCTUIColor *backgroundColor = variant ? variant.backgroundColor : [_config linkBackgroundColor];
+
+  NSNumber *underlineStyle = @(linkUnderline ? NSUnderlineStyleSingle : NSUnderlineStyleNone);
 
   // 3. Apply core link functionality (non-destructive)
   [output addAttribute:NSLinkAttributeName value:url range:range];
@@ -67,7 +72,10 @@
                             }
                           }];
 
-  // 5. Register for touch handling
+  if (backgroundColor) {
+    [output addAttribute:NSBackgroundColorAttributeName value:backgroundColor range:range];
+  }
+
   [context registerLinkRange:range url:url];
 }
 

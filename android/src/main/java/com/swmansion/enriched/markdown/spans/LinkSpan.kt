@@ -1,6 +1,7 @@
 package com.swmansion.enriched.markdown.spans
 
 import android.content.Context
+import android.graphics.Color
 import android.text.TextPaint
 import android.text.style.ClickableSpan
 import android.view.View
@@ -44,15 +45,22 @@ class LinkSpan(
 
     textPaint.textSize = blockStyle.fontSize
 
-    if (styleCache.linkFontFamily.isNotEmpty()) {
-      val overriddenBlockStyle =
-        blockStyle.copy(fontFamily = styleCache.linkFontFamily)
+    val variant = styleCache.resolvedVariantForUrl(url)
+
+    val fontFamily = variant?.fontFamily?.takeIf { it.isNotEmpty() } ?: styleCache.linkFontFamily
+    if (fontFamily.isNotEmpty()) {
+      val overriddenBlockStyle = blockStyle.copy(fontFamily = fontFamily)
       textPaint.applyBlockStyleFont(overriddenBlockStyle, context)
     } else {
       textPaint.applyBlockStyleFont(blockStyle, context)
     }
 
-    textPaint.color = styleCache.linkColor
-    textPaint.isUnderlineText = styleCache.linkUnderline
+    textPaint.color = variant?.color ?: styleCache.linkColor
+    textPaint.isUnderlineText = variant?.underline ?: styleCache.linkUnderline
+
+    val backgroundColor = variant?.backgroundColor ?: styleCache.linkBackgroundColor
+    if (Color.alpha(backgroundColor) > 0) {
+      textPaint.bgColor = backgroundColor
+    }
   }
 }

@@ -106,6 +106,13 @@ class StyleConfig(
     LinkStyle.fromReadableMap(map, styleParser)
   }
 
+  val linkVariants: List<LinkVariantEntry> by lazy {
+    val array = style.getArray("linkVariants") ?: return@lazy emptyList()
+    (0 until array.size()).map { i ->
+      LinkVariantEntry.fromReadableMap(array.getMap(i), styleParser)
+    }
+  }
+
   val strongStyle: StrongStyle by lazy {
     val map =
       requireNotNull(style.getMap("strong")) {
@@ -298,6 +305,7 @@ class StyleConfig(
     return paragraphStyle == other.paragraphStyle &&
       headingStyles.contentEquals(other.headingStyles) &&
       linkStyle == other.linkStyle &&
+      linkVariants == other.linkVariants &&
       strongStyle == other.strongStyle &&
       emphasisStyle == other.emphasisStyle &&
       strikethroughStyle == other.strikethroughStyle &&
@@ -322,6 +330,7 @@ class StyleConfig(
     var result = paragraphStyle.hashCode()
     result = 31 * result + headingStyles.contentHashCode()
     result = 31 * result + linkStyle.hashCode()
+    result = 31 * result + linkVariants.hashCode()
     result = 31 * result + strongStyle.hashCode()
     result = 31 * result + emphasisStyle.hashCode()
     result = 31 * result + strikethroughStyle.hashCode()

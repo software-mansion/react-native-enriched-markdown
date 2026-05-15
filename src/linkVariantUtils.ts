@@ -1,0 +1,43 @@
+import type { LinkStyle } from './types/MarkdownStyle';
+
+type LinkVariantEntry = [pattern: string, style: LinkStyle];
+
+// Lookbehind assertions (?<=...) and (?<!...) are not supported by
+// NSRegularExpression on iOS. Warn early so the issue surfaces in JS tests
+// before it silently misfires on device.
+const UNSAFE_LOOKBEHIND_RE = /\(\?<[=!]/;
+
+function warnAboutUnsafePattern(pattern: string): void {
+  if (UNSAFE_LOOKBEHIND_RE.test(pattern)) {
+    console.warn(
+      `[MarkdownStyle] linkVariants pattern "${pattern}" contains a lookbehind assertion (?<= or ?<!). ` +
+        'Lookbehinds are not supported by NSRegularExpression on iOS and will never match. ' +
+        'Use a lookahead or restructure the pattern to avoid them.'
+    );
+  }
+}
+
+export function normalizeLinkVariantEntries(
+  linkVariants?: Record<string, LinkStyle>
+): LinkVariantEntry[] {
+  return Object.entries(linkVariants ?? {})
+    .sort(([a], [b]) => b.length - a.length)
+    .filter(([pattern]) => {
+      try {
+        // eslint-disable-next-line no-new
+        new RegExp(pattern);
+      } catch {
+        if (__DEV__) {
+          console.warn(
+            `[MarkdownStyle] linkVariants pattern "${pattern}" is not a valid regex and will be ignored.`
+          );
+        }
+        return false;
+      }
+
+      if (__DEV__) {
+        warnAboutUnsafePattern(pattern);
+      }
+      return true;
+    });
+}

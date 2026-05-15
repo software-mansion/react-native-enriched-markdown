@@ -3,9 +3,11 @@ import type { MarkdownStyle } from './types/MarkdownStyle';
 import type {
   BlockTextAlign,
   EmphasisFontStyle,
+  LinkVariantEntryInternal,
   MarkdownStyleInternal,
 } from './types/MarkdownStyleInternal';
 import { isStyleEqual, normalizeColor, mergeSubStyle } from './styleUtils';
+import { normalizeLinkVariantEntries } from './linkVariantUtils';
 
 const getSystemFont = (): string =>
   Platform.select({
@@ -132,7 +134,13 @@ const DEFAULT_NORMALIZED_STYLE = Object.freeze({
     borderWidth: 1,
     padding: 16,
   },
-  link: { fontFamily: '', color: normalizeColor('#2563EB')!, underline: true },
+  link: {
+    fontFamily: '',
+    color: normalizeColor('#2563EB')!,
+    underline: true,
+    backgroundColor: normalizeColor('transparent')!,
+  },
+  linkVariants: [],
   strong: { fontFamily: '', fontWeight: 'bold', color: undefined },
   em: {
     fontFamily: '',
@@ -247,6 +255,7 @@ export const normalizeMarkdownStyle = (
   (
     Object.keys(DEFAULT_NORMALIZED_STYLE) as (keyof MarkdownStyleInternal)[]
   ).forEach((key) => {
+    if (Array.isArray(DEFAULT_NORMALIZED_STYLE[key])) return;
     const userValue = style[key] as unknown as
       | Record<string, unknown>
       | undefined;
@@ -255,6 +264,24 @@ export const normalizeMarkdownStyle = (
       userValue as Record<string, unknown> | undefined
     );
   });
+
+  // Normalize variants longest-pattern-first so specific patterns win.
+  const transparent = normalizeColor('transparent')!;
+  const linkBase = result.link as MarkdownStyleInternal['link'];
+  result.linkVariants = normalizeLinkVariantEntries(style.linkVariants).map(
+    ([pattern, override]): LinkVariantEntryInternal => {
+      return {
+        pattern,
+        fontFamily: override.fontFamily ?? linkBase.fontFamily,
+        color: ((override.color ? normalizeColor(override.color) : null) ??
+          linkBase.color) as string,
+        underline: override.underline ?? linkBase.underline,
+        backgroundColor: (override.backgroundColor
+          ? (normalizeColor(override.backgroundColor) ?? transparent)
+          : transparent) as string,
+      };
+    }
+  );
 
   if (style.taskList?.checkboxSize === undefined) {
     const listSize = (result.list as { fontSize: number }).fontSize;
