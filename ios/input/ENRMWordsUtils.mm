@@ -14,6 +14,20 @@
 
 @implementation ENRMWordsUtils
 
++ (NSUInteger)tokenStartInText:(NSString *)text beforePosition:(NSUInteger)position
+{
+  NSCharacterSet *whitespace = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+  NSUInteger start = position;
+  while (start > 0) {
+    unichar previous = [text characterAtIndex:start - 1];
+    if ([whitespace characterIsMember:previous]) {
+      break;
+    }
+    start--;
+  }
+  return start;
+}
+
 + (NSArray<ENRMWordResult *> *)getAffectedWordsFromText:(NSString *)text modificationRange:(NSRange)range
 {
   NSUInteger textLength = text.length;

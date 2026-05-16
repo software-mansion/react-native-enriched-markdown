@@ -7,6 +7,9 @@
 #import "ENRMStyleHandler.h"
 #import "ENRMUnderlineStyleHandler.h"
 
+@implementation ENRMInputLinkVariantStyle
+@end
+
 @implementation ENRMInputFormatterStyle {
   NSMutableDictionary<NSNumber *, UIFont *> *_fontCache;
   UIFont *_lastBaseFont;
@@ -17,6 +20,7 @@
   if (self = [super init]) {
     _baseFont = [UIFont systemFontOfSize:16.0];
     _baseTextColor = [RCTUIColor labelColor];
+    _linkVariants = @[];
     _fontCache = [NSMutableDictionary dictionary];
   }
   return self;
@@ -31,6 +35,8 @@
   copy.italicColor = _italicColor;
   copy.linkColor = _linkColor;
   copy.linkUnderline = _linkUnderline;
+  copy.linkBackgroundColor = _linkBackgroundColor;
+  copy.linkVariants = [_linkVariants copy];
   copy.spoilerColor = _spoilerColor;
   copy.spoilerBackgroundColor = _spoilerBackgroundColor;
   return copy;
@@ -149,7 +155,10 @@
       }
     }
 
-    [handler applyNonFontAttributesToTextStorage:textStorage range:formattingRange.range style:style];
+    [handler applyNonFontAttributesToTextStorage:textStorage
+                                           range:formattingRange.range
+                                 formattingRange:formattingRange
+                                           style:style];
   }
 
   NSUInteger runStart = 0;

@@ -18,6 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Apply non-font attributes (color, underline, etc.) to the given range.
 - (void)applyNonFontAttributesToTextStorage:(NSTextStorage *)storage
                                       range:(NSRange)range
+                            formattingRange:(ENRMFormattingRange *)formattingRange
                                       style:(ENRMInputFormatterStyle *)style;
 
 @end

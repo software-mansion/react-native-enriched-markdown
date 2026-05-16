@@ -1,6 +1,21 @@
 package com.swmansion.enriched.markdown.input.detection
 
 object WordsUtils {
+  /**
+   * Returns the start index of the token (non-whitespace run) that ends at [position].
+   * If [position] is directly after whitespace (or at the start of text), returns [position].
+   */
+  fun tokenStart(
+    text: String,
+    position: Int,
+  ): Int {
+    var start = position
+    while (start > 0 && !text[start - 1].isWhitespace()) {
+      start--
+    }
+    return start
+  }
+
   fun getAffectedWords(
     text: String,
     editStart: Int,

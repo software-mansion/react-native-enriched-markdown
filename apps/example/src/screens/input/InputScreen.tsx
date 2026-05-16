@@ -2,12 +2,15 @@ import { useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
+  FlatList,
   ScrollView,
+  Pressable,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  type ListRenderItemInfo,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,10 +29,30 @@ interface Message {
   time: string;
 }
 
+interface MentionItem {
+  name: string;
+  url: string;
+}
+
+const USER_MENTIONS: MentionItem[] = [
+  { name: 'John Doe', url: 'user://u_1' },
+  { name: 'Jane Smith', url: 'user://u_2' },
+  { name: 'Alice Johnson', url: 'user://u_3' },
+  { name: 'Bob Brown', url: 'user://u_4' },
+];
+
+const CHANNEL_MENTIONS: MentionItem[] = [
+  { name: 'General', url: 'channel://c_1' },
+  { name: 'Random', url: 'channel://c_2' },
+  { name: 'Engineering', url: 'channel://c_3' },
+  { name: 'Private channel', url: 'channel://c_4' },
+];
+
 const INITIAL_MESSAGES: Message[] = [
   {
     id: 1,
-    markdown: 'Hey! Try out the rich text editor below 👇',
+    markdown:
+      'Hey [@Jane Smith](user://u_2), try the rich text editor below 👇',
     isOwn: false,
     time: '10:51',
   },
@@ -43,7 +66,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 3,
     markdown:
-      'You can also add [links](https://github.com) and combine **_bold italic_** styles.',
+      'You can also add [links](https://github.com), mention [@Alice Johnson](user://u_3), and post to [#Engineering](channel://c_3).',
     isOwn: true,
     time: '10:52',
   },
@@ -57,7 +80,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 5,
     markdown:
-      'The toolbar above the input lets you toggle formatting at the cursor too.',
+      'Type @ or # to open mention suggestions. The toolbar still lets you toggle formatting at the cursor.',
     isOwn: true,
     time: '10:53',
   },
@@ -65,9 +88,64 @@ const INITIAL_MESSAGES: Message[] = [
 
 const MARKDOWN_STYLE = {
   link: { color: '#2563EB', underline: true },
+  linkVariants: {
+    '^user:': {
+      color: '#1264A3',
+      backgroundColor: '#E8F5FB',
+      underline: false,
+    },
+    '^channel:': {
+      color: '#065F46',
+      backgroundColor: '#D1FAE5',
+      underline: false,
+    },
+  },
 };
 
 let nextId = 6;
+
+function MentionSuggestionPopup({
+  indicator,
+  data,
+  onItemPress,
+}: {
+  indicator: string | null;
+  data: MentionItem[];
+  onItemPress: (item: MentionItem) => void;
+}) {
+  if (indicator == null || data.length === 0) return null;
+
+  const isUserMention = indicator === '@';
+  const renderItem = ({ item }: ListRenderItemInfo<MentionItem>) => (
+    <Pressable
+      style={({ pressed }) => [
+        styles.mentionItem,
+        pressed && styles.mentionItemPressed,
+      ]}
+      onPress={() => onItemPress(item)}
+    >
+      <View style={styles.mentionAvatar}>
+        <Text style={styles.mentionAvatarText}>
+          {isUserMention ? '@' : '#'}
+        </Text>
+      </View>
+      <Text style={styles.mentionName}>{item.name}</Text>
+    </Pressable>
+  );
+
+  return (
+    <View style={styles.mentionPopup}>
+      <FlatList
+        keyboardShouldPersistTaps="handled"
+        overScrollMode="never"
+        data={data}
+        keyExtractor={(item) => item.url}
+        renderItem={renderItem}
+        style={styles.mentionList}
+      />
+    </View>
+  );
+}
 
 export default function InputScreen() {
   const inputRef = useRef<EnrichedMarkdownTextInputInstance>(null);
@@ -75,9 +153,23 @@ export default function InputScreen() {
   const [state, setState] = useState<StyleState | null>(null);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [hasSelection, setHasSelection] = useState(false);
+  const [activeMention, setActiveMention] = useState<{
+    indicator: string;
+    text: string;
+  } | null>(null);
   const navHeaderHeight = useHeaderHeight();
   const [chatHeaderHeight, setChatHeaderHeight] = useState(0);
   const { bottom: bottomInset } = useSafeAreaInsets();
+
+  const mentionSuggestions = useMemo(() => {
+    if (activeMention == null) return [];
+
+    const source =
+      activeMention.indicator === '@' ? USER_MENTIONS : CHANNEL_MENTIONS;
+    const query = activeMention.text.toLowerCase();
+
+    return source.filter((item) => item.name.toLowerCase().startsWith(query));
+  }, [activeMention]);
 
   const sendMessage = useCallback(async () => {
     const md = await inputRef.current?.getMarkdown();
@@ -92,7 +184,14 @@ export default function InputScreen() {
     ]);
 
     inputRef.current?.setValue('');
+    setActiveMention(null);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+  }, []);
+
+  const handleMentionSelected = useCallback((item: MentionItem) => {
+    const indicator = item.url.startsWith('user://') ? '@' : '#';
+    inputRef.current?.insertMention(`${indicator}${item.name}`, item.url);
+    setActiveMention(null);
   }, []);
 
   const bubbleContextMenuItems = useMemo(
@@ -219,6 +318,12 @@ export default function InputScreen() {
           state={state}
           inputRef={inputRef}
           hasSelection={hasSelection}
+          mentionIndicators={['@', '#']}
+        />
+        <MentionSuggestionPopup
+          indicator={activeMention?.indicator ?? null}
+          data={mentionSuggestions}
+          onItemPress={handleMentionSelected}
         />
         <View style={[styles.inputRow, { paddingBottom: 12 + bottomInset }]}>
           <EnrichedMarkdownTextInput
@@ -227,8 +332,18 @@ export default function InputScreen() {
             placeholderTextColor="#9CA3AF"
             style={styles.input}
             markdownStyle={MARKDOWN_STYLE}
+            mentionIndicators={['@', '#']}
             onChangeState={setState}
             onChangeSelection={(sel) => setHasSelection(sel.start !== sel.end)}
+            onStartMention={({ indicator }) => {
+              setActiveMention({ indicator, text: '' });
+            }}
+            onChangeMention={({ indicator, text }) => {
+              setActiveMention({ indicator, text });
+            }}
+            onEndMention={() => {
+              setActiveMention(null);
+            }}
             contextMenuItems={inputContextMenuItems}
           />
           <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
@@ -336,6 +451,49 @@ const styles = StyleSheet.create({
   },
   bubbleTimeOther: {
     color: '#9CA3AF',
+  },
+  mentionPopup: {
+    marginHorizontal: 12,
+    marginBottom: 6,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  mentionList: {
+    maxHeight: 164,
+  },
+  mentionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  mentionItemPressed: {
+    backgroundColor: '#EEF2FF',
+  },
+  mentionAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mentionAvatarText: {
+    color: '#4B5563',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  mentionName: {
+    color: '#111827',
+    fontSize: 15,
   },
   inputRow: {
     flexDirection: 'row',

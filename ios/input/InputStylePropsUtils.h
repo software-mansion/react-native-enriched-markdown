@@ -91,6 +91,45 @@ BOOL applyInputStyleProps(ENRMInputFormatterStyle *style, const InputProps &newP
     changed = YES;
   }
 
+  if (newProps.markdownStyle.link.backgroundColor != oldProps.markdownStyle.link.backgroundColor) {
+    RCTUIColor *backgroundColor = RCTUIColorFromSharedColor(newProps.markdownStyle.link.backgroundColor);
+    style.linkBackgroundColor = CGColorGetAlpha(backgroundColor.CGColor) > 0 ? backgroundColor : nil;
+    changed = YES;
+  }
+
+  {
+    BOOL linkVariantsChanged = newProps.markdownStyle.linkVariants.size() != oldProps.markdownStyle.linkVariants.size();
+    if (!linkVariantsChanged) {
+      for (size_t i = 0; i < newProps.markdownStyle.linkVariants.size(); i++) {
+        const auto &newVariant = newProps.markdownStyle.linkVariants[i];
+        const auto &oldVariant = oldProps.markdownStyle.linkVariants[i];
+        if (newVariant.pattern != oldVariant.pattern || newVariant.color != oldVariant.color ||
+            newVariant.underline != oldVariant.underline || newVariant.backgroundColor != oldVariant.backgroundColor) {
+          linkVariantsChanged = YES;
+          break;
+        }
+      }
+    }
+
+    if (linkVariantsChanged) {
+      NSMutableArray<ENRMInputLinkVariantStyle *> *variants = [NSMutableArray array];
+      for (const auto &entry : newProps.markdownStyle.linkVariants) {
+        ENRMInputLinkVariantStyle *variant = [[ENRMInputLinkVariantStyle alloc] init];
+        variant.pattern = [[NSString alloc] initWithUTF8String:entry.pattern.c_str()];
+        variant.color = RCTUIColorFromSharedColor(entry.color);
+        variant.underline = entry.underline;
+        RCTUIColor *backgroundColor = RCTUIColorFromSharedColor(entry.backgroundColor);
+        variant.backgroundColor = CGColorGetAlpha(backgroundColor.CGColor) > 0 ? backgroundColor : nil;
+        variant.regex = [NSRegularExpression regularExpressionWithPattern:variant.pattern options:0 error:nil];
+        if (variant.regex != nil) {
+          [variants addObject:variant];
+        }
+      }
+      style.linkVariants = variants;
+      changed = YES;
+    }
+  }
+
   if (newProps.markdownStyle.spoiler.color != oldProps.markdownStyle.spoiler.color) {
     style.spoilerColor = RCTUIColorFromSharedColor(newProps.markdownStyle.spoiler.color);
     changed = YES;

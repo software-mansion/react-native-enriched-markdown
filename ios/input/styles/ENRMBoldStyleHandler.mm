@@ -19,6 +19,7 @@
 
 - (void)applyNonFontAttributesToTextStorage:(NSTextStorage *)storage
                                       range:(NSRange)range
+                            formattingRange:(ENRMFormattingRange *)formattingRange
                                       style:(ENRMInputFormatterStyle *)style
 {
   RCTUIColor *color = style.boldColor ?: style.baseTextColor;

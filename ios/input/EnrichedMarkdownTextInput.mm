@@ -7,6 +7,7 @@
 #import "ENRMInputFormatter.h"
 #import "ENRMInputLayoutManager.h"
 #import "ENRMInputLinkPrompt.h"
+#import "ENRMInputMentionCandidate.h"
 #import "ENRMInputParser.h"
 #import "ENRMInputTextView.h"
 #import "ENRMLinkRegexConfig.h"
@@ -14,6 +15,7 @@
 #import "ENRMStyleHandler.h"
 #import "ENRMStyleMergingConfig.h"
 #import "ENRMUIKit.h"
+#import "ENRMWordsUtils.h"
 #import "InputStylePropsUtils.h"
 #import "SelectionColorUtils.h"
 #if TARGET_OS_OSX
@@ -75,6 +77,11 @@ using namespace facebook::react;
 
   NSArray<NSString *> *_contextMenuItemTexts;
   NSArray<NSString *> *_contextMenuItemIcons;
+  NSArray<NSString *> *_mentionIndicators;
+  BOOL _insertMentionAppendSpace;
+  NSString *_activeMentionIndicator;
+  NSRange _activeMentionRange;
+  NSString *_activeMentionText;
 
   ENRMAutoLinkDetector *_autoLinkDetector;
   ENRMDetectorPipeline *_detectorPipeline;
@@ -108,6 +115,10 @@ using namespace facebook::react;
     _pendingStyleRemovals = [NSMutableSet set];
     _lastTextLength = 0;
     _lastSelectedRange = NSMakeRange(0, 0);
+    _mentionIndicators = @[];
+    _insertMentionAppendSpace = YES;
+    _activeMentionRange = NSMakeRange(NSNotFound, 0);
+    _activeMentionText = @"";
 
     [self setupTextView];
 
@@ -309,6 +320,23 @@ using namespace facebook::react;
     _contextMenuItemIcons = ENRMContextMenuIconsFromItems(newViewProps.contextMenuItems);
   }
 
+  if (newViewProps.mentionIndicators != oldViewProps.mentionIndicators) {
+    NSMutableArray<NSString *> *indicators = [NSMutableArray array];
+    for (const auto &indicator : newViewProps.mentionIndicators) {
+      NSString *value = [NSString stringWithUTF8String:indicator.c_str()];
+      if (value.length > 0) {
+        [indicators addObject:value];
+      }
+    }
+    _mentionIndicators = [indicators copy];
+    if (_activeMentionIndicator != nil && ![_mentionIndicators containsObject:_activeMentionIndicator]) {
+      [self clearActiveMention:_activeMentionIndicator];
+    }
+    [self updateActiveMention];
+  }
+
+  _insertMentionAppendSpace = newViewProps.insertMentionAppendSpace;
+
   BOOL styleChanged = applyInputStyleProps(_formatterStyle, newViewProps, oldViewProps);
 
   if (newViewProps.defaultValue != oldViewProps.defaultValue) {
@@ -463,9 +491,10 @@ using namespace facebook::react;
   _blockEmitting = NO;
 }
 
-- (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
+- (void)replaceTextInRange:(NSRange)selection
+                  withText:(NSString *)text
+          formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
 {
-  NSRange selection = _textView.selectedRange;
   NSUInteger editLocation = selection.location;
 
   _isApplyingFormatting = YES;
@@ -493,6 +522,11 @@ using namespace facebook::react;
   [self emitFormattingChanged];
   [self requestHeightUpdate];
   [self scheduleRelayoutIfNeeded];
+}
+
+- (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
+{
+  [self replaceTextInRange:_textView.selectedRange withText:text formattingRanges:ranges];
 }
 
 - (void)pasteMarkdown:(NSString *)markdown
@@ -684,8 +718,45 @@ using namespace facebook::react;
 {
   NSString *displayText = text.length > 0 ? text : url;
   NSRange linkRange = NSMakeRange(0, displayText.length);
-  ENRMFormattingRange *range = [ENRMFormattingRange rangeWithType:ENRMInputStyleTypeLink range:linkRange url:url];
+  ENRMFormattingRange *range = [ENRMFormattingRange rangeWithType:ENRMInputStyleTypeLink
+                                                            range:linkRange
+                                                              url:[self sanitizeLinkURL:url]];
   [self replaceSelectedTextWith:displayText formattingRanges:@[ range ]];
+}
+
+- (NSString *)sanitizeLinkURL:(NSString *)url
+{
+  NSString *result = [url stringByReplacingOccurrencesOfString:@"(" withString:@"%28"];
+  return [result stringByReplacingOccurrencesOfString:@")" withString:@"%29"];
+}
+
+- (void)insertMention:(NSString *)displayText url:(NSString *)url
+{
+  if (displayText.length == 0 || _activeMentionIndicator == nil || _activeMentionRange.location == NSNotFound) {
+    return;
+  }
+
+  NSString *plainText = ENRMGetPlainText(_textView);
+  NSUInteger rangeEnd = NSMaxRange(_activeMentionRange);
+  if (rangeEnd > plainText.length) {
+    return;
+  }
+  BOOL nextCharIsWhitespace = rangeEnd < plainText.length && [[NSCharacterSet whitespaceAndNewlineCharacterSet]
+                                                                 characterIsMember:[plainText
+                                                                                       characterAtIndex:rangeEnd]];
+  BOOL shouldAppendSpace = _insertMentionAppendSpace && !nextCharIsWhitespace;
+
+  NSString *replacement = shouldAppendSpace ? [displayText stringByAppendingString:@" "] : displayText;
+  ENRMFormattingRange *linkRange = [ENRMFormattingRange rangeWithType:ENRMInputStyleTypeLink
+                                                                range:NSMakeRange(0, displayText.length)
+                                                                  url:[self sanitizeLinkURL:url]];
+  NSString *indicator = _activeMentionIndicator;
+  NSRange mentionRange = _activeMentionRange;
+
+  [self clearActiveMention:indicator];
+  [self replaceTextInRange:mentionRange withText:replacement formattingRanges:@[ linkRange ]];
+  _textView.selectedRange = NSMakeRange(mentionRange.location + replacement.length, 0);
+  [self emitOnChangeSelection];
 }
 
 - (void)removeLink
@@ -840,6 +911,109 @@ using namespace facebook::react;
   NSMutableArray<ENRMFormattingRange *> *merged = [_formattingStore.allRanges mutableCopy];
   [merged addObjectsFromArray:transient];
   return merged;
+}
+
+- (void)clearActiveMention:(nullable NSString *)indicatorOverride
+{
+  NSString *indicator = indicatorOverride ?: _activeMentionIndicator;
+  _activeMentionIndicator = nil;
+  _activeMentionRange = NSMakeRange(NSNotFound, 0);
+  _activeMentionText = @"";
+
+  if (indicator.length > 0) {
+    [self emitOnEndMention:indicator];
+  }
+}
+
+- (nullable ENRMInputMentionCandidate *)mentionCandidateAtCursor
+{
+  NSRange selectedRange = _textView.selectedRange;
+  if (_mentionIndicators.count == 0 || selectedRange.length != 0) {
+    return nil;
+  }
+
+  NSString *plainText = ENRMGetPlainText(_textView);
+  NSUInteger cursor = selectedRange.location;
+  if (cursor > plainText.length) {
+    return nil;
+  }
+
+  NSUInteger start = [ENRMWordsUtils tokenStartInText:plainText beforePosition:cursor];
+  NSString *token = [plainText substringWithRange:NSMakeRange(start, cursor - start)];
+  NSString *matchedIndicator = nil;
+  for (NSString *indicator in _mentionIndicators) {
+    if ([token hasPrefix:indicator]) {
+      matchedIndicator = indicator;
+      break;
+    }
+  }
+  if (matchedIndicator == nil) {
+    return nil;
+  }
+
+  if ([_formattingStore rangeOfType:ENRMInputStyleTypeLink containingPosition:start] != nil) {
+    return nil;
+  }
+
+  return [ENRMInputMentionCandidate candidateWithIndicator:matchedIndicator
+                                                     start:start
+                                                       end:cursor
+                                                      text:[token substringFromIndex:matchedIndicator.length]];
+}
+
+- (void)updateActiveMention
+{
+  ENRMInputMentionCandidate *candidate = [self mentionCandidateAtCursor];
+  if (candidate == nil) {
+    [self clearActiveMention:nil];
+    return;
+  }
+
+  NSString *indicator = candidate.indicator;
+  NSUInteger start = candidate.start;
+  NSUInteger end = candidate.end;
+  NSString *query = candidate.text;
+
+  if (_activeMentionIndicator == nil || ![_activeMentionIndicator isEqualToString:indicator] ||
+      _activeMentionRange.location != start) {
+    if (_activeMentionIndicator != nil) {
+      [self emitOnEndMention:_activeMentionIndicator];
+    }
+    _activeMentionIndicator = indicator;
+    [self emitOnStartMention:indicator];
+  }
+  _activeMentionRange = NSMakeRange(start, end - start);
+
+  if (![_activeMentionText isEqualToString:query]) {
+    _activeMentionText = query;
+    [self emitOnChangeMentionWithIndicator:indicator text:query];
+  }
+}
+
+- (BOOL)deleteLinkForReplacementRange:(NSRange)range replacementText:(NSString *)text
+{
+  if (text.length > 0) {
+    return NO;
+  }
+
+  NSUInteger lookupPosition;
+  if (range.length > 0) {
+    lookupPosition = range.location;
+  } else if (range.location > 0) {
+    lookupPosition = range.location - 1;
+  } else {
+    return NO;
+  }
+
+  ENRMFormattingRange *linkRange = [_formattingStore rangeOfType:ENRMInputStyleTypeLink
+                                              containingPosition:lookupPosition];
+  if (linkRange == nil) {
+    return NO;
+  }
+
+  [self replaceTextInRange:linkRange.range withText:@"" formattingRanges:@[]];
+  [self clearActiveMention:nil];
+  return YES;
 }
 
 - (void)emitOnChangeText
@@ -1022,6 +1196,36 @@ using namespace facebook::react;
   });
 }
 
+- (void)emitOnStartMention:(NSString *)indicator
+{
+  auto emitter = [self getEventEmitter];
+  if (emitter == nullptr) {
+    return;
+  }
+  emitter->onStartMention({.indicator = std::string([indicator UTF8String] ?: "")});
+}
+
+- (void)emitOnChangeMentionWithIndicator:(NSString *)indicator text:(NSString *)text
+{
+  auto emitter = [self getEventEmitter];
+  if (emitter == nullptr) {
+    return;
+  }
+  emitter->onChangeMention({
+      .indicator = std::string([indicator UTF8String] ?: ""),
+      .text = std::string([text UTF8String] ?: ""),
+  });
+}
+
+- (void)emitOnEndMention:(NSString *)indicator
+{
+  auto emitter = [self getEventEmitter];
+  if (emitter == nullptr) {
+    return;
+  }
+  emitter->onEndMention({.indicator = std::string([indicator UTF8String] ?: "")});
+}
+
 #pragma mark - Text edit tracking
 
 - (void)handleTextChanged
@@ -1093,6 +1297,7 @@ using namespace facebook::react;
   [self emitOnChangeText];
   [self emitOnChangeSelection];
   [self emitFormattingChanged];
+  [self updateActiveMention];
   [self emitCaretRectChangeIfNeeded];
   [self requestHeightUpdate];
   [self scheduleRelayoutIfNeeded];
@@ -1151,6 +1356,9 @@ using namespace facebook::react;
 
 - (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text
 {
+  if ([self deleteLinkForReplacementRange:range replacementText:text]) {
+    return NO;
+  }
   _preEditSelectedRange = _lastSelectedRange;
   _isTextChanging = YES;
   [self stripLinkTypingAttributes];
@@ -1174,6 +1382,7 @@ using namespace facebook::react;
 
 - (void)textViewDidEndEditing:(UITextView *)textView
 {
+  [self clearActiveMention:nil];
   [self emitOnBlur];
 }
 
@@ -1198,6 +1407,7 @@ using namespace facebook::react;
   [self manageSelectionBasedChanges];
 
   [self emitOnChangeSelection];
+  [self updateActiveMention];
   [self emitOnChangeState];
   [self emitCaretRectChangeIfNeeded];
 }
@@ -1223,6 +1433,7 @@ using namespace facebook::react;
 
 - (void)textInputDidEndEditing
 {
+  [self clearActiveMention:nil];
   [self emitOnBlur];
 }
 
@@ -1242,6 +1453,9 @@ using namespace facebook::react;
 
 - (nullable NSString *)textInputShouldChangeText:(NSString *)text inRange:(NSRange)range
 {
+  if ([self deleteLinkForReplacementRange:range replacementText:text]) {
+    return nil;
+  }
   _preEditSelectedRange = _lastSelectedRange;
   _isTextChanging = YES;
   return text;
@@ -1270,6 +1484,7 @@ using namespace facebook::react;
   [_pendingStyleRemovals removeAllObjects];
 
   [self emitOnChangeSelection];
+  [self updateActiveMention];
   [self emitOnChangeState];
   [self emitCaretRectChangeIfNeeded];
 }

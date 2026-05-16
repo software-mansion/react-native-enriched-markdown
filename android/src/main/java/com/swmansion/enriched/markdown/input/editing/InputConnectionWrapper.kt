@@ -35,7 +35,20 @@ class InputConnectionWrapper(
   override fun deleteSurroundingText(
     beforeLength: Int,
     afterLength: Int,
-  ): Boolean = super.deleteSurroundingText(beforeLength, afterLength)
+  ): Boolean {
+    if (beforeLength == 1 && afterLength == 0 && editText.deleteLinkBeforeCursor()) {
+      return true
+    }
+    return super.deleteSurroundingText(beforeLength, afterLength)
+  }
 
-  override fun sendKeyEvent(event: KeyEvent): Boolean = super.sendKeyEvent(event)
+  override fun sendKeyEvent(event: KeyEvent): Boolean {
+    if (event.action == KeyEvent.ACTION_DOWN &&
+      event.keyCode == KeyEvent.KEYCODE_DEL &&
+      editText.deleteLinkBeforeCursor()
+    ) {
+      return true
+    }
+    return super.sendKeyEvent(event)
+  }
 }

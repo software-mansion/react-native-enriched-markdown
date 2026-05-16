@@ -21,5 +21,8 @@ export type {
   StyleState,
   ContextMenuItem,
   OnLinkDetected,
+  OnStartMentionEvent,
+  OnChangeMentionEvent,
+  OnEndMentionEvent,
   CaretRect,
 } from './EnrichedMarkdownTextInput';

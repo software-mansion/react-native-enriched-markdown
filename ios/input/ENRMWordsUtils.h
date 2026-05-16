@@ -15,6 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ENRMWordsUtils : NSObject
 
+/// Returns the start index of the non-whitespace token that ends at [position].
+/// If [position] is directly after whitespace or at the start of text, returns [position].
++ (NSUInteger)tokenStartInText:(NSString *)text beforePosition:(NSUInteger)position;
+
 /// Expands the modification range to word boundaries, then splits into
 /// individual ENRMWordResult objects.
 + (NSArray<ENRMWordResult *> *)getAffectedWordsFromText:(NSString *)text modificationRange:(NSRange)range;

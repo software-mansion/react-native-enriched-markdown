@@ -5,7 +5,6 @@ import PlaygroundScreen from './screens/playground/PlaygroundScreen';
 import TextScreen from './screens/text/TextScreen';
 import InputScreen from './screens/input/InputScreen';
 import StreamingMarkdownSimulator from './screens/streaming/StreamingMarkdownSimulator';
-import MentionsScreen from './screens/mentions/MentionsScreen';
 
 export default function App() {
   return (
@@ -47,11 +46,6 @@ export default function App() {
           name="Stream"
           component={StreamingMarkdownSimulator}
           options={{ title: 'Stream' }}
-        />
-        <Stack.Screen
-          name="Mentions"
-          component={MentionsScreen}
-          options={{ title: 'Mentions & Link Variants' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

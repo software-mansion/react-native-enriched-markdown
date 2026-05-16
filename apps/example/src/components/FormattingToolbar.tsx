@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import {
+  Text,
   View,
   TouchableOpacity,
   StyleSheet,
@@ -22,6 +23,7 @@ interface FormattingToolbarProps {
   state: StyleState | null;
   inputRef: React.RefObject<EnrichedMarkdownTextInputInstance | null>;
   hasSelection: boolean;
+  mentionIndicators?: string[];
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -77,6 +79,7 @@ export function FormattingToolbar({
   state,
   inputRef,
   hasSelection,
+  mentionIndicators,
   style,
   testID,
 }: FormattingToolbarProps) {
@@ -131,6 +134,16 @@ export function FormattingToolbar({
         >
           {LINK_ICON}
         </TouchableOpacity>
+        {mentionIndicators?.map((indicator) => (
+          <TouchableOpacity
+            key={indicator}
+            style={[styles.toolbarButton, styles.mentionButton]}
+            onPress={() => inputRef.current?.focus()}
+            testID={`toolbar-mention-${indicator}`}
+          >
+            <Text style={styles.mentionButtonText}>{indicator}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
       <LinkModal
         visible={linkModalVisible}
@@ -164,5 +177,13 @@ const styles = StyleSheet.create({
   },
   toolbarButtonActive: {
     backgroundColor: '#E2F8EB',
+  },
+  mentionButton: {
+    backgroundColor: '#EEF2FF',
+  },
+  mentionButtonText: {
+    color: ICON_COLOR,
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

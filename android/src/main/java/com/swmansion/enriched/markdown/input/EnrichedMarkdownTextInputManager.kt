@@ -17,15 +17,18 @@ import com.facebook.yoga.YogaMeasureMode
 import com.swmansion.enriched.markdown.input.autolink.LinkRegexConfig
 import com.swmansion.enriched.markdown.input.events.OnCaretRectChangeEvent
 import com.swmansion.enriched.markdown.input.events.OnChangeMarkdownEvent
+import com.swmansion.enriched.markdown.input.events.OnChangeMentionEvent
 import com.swmansion.enriched.markdown.input.events.OnChangeSelectionEvent
 import com.swmansion.enriched.markdown.input.events.OnChangeStateEvent
 import com.swmansion.enriched.markdown.input.events.OnChangeTextEvent
 import com.swmansion.enriched.markdown.input.events.OnContextMenuItemPressEvent
+import com.swmansion.enriched.markdown.input.events.OnEndMentionEvent
 import com.swmansion.enriched.markdown.input.events.OnInputBlurEvent
 import com.swmansion.enriched.markdown.input.events.OnInputFocusEvent
 import com.swmansion.enriched.markdown.input.events.OnLinkDetectedEvent
 import com.swmansion.enriched.markdown.input.events.OnRequestCaretRectResultEvent
 import com.swmansion.enriched.markdown.input.events.OnRequestMarkdownResultEvent
+import com.swmansion.enriched.markdown.input.events.OnStartMentionEvent
 import com.swmansion.enriched.markdown.input.layout.InputMeasurementStore
 import com.swmansion.enriched.markdown.input.model.StyleType
 import com.swmansion.enriched.markdown.utils.input.BorderPropsApplicator
@@ -60,6 +63,7 @@ class EnrichedMarkdownTextInputManager :
   }
 
   override fun onDropViewInstance(view: EnrichedMarkdownTextInputView) {
+    view.dismissActiveMention()
     super.onDropViewInstance(view)
     view.layoutManager.release()
   }
@@ -92,6 +96,9 @@ class EnrichedMarkdownTextInputManager :
       OnInputBlurEvent.EVENT_NAME,
       OnContextMenuItemPressEvent.EVENT_NAME,
       OnLinkDetectedEvent.EVENT_NAME,
+      OnStartMentionEvent.EVENT_NAME,
+      OnChangeMentionEvent.EVENT_NAME,
+      OnEndMentionEvent.EVENT_NAME,
     ).associateWithTo(mutableMapOf()) { name -> mapOf("registrationName" to name) }
 
   // Props
@@ -277,6 +284,26 @@ class EnrichedMarkdownTextInputManager :
     view.setLinkRegex(config)
   }
 
+  @ReactProp(name = "mentionIndicators")
+  override fun setMentionIndicators(
+    view: EnrichedMarkdownTextInputView?,
+    value: ReadableArray?,
+  ) {
+    val indicators =
+      (0 until (value?.size() ?: 0))
+        .mapNotNull { value?.getString(it) }
+        .filter { it.isNotEmpty() }
+    view?.setMentionIndicators(indicators)
+  }
+
+  @ReactProp(name = "insertMentionAppendSpace", defaultBoolean = true)
+  override fun setInsertMentionAppendSpace(
+    view: EnrichedMarkdownTextInputView?,
+    value: Boolean,
+  ) {
+    view?.insertMentionAppendSpace = value
+  }
+
   override fun updateProperties(
     view: EnrichedMarkdownTextInputView,
     props: ReactStylesDiffMap,
@@ -362,6 +389,16 @@ class EnrichedMarkdownTextInputManager :
   ) {
     if (url != null) {
       view?.insertLinkAtCursor(text ?: url, url)
+    }
+  }
+
+  override fun insertMention(
+    view: EnrichedMarkdownTextInputView?,
+    displayText: String?,
+    url: String?,
+  ) {
+    if (displayText != null && url != null) {
+      view?.insertMention(displayText, url)
     }
   }
 

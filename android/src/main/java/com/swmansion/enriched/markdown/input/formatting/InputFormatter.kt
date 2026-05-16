@@ -48,6 +48,11 @@ class InputFormatter {
       spannable
         .getSpans(0, spannable.length, CharacterStyle::class.java)
         .filterIsInstance<MarkdownSpan>()
+    val linkSpanClasses = handlers[StyleType.LINK]?.spanClasses().orEmpty().toSet()
+    val existingLinkSpans = existingSpans.filter { span -> span::class.java in linkSpanClasses }
+    for (span in existingLinkSpans) {
+      spannable.removeSpan(span as CharacterStyle)
+    }
 
     val desired = mutableListOf<SpanDescriptor>()
     for (range in ranges) {
@@ -55,18 +60,21 @@ class InputFormatter {
       val handler = handlers[range.type] ?: continue
       val spans = handler.createSpans(range, currentStyle)
       for (span in spans) {
-        desired.add(SpanDescriptor(range.start, range.end, span::class.java))
+        desired.add(SpanDescriptor(range.start, range.end, span::class.java, range.url))
       }
     }
 
     val existing =
-      existingSpans.map { span ->
-        SpanDescriptor(
-          spannable.getSpanStart(span as CharacterStyle),
-          spannable.getSpanEnd(span as CharacterStyle),
-          span::class.java,
-        ) to (span as CharacterStyle)
-      }
+      existingSpans
+        .filter { span -> span !in existingLinkSpans }
+        .map { span ->
+          SpanDescriptor(
+            spannable.getSpanStart(span as CharacterStyle),
+            spannable.getSpanEnd(span as CharacterStyle),
+            span::class.java,
+            null,
+          ) to (span as CharacterStyle)
+        }
 
     val desiredSet = desired.toSet()
     val existingSet = existing.map { it.first }.toSet()
@@ -85,7 +93,7 @@ class InputFormatter {
           handlers.values.firstOrNull { h ->
             h.spanClasses().any { it == desc.spanClass }
           } ?: continue
-        val dummyRange = FormattingRange(handler.styleType, desc.start, desc.end)
+        val dummyRange = FormattingRange(handler.styleType, desc.start, desc.end, desc.url)
         val newSpans = handler.createSpans(dummyRange, currentStyle)
         val matchingSpan = newSpans.firstOrNull { it::class.java == desc.spanClass }
         if (matchingSpan != null) {
@@ -104,5 +112,6 @@ class InputFormatter {
     val start: Int,
     val end: Int,
     val spanClass: Class<*>,
+    val url: String?,
   )
 }

@@ -7,6 +7,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol ENRMStyleHandler;
 
+@interface ENRMInputLinkVariantStyle : NSObject
+
+@property (nonatomic, copy) NSString *pattern;
+@property (nonatomic, strong) RCTUIColor *color;
+@property (nonatomic, assign) BOOL underline;
+@property (nonatomic, strong, nullable) RCTUIColor *backgroundColor;
+@property (nonatomic, strong, nullable) NSRegularExpression *regex;
+
+@end
+
 @interface ENRMInputFormatterStyle : NSObject <NSCopying>
 
 /// Base text properties
@@ -22,6 +32,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// Link
 @property (nonatomic, strong, nullable) RCTUIColor *linkColor;
 @property (nonatomic, assign) BOOL linkUnderline;
+@property (nonatomic, strong, nullable) RCTUIColor *linkBackgroundColor;
+@property (nonatomic, copy) NSArray<ENRMInputLinkVariantStyle *> *linkVariants;
 
 /// Spoiler
 @property (nonatomic, strong, nullable) RCTUIColor *spoilerColor;

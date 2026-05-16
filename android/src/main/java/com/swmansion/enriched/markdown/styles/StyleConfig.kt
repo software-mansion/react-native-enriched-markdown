@@ -108,8 +108,8 @@ class StyleConfig(
 
   val linkVariants: List<LinkVariantEntry> by lazy {
     val array = style.getArray("linkVariants") ?: return@lazy emptyList()
-    (0 until array.size()).map { i ->
-      LinkVariantEntry.fromReadableMap(array.getMap(i), styleParser)
+    (0 until array.size()).mapNotNull { i ->
+      array.getMap(i)?.let { LinkVariantEntry.fromReadableMap(it, styleParser) }
     }
   }
 

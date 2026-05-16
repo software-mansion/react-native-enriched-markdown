@@ -9,6 +9,7 @@ import android.text.Editable
 import android.text.InputType
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View.OnFocusChangeListener
 import android.view.inputmethod.EditorInfo
@@ -23,6 +24,7 @@ import com.facebook.react.views.text.ReactTypefaceUtils
 import com.swmansion.enriched.markdown.input.autolink.AutoLinkDetector
 import com.swmansion.enriched.markdown.input.autolink.LinkRegexConfig
 import com.swmansion.enriched.markdown.input.detection.DetectorPipeline
+import com.swmansion.enriched.markdown.input.detection.WordsUtils
 import com.swmansion.enriched.markdown.input.editing.InputConnectionWrapper
 import com.swmansion.enriched.markdown.input.editing.MarkdownEditableFactory
 import com.swmansion.enriched.markdown.input.editing.MarkdownTextWatcher
@@ -79,6 +81,13 @@ class EnrichedMarkdownTextInputView(
   private var inputMethodManager: InputMethodManager? = null
   private var detectScrollMovement = false
   var scrollEnabled: Boolean = true
+  var insertMentionAppendSpace: Boolean = true
+
+  private var mentionIndicators: LinkedHashSet<String> = linkedSetOf()
+  private var activeMentionIndicator: String? = null
+  private var activeMentionStart = -1
+  private var activeMentionEnd = -1
+  private var activeMentionText = ""
 
   init {
     setupDetectorPipeline()
@@ -138,6 +147,16 @@ class EnrichedMarkdownTextInputView(
   override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection? {
     val base = super.onCreateInputConnection(outAttrs) ?: return null
     return InputConnectionWrapper(base, this)
+  }
+
+  override fun onKeyDown(
+    keyCode: Int,
+    event: KeyEvent?,
+  ): Boolean {
+    if (keyCode == KeyEvent.KEYCODE_DEL && deleteLinkBeforeCursor()) {
+      return true
+    }
+    return super.onKeyDown(keyCode, event)
   }
 
   // Prevents TextView from deferring its internal layout when a Fabric
@@ -231,6 +250,7 @@ class EnrichedMarkdownTextInputView(
       forceScrollToSelection()
       eventEmitter.emitChangeText()
       if (emitMarkdown) eventEmitter.emitChangeMarkdown()
+      updateActiveMention()
       eventEmitter.emitCaretRectChangeIfNeeded()
       isTextChanging = false
       didTextChangeRecently = true
@@ -257,6 +277,7 @@ class EnrichedMarkdownTextInputView(
     }
 
     eventEmitter.emitSelection(selStart, selEnd)
+    updateActiveMention()
     eventEmitter.emitState()
     eventEmitter.emitCaretRectChangeIfNeeded()
   }
@@ -392,10 +413,45 @@ class EnrichedMarkdownTextInputView(
       editable.replace(selStart, selEnd, displayText)
       formattingStore.adjustForEdit(selStart, selEnd - selStart, displayText.length)
       autoLinkDetector.clearAutoLinkInRange(editable, selStart, linkEnd)
-      formattingStore.addRange(FormattingRange(StyleType.LINK, selStart, linkEnd, url))
+      formattingStore.addRange(FormattingRange(StyleType.LINK, selStart, linkEnd, sanitizeLinkUrl(url)))
       lastProcessedText = editable.toString()
 
       setSelection(linkEnd)
+      applyFormattingAndEmit()
+      eventEmitter.emitChangeText()
+    } finally {
+      isProcessingTextChange = false
+    }
+  }
+
+  fun insertMention(
+    displayText: String,
+    url: String,
+  ) {
+    if (displayText.isEmpty()) return
+    val indicator = activeMentionIndicator ?: return
+    val start = activeMentionStart
+    val end = activeMentionEnd
+    val editable = text ?: return
+    if (start < 0 || end < start || end > editable.length) return
+
+    val sanitizedUrl = sanitizeLinkUrl(url)
+    val shouldAppendSpace =
+      insertMentionAppendSpace &&
+        (end >= editable.length || !editable[end].isWhitespace())
+    val replacement = if (shouldAppendSpace) "$displayText " else displayText
+    val linkEnd = start + displayText.length
+
+    isProcessingTextChange = true
+    try {
+      editable.replace(start, end, replacement)
+      formattingStore.adjustForEdit(start, end - start, replacement.length)
+      autoLinkDetector.clearAutoLinkInRange(editable, start, linkEnd)
+      formattingStore.addRange(FormattingRange(StyleType.LINK, start, linkEnd, sanitizedUrl))
+      lastProcessedText = editable.toString()
+
+      clearActiveMention(emit = true, indicatorOverride = indicator)
+      setSelection(start + replacement.length)
       applyFormattingAndEmit()
       eventEmitter.emitChangeText()
     } finally {
@@ -408,6 +464,43 @@ class EnrichedMarkdownTextInputView(
     val linkRange = formattingStore.rangeOfType(StyleType.LINK, pos) ?: return
     formattingStore.removeRange(linkRange)
     applyFormattingAndEmit()
+  }
+
+  fun deleteLinkBeforeCursor(): Boolean {
+    val editable = text ?: return false
+    val cursorStart = selectionStart
+    val cursorEnd = selectionEnd
+    if (cursorStart != cursorEnd || cursorStart <= 0) return false
+
+    val linkRange = formattingStore.rangeOfType(StyleType.LINK, cursorStart - 1) ?: return false
+
+    isProcessingTextChange = true
+    try {
+      editable.delete(linkRange.start, linkRange.end)
+      formattingStore.adjustForEdit(linkRange.start, linkRange.length, 0)
+      lastProcessedText = editable.toString()
+      setSelection(linkRange.start.coerceAtMost(editable.length))
+      applyFormattingAndEmit()
+      eventEmitter.emitChangeText()
+      clearActiveMention()
+    } finally {
+      isProcessingTextChange = false
+    }
+    return true
+  }
+
+  fun setMentionIndicators(indicators: List<String>) {
+    mentionIndicators = LinkedHashSet(indicators)
+    activeMentionIndicator?.let { indicator ->
+      if (indicator !in mentionIndicators) {
+        clearActiveMention(emit = true, indicatorOverride = indicator)
+      }
+    }
+    updateActiveMention()
+  }
+
+  fun dismissActiveMention() {
+    clearActiveMention(emit = false)
   }
 
   fun setContextMenuItems(items: List<String>) {
@@ -553,4 +646,77 @@ class EnrichedMarkdownTextInputView(
     formattingStore.addRange(FormattingRange(StyleType.LINK, start, end, url))
     applyFormattingAndEmit()
   }
+
+  private fun updateActiveMention() {
+    val plainText = text?.toString() ?: return
+    val cursor = selectionStart
+    if (selectionStart != selectionEnd || cursor < 0 || cursor > plainText.length) {
+      clearActiveMention()
+      return
+    }
+
+    val candidate = detectMentionAtCursor(plainText, cursor)
+    if (candidate == null) {
+      clearActiveMention()
+      return
+    }
+
+    if (activeMentionIndicator != candidate.indicator || activeMentionStart != candidate.start) {
+      activeMentionIndicator?.let { eventEmitter.emitEndMention(it) }
+      activeMentionIndicator = candidate.indicator
+      activeMentionStart = candidate.start
+      eventEmitter.emitStartMention(candidate.indicator)
+    }
+
+    activeMentionEnd = candidate.end
+    if (activeMentionText != candidate.text) {
+      activeMentionText = candidate.text
+      eventEmitter.emitChangeMention(candidate.indicator, candidate.text)
+    }
+  }
+
+  private fun detectMentionAtCursor(
+    plainText: String,
+    cursor: Int,
+  ): MentionCandidate? {
+    if (mentionIndicators.isEmpty()) return null
+
+    val start = WordsUtils.tokenStart(plainText, cursor)
+    val token = plainText.substring(start, cursor)
+    val indicator = mentionIndicators.firstOrNull { token.startsWith(it) } ?: return null
+    if (formattingStore.rangeOfType(StyleType.LINK, start) != null) return null
+
+    return MentionCandidate(
+      indicator = indicator,
+      start = start,
+      end = cursor,
+      text = token.substring(indicator.length),
+    )
+  }
+
+  private fun clearActiveMention(
+    emit: Boolean = true,
+    indicatorOverride: String? = null,
+  ) {
+    val indicator = indicatorOverride ?: activeMentionIndicator
+    activeMentionIndicator = null
+    activeMentionStart = -1
+    activeMentionEnd = -1
+    activeMentionText = ""
+    if (emit && indicator != null) {
+      eventEmitter.emitEndMention(indicator)
+    }
+  }
+
+  private fun sanitizeLinkUrl(url: String): String =
+    url
+      .replace("(", "%28")
+      .replace(")", "%29")
+
+  private data class MentionCandidate(
+    val indicator: String,
+    val start: Int,
+    val end: Int,
+    val text: String,
+  )
 }

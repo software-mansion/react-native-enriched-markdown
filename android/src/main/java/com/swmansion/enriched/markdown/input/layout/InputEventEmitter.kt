@@ -6,15 +6,18 @@ import com.facebook.react.uimanager.events.Event
 import com.swmansion.enriched.markdown.input.EnrichedMarkdownTextInputView
 import com.swmansion.enriched.markdown.input.events.OnCaretRectChangeEvent
 import com.swmansion.enriched.markdown.input.events.OnChangeMarkdownEvent
+import com.swmansion.enriched.markdown.input.events.OnChangeMentionEvent
 import com.swmansion.enriched.markdown.input.events.OnChangeSelectionEvent
 import com.swmansion.enriched.markdown.input.events.OnChangeStateEvent
 import com.swmansion.enriched.markdown.input.events.OnChangeTextEvent
 import com.swmansion.enriched.markdown.input.events.OnContextMenuItemPressEvent
+import com.swmansion.enriched.markdown.input.events.OnEndMentionEvent
 import com.swmansion.enriched.markdown.input.events.OnInputBlurEvent
 import com.swmansion.enriched.markdown.input.events.OnInputFocusEvent
 import com.swmansion.enriched.markdown.input.events.OnLinkDetectedEvent
 import com.swmansion.enriched.markdown.input.events.OnRequestCaretRectResultEvent
 import com.swmansion.enriched.markdown.input.events.OnRequestMarkdownResultEvent
+import com.swmansion.enriched.markdown.input.events.OnStartMentionEvent
 import com.swmansion.enriched.markdown.input.formatting.MarkdownSerializer
 import com.swmansion.enriched.markdown.input.model.CaretRect
 import com.swmansion.enriched.markdown.input.model.StyleType
@@ -80,6 +83,21 @@ class InputEventEmitter(
     end: Int,
   ) {
     dispatch(OnLinkDetectedEvent(surfaceId(), view.id, text, url, start, end))
+  }
+
+  fun emitStartMention(indicator: String) {
+    dispatch(OnStartMentionEvent(surfaceId(), view.id, indicator))
+  }
+
+  fun emitChangeMention(
+    indicator: String,
+    text: String,
+  ) {
+    dispatch(OnChangeMentionEvent(surfaceId(), view.id, indicator, text))
+  }
+
+  fun emitEndMention(indicator: String) {
+    dispatch(OnEndMentionEvent(surfaceId(), view.id, indicator))
   }
 
   fun emitRequestMarkdownResult(requestId: Int) {

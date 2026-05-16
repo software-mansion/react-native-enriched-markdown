@@ -18,7 +18,16 @@ interface MarkdownTextInputStyleInternal {
   link: {
     color: ColorValue;
     underline: boolean;
+    backgroundColor: ColorValue;
   };
+  linkVariants: ReadonlyArray<
+    Readonly<{
+      pattern: string;
+      color: ColorValue;
+      underline: boolean;
+      backgroundColor: ColorValue;
+    }>
+  >;
   spoiler: {
     color: ColorValue;
     backgroundColor: ColorValue;
@@ -84,6 +93,19 @@ export interface OnLinkDetected {
   url: string;
   start: CodegenTypes.Int32;
   end: CodegenTypes.Int32;
+}
+
+export interface OnStartMentionEvent {
+  indicator: string;
+}
+
+export interface OnChangeMentionEvent {
+  indicator: string;
+  text: string;
+}
+
+export interface OnEndMentionEvent {
+  indicator: string;
 }
 
 export interface ContextMenuItemConfig {
@@ -182,6 +204,10 @@ export interface NativeProps extends ViewProps {
    */
   linkRegex?: Readonly<LinkNativeRegex>;
 
+  mentionIndicators?: ReadonlyArray<string>;
+
+  insertMentionAppendSpace?: boolean;
+
   // Events
   onChangeText?: CodegenTypes.DirectEventHandler<OnChangeTextEvent>;
   onChangeMarkdown?: CodegenTypes.DirectEventHandler<OnChangeMarkdownEvent>;
@@ -194,6 +220,9 @@ export interface NativeProps extends ViewProps {
   onCaretRectChange?: CodegenTypes.DirectEventHandler<OnCaretRectChangeEvent>;
   onContextMenuItemPress?: CodegenTypes.DirectEventHandler<OnContextMenuItemPressEvent>;
   onLinkDetected?: CodegenTypes.DirectEventHandler<OnLinkDetected>;
+  onStartMention?: CodegenTypes.DirectEventHandler<OnStartMentionEvent>;
+  onChangeMention?: CodegenTypes.DirectEventHandler<OnChangeMentionEvent>;
+  onEndMention?: CodegenTypes.DirectEventHandler<OnEndMentionEvent>;
 }
 
 type ComponentType = HostComponent<NativeProps>;
@@ -221,6 +250,11 @@ interface NativeCommands {
     text: string,
     url: string
   ) => void;
+  insertMention: (
+    viewRef: React.ElementRef<ComponentType>,
+    displayText: string,
+    url: string
+  ) => void;
   removeLink: (viewRef: React.ElementRef<ComponentType>) => void;
   requestMarkdown: (
     viewRef: React.ElementRef<ComponentType>,
@@ -245,6 +279,7 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'toggleSpoiler',
     'setLink',
     'insertLink',
+    'insertMention',
     'removeLink',
     'requestMarkdown',
     'requestCaretRect',
