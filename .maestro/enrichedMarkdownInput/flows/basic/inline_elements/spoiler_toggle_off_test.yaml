@@ -1,6 +1,8 @@
 appId: swmansion.enriched.markdown.example
 tags:
   - input
+  - inline
+  - spoiler
   - smoke
 ---
 - launchApp
@@ -9,15 +11,15 @@ tags:
     file: '../../../../subflows/move_to_playground.yaml'
 
 - tapOn:
-    id: toolbar-underline
+    id: toolbar-spoiler
 
 - tapOn:
     id: focus-button
 
-- inputText: "Underline text"
+- inputText: "Spoiler text"
 
 - tapOn:
-    id: toolbar-underline
+    id: toolbar-spoiler
 
 - inputText: "Normal text"
 
@@ -27,4 +29,4 @@ tags:
 - runFlow:
     file: '../../../subflows/capture_or_assert_screenshot.yaml'
     env:
-      SCREENSHOT_NAME: 'underline_toggle_off_input'
+      SCREENSHOT_NAME: 'spoiler_toggle_off_input'

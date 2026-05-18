@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - list
+  - task_list
+  - text
 ---
 # checks the combination of task lists, ordered lists, and unordered lists in sequence
 - launchApp

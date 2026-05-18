@@ -3,6 +3,8 @@ tags:
   - block
   - advanced
   - image
+  - text
+  - thematic_break
 ---
 # checks the combination of thematic breaks surrounding a block image
 - launchApp

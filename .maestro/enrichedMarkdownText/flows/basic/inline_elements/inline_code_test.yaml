@@ -2,6 +2,8 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - inline
+  - inline_code
+  - text
 ---
 - launchApp
 

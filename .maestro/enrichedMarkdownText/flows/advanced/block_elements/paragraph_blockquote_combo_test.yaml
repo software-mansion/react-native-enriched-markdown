@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - blockquote
+  - paragraph
+  - text
 ---
 # checks the combination of paragraphs and blockquotes (interleaved flow)
 - launchApp

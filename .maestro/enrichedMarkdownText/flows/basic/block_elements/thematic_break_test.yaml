@@ -2,6 +2,8 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - block
+  - text
+  - thematic_break
 ---
 - launchApp
 

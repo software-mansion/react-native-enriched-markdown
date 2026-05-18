@@ -3,6 +3,8 @@ tags:
   - block
   - advanced
   - image
+  - table
+  - text
 ---
 # checks the combination of a table followed by a block image
 - launchApp

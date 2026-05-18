@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - input
   - advanced
+  - inline
+  - italic
+  - strikethrough
 ---
 - launchApp
 

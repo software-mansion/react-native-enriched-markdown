@@ -3,6 +3,8 @@ tags:
   - block
   - advanced
   - image
+  - blockquote
+  - text
 ---
 # checks the combination of a blockquote followed by a block image
 - launchApp

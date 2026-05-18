@@ -1,6 +1,8 @@
 appId: swmansion.enriched.markdown.example
 tags:
   - input
+  - inline
+  - italic
   - smoke
 ---
 - launchApp
@@ -9,15 +11,15 @@ tags:
     file: '../../../../subflows/move_to_playground.yaml'
 
 - tapOn:
-    id: toolbar-strikethrough
+    id: toolbar-italic
 
 - tapOn:
     id: focus-button
 
-- inputText: "Strikethrough text"
+- inputText: "Italic text"
 
 - tapOn:
-    id: toolbar-strikethrough
+    id: toolbar-italic
 
 - inputText: "Normal text"
 
@@ -27,4 +29,4 @@ tags:
 - runFlow:
     file: '../../../subflows/capture_or_assert_screenshot.yaml'
     env:
-      SCREENSHOT_NAME: 'strikethrough_toggle_off_input'
+      SCREENSHOT_NAME: 'italic_toggle_off_input'

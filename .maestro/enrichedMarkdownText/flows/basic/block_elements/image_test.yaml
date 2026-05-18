@@ -3,6 +3,7 @@ tags:
   - smoke
   - block
   - image
+  - text
 ---
 - launchApp
 
