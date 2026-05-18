@@ -1,6 +1,5 @@
 appId: swmansion.enriched.markdown.example
 ---
-# checks the parsing of Markdown nested ordered lists
 - launchApp
 
 - runFlow:

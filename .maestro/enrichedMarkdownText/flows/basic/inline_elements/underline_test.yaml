@@ -1,6 +1,5 @@
 appId: swmansion.enriched.markdown.example
 ---
-# checks the parsing of underline inline markdown (__text__, requires underline flag enabled)
 - launchApp
 
 - runFlow:

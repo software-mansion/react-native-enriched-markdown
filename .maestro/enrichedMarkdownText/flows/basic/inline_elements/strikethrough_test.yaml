@@ -1,6 +1,5 @@
 appId: swmansion.enriched.markdown.example
 ---
-# checks the parsing of strikethrough inline markdown (~~text~~)
 - launchApp
 
 - runFlow:

@@ -1,6 +1,5 @@
 appId: swmansion.enriched.markdown.example
 ---
-# checks the parsing of inline code spans (`code`)
 - launchApp
 
 - runFlow:

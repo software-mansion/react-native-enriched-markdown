@@ -1,6 +1,5 @@
 appId: swmansion.enriched.markdown.example
 ---
-# checks the parsing of Markdown math display blocks ($$...$$ LaTeX)
 - launchApp
 
 - runFlow:
