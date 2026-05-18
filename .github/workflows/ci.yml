@@ -75,7 +75,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock', 'android/**', 'src/**', 'cpp/**', 'apps/example/android/**') }}
           restore-keys: |
             ${{ runner.os }}-turborepo-android-
 
@@ -142,7 +142,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock') }}
+          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock', 'ios/**', 'src/**', 'cpp/**', 'apps/example/ios/**') }}
           restore-keys: |
             ${{ runner.os }}-turborepo-ios-
 
