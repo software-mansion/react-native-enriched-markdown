@@ -524,6 +524,7 @@ using namespace facebook::react;
 
 - (void)prepareForRecycle
 {
+  _props = std::make_shared<const EnrichedMarkdownTextProps>();
   [_renderCoordinator invalidate];
 
   [_fadeAnimator cancel];

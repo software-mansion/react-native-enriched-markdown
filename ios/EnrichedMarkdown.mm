@@ -767,6 +767,7 @@ static char kENRMSegmentFadeAnimatorKey;
 
 - (void)prepareForRecycle
 {
+  _props = std::make_shared<const EnrichedMarkdownProps>();
   [_renderCoordinator invalidate];
 
   for (RCTUIView *segment in _segmentViews) {
