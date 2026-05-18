@@ -524,10 +524,6 @@ using namespace facebook::react;
 
 - (void)prepareForRecycle
 {
-  // Fabric pools `RCTViewComponentView` instances. Without resetting here, the
-  // running tail-fade animator, previous text length and cached markdown from
-  // the previous mount would resume against the new content and the text view
-  // would briefly show the prior message.
   [_renderCoordinator invalidate];
 
   [_fadeAnimator cancel];

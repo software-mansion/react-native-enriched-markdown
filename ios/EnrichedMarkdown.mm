@@ -764,10 +764,6 @@ static char kENRMSegmentFadeAnimatorKey;
 
 - (void)prepareForRecycle
 {
-  // Fabric pools `RCTViewComponentView` instances. Without resetting here, the
-  // segment subviews, signatures, cached markdown and any running tail-fade
-  // animators from the previous mount would leak into the next mount and the
-  // reconciler would reuse stale views against unrelated content.
   [_renderCoordinator invalidate];
 
   for (RCTUIView *segment in _segmentViews) {
