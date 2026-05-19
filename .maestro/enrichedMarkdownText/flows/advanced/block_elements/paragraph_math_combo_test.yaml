@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - math
+  - paragraph
+  - text
 ---
 # checks the combination of paragraphs and math display blocks
 - launchApp

@@ -48,6 +48,12 @@ typedef struct {
   if (!storage || tailEnd <= tailStart || tailEnd > storage.length)
     return;
 
+#if !TARGET_OS_OSX
+  if (UIAccessibilityIsReduceMotionEnabled()) {
+    return;
+  }
+#endif
+
   NSRange range = NSMakeRange(tailStart, tailEnd - tailStart);
 
   [self snapshotColorsInRange:range storage:storage];
@@ -64,6 +70,9 @@ typedef struct {
   // CADisplayLink doesn't exist on macOS; the equivalent is CVDisplayLink (Core Video)
   // or an NSTimer driven at the display refresh rate. The iOS step:/eased-progress
   // logic below can be reused directly once a display-sync callback is wired up.
+  // TODO: When this is implemented, gate it on
+  // NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion so macOS
+  // users with Reduce Motion enabled also skip the fade.
   [self updateAlpha:1.0];
   [self cleanupEntries];
 #endif

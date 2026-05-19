@@ -1,0 +1,35 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - input
+  - smoke
+  - inline
+  - link
+---
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- tapOn:
+    id: toolbar-link
+
+- tapOn:
+    id: link-modal-text-input
+
+- inputText: "Click here"
+
+- tapOn:
+    id: link-modal-url-input
+
+- inputText: "https://example.com"
+
+- tapOn:
+    id: link-modal-save
+
+- tapOn:
+    id: blur-button
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'link_input'

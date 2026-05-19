@@ -135,7 +135,7 @@ export const EnrichedMarkdownText = ({
     [onTaskListItemPress]
   );
 
-  const tableMode = streamingConfig?.tableMode ?? 'hidden';
+  const tableMode = streamingConfig?.tableMode ?? 'progressive';
   const normalizedStreamingConfig = useMemo(() => ({ tableMode }), [tableMode]);
   const normalizedSelectionMenuConfig = useMemo(
     () => ({

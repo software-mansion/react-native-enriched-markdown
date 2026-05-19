@@ -164,8 +164,8 @@ class EnrichedMarkdownManager :
     if (view == null) return
     val tableMode =
       when (config?.getString("tableMode")) {
-        "progressive" -> TableStreamingMode.PROGRESSIVE
-        else -> TableStreamingMode.HIDDEN
+        "hidden" -> TableStreamingMode.HIDDEN
+        else -> TableStreamingMode.PROGRESSIVE
       }
     view.tableStreamingMode = tableMode
   }

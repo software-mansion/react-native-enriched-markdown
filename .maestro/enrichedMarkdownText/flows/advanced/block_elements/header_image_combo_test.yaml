@@ -3,6 +3,8 @@ tags:
   - block
   - advanced
   - image
+  - header
+  - text
 ---
 # checks the combination of a header followed by a block image
 - launchApp

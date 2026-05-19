@@ -2,8 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - inline
+  - spoiler
+  - text
 ---
-# checks the parsing of spoiler inline markdown (||text||)
 - launchApp
 
 - runFlow:

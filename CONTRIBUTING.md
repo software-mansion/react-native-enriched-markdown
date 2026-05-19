@@ -9,7 +9,7 @@ We want this community to be friendly and respectful to each other. Please follo
 This project is a monorepo managed using [Yarn workspaces](https://yarnpkg.com/features/workspaces). It contains the following packages:
 
 - The library package in the root directory.
-- An example app in the `example/` directory.
+- An example app in the `apps/example/` directory.
 
 To get started with the project, make sure you have the correct version of [Node.js](https://nodejs.org/) installed. See the [`.nvmrc`](./.nvmrc) file for the version used in this project.
 
@@ -119,6 +119,12 @@ yarn test:e2e:android:update-screenshots
 ```
 
 > Maestro must be installed and a simulator/emulator must be available. Pass `-- --rebuild` to force a fresh build of the example app.
+
+### Storybook
+
+Storybook is embedded in the example app (`apps/example/`) as a dedicated screen. To use it, run the example app normally and navigate to the **Storybook** screen from the home screen.
+
+Stories live in `apps/example/.rnstorybook/stories/`.
 
 ### Commit message convention
 

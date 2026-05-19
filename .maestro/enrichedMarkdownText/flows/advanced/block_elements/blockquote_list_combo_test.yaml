@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - blockquote
+  - list
+  - text
 ---
 # checks the combination of blockquotes and lists (quoted content adjacent to list items)
 - launchApp

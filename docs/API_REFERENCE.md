@@ -201,21 +201,21 @@ Configuration for streaming behavior. Currently controls how incomplete tables a
 
 | Type                    | Default Value            | Platform |
 | ----------------------- | ------------------------ | -------- |
-| `{ tableMode: string }` | `{ tableMode: 'hidden' }` | Both     |
+| `{ tableMode: string }` | `{ tableMode: 'progressive' }` | Both     |
 
 #### `tableMode`
 
 Controls how incomplete (still-streaming) tables are rendered:
 
-- **`'hidden'`** (default): The entire table is hidden until it is complete (followed by a blank line). This prevents visual jank from partially formed tables.
-- **`'progressive'`**: The table is rendered row-by-row as content arrives. Requires at least a header row and separator line before anything is shown. Incomplete trailing rows (missing closing `|` or fewer columns than the header) are trimmed. New rows fade in with animation when `streamingAnimation` is also enabled.
+- **`'progressive'`** (default): The table is rendered row-by-row as content arrives. Requires at least a header row and separator line before anything is shown. Incomplete trailing rows (missing closing `|` or fewer columns than the header) are trimmed. New rows fade in with animation when `streamingAnimation` is also enabled.
+- **`'hidden'`**: The entire table is hidden until it is complete (followed by a blank line). This prevents visual jank from partially formed tables.
 
 ```tsx
 <EnrichedMarkdownText
   markdown={streamingMarkdown}
   flavor="github"
   streamingAnimation
-  streamingConfig={{ tableMode: 'progressive' }}
+  streamingConfig={{ tableMode: 'hidden' }}
 />
 ```
 

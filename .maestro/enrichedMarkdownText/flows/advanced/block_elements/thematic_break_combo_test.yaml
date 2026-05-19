@@ -2,6 +2,8 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - text
+  - thematic_break
 ---
 # checks thematic breaks separating different block element types
 - launchApp

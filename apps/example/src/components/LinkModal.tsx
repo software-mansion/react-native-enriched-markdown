@@ -79,6 +79,7 @@ export const LinkModal: FC<LinkModalProps> = ({
             autoCapitalize="none"
             autoCorrect={false}
             autoFocus
+            testID="link-modal-text-input"
           />
 
           <Text style={styles.label}>Link</Text>
@@ -91,10 +92,15 @@ export const LinkModal: FC<LinkModalProps> = ({
             keyboardType="url"
             autoCapitalize="none"
             autoCorrect={false}
+            testID="link-modal-url-input"
           />
 
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={onClose}
+              testID="link-modal-cancel"
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -104,6 +110,7 @@ export const LinkModal: FC<LinkModalProps> = ({
               ]}
               onPress={handleSave}
               disabled={url.length === 0}
+              testID="link-modal-save"
             >
               <Text
                 style={[

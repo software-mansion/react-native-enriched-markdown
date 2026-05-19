@@ -2,8 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - block
+  - blockquote
+  - text
 ---
-# checks the parsing of Markdown nested blockquotes (>> text)
 - launchApp
 
 - runFlow:

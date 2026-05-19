@@ -36,10 +36,10 @@ export interface SelectionMenuConfig {
 export interface StreamingConfig {
   /**
    * Controls how incomplete tables are handled during streaming.
-   * - `'hidden'` (default): hide the entire table until it's complete.
-   * - `'progressive'`: show the table row-by-row as rows complete.
+   * - `'hidden'`: hide the entire table until it's complete.
+   * - `'progressive'` (default): show the table row-by-row as rows complete.
    * Only effective when `streamingAnimation` is `true`.
-   * @default 'hidden'
+   * @default 'progressive'
    * @platform ios, android
    */
   tableMode?: 'hidden' | 'progressive';

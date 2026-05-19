@@ -2,8 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - inline
+  - text
+  - underline
 ---
-# checks the parsing of underline inline markdown (__text__, requires underline flag enabled)
 - launchApp
 
 - runFlow:

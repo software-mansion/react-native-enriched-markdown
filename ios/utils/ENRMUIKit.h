@@ -162,6 +162,22 @@ static inline void ENRMSetContentSize(ENRMPlatformTextView *textView, CGSize siz
 #endif
 }
 
+/// Returns YES when the user has asked the system to minimise motion.
+/// iOS: UIAccessibilityIsReduceMotionEnabled.
+/// macOS: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion.
+/// Always NO on platforms where the API is unavailable.
+static inline BOOL ENRMShouldReduceMotion(void)
+{
+#if !TARGET_OS_OSX
+  return UIAccessibilityIsReduceMotionEnabled();
+#else
+  if (@available(macOS 10.12, *)) {
+    return NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
+  }
+  return NO;
+#endif
+}
+
 /// Sets default typing attributes on the text view.
 /// On macOS, RCTUITextView overrides setTypingAttributes: to use defaultTextAttributes,
 /// so we must set that property as well.

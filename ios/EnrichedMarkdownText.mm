@@ -522,6 +522,30 @@ using namespace facebook::react;
   }
 }
 
+- (void)prepareForRecycle
+{
+  _props = std::make_shared<const EnrichedMarkdownTextProps>();
+  [_renderCoordinator invalidate];
+
+  [_fadeAnimator cancel];
+  _fadeAnimator = nil;
+  _previousTextLength = 0;
+  _streamingAnimation = NO;
+  _forceHeightUpdateOnNextRender = NO;
+  _cachedMarkdown = nil;
+  _renderedMarkdown = nil;
+  _accessibilityElements = nil;
+  _accessibilityInfo = nil;
+  _accessibilityNeedsRebuild = NO;
+  [_spoilerManager removeAllOverlays];
+  if (_textView != nil) {
+    ENRMSetAttributedText(_textView, [[NSAttributedString alloc] initWithString:@""]);
+    _textView.hidden = YES;
+  }
+
+  [super prepareForRecycle];
+}
+
 Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
 {
   return EnrichedMarkdownText.class;

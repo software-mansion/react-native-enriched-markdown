@@ -1,0 +1,32 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - input
+  - inline
+  - italic
+  - smoke
+---
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- tapOn:
+    id: toolbar-italic
+
+- tapOn:
+    id: focus-button
+
+- inputText: "Italic text"
+
+- tapOn:
+    id: toolbar-italic
+
+- inputText: "Normal text"
+
+- tapOn:
+    id: blur-button
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'italic_toggle_off_input'

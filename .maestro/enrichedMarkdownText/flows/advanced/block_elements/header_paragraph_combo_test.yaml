@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - header
+  - paragraph
+  - text
 ---
 # checks the combination of headers and paragraphs (spacing, visual separation)
 - launchApp

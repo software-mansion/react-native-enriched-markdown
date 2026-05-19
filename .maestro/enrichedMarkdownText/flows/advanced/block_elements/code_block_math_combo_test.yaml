@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - code_block
+  - math
+  - text
 ---
 # checks the combination of code blocks and math display (technical content side by side)
 - launchApp

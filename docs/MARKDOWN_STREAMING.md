@@ -23,7 +23,7 @@ The `streamingConfig` prop controls this behavior:
   markdown={streamingMarkdown}
   flavor="github"
   streamingAnimation
-  streamingConfig={{ tableMode: 'progressive' }}
+  streamingConfig={{ tableMode: 'hidden' }}
 />
 ```
 
@@ -31,6 +31,6 @@ The `streamingConfig` prop controls this behavior:
 
 | Mode | Behavior |
 |---|---|
-| `'hidden'` (default) | The table is completely hidden until it is followed by a blank line, indicating the table is complete. Prevents visual jank from partially formed tables. |
-| `'progressive'` | Renders the table row-by-row as content arrives. New rows fade in when `streamingAnimation` is enabled. Incomplete trailing rows are automatically trimmed. |
+| `'progressive'` (default) | Renders the table row-by-row as content arrives. New rows fade in when `streamingAnimation` is enabled. Incomplete trailing rows are automatically trimmed. |
+| `'hidden'` | The table is completely hidden until it is followed by a blank line, indicating the table is complete. Prevents visual jank from partially formed tables. |
 

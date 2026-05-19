@@ -29,4 +29,9 @@
   });
 }
 
+- (void)invalidate
+{
+  ++_currentRenderId;
+}
+
 @end

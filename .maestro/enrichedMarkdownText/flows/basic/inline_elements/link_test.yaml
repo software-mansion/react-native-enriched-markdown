@@ -2,8 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - inline
+  - link
+  - text
 ---
-# checks the parsing of inline links ([label](url))
 - launchApp
 
 - runFlow:

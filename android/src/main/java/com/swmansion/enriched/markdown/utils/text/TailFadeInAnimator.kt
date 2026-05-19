@@ -7,6 +7,7 @@ import android.text.Spannable
 import android.view.animation.LinearInterpolator
 import android.widget.TextView
 import com.swmansion.enriched.markdown.spans.FadeInSpan
+import com.swmansion.enriched.markdown.utils.common.isReducedMotionEnabled
 import java.lang.ref.WeakReference
 
 class TailFadeInAnimator(
@@ -25,6 +26,8 @@ class TailFadeInAnimator(
     val textView = viewRef.get() ?: return
     val spannable = textView.text as? Spannable ?: return
 
+    if (isReducedMotionEnabled(textView.context)) return
+
     val fadeSpan = FadeInSpan().apply { alpha = 0f }
     spannable.setSpan(fadeSpan, tailStart, tailEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
 
@@ -35,7 +38,14 @@ class TailFadeInAnimator(
 
         addUpdateListener { anim ->
           fadeSpan.alpha = anim.animatedValue as Float
-          viewRef.get()?.invalidate()
+          val tv = viewRef.get() ?: return@addUpdateListener
+          val currentSpannable = tv.text as? Spannable ?: return@addUpdateListener
+
+          val end = minOf(tailEnd, currentSpannable.length)
+          if (end > tailStart) {
+            currentSpannable.setSpan(fadeSpan, tailStart, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+          }
+          tv.invalidate()
         }
 
         addListener(

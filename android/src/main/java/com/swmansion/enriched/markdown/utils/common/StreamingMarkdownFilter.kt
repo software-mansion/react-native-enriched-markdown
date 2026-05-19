@@ -14,7 +14,7 @@ enum class TableStreamingMode {
 object StreamingMarkdownFilter {
   fun renderableMarkdownForStreaming(
     markdown: String,
-    tableMode: TableStreamingMode = TableStreamingMode.HIDDEN,
+    tableMode: TableStreamingMode = TableStreamingMode.PROGRESSIVE,
   ): String {
     val lines = markdown.split("\n")
     val afterMath = removePendingStreamingMathBlock(markdown, lines)

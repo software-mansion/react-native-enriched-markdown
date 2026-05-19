@@ -2,8 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - inline
+  - inline_code
+  - text
 ---
-# checks the parsing of inline code spans (`code`)
 - launchApp
 
 - runFlow:

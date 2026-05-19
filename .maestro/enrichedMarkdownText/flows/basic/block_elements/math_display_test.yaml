@@ -2,8 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - block
+  - math
+  - text
 ---
-# checks the parsing of Markdown math display blocks ($$...$$ LaTeX)
 - launchApp
 
 - runFlow:

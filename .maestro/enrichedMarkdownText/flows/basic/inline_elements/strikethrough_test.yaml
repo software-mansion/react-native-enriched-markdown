@@ -2,8 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - inline
+  - strikethrough
+  - text
 ---
-# checks the parsing of strikethrough inline markdown (~~text~~)
 - launchApp
 
 - runFlow:

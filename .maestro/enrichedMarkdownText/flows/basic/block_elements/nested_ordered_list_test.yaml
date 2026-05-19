@@ -2,8 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - block
+  - list
+  - text
 ---
-# checks the parsing of Markdown nested ordered lists
 - launchApp
 
 - runFlow:

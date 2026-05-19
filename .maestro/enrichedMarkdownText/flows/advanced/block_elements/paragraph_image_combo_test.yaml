@@ -3,6 +3,8 @@ tags:
   - block
   - advanced
   - image
+  - paragraph
+  - text
 ---
 # checks the combination of a paragraph followed by a block image
 - launchApp

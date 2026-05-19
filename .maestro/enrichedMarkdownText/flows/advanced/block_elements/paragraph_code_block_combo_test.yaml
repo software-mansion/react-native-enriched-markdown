@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - code_block
+  - paragraph
+  - text
 ---
 # checks the combination of paragraphs and code blocks (prose around code)
 - launchApp

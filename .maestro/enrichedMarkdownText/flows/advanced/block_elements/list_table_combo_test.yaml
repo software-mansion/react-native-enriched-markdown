@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - list
+  - table
+  - text
 ---
 # checks the combination of lists and tables (list items adjacent to tabular data)
 - launchApp

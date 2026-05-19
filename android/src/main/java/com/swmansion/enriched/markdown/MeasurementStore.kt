@@ -320,7 +320,14 @@ object MeasurementStore {
     val isStreaming = props.getBooleanOrDefault("streamingAnimation", false)
 
     val rawMarkdown = props.getStringOrDefault("markdown", "")
-    val tableMode = if (isStreaming) id?.let { streamingTableModes[it] } ?: TableStreamingMode.HIDDEN else TableStreamingMode.HIDDEN
+    val tableMode =
+      if (isStreaming) {
+        id?.let {
+          streamingTableModes[it]
+        } ?: TableStreamingMode.PROGRESSIVE
+      } else {
+        TableStreamingMode.PROGRESSIVE
+      }
     val markdown =
       if (isStreaming) {
         StreamingMarkdownFilter.renderableMarkdownForStreaming(rawMarkdown, tableMode)

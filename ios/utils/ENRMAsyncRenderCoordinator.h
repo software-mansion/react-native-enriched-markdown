@@ -16,4 +16,9 @@
 /// provided the render ID has not been superseded by a newer call.
 - (void)scheduleRender:(BOOL (^)(void))renderBlock apply:(dispatch_block_t)applyBlock;
 
+/// Advances the render ID so any in-flight render's apply block is discarded
+/// by the renderId == currentRenderId check when it lands on the main queue.
+/// Use before recycling or otherwise resetting a host that owns this coordinator.
+- (void)invalidate;
+
 @end

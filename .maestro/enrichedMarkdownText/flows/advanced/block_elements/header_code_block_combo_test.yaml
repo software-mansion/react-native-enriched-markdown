@@ -2,6 +2,9 @@ appId: swmansion.enriched.markdown.example
 tags:
   - block
   - advanced
+  - code_block
+  - header
+  - text
 ---
 # checks the combination of headers and code blocks (section headers above code snippets)
 - launchApp

@@ -2,14 +2,14 @@ appId: swmansion.enriched.markdown.example
 tags:
   - smoke
   - inline
+  - italic
+  - text
 ---
-# checks the parsing of italic/emphasis inline markdown (*text*)
 - launchApp
 
 - runFlow:
     file: '../../../../subflows/move_to_playground.yaml'
 
-# underline flag is ON by default; tap to disable it so _text_ renders as italic
 - tapOn:
     id: underline-button
 
