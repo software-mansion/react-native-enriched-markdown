@@ -19,6 +19,7 @@ import {
   EnrichedMarkdownText,
   type EnrichedMarkdownTextInputInstance,
   type StyleState,
+  type CaretRect,
 } from 'react-native-enriched-markdown';
 import { FormattingToolbar } from '../../components/FormattingToolbar';
 
@@ -107,10 +108,12 @@ let nextId = 6;
 function MentionSuggestionPopup({
   indicator,
   data,
+  top,
   onItemPress,
 }: {
   indicator: string | null;
   data: MentionItem[];
+  top: number;
   onItemPress: (item: MentionItem) => void;
 }) {
   if (indicator == null || data.length === 0) return null;
@@ -134,7 +137,7 @@ function MentionSuggestionPopup({
   );
 
   return (
-    <View style={styles.mentionPopup}>
+    <View style={[styles.mentionPopup, { top }]}>
       <FlatList
         keyboardShouldPersistTaps="handled"
         overScrollMode="never"
@@ -157,6 +160,8 @@ export default function InputScreen() {
     indicator: string;
     text: string;
   } | null>(null);
+  const [caretRect, setCaretRect] = useState<CaretRect | null>(null);
+  const [inputRowY, setInputRowY] = useState(0);
   const navHeaderHeight = useHeaderHeight();
   const { bottom: bottomInset } = useSafeAreaInsets();
 
@@ -310,18 +315,16 @@ export default function InputScreen() {
             </View>
           ))}
         </ScrollView>
-        <MentionSuggestionPopup
-          indicator={activeMention?.indicator ?? null}
-          data={mentionSuggestions}
-          onItemPress={handleMentionSelected}
-        />
         <FormattingToolbar
           state={state}
           inputRef={inputRef}
           hasSelection={hasSelection}
           mentionIndicators={['@', '#']}
         />
-        <View style={[styles.inputRow, { paddingBottom: 12 + bottomInset }]}>
+        <View
+          style={[styles.inputRow, { paddingBottom: 12 + bottomInset }]}
+          onLayout={(e) => setInputRowY(e.nativeEvent.layout.y)}
+        >
           <EnrichedMarkdownTextInput
             ref={inputRef}
             placeholder="Message..."
@@ -330,6 +333,7 @@ export default function InputScreen() {
             markdownStyle={MARKDOWN_STYLE}
             mentionIndicators={['@', '#']}
             onChangeState={setState}
+            onCaretRectChange={setCaretRect}
             onChangeSelection={(sel) => setHasSelection(sel.start !== sel.end)}
             onStartMention={({ indicator }) => {
               setActiveMention({ indicator, text: '' });
@@ -346,6 +350,12 @@ export default function InputScreen() {
             <Text style={styles.sendIcon}>▶</Text>
           </TouchableOpacity>
         </View>
+        <MentionSuggestionPopup
+          indicator={activeMention?.indicator ?? null}
+          data={mentionSuggestions}
+          top={Math.max(0, inputRowY + (caretRect?.y ?? 0) - 172)}
+          onItemPress={handleMentionSelected}
+        />
       </KeyboardAvoidingView>
     </View>
   );
@@ -449,8 +459,9 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   mentionPopup: {
-    marginHorizontal: 12,
-    marginBottom: 6,
+    position: 'absolute',
+    left: 12,
+    right: 12,
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#CBD5E1',
@@ -458,8 +469,9 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: -2 },
     elevation: 4,
+    zIndex: 10,
   },
   mentionList: {
     maxHeight: 164,
