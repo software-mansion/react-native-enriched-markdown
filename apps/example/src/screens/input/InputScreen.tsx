@@ -13,53 +13,67 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   EnrichedMarkdownTextInput,
-  EnrichedMarkdownText,
   type EnrichedMarkdownTextInputInstance,
   type StyleState,
 } from 'react-native-enriched-markdown';
 import { FormattingToolbar } from '../../components/FormattingToolbar';
+import { MessageBubble, type BubbleContextMenuItem } from './MessageBubble';
 
-interface Message {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type ChatMessage = {
   id: number;
-  markdown: string;
-  isOwn: boolean;
+  nick: string;
   time: string;
-}
+  message: string;
+};
 
-const INITIAL_MESSAGES: Message[] = [
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const MY_NICK = 'me';
+
+const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 1,
-    markdown: 'Hey! Try out the rich text editor below 👇',
-    isOwn: false,
-    time: '10:51',
+    nick: 'alice',
+    time: '14:15',
+    message: 'anything new today?',
   },
   {
     id: 2,
-    markdown:
-      'Sure! It supports **bold**, *italic*, ~~strikethrough~~ and _underline_.',
-    isOwn: true,
-    time: '10:52',
+    nick: 'dave',
+    time: '14:16',
+    message: 'not really, pretty quiet',
   },
   {
     id: 3,
-    markdown:
-      'You can also add [links](https://github.com) and combine **_bold italic_** styles.',
-    isOwn: true,
-    time: '10:52',
+    nick: 'bob',
+    time: '14:22',
+    message: '### Announcement\n\n|| I love bananas ||',
   },
   {
     id: 4,
-    markdown:
-      'You can hide text with ||spoiler tags|| too — great for surprises!',
-    isOwn: false,
-    time: '10:53',
+    nick: 'carol',
+    time: '14:22',
+    message: '@bob you truly are a silly guy 😂',
   },
   {
     id: 5,
-    markdown:
-      'The toolbar above the input lets you toggle formatting at the cursor too.',
-    isOwn: true,
-    time: '10:53',
+    nick: 'dave',
+    time: '14:23',
+    message: 'wait what 💀',
+  },
+  {
+    id: 6,
+    nick: 'alice',
+    time: '14:23',
+    message: 'I stand by this',
+  },
+  {
+    id: 7,
+    nick: 'carol',
+    time: '14:24',
+    message: 'someone post this in #general lmao',
   },
 ];
 
@@ -67,13 +81,15 @@ const MARKDOWN_STYLE = {
   link: { color: '#2563EB', underline: true },
 };
 
-let nextId = 6;
+let nextId = INITIAL_MESSAGES.length + 1;
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function InputScreen() {
   const inputRef = useRef<EnrichedMarkdownTextInputInstance>(null);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const [state, setState] = useState<StyleState | null>(null);
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [hasSelection, setHasSelection] = useState(false);
   const navHeaderHeight = useHeaderHeight();
   const [chatHeaderHeight, setChatHeaderHeight] = useState(0);
@@ -88,19 +104,19 @@ export default function InputScreen() {
 
     setMessages((prev) => [
       ...prev,
-      { id: nextId++, markdown: md.trim(), isOwn: true, time },
+      { id: nextId++, nick: MY_NICK, message: md.trim(), time },
     ]);
 
     inputRef.current?.setValue('');
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
   }, []);
 
-  const bubbleContextMenuItems = useMemo(
+  const bubbleContextMenuItems = useMemo<BubbleContextMenuItem[]>(
     () => [
       {
         text: 'Summarize with AI',
         icon: Platform.OS === 'ios' ? 'sparkles' : undefined,
-        onPress: ({ text }: { text: string }) => {
+        onPress: ({ text }) => {
           Alert.alert('✦ Summarize with AI', `"${text}"`, [
             { text: 'Dismiss', style: 'cancel' },
           ]);
@@ -110,7 +126,7 @@ export default function InputScreen() {
         text: 'Reply',
         icon:
           Platform.OS === 'ios' ? 'arrowshape.turn.up.left.fill' : undefined,
-        onPress: ({ text }: { text: string }) => {
+        onPress: ({ text }) => {
           inputRef.current?.setValue(`> ${text}\n\n`);
           inputRef.current?.focus();
         },
@@ -158,12 +174,12 @@ export default function InputScreen() {
         style={styles.header}
         onLayout={(e) => setChatHeaderHeight(e.nativeEvent.layout.height)}
       >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>JD</Text>
+        <View style={[styles.avatar, styles.headerAvatar]}>
+          <Text style={styles.avatarText}>#</Text>
         </View>
         <View>
-          <Text style={styles.headerName}>John Doe</Text>
-          <Text style={styles.headerStatus}>online</Text>
+          <Text style={styles.headerName}>#random</Text>
+          <Text style={styles.headerStatus}>4 members</Text>
         </View>
       </View>
 
@@ -181,49 +197,27 @@ export default function InputScreen() {
           }
         >
           {messages.map((msg) => (
-            <View
+            <MessageBubble
               key={msg.id}
-              style={[
-                styles.messageRow,
-                msg.isOwn ? styles.messageRowOwn : styles.messageRowOther,
-              ]}
-            >
-              <View
-                style={[
-                  styles.bubble,
-                  msg.isOwn ? styles.bubbleOwn : styles.bubbleOther,
-                ]}
-              >
-                <EnrichedMarkdownText
-                  containerStyle={
-                    msg.isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther
-                  }
-                  markdownStyle={MARKDOWN_STYLE}
-                  markdown={msg.markdown}
-                  md4cFlags={{ underline: true }}
-                  contextMenuItems={bubbleContextMenuItems}
-                />
-                <Text
-                  style={[
-                    styles.bubbleTime,
-                    msg.isOwn ? styles.bubbleTimeOwn : styles.bubbleTimeOther,
-                  ]}
-                >
-                  {msg.time}
-                </Text>
-              </View>
-            </View>
+              nick={msg.nick}
+              time={msg.time}
+              message={msg.message}
+              isMe={msg.nick === MY_NICK}
+              contextMenuItems={bubbleContextMenuItems}
+            />
           ))}
         </ScrollView>
+
         <FormattingToolbar
           state={state}
           inputRef={inputRef}
           hasSelection={hasSelection}
         />
+
         <View style={[styles.inputRow, { paddingBottom: 12 + bottomInset }]}>
           <EnrichedMarkdownTextInput
             ref={inputRef}
-            placeholder="Message..."
+            placeholder="Message #random..."
             placeholderTextColor="#9CA3AF"
             style={styles.input}
             markdownStyle={MARKDOWN_STYLE}
@@ -240,9 +234,9 @@ export default function InputScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const TEAL = '#4A9EBF';
-const OWN_BUBBLE = '#DCFCE7';
-const OTHER_BUBBLE = '#FFFFFF';
 
 const styles = StyleSheet.create({
   container: {
@@ -260,18 +254,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: TEAL,
   },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#2980B9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
+  headerAvatar: {
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
   headerName: {
     color: '#fff',
@@ -282,60 +266,26 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     fontSize: 12,
   },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
   messageList: {
     flex: 1,
   },
   messageListContent: {
     paddingHorizontal: 12,
     paddingVertical: 12,
-    gap: 6,
-  },
-  messageRow: {
-    flexDirection: 'row',
-  },
-  messageRowOwn: {
-    justifyContent: 'flex-end',
-  },
-  messageRowOther: {
-    justifyContent: 'flex-start',
-  },
-  bubble: {
-    maxWidth: '78%',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  bubbleOwn: {
-    backgroundColor: OWN_BUBBLE,
-    borderBottomRightRadius: 4,
-  },
-  bubbleOther: {
-    backgroundColor: OTHER_BUBBLE,
-    borderBottomLeftRadius: 4,
-  },
-
-  bubbleTextOwn: {
-    color: '#111827',
-  },
-  bubbleTextOther: {
-    color: '#111827',
-  },
-  bubbleTime: {
-    fontSize: 11,
-    marginTop: 4,
-    alignSelf: 'flex-end',
-  },
-  bubbleTimeOwn: {
-    color: '#6B9E6B',
-  },
-  bubbleTimeOther: {
-    color: '#9CA3AF',
+    gap: 10,
   },
   inputRow: {
     flexDirection: 'row',
