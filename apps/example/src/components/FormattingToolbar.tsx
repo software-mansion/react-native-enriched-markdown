@@ -138,7 +138,7 @@ export function FormattingToolbar({
           <TouchableOpacity
             key={indicator}
             style={[styles.toolbarButton, styles.mentionButton]}
-            onPress={() => inputRef.current?.focus()}
+            onPress={() => inputRef.current?.startMention(indicator)}
             testID={`toolbar-mention-${indicator}`}
           >
             <Text style={styles.mentionButtonText}>{indicator}</Text>

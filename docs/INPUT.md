@@ -147,6 +147,12 @@ An imperative, pull-based method for one-off queries. Returns a Promise that res
 const rect = await ref.current?.getCaretRect();
 ```
 
+## Mentions
+
+`EnrichedMarkdownTextInput` supports mention flows with configurable trigger indicators, lifecycle events for showing suggestion lists, and per-pattern styling via `linkVariants`.
+
+See [Mentions](MENTIONS.md) for full documentation on setup, events, ref methods, and styling.
+
 ## Style Detection
 
 All of the above styles can be detected with the use of [onChangeState](API_REFERENCE.md#onchangestate) callback payload.

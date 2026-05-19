@@ -158,7 +158,6 @@ export default function InputScreen() {
     text: string;
   } | null>(null);
   const navHeaderHeight = useHeaderHeight();
-  const [chatHeaderHeight, setChatHeaderHeight] = useState(0);
   const { bottom: bottomInset } = useSafeAreaInsets();
 
   const mentionSuggestions = useMemo(() => {
@@ -253,10 +252,7 @@ export default function InputScreen() {
 
   return (
     <View style={styles.container} testID="input-screen">
-      <View
-        style={styles.header}
-        onLayout={(e) => setChatHeaderHeight(e.nativeEvent.layout.height)}
-      >
+      <View style={styles.header}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>JD</Text>
         </View>
@@ -269,7 +265,7 @@ export default function InputScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={navHeaderHeight + chatHeaderHeight}
+        keyboardVerticalOffset={navHeaderHeight / 1.25}
       >
         <ScrollView
           ref={scrollRef}
@@ -314,16 +310,16 @@ export default function InputScreen() {
             </View>
           ))}
         </ScrollView>
+        <MentionSuggestionPopup
+          indicator={activeMention?.indicator ?? null}
+          data={mentionSuggestions}
+          onItemPress={handleMentionSelected}
+        />
         <FormattingToolbar
           state={state}
           inputRef={inputRef}
           hasSelection={hasSelection}
           mentionIndicators={['@', '#']}
-        />
-        <MentionSuggestionPopup
-          indicator={activeMention?.indicator ?? null}
-          data={mentionSuggestions}
-          onItemPress={handleMentionSelected}
         />
         <View style={[styles.inputRow, { paddingBottom: 12 + bottomInset }]}>
           <EnrichedMarkdownTextInput

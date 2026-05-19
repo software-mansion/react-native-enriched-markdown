@@ -16,7 +16,8 @@
 - 🎨 Fully customizable styles for all elements
 - ✨ Text selection and copy support
 - 📌 Custom text selection context menu items
-- 🔗 Interactive link handling
+- 🔗 Interactive link handling with [per-URL-pattern styling](docs/MENTIONS.md#link-variants-styling) (`linkVariants`)
+- 👤 Renders mentions as styled links (compatible with `EnrichedMarkdownTextInput` mention output)
 - 🙈 Spoiler text with animated particle overlay and tap-to-reveal
 - 🖼️ Native image interactions (iOS: Copy, Save to Camera Roll)
 - 🌐 Native platform features (Translate, Look Up, Search Web, Share)
@@ -32,6 +33,7 @@
 - 🔗 Auto-link detection with customizable regex
 - 🔄 Smart copy/paste with Markdown preservation
 - 🎨 Customizable bold, italic, and link colors
+- 👤 [Mentions](docs/MENTIONS.md) with configurable indicators, suggestion lifecycle events, and per-pattern link styling
 
 Since 2012 [Software Mansion](https://swmansion.com) is a software agency with experience in building web and mobile apps. We are Core React Native Contributors and experts in dealing with all kinds of React Native issues.
 We can help you build your next dream product –
@@ -56,6 +58,7 @@ We can help you build your next dream product –
   - [Inline Styles](docs/INPUT.md#inline-styles)
   - [Links](docs/INPUT.md#links)
   - [Auto-Link Detection](docs/INPUT.md#auto-link-detection)
+  - [Mentions](docs/MENTIONS.md)
   - [Style Detection](docs/INPUT.md#style-detection)
   - [Other Events](docs/INPUT.md#other-events)
   - [Customizing Styles](docs/INPUT.md#customizing-enrichedmarkdowntextinput--styles)
@@ -156,7 +159,7 @@ npx expo prebuild
 
 ## EnrichedMarkdownText
 
-See [EnrichedMarkdownText](docs/TEXT.md) for detailed documentation on usage examples, GFM tables, task lists, link handling, supported elements, copy options, accessibility, RTL support, and customizing styles.
+See [EnrichedMarkdownText](docs/TEXT.md) for detailed documentation on usage examples, GFM tables, task lists, link handling, supported elements, copy options, accessibility, RTL support, and customizing styles. Mentions created by `EnrichedMarkdownTextInput` render as styled links — use [`linkVariants`](docs/MENTIONS.md#link-variants-styling) to customize their appearance.
 
 ## EnrichedMarkdownTextInput
 
@@ -178,7 +181,7 @@ See [Web Support](docs/WEB.md) for details on supported features, web-specific p
 
 We're actively working on expanding the capabilities of `react-native-enriched-markdown`. Here's what's on the roadmap:
 
-- `EnrichedMarkdownTextInput`: headings, lists, blockquotes, code blocks, mentions, inline images
+- `EnrichedMarkdownTextInput`: headings, lists, blockquotes, code blocks, inline images
 - `EnrichedMarkdownTextInput` web support
 - macOS: block math rendering, VoiceOver accessibility, tail fade-in animation
 - Web: spoiler text, streaming animation, configurable link `target`, copy options (Copy as Markdown, multi-format clipboard)

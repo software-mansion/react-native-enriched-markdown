@@ -421,8 +421,26 @@ Style configuration for formatted text in the input.
 - `em.color` — text color for italic text (defaults to the input's text color).
 - `link.color` — text color for links (defaults to `#2563EB`).
 - `link.underline` — whether links are underlined (defaults to `true`).
+- `link.backgroundColor` — background color for links (defaults to `transparent`).
+- `linkVariants` — per-URL-pattern style overrides. Each key is a regex tested against the link URL. See [Mentions — Link Variants](MENTIONS.md#link-variants-mention-styling).
 - `spoiler.color` — text color for spoiler text.
 - `spoiler.backgroundColor` — background color for spoiler text.
+
+### `mentionIndicators`
+
+List of trigger strings that start a mention flow (e.g. `['@', '#']`). See [Mentions](MENTIONS.md).
+
+| Type       | Default Value | Platform |
+| ---------- | ------------- | -------- |
+| `string[]` | `[]`          | Both     |
+
+### `insertMentionAppendSpace`
+
+When `true`, a space is appended after the inserted mention if the next character is not already whitespace.
+
+| Type      | Default Value | Platform |
+| --------- | ------------- | -------- |
+| `boolean` | `true`        | Both     |
 
 ### `style`
 
@@ -526,6 +544,30 @@ Fires when the input loses focus.
 | Type           | Default Value | Platform |
 | -------------- | ------------- | -------- |
 | `() => void`   | -             | Both     |
+
+### `onStartMention`
+
+Fires when a new mention flow starts. See [Mentions](MENTIONS.md#events).
+
+| Type | Default Value | Platform |
+| ---- | ------------- | -------- |
+| `(event: { indicator: string }) => void` | - | Both |
+
+### `onChangeMention`
+
+Fires on every keystroke while a mention flow is active.
+
+| Type | Default Value | Platform |
+| ---- | ------------- | -------- |
+| `(event: { indicator: string; text: string }) => void` | - | Both |
+
+### `onEndMention`
+
+Fires when the active mention flow ends.
+
+| Type | Default Value | Platform |
+| ---- | ------------- | -------- |
+| `(event: { indicator: string }) => void` | - | Both |
 
 ### `contextMenuItems`
 
@@ -644,3 +686,17 @@ Inserts a link with the given text and URL at the current cursor position. Usefu
 ### `removeLink()`
 
 Removes the link from the current selection.
+
+### `startMention(indicator: string)`
+
+Programmatically triggers a mention flow by inserting the indicator character at the current cursor position. The indicator must be listed in the `mentionIndicators` prop. Useful for toolbar buttons.
+
+### `insertMention(displayText: string, url: string)`
+
+Replaces the active mention token with a formatted link. Only works when a mention flow is active. The mention is serialized as `[displayText](url)` in Markdown output.
+
+---
+
+## Mentions
+
+For full documentation on the mention system — setup, events, styling, and best practices — see [Mentions](MENTIONS.md).
