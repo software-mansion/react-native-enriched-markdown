@@ -105,6 +105,7 @@ export interface EnrichedMarkdownTextInputInstance {
   setLink: (url: string) => void;
   insertLink: (text: string, url: string) => void;
   insertMention: (displayText: string, url: string) => void;
+  startMention: (indicator: string) => void;
   removeLink: () => void;
   getMarkdown: () => Promise<string>;
   getCaretRect: () => Promise<CaretRect>;
@@ -384,6 +385,7 @@ export const EnrichedMarkdownTextInput = ({
       insertLink: (text, url) => Commands.insertLink(commandRef, text, url),
       insertMention: (displayText, url) =>
         Commands.insertMention(commandRef, displayText, url),
+      startMention: (indicator) => Commands.startMention(commandRef, indicator),
       removeLink: () => Commands.removeLink(commandRef),
       getMarkdown: () =>
         new Promise<string>((resolve, reject) => {

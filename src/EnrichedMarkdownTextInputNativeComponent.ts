@@ -266,6 +266,10 @@ interface NativeCommands {
     displayText: string,
     url: string
   ) => void;
+  startMention: (
+    viewRef: React.ElementRef<ComponentType>,
+    indicator: string
+  ) => void;
   removeLink: (viewRef: React.ElementRef<ComponentType>) => void;
   requestMarkdown: (
     viewRef: React.ElementRef<ComponentType>,
@@ -291,6 +295,7 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'setLink',
     'insertLink',
     'insertMention',
+    'startMention',
     'removeLink',
     'requestMarkdown',
     'requestCaretRect',

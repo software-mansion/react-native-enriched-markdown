@@ -459,6 +459,26 @@ class EnrichedMarkdownTextInputView(
     }
   }
 
+  fun startMention(indicator: String) {
+    if (indicator.isEmpty() || indicator !in mentionIndicators) return
+    val editable = text ?: return
+    val selStart = selectionStart
+    val selEnd = selectionEnd
+
+    isProcessingTextChange = true
+    try {
+      editable.replace(selStart, selEnd, indicator)
+      formattingStore.adjustForEdit(selStart, selEnd - selStart, indicator.length)
+      lastProcessedText = editable.toString()
+      setSelection(selStart + indicator.length)
+      applyFormattingAndEmit()
+      eventEmitter.emitChangeText()
+    } finally {
+      isProcessingTextChange = false
+    }
+    updateActiveMention()
+  }
+
   fun removeLinkAtCursor() {
     val pos = selectionStart
     val linkRange = formattingStore.rangeOfType(StyleType.LINK, pos) ?: return

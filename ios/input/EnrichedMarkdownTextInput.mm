@@ -730,6 +730,16 @@ using namespace facebook::react;
   return [result stringByReplacingOccurrencesOfString:@")" withString:@"%29"];
 }
 
+- (void)startMention:(NSString *)indicator
+{
+  if (indicator.length == 0 || ![_mentionIndicators containsObject:indicator]) {
+    return;
+  }
+
+  [self replaceSelectedTextWith:indicator formattingRanges:@[]];
+  [self updateActiveMention];
+}
+
 - (void)insertMention:(NSString *)displayText url:(NSString *)url
 {
   if (displayText.length == 0 || _activeMentionIndicator == nil || _activeMentionRange.location == NSNotFound) {

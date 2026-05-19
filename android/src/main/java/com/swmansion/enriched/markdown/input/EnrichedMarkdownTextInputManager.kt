@@ -402,6 +402,15 @@ class EnrichedMarkdownTextInputManager :
     }
   }
 
+  override fun startMention(
+    view: EnrichedMarkdownTextInputView?,
+    indicator: String?,
+  ) {
+    if (indicator != null) {
+      view?.startMention(indicator)
+    }
+  }
+
   override fun removeLink(view: EnrichedMarkdownTextInputView?) {
     view?.removeLinkAtCursor()
   }
