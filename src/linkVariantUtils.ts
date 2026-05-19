@@ -24,8 +24,7 @@ export function normalizeLinkVariantEntries(
     .sort(([a], [b]) => b.length - a.length)
     .filter(([pattern]) => {
       try {
-        // eslint-disable-next-line no-new
-        new RegExp(pattern);
+        RegExp(pattern);
       } catch {
         if (__DEV__) {
           console.warn(
