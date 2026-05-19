@@ -470,10 +470,10 @@ class EnrichedMarkdownTextInputView(
       setSelection(selStart + indicator.length)
       applyFormattingAndEmit()
       eventEmitter.emitChangeText()
+      updateActiveMention()
     } finally {
       isProcessingTextChange = false
     }
-    updateActiveMention()
   }
 
   fun removeLinkAtCursor() {
