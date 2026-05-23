@@ -12,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (CGSize)measureSize:(CGFloat)maxWidth;
 - (void)renderMarkdownSynchronously:(NSString *)markdownString;
 - (BOOL)hasRenderedMarkdown:(NSString *)markdown;
+- (BOOL)hasRenderedWithStyleFingerprint:(size_t)fingerprint;
 @end
 
 NS_ASSUME_NONNULL_END

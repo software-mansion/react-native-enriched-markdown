@@ -20,6 +20,7 @@
 #import "MarkdownASTNode.h"
 #import "MarkdownAccessibilityElementBuilder.h"
 #import "MarkdownExtractor.h"
+#import "MeasurementCache.h"
 #import "ParagraphStyleUtils.h"
 #import "RuntimeKeys.h"
 #import "SelectionColorUtils.h"
@@ -74,6 +75,9 @@ using namespace facebook::react;
   BOOL _streamingAnimation;
   BOOL _forceHeightUpdateOnNextRender;
 
+  size_t _renderedStyleFingerprint;
+  size_t _pendingStyleFingerprint;
+
   NSUInteger _previousTextLength;
   ENRMTailFadeInAnimator *_fadeAnimator;
 
@@ -112,6 +116,11 @@ using namespace facebook::react;
 - (BOOL)hasRenderedMarkdown:(NSString *)markdown
 {
   return _renderedMarkdown != nil && [_renderedMarkdown isEqualToString:markdown];
+}
+
+- (BOOL)hasRenderedWithStyleFingerprint:(size_t)fingerprint
+{
+  return _renderedStyleFingerprint == fingerprint;
 }
 
 - (void)updateState:(const facebook::react::State::Shared &)state
@@ -265,6 +274,7 @@ using namespace facebook::react;
       apply:^{
         self->_lastElementMarginBottom = result.lastElementMarginBottom;
         self->_accessibilityInfo = result.accessibilityInfo;
+        self->_renderedStyleFingerprint = self->_pendingStyleFingerprint;
         [self applyRenderedText:result.attributedText];
       }];
 }
@@ -303,6 +313,7 @@ using namespace facebook::react;
 
   _textView.attributedText = attributedText;
   _renderedMarkdown = [_cachedMarkdown copy];
+  _renderedStyleFingerprint = _pendingStyleFingerprint;
 }
 
 - (void)applyRenderedText:(NSMutableAttributedString *)attributedText
@@ -497,6 +508,8 @@ using namespace facebook::react;
   }
 
   if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged) {
+    _pendingStyleFingerprint =
+        computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];
     [self renderMarkdownContent:markdownString];
   }

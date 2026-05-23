@@ -101,9 +101,12 @@ static inline Size ENRMMeasureMarkdownContent(const PropsT &typedProps, const st
 
   __block CGSize size;
   NSString *currentMarkdown = typedProps.markdown.empty() ? nil : @(typedProps.markdown.c_str());
+  size_t styleFingerprint =
+      computeStyleFingerprint(typedProps.markdownStyle) ^ std::hash<bool>{}(typedProps.allowTrailingMargin);
 
   void (^measureBlock)(void) = ^{
-    if (view && (typedProps.streamingAnimation || [view hasRenderedMarkdown:currentMarkdown])) {
+    if (view && (typedProps.streamingAnimation || ([view hasRenderedMarkdown:currentMarkdown] &&
+                                                   [view hasRenderedWithStyleFingerprint:styleFingerprint]))) {
       size = [view measureSize:maxWidth];
     } else {
       ViewT *mockView = createMockView(maxWidth);

@@ -83,7 +83,8 @@
 
   // 2. Trim trailing characters
   NSUInteger logicalEnd = NSMaxRange(lastContent);
-  if (isLastElementCodeBlock(output)) {
+  BOOL isCodeBlock = isLastElementCodeBlock(output);
+  if (isCodeBlock) {
     NSRange codeRange;
     [output attribute:CodeBlockAttributeName atIndex:lastContent.location effectiveRange:&codeRange];
     logicalEnd = NSMaxRange(codeRange);
@@ -94,7 +95,7 @@
   }
 
   // 3. Zero out internal spacing for the last element (if not a code block)
-  if (!isLastElementCodeBlock(output)) {
+  if (!isCodeBlock) {
     NSRange styleRange;
     NSParagraphStyle *style = [output attribute:NSParagraphStyleAttributeName
                                         atIndex:lastContent.location

@@ -27,6 +27,7 @@
 #import "MarkdownASTNode.h"
 #import "MarkdownAccessibilityElementBuilder.h"
 #import "MarkdownExtractor.h"
+#import "MeasurementCache.h"
 #import "RenderedMarkdownSegment.h"
 #import "RuntimeKeys.h"
 #import "SegmentReconciler.h"
@@ -95,6 +96,9 @@ static char kENRMSegmentFadeAnimatorKey;
   BOOL _enableLinkPreview;
   BOOL _streamingAnimation;
   ENRMTableStreamingMode _tableStreamingMode;
+
+  size_t _renderedStyleFingerprint;
+  size_t _pendingStyleFingerprint;
 
   NSArray<NSString *> *_contextMenuItemTexts;
   NSArray<NSString *> *_contextMenuItemIcons;
@@ -306,6 +310,11 @@ static char kENRMSegmentFadeAnimatorKey;
   return _renderedMarkdown != nil && [_renderedMarkdown isEqualToString:markdown];
 }
 
+- (BOOL)hasRenderedWithStyleFingerprint:(size_t)fingerprint
+{
+  return _renderedStyleFingerprint == fingerprint;
+}
+
 - (BOOL)renderedSegmentsChangeTopology:(NSArray<ENRMRenderedSegment *> *)renderedSegments
 {
   if (renderedSegments.count != _segmentViews.count) {
@@ -374,7 +383,10 @@ static char kENRMSegmentFadeAnimatorKey;
             ENRMRenderSegmentsFromAST(ast, config, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier);
         return YES;
       }
-      apply:^{ [self applyRenderedSegments:renderedSegments renderedMarkdown:renderableMarkdown]; }];
+      apply:^{
+        self->_renderedStyleFingerprint = self->_pendingStyleFingerprint;
+        [self applyRenderedSegments:renderedSegments renderedMarkdown:renderableMarkdown];
+      }];
 }
 
 - (NSArray *)parseAndRenderSegments:(NSString *)markdownString
@@ -406,6 +418,7 @@ static char kENRMSegmentFadeAnimatorKey;
   NSString *renderableMarkdown =
       _streamingAnimation ? ENRMRenderableMarkdownForStreaming(markdownString, _tableStreamingMode) : markdownString;
   _renderedMarkdown = [renderableMarkdown copy];
+  _renderedStyleFingerprint = _pendingStyleFingerprint;
 
   if (renderableMarkdown.length == 0) {
     return;
@@ -739,6 +752,8 @@ static char kENRMSegmentFadeAnimatorKey;
 
   if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
       streamingAnimationChanged || streamingConfigChanged) {
+    _pendingStyleFingerprint =
+        computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];
     [self renderMarkdownContent:markdownString];
   }
