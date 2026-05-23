@@ -83,6 +83,8 @@ class EnrichedMarkdownText
       private set
     var spoilerOverlay: SpoilerOverlay = SpoilerOverlay.PARTICLES
 
+    private var pendingStyledText: CharSequence? = null
+
     private var selectionColor: Int? = null
     private var selectionHandleColor: Int? = null
     private var selectionMenuConfig = SelectionMenuConfig()
@@ -211,7 +213,7 @@ class EnrichedMarkdownText
         try {
           val ast =
             parser.parseMarkdown(markdown, md4cFlags) ?: run {
-              mainHandler.post { if (renderId == currentRenderId) text = "" }
+              mainHandler.post { if (renderId == currentRenderId && isAttachedToWindow) text = "" }
               return@execute
             }
 
@@ -220,12 +222,16 @@ class EnrichedMarkdownText
 
           mainHandler.post {
             if (renderId == currentRenderId) {
-              applyRenderedText(styledText)
+              if (isAttachedToWindow) {
+                applyRenderedText(styledText)
+              } else {
+                pendingStyledText = styledText
+              }
             }
           }
         } catch (e: Exception) {
           Log.e(TAG, "Render failed: ${e.message}", e)
-          mainHandler.post { if (renderId == currentRenderId) text = "" }
+          mainHandler.post { if (renderId == currentRenderId && isAttachedToWindow) text = "" }
         }
       }
     }
@@ -302,6 +308,14 @@ class EnrichedMarkdownText
 
     fun setOnTaskListItemPressCallback(callback: ((taskIndex: Int, checked: Boolean, itemText: String) -> Unit)?) {
       checkboxTouchHelper.onCheckboxTap = callback
+    }
+
+    override fun onAttachedToWindow() {
+      super.onAttachedToWindow()
+      pendingStyledText?.let {
+        pendingStyledText = null
+        applyRenderedText(it)
+      }
     }
 
     override fun onDetachedFromWindow() {
