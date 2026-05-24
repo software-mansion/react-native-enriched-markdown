@@ -47,6 +47,17 @@ android {
     }
   }
 
+  packaging {
+    jniLibs {
+      // Android test APK builds merge native libraries from this module and
+      // react-android. AndroidMath also ships libc++_shared.so, so keep a
+      // single copy to avoid duplicate native library failures in Detox and
+      // other instrumentation builds. Remove this workaround after migrating
+      // away from AndroidMath if the new math backend does not package it.
+      pickFirsts += ["**/libc++_shared.so"]
+    }
+  }
+
   lintOptions {
     disable "GradleCompatible"
   }
