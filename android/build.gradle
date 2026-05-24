@@ -47,6 +47,25 @@ android {
     }
   }
 
+  packaging {
+    jniLibs {
+      // Android test APK builds merge native libraries from this module and
+      // react-android. AndroidMath also ships libc++_shared.so, so keep a
+      // single copy to avoid duplicate native library failures in Detox and
+      // other instrumentation builds. Remove this workaround after migrating
+      // away from AndroidMath if the new math backend does not package it.
+      pickFirsts += ["**/libc++_shared.so"]
+    }
+
+    resources {
+      // AndroidMath pulls in appcompat/lifecycle dependencies that can bring
+      // both coroutines-core and coroutines-android into androidTest packaging.
+      // They ship the same ProGuard metadata file, so keep one copy to avoid
+      // mergeDebugAndroidTestJavaResource failures. Revisit with AndroidMath.
+      pickFirsts += ["META-INF/com.android.tools/proguard/coroutines.pro"]
+    }
+  }
+
   lintOptions {
     disable "GradleCompatible"
   }
