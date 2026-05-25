@@ -6,8 +6,6 @@ import {
 import type { BubbleContextMenuItem } from './types';
 import { MARKDOWN_STYLE } from './markdownStyle';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type MessageBubbleProps = {
   nick: string;
   time: string;
@@ -16,8 +14,6 @@ export type MessageBubbleProps = {
   contextMenuItems: BubbleContextMenuItem[];
   onLinkPress?: (event: LinkPressEvent) => void;
 };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
   '#E57373',
@@ -39,8 +35,6 @@ function nickToColor(nick: string): string {
 function nickToInitials(nick: string): string {
   return nick.slice(0, 2).toUpperCase();
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export function MessageBubble({
   nick,
@@ -81,8 +75,6 @@ export function MessageBubble({
     </View>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const OWN_BUBBLE = '#DCFCE7';
 const OTHER_BUBBLE = '#FFFFFF';

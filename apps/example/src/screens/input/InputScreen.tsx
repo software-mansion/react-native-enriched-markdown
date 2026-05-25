@@ -100,7 +100,6 @@ export default function InputScreen({ navigation, route }: Props) {
       <KeyboardAvoidingView style={styles.body} behavior="position" enabled>
         <ScrollView
           ref={scrollRef}
-          style={styles.messageList}
           contentContainerStyle={styles.messageListContent}
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -139,13 +138,11 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     flexDirection: 'column',
-    justifyContent: 'flex-end',
-  },
-  messageList: {
-    flex: 1,
+    justifyContent: 'center',
+    paddingBottom: 50,
   },
   messageListContent: {
-    paddingTop: 16,
+    paddingTop: 80,
     paddingHorizontal: 12,
     paddingBottom: 12,
     gap: 10,
