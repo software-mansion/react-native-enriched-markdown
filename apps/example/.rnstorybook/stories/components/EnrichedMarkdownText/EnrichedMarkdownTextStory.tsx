@@ -54,18 +54,20 @@ export function EnrichedMarkdownTextStory({
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
 
-      <Text style={styles.sectionLabel}>Markdown</Text>
-      <TextInput
-        style={styles.markdownInput}
-        value={markdown}
-        onChangeText={setMarkdown}
-        multiline
-        autoCorrect={false}
-        autoCapitalize="none"
-      />
+      <View style={styles.innerContainer}>
+        <Text style={styles.sectionLabel}>Markdown</Text>
+        <TextInput
+          style={styles.markdownInput}
+          value={markdown}
+          onChangeText={setMarkdown}
+          multiline
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+      </View>
 
       {controls.length > 0 && (
-        <>
+        <View style={styles.innerContainer}>
           <Text style={styles.sectionLabel}>Settings</Text>
           {controls.map((ctrl) => (
             <ControlRow
@@ -77,37 +79,41 @@ export function EnrichedMarkdownTextStory({
               }
             />
           ))}
-        </>
+        </View>
       )}
 
-      <TouchableOpacity
-        style={styles.collapseHeader}
-        onPress={() => setStyleExpanded((v) => !v)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.sectionLabel}>Global Style</Text>
-        {styleExpanded ? (
-          <CollapseIcon width={16} height={16} color="#555" />
-        ) : (
-          <ExpandIcon width={16} height={16} color="#555" />
+      <View style={styles.innerContainer}>
+        <TouchableOpacity
+          style={styles.collapseHeader}
+          onPress={() => setStyleExpanded((v) => !v)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.sectionLabel}>Global Style</Text>
+          {styleExpanded ? (
+            <CollapseIcon width={16} height={16} color="#555" />
+          ) : (
+            <ExpandIcon width={16} height={16} color="#555" />
+          )}
+        </TouchableOpacity>
+        {styleExpanded && (
+          <TextInput
+            style={[styles.markdownInput, styles.codeInput]}
+            value={styleJson}
+            onChangeText={setStyleJson}
+            multiline
+            autoCorrect={false}
+            autoCapitalize="none"
+            placeholder={'{\n  "body": { "fontSize": 16 }\n}'}
+            placeholderTextColor="#aaa"
+          />
         )}
-      </TouchableOpacity>
-      {styleExpanded && (
-        <TextInput
-          style={[styles.markdownInput, styles.codeInput]}
-          value={styleJson}
-          onChangeText={setStyleJson}
-          multiline
-          autoCorrect={false}
-          autoCapitalize="none"
-          placeholder={'{\n  "body": { "fontSize": 16 }\n}'}
-          placeholderTextColor="#aaa"
-        />
-      )}
+      </View>
 
-      <Text style={styles.sectionLabel}>Output</Text>
-      <View style={styles.output}>
-        <EnrichedMarkdownText markdown={markdown} {...assembledProps} />
+      <View style={styles.innerContainer}>
+        <Text style={styles.sectionLabel}>Output</Text>
+        <View style={styles.output}>
+          <EnrichedMarkdownText markdown={markdown} {...assembledProps} />
+        </View>
       </View>
     </ScrollView>
   );
@@ -117,6 +123,9 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     gap: 8,
+  },
+  innerContainer: {
+    paddingVertical: 8,
   },
   title: {
     fontSize: 20,
