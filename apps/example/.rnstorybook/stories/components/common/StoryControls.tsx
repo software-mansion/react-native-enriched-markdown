@@ -106,8 +106,6 @@ export function ControlRow({ control, value, onChange }: ControlRowProps) {
   );
 }
 
-// ─── SegmentedControl ─────────────────────────────────────────────────────────
-
 type SegmentedControlProps = {
   options: { label: string; value: unknown }[];
   value: unknown;
@@ -147,12 +145,10 @@ export function SegmentedControl({
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
   controlRow: {
     gap: 6,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   controlRowInline: {
     flexDirection: 'row',

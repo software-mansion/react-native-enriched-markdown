@@ -110,48 +110,10 @@ export const Spoiler: Story = {
           prop: 'spoilerOverlay',
           label: 'Overlay style',
           description:
-            "'particles': animated overlay.  'solid': opaque block (Discord-style).",
+            "'particles': animated overlay. \n'solid': opaque block (Discord-style).",
           type: 'select',
           options: ['particles', 'solid'],
           default: 'particles',
-        },
-      ]}
-    />
-  ),
-};
-
-export const Streaming: Story = {
-  render: () => (
-    <EnrichedMarkdownTextStory
-      title="Streaming"
-      description="Controls for LLM streaming use cases."
-      markdown={
-        'Paragraph one.\n\nParagraph two.\n\n| Col A | Col B |\n| ----- | ----- |\n| one   | two   |'
-      }
-      controls={[
-        {
-          prop: 'streamingAnimation',
-          label: 'Streaming animation',
-          description: 'Newly appended content fades in.',
-          type: 'boolean',
-          default: false,
-        },
-        {
-          prop: 'flavor',
-          label: 'Flavor',
-          description: "Set to 'github' to enable table streaming.",
-          type: 'select',
-          options: ['commonmark', 'github'],
-          default: 'commonmark',
-        },
-        {
-          prop: 'streamingConfig.tableMode',
-          label: 'Table mode',
-          description:
-            "'progressive': renders row-by-row.  'hidden': waits until table is complete.",
-          type: 'select',
-          options: ['progressive', 'hidden'],
-          default: 'progressive',
         },
       ]}
     />
