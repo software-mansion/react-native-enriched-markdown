@@ -3,6 +3,7 @@ package com.swmansion.enriched.markdown.views
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.graphics.Canvas
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -15,8 +16,9 @@ import com.swmansion.enriched.markdown.spans.MathMeasureRequest
 import com.swmansion.enriched.markdown.spans.MathRenderMode
 import com.swmansion.enriched.markdown.styles.MathStyle
 import com.swmansion.enriched.markdown.styles.StyleConfig
+import io.ratex.RaTeXEngine
 import io.ratex.RaTeXFontLoader
-import io.ratex.RaTeXView
+import io.ratex.RaTeXRenderer
 
 class MathContainerView(
   context: Context,
@@ -24,7 +26,6 @@ class MathContainerView(
 ) : FrameLayout(context),
   BlockSegmentView {
   private val mathStyle: MathStyle = styleConfig.mathStyle
-  private val mathView = RaTeXView(context)
   private val scrollView = HorizontalScrollView(context)
   private var cachedLatex: String = ""
 
@@ -38,19 +39,33 @@ class MathContainerView(
       else -> Gravity.CENTER_HORIZONTAL
     }
 
+  private val mathView =
+    object : View(context) {
+      var renderer: RaTeXRenderer? = null
+
+      override fun onMeasure(
+        widthMeasureSpec: Int,
+        heightMeasureSpec: Int,
+      ) {
+        val r = renderer
+        if (r == null) {
+          setMeasuredDimension(0, 0)
+        } else {
+          setMeasuredDimension(r.widthPx.toInt().coerceAtLeast(1), r.totalHeightPx.toInt().coerceAtLeast(1))
+        }
+      }
+
+      override fun onDraw(canvas: Canvas) {
+        renderer?.draw(canvas)
+      }
+    }
+
   init {
     setBackgroundColor(mathStyle.backgroundColor)
 
     val paddingPx = mathStyle.padding.toInt()
 
     RaTeXFontLoader.ensureLoaded(context)
-
-    mathView.apply {
-      displayMode = true
-      fontSize = mathStyle.fontSize / context.resources.displayMetrics.density
-      color = mathStyle.color
-      onError = { e -> Log.e("MathContainerView", "RaTeXView error", e) }
-    }
 
     val mathLayoutParams =
       FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply {
@@ -84,7 +99,15 @@ class MathContainerView(
 
   fun applyLatex(latex: String) {
     cachedLatex = latex
-    mathView.latex = latex
+    try {
+      val dl = RaTeXEngine.parseBlocking(latex, displayMode = true, color = mathStyle.color)
+      mathView.renderer = RaTeXRenderer(dl, mathStyle.fontSize) { RaTeXFontLoader.getTypeface(it) }
+    } catch (e: Exception) {
+      Log.e("MathContainerView", "Failed to render LaTeX", e)
+      mathView.renderer = null
+    }
+    mathView.requestLayout()
+    mathView.invalidate()
   }
 
   private fun showContextMenu(anchor: View) {
