@@ -1,6 +1,4 @@
-import configPlugins, { type ConfigPlugin } from '@expo/config-plugins';
-
-const { withGradleProperties } = configPlugins;
+import { withGradleProperties, type ConfigPlugin } from '@expo/config-plugins';
 
 export const withAndroidMath: ConfigPlugin<{ enableMath?: boolean }> = (
   config,
