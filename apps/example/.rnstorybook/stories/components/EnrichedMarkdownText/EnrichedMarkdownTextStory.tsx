@@ -49,6 +49,8 @@ export function EnrichedMarkdownTextStory({
     return props as Partial<EnrichedMarkdownTextProps>;
   }, [controlState, styleJson]);
 
+  console.log(assembledProps);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>{title}</Text>
