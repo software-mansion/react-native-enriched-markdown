@@ -607,7 +607,7 @@ object MeasurementStore {
     }
     return try {
       val mathMeasureHelperClass = Class.forName("com.swmansion.enriched.markdown.spans.MathMeasureHelper")
-      val method = mathMeasureHelperClass.getMethod("measureOnMainThread", Context::class.java, List::class.java)
+      val method = mathMeasureHelperClass.getMethod("measure", Context::class.java, List::class.java)
       @Suppress("UNCHECKED_CAST")
       method.invoke(null, context, requests) as List<MathMetrics>
     } catch (_: Exception) {

@@ -14,7 +14,6 @@
 -keep class com.swmansion.enriched.markdown.views.MathContainerView { *; }
 -keep class com.swmansion.enriched.markdown.renderer.MathInlineRenderer { *; }
 
-# AndroidMath and its FreeType dependency use JNI to instantiate Java objects from native code.
+# RaTeX uses JNI to instantiate Java objects from native code.
 # R8 cannot trace these lookups and will strip or rename the referenced classes.
--keep class com.agog.mathdisplay.** { *; }
--keep class com.pvporbit.freetype.** { *; }
+-keep class io.ratex.** { *; }

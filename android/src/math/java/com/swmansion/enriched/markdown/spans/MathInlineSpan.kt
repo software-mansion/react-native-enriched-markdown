@@ -5,8 +5,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.text.style.ReplacementSpan
-import android.view.View.MeasureSpec
-import com.agog.mathdisplay.MTMathView
+import io.ratex.RaTeXEngine
+import io.ratex.RaTeXFontLoader
+import io.ratex.RaTeXRenderer
 import kotlin.math.roundToInt
 
 class MathInlineSpan(
@@ -26,28 +27,21 @@ class MathInlineSpan(
     if (renderFailed) return
 
     try {
-      val mathView =
-        MTMathView(context).apply {
-          labelMode = MTMathView.MTMathViewMode.KMTMathViewModeText
-          textAlignment = MTMathView.MTTextAlignment.KMTTextAlignmentLeft
-          this.fontSize = this@MathInlineSpan.fontSize
-          this.textColor = this@MathInlineSpan.textColor
-          this.latex = this@MathInlineSpan.latex
-        }
+      val dl = RaTeXEngine.parseBlocking(latex, displayMode = false, color = textColor)
+      val renderer = RaTeXRenderer(dl, fontSize) { RaTeXFontLoader.getTypeface(it) }
 
-      val spec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-      mathView.measure(spec, spec)
+      cachedWidth = renderer.widthPx.toInt().coerceAtLeast(1)
+      mathAscent = renderer.heightPx
+      mathDescent = renderer.depthPx
 
-      val width = mathView.measuredWidth.coerceAtLeast(1)
-      val height = mathView.measuredHeight.coerceAtLeast(1)
+      val bitmap =
+        Bitmap.createBitmap(
+          cachedWidth,
+          renderer.totalHeightPx.toInt().coerceAtLeast(1),
+          Bitmap.Config.ARGB_8888,
+        )
 
-      cachedWidth = width
-      calculateMetrics(mathView, height)
-
-      mathView.layout(0, 0, width, height)
-
-      val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-      mathView.draw(Canvas(bitmap))
+      renderer.draw(Canvas(bitmap))
       cachedBitmap = bitmap
     } catch (_: Exception) {
       renderFailed = true
@@ -55,25 +49,6 @@ class MathInlineSpan(
       cachedWidth = (fontSize * latex.length * 0.6f).toInt().coerceAtLeast(1)
       mathAscent = estimatedHeight * 0.7f
       mathDescent = estimatedHeight * 0.3f
-    }
-  }
-
-  private fun calculateMetrics(
-    view: MTMathView,
-    height: Int,
-  ) {
-    try {
-      val dl = DISPLAY_LIST_FIELD?.get(view)
-      if (dl != null) {
-        mathAscent = GET_ASCENT_METHOD?.invoke(dl) as? Float ?: (height * 0.7f)
-        mathDescent = GET_DESCENT_METHOD?.invoke(dl) as? Float ?: (height * 0.3f)
-      } else {
-        mathAscent = height * 0.7f
-        mathDescent = height * 0.3f
-      }
-    } catch (e: Exception) {
-      mathAscent = height * 0.7f
-      mathDescent = height * 0.3f
     }
   }
 
@@ -112,22 +87,5 @@ class MathInlineSpan(
       val bitmapY = y - mathAscent
       canvas.drawBitmap(it, x, bitmapY, paint)
     }
-  }
-
-  companion object {
-    private val DISPLAY_LIST_FIELD =
-      runCatching {
-        MTMathView::class.java.getDeclaredField("displayList").apply { isAccessible = true }
-      }.getOrNull()
-
-    private val GET_ASCENT_METHOD =
-      runCatching {
-        DISPLAY_LIST_FIELD?.type?.getMethod("getAscent")
-      }.getOrNull()
-
-    private val GET_DESCENT_METHOD =
-      runCatching {
-        DISPLAY_LIST_FIELD?.type?.getMethod("getDescent")
-      }.getOrNull()
   }
 }

@@ -460,7 +460,8 @@ class EnrichedMarkdown
             .newInstance(context, style) as View
         resolvedClass.getMethod("applyLatex", String::class.java).invoke(view, segment.latex)
         view
-      } catch (_: Exception) {
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to create math view", e)
         View(context)
       }
     }

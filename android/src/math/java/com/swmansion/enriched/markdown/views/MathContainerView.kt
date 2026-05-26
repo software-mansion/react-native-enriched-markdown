@@ -3,18 +3,20 @@ package com.swmansion.enriched.markdown.views
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
-import com.agog.mathdisplay.MTMathView
 import com.swmansion.enriched.markdown.spans.MathMeasureHelper
 import com.swmansion.enriched.markdown.spans.MathMeasureRequest
 import com.swmansion.enriched.markdown.spans.MathRenderMode
 import com.swmansion.enriched.markdown.styles.MathStyle
 import com.swmansion.enriched.markdown.styles.StyleConfig
+import io.ratex.RaTeXFontLoader
+import io.ratex.RaTeXView
 
 class MathContainerView(
   context: Context,
@@ -22,18 +24,18 @@ class MathContainerView(
 ) : FrameLayout(context),
   BlockSegmentView {
   private val mathStyle: MathStyle = styleConfig.mathStyle
-  private val mathView = MTMathView(context)
+  private val mathView = RaTeXView(context)
   private val scrollView = HorizontalScrollView(context)
   private var cachedLatex: String = ""
 
   override val segmentMarginTop: Int get() = mathStyle.marginTop.toInt()
   override val segmentMarginBottom: Int get() = mathStyle.marginBottom.toInt()
 
-  private val alignmentPair =
+  private val mathGravity =
     when (mathStyle.textAlign) {
-      "left" -> MTMathView.MTTextAlignment.KMTTextAlignmentLeft to Gravity.START
-      "right" -> MTMathView.MTTextAlignment.KMTTextAlignmentRight to Gravity.END
-      else -> MTMathView.MTTextAlignment.KMTTextAlignmentCenter to Gravity.CENTER_HORIZONTAL
+      "left" -> Gravity.START
+      "right" -> Gravity.END
+      else -> Gravity.CENTER_HORIZONTAL
     }
 
   init {
@@ -41,16 +43,18 @@ class MathContainerView(
 
     val paddingPx = mathStyle.padding.toInt()
 
+    RaTeXFontLoader.ensureLoaded(context)
+
     mathView.apply {
-      labelMode = MTMathView.MTMathViewMode.KMTMathViewModeDisplay
-      fontSize = mathStyle.fontSize
-      textColor = mathStyle.color
-      textAlignment = alignmentPair.first
+      displayMode = true
+      fontSize = mathStyle.fontSize / context.resources.displayMetrics.density
+      color = mathStyle.color
+      onError = { e -> Log.e("MathContainerView", "RaTeXView error", e) }
     }
 
     val mathLayoutParams =
       FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply {
-        gravity = alignmentPair.second
+        gravity = mathGravity
       }
 
     val mathWrapper =
@@ -107,7 +111,7 @@ class MathContainerView(
           latex = latex,
           mode = MathRenderMode.Display,
         )
-      val metrics = MathMeasureHelper.measureOnMainThread(context, listOf(request)).first()
+      val metrics = MathMeasureHelper.measure(context, listOf(request)).first()
       return (metrics.ascent + metrics.descent).toInt() + (mathStyle.padding * 2)
     }
   }
