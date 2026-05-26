@@ -46,16 +46,19 @@ Lcom/swmansion/enriched/markdown/input/editing/MarkdownTextWatcher;
 
 # Input - Events
 Lcom/swmansion/enriched/markdown/input/events/OnCaretRectChangeEvent;
+Lcom/swmansion/enriched/markdown/input/events/OnChangeMentionEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnChangeMarkdownEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnChangeSelectionEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnChangeStateEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnChangeTextEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnContextMenuItemPressEvent;
+Lcom/swmansion/enriched/markdown/input/events/OnEndMentionEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnInputBlurEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnInputFocusEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnLinkDetectedEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnRequestCaretRectResultEvent;
 Lcom/swmansion/enriched/markdown/input/events/OnRequestMarkdownResultEvent;
+Lcom/swmansion/enriched/markdown/input/events/OnStartMentionEvent;
 
 # Input - Formatting
 Lcom/swmansion/enriched/markdown/input/formatting/FormattingStore;
@@ -181,6 +184,7 @@ Lcom/swmansion/enriched/markdown/styles/ImageStyle;
 Lcom/swmansion/enriched/markdown/styles/InlineImageStyle;
 Lcom/swmansion/enriched/markdown/styles/InlineMathStyle;
 Lcom/swmansion/enriched/markdown/styles/LinkStyle;
+Lcom/swmansion/enriched/markdown/styles/LinkVariantEntry;
 Lcom/swmansion/enriched/markdown/styles/ListStyle;
 Lcom/swmansion/enriched/markdown/styles/MathStyle;
 Lcom/swmansion/enriched/markdown/styles/ParagraphStyle;
