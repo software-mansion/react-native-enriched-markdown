@@ -388,7 +388,7 @@ object MeasurementStore {
         for (i in mathSegmentIndices.indices) {
           val metrics = mathResults[i]
           mathHeightByIndex[mathSegmentIndices[i]] =
-            (metrics.ascent + metrics.descent).toInt() + (style.mathStyle.padding * 2)
+            ceil(metrics.ascent + metrics.descent).toInt() + (style.mathStyle.padding * 2)
         }
       }
 
