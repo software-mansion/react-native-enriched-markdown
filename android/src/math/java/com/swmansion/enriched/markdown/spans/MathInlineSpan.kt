@@ -8,6 +8,7 @@ import android.text.style.ReplacementSpan
 import io.ratex.RaTeXEngine
 import io.ratex.RaTeXFontLoader
 import io.ratex.RaTeXRenderer
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 class MathInlineSpan(
@@ -27,8 +28,8 @@ class MathInlineSpan(
     if (renderFailed) return
 
     try {
-      val dl = RaTeXEngine.parseBlocking(latex, displayMode = false, color = textColor)
-      val renderer = RaTeXRenderer(dl, fontSize) { RaTeXFontLoader.getTypeface(it) }
+      val displayList = RaTeXEngine.parseBlocking(latex, displayMode = false, color = textColor)
+      val renderer = RaTeXRenderer(displayList, fontSize) { RaTeXFontLoader.getTypeface(it) }
 
       cachedWidth = renderer.widthPx.toInt().coerceAtLeast(1)
       mathAscent = renderer.heightPx
@@ -37,7 +38,7 @@ class MathInlineSpan(
       val bitmap =
         Bitmap.createBitmap(
           cachedWidth,
-          renderer.totalHeightPx.toInt().coerceAtLeast(1),
+          ceil(renderer.totalHeightPx).toInt().coerceAtLeast(1),
           Bitmap.Config.ARGB_8888,
         )
 

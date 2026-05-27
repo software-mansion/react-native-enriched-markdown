@@ -1,6 +1,7 @@
 package com.swmansion.enriched.markdown.spans
 
 import android.content.Context
+import android.util.Log
 import io.ratex.RaTeXEngine
 import io.ratex.RaTeXFontLoader
 import io.ratex.RaTeXRenderer
@@ -13,6 +14,8 @@ object MathMeasureHelper {
   ): List<MathMetrics> {
     if (requests.isEmpty()) return emptyList()
 
+    RaTeXFontLoader.ensureLoaded(context)
+
     return requests.map { request ->
       runCatching { measureSingle(context, request) }.getOrElse { estimateFallback(request) }
     }
@@ -22,19 +25,26 @@ object MathMeasureHelper {
     context: Context,
     request: MathMeasureRequest,
   ): MathMetrics {
-    RaTeXFontLoader.ensureLoaded(context)
-
-    val dl = RaTeXEngine.parseBlocking(request.latex, displayMode = request.mode == MathRenderMode.Display)
+    val displayList =
+      RaTeXEngine.parseBlocking(
+        request.latex,
+        displayMode = request.mode == MathRenderMode.Display,
+      )
 
     val renderer =
-      RaTeXRenderer(dl, request.fontSize) {
+      RaTeXRenderer(displayList, request.fontSize) {
         RaTeXFontLoader.getTypeface(it)
       }
 
-    return MathMetrics(renderer.widthPx.toInt(), renderer.heightPx, renderer.depthPx)
+    return MathMetrics(
+      renderer.widthPx.toInt(),
+      renderer.heightPx,
+      renderer.depthPx,
+    )
   }
 
   private fun estimateFallback(request: MathMeasureRequest): MathMetrics {
+    Log.d("DUPA", "using estimate fallback")
     val h = request.fontSize * 1.4f
     return MathMetrics(
       width =
