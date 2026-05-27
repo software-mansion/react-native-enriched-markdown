@@ -44,7 +44,6 @@ object MathMeasureHelper {
   }
 
   private fun estimateFallback(request: MathMeasureRequest): MathMetrics {
-    Log.d("DUPA", "using estimate fallback")
     val h = request.fontSize * 1.4f
     return MathMetrics(
       width =
