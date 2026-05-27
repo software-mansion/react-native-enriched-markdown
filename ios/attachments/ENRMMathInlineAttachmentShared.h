@@ -3,13 +3,14 @@
 #import "ENRMMathInlineAttachment.h"
 
 #if ENRICHED_MARKDOWN_MATH
-#import <IosMath/IosMath.h>
+
+@class ENRMRaTeXRenderResult;
 
 @interface ENRMMathInlineAttachment () {
   CGSize _cachedSize;
   CGFloat _mathAscent;
   CGFloat _mathDescent;
-  MTMathListDisplay *_displayList;
+  ENRMRaTeXRenderResult *_renderResult;
 }
 @end
 

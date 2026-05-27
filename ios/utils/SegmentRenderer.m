@@ -28,10 +28,8 @@ static NSArray *ENRMSplitASTIntoSegments(MarkdownASTNode *root)
       NSString *latex = child.children.count > 0 ? child.children.firstObject.content : child.content;
       [segments addObject:[ENRMMathSegment segmentWithLatex:latex ?: @""]];
 #else
-      // TODO: Fix block math rendering on macOS. Adding ENRMMathContainerView (which
-      // hosts MTMathUILabel) as a segment causes all preceding text segments to become
-      // invisible. Likely related to MTMathUILabel.layer.geometryFlipped interacting
-      // with NSTextView's coordinate system. Inline math ($...$) works.
+      // TODO: Fix block math rendering on macOS. Adding ENRMMathContainerView as a
+      // segment causes all preceding text segments to become invisible.
 #endif
     }
 #endif

@@ -1,0 +1,15 @@
+{
+  "originHash" : "565035e3bc830e0df269442471c019261284ac60e218a00d2cf8950c1037a837",
+  "pins" : [
+    {
+      "identity" : "ratex",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/erweixin/RaTeX.git",
+      "state" : {
+        "revision" : "2d0233e6323f449b95d369264a0090e2ce1ee4cb",
+        "version" : "0.1.9"
+      }
+    }
+  ],
+  "version" : 3
+}

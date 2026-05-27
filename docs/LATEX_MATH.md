@@ -68,7 +68,7 @@ This also prevents KaTeX from being loaded at runtime.
 
 ## Disabling LaTeX Math (reducing bundle size)
 
-LaTeX math rendering relies on native third-party libraries — **iosMath** (~2.5 MB) on iOS and **AndroidMath** on Android. These are included by default but can be excluded to reduce your app's binary size.
+LaTeX math rendering relies on **RaTeX** — a native, KaTeX-compatible math engine — on both iOS and Android. It is included by default but can be excluded to reduce your app's binary size (~3–5 MB on iOS, varies on Android).
 
 ### 1. Disable at the parser level (JS)
 
@@ -88,7 +88,14 @@ Add the following to your Podfile and re-run `pod install`:
 ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0'
 ```
 
-This excludes `iosMath` (~2.5 MB) from the build. Rebuild the app after running `pod install`.
+This excludes **RaTeX** from the build. Rebuild the app after running `pod install`.
+
+> [!NOTE]
+> When math is **enabled** (the default), your Podfile must use dynamic frameworks:
+> ```ruby
+> use_frameworks! :linkage => :dynamic
+> ```
+> This is required for CocoaPods to resolve the RaTeX Swift Package dependency.
 
 ### 3. Remove the native Android dependency
 
@@ -98,7 +105,7 @@ Add the following to your project's `gradle.properties`:
 enrichedMarkdown.enableMath=false
 ```
 
-This excludes `AndroidMath` from the build. Rebuild the app after changing this property.
+This excludes **RaTeX** from the Android build. Rebuild the app after changing this property.
 
 ### 4. Expo config plugin
 

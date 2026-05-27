@@ -1,7 +1,9 @@
 ENV['RCT_NEW_ARCH_ENABLED'] = '1'
 
-# Set to '0' to disable LaTeX math rendering and remove the iosMath dependency (~2.5 MB savings).
-#ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0'
+# LaTeX math rendering (RaTeX). Set to '0' to disable and remove the dependency.
+# When enabled, dynamic frameworks are required for SPM interop.
+# ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0'
+ENV['USE_FRAMEWORKS'] = 'dynamic' if ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] != '0'
 
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command('node', ['-p',
