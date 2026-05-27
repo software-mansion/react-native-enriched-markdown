@@ -9,7 +9,6 @@ import io.ratex.RaTeXEngine
 import io.ratex.RaTeXFontLoader
 import io.ratex.RaTeXRenderer
 import kotlin.math.ceil
-import kotlin.math.roundToInt
 
 class MathInlineSpan(
   private val context: Context,
@@ -63,9 +62,10 @@ class MathInlineSpan(
     prepareResources()
 
     fm?.apply {
-      ascent = -mathAscent.roundToInt()
+      val ascentPx = ceil(mathAscent).toInt()
+      ascent = -ascentPx
       top = ascent
-      descent = mathDescent.roundToInt()
+      descent = (cachedBitmap?.height ?: ceil(mathAscent + mathDescent).toInt()) - ascentPx
       bottom = descent
     }
 
@@ -85,7 +85,7 @@ class MathInlineSpan(
   ) {
     prepareResources()
     cachedBitmap?.let {
-      val bitmapY = y - mathAscent
+      val bitmapY = y - ceil(mathAscent)
       canvas.drawBitmap(it, x, bitmapY, paint)
     }
   }
