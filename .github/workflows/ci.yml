@@ -136,7 +136,7 @@ jobs:
           xcode-version: '16.4'
 
       - name: Reset build folder and pods
-        run: rm -rf apps/example/build apps/example/ios/Pods apps/example/ios/Podfile.lock
+        run: rm -rf apps/example/build apps/example/ios/Pods
 
       - name: Cache turborepo for iOS
         uses: actions/cache@v4
@@ -179,7 +179,7 @@ jobs:
         with:
           path: |
             **/ios/Pods
-          key: ${{ steps.cocoapods-cache.outputs.cache-key }}
+          key: ${{ steps.cocoapods-cache.outputs.cache-primary-key }}
 
       - name: Build example for iOS
         run: |
