@@ -135,8 +135,8 @@ jobs:
         with:
           xcode-version: '16.4'
 
-      - name: Reset build folder and pods
-        run: rm -rf apps/example/build apps/example/ios/Pods
+      - name: Reset build folder
+        run: rm -rf apps/example/build
 
       - name: Cache turborepo for iOS
         uses: actions/cache@v4
@@ -168,6 +168,7 @@ jobs:
       - name: Install cocoapods
         if: env.turbo_cache_hit != 1 && steps.cocoapods-cache.outputs.cache-hit != 'true'
         run: |
+          rm -rf apps/example/ios/Pods
           cd apps/example/ios
           pod install
         env:
