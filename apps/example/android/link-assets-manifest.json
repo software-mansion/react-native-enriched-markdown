@@ -2,28 +2,28 @@
   "migIndex": 1,
   "data": [
     {
-      "path": "assets/fonts/Montserrat-Medium.ttf",
-      "sha1": "77f3553415d858c653baea45aacab20196776334"
+      "path": "assets/fonts/CourierPrime-Regular.ttf",
+      "sha1": "f0e110c73ff02b2fc7f60bd96697c42ee9730ae2"
     },
     {
       "path": "assets/fonts/Montserrat-Bold.ttf",
       "sha1": "be7c1438070ab637e11716915e4e50903726dcc8"
     },
     {
-      "path": "assets/fonts/Montserrat-SemiBold.ttf",
-      "sha1": "79f74616d68b87d6cf89798fe72259036326567a"
+      "path": "assets/fonts/Montserrat-Italic.ttf",
+      "sha1": "aef4e6a1af1849644ce1e934b4ab9059e916d887"
+    },
+    {
+      "path": "assets/fonts/Montserrat-Medium.ttf",
+      "sha1": "77f3553415d858c653baea45aacab20196776334"
     },
     {
       "path": "assets/fonts/Montserrat-Regular.ttf",
       "sha1": "ec13ef1f2c99f8780d6f2eb3f9f27ef89f30161b"
     },
     {
-      "path": "assets/fonts/Montserrat-Italic.ttf",
-      "sha1": "aef4e6a1af1849644ce1e934b4ab9059e916d887"
-    },
-    {
-      "path": "assets/fonts/CourierPrime-Regular.ttf",
-      "sha1": "f0e110c73ff02b2fc7f60bd96697c42ee9730ae2"
+      "path": "assets/fonts/Montserrat-SemiBold.ttf",
+      "sha1": "79f74616d68b87d6cf89798fe72259036326567a"
     }
   ]
 }

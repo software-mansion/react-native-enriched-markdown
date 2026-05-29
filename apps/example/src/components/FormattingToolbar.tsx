@@ -179,11 +179,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#E2F8EB',
   },
   mentionButton: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#E2F8EB',
   },
   mentionButtonText: {
     color: ICON_COLOR,
-    fontSize: 15,
     fontWeight: '700',
+    fontSize: 15,
   },
 });

@@ -1902,7 +1902,7 @@ PODS:
     - React-utils (= 0.85.3)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.85.3)
-  - ReactNativeEnrichedMarkdown (0.5.0):
+  - ReactNativeEnrichedMarkdown (0.6.0):
     - hermes-engine
     - iosMath (~> 0.9)
     - RCTRequired
@@ -2569,7 +2569,7 @@ SPEC CHECKSUMS:
   ReactCodegen: c8f81e6c6f762dcf442a6203a1fb58f7dafc8014
   ReactCommon: 7dfc3250793bf36cf221096ff59e1179e13eef7f
   ReactNativeDependencies: c6c22887dcb9997b770c6751e2a8b7c528e29363
-  ReactNativeEnrichedMarkdown: 89508c40d324ef3e1f726a64a94605096cb46557
+  ReactNativeEnrichedMarkdown: 861d6937d7f4a6481e8446538dc715c93b545143
   RNCAsyncStorage: d0aafe51ea74a65afce26acb739a4ea975a7a884
   RNDateTimePicker: 7b2738f1e595f83c14580a11c476872755c5befc
   RNGestureHandler: 2ff61eac036eaf89f6818bf4ed9c39771a17d134
@@ -2581,4 +2581,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 9c5417fc84515945aa2357a49779fde55434ae62
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2

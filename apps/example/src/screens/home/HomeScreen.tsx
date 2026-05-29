@@ -68,7 +68,11 @@ export default function HomeScreen({ navigation }: Props) {
           subtext={subtext}
           testID={testID}
           color={color}
-          onPress={() => navigation.navigate(route)}
+          onPress={() =>
+            route === 'Input'
+              ? navigation.navigate('Input', { channel: 'random' })
+              : navigation.navigate(route)
+          }
         />
       ))}
     </View>

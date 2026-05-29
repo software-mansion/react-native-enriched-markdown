@@ -76,5 +76,3 @@ export const MARKDOWN_STYLE = {
     },
   },
 };
-
-// @allice Let's B meet B at #swm- U before the talk U ar

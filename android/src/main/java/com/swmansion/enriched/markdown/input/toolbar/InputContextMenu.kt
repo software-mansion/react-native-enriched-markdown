@@ -37,6 +37,8 @@ class InputContextMenu(
           mode: ActionMode,
           menu: Menu,
         ): Boolean {
+          menu.removeItem(MENU_FORMAT_ID)
+          menu.removeItem(MENU_COPY_MARKDOWN_ID)
           menu.removeGroup(FORMAT_MENU_GROUP_ID)
           menu.removeGroup(CUSTOM_MENU_GROUP_ID)
 

@@ -41,7 +41,7 @@ export default function App() {
         <Stack.Screen
           name="Input"
           component={InputScreen}
-          options={{ title: 'Input' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Stream"
