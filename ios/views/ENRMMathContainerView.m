@@ -4,7 +4,7 @@
 
 #if ENRICHED_MARKDOWN_MATH
 #import "PasteboardUtils.h"
-#import <IosMath/IosMath.h>
+@import iosMath;
 #if TARGET_OS_OSX
 #import "ENRMMenuAction.h"
 #endif

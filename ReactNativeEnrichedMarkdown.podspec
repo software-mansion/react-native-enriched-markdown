@@ -22,11 +22,15 @@ Pod::Spec.new do |s|
   preprocessor_defs = '$(inherited) MD4C_USE_UTF8=1'
   if enable_math
     preprocessor_defs += ' ENRICHED_MARKDOWN_MATH=1'
-    s.dependency 'iosMath', '~> 0.9'
+     spm_dependency(s,
+      url: 'https://github.com/kostub/iosMath.git',
+      requirement: { kind: 'upToNextMajorVersion', minimumVersion: '2.2.0' },
+      products: ['iosMath']
+    )
   end
 
   s.pod_target_xcconfig = {
-    'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/cpp/md4c" "$(PODS_TARGET_SRCROOT)/cpp/parser" "$(PODS_TARGET_SRCROOT)/ios/internals" "$(PODS_TARGET_SRCROOT)/ios/input/internals"',
+    'HEADER_SEARCH_PATHS' => '"$(PODS_TARGET_SRCROOT)/cpp/md4c" "$(PODS_TARGET_SRCROOT)/cpp/parser" "$(PODS_TARGET_SRCROOT)/ios/internals" "$(PODS_TARGET_SRCROOT)/ios/input/internals" "$(SYMROOT)/../../SourcePackages/checkouts/iosMath/iosMath/lib" "$(SYMROOT)/../../SourcePackages/checkouts/iosMath/iosMath/render" "$(SYMROOT)/../../SourcePackages/checkouts/iosMath/iosMath/render/internal"',
     'GCC_PREPROCESSOR_DEFINITIONS' => preprocessor_defs,
     'CLANG_CXX_LANGUAGE_STANDARD' => 'c++17'
   }
