@@ -457,22 +457,6 @@ Controls the Writing Tools experience (rewrite, proofread, etc.) in the text sel
 - **`'limited'`** — panel-only experience (no inline rewrite).
 - **`'complete'`** — full experience including inline rewrite.
 
-**Example:**
-
-```tsx
-// Disable Writing Tools for a sensitive input
-<EnrichedMarkdownTextInput
-  writingToolsBehavior="none"
-  placeholder="Enter password..."
-/>
-
-// Full inline Writing Tools experience
-<EnrichedMarkdownTextInput
-  writingToolsBehavior="complete"
-  placeholder="Write something..."
-/>
-```
-
 ### Events
 
 ### `onChangeText`
