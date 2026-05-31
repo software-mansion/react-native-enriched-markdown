@@ -274,6 +274,24 @@ using namespace facebook::react;
     _textView.textContainer.lineBreakMode =
         newViewProps.multiline ? NSLineBreakByWordWrapping : NSLineBreakByTruncatingTail;
   }
+
+  if (newViewProps.writingToolsBehavior != oldViewProps.writingToolsBehavior) {
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 180000
+    if (@available(iOS 18.0, *)) {
+      id<UITextInputTraits> textInputTraits = (id<UITextInputTraits>)_textView;
+      NSString *value = [NSString stringWithUTF8String:newViewProps.writingToolsBehavior.c_str()];
+      if ([value isEqualToString:@"none"]) {
+        textInputTraits.writingToolsBehavior = UIWritingToolsBehaviorNone;
+      } else if ([value isEqualToString:@"limited"]) {
+        textInputTraits.writingToolsBehavior = UIWritingToolsBehaviorLimited;
+      } else if ([value isEqualToString:@"complete"]) {
+        textInputTraits.writingToolsBehavior = UIWritingToolsBehaviorComplete;
+      } else {
+        textInputTraits.writingToolsBehavior = UIWritingToolsBehaviorDefault;
+      }
+    }
+#endif
+  }
 #endif
 
   if (newViewProps.placeholder != oldViewProps.placeholder) {

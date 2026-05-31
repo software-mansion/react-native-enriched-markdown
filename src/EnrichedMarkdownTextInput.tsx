@@ -139,6 +139,18 @@ export interface EnrichedMarkdownTextInputProps {
   onBlur?: () => void;
   contextMenuItems?: ContextMenuItem[];
   linkRegex?: RegExp | null;
+  /**
+   * Controls the Writing Tools experience (rewrite, proofread, etc.) in the text
+   * selection menu. Maps to `UIWritingToolsBehavior` (iOS 18+).
+   *
+   * - `'default'`: system chooses the appropriate experience
+   * - `'none'`: disable Writing Tools for this field
+   * - `'limited'`: panel-only experience (no inline rewrite)
+   * - `'complete'`: full experience including inline rewrite
+   *
+   * @platform ios
+   */
+  writingToolsBehavior?: 'default' | 'none' | 'limited' | 'complete';
 }
 
 type PendingRequest<T> = {
@@ -183,6 +195,7 @@ export const EnrichedMarkdownTextInput = ({
   onBlur,
   contextMenuItems,
   linkRegex: _linkRegex,
+  writingToolsBehavior,
 }: EnrichedMarkdownTextInputProps) => {
   const nativeRef = useRef<NativeRef | null>(null);
 
@@ -446,6 +459,7 @@ export const EnrichedMarkdownTextInput = ({
       onStartMention={handleStartMention as NativeProps['onStartMention']}
       onChangeMention={handleChangeMention as NativeProps['onChangeMention']}
       onEndMention={handleEndMention as NativeProps['onEndMention']}
+      writingToolsBehavior={writingToolsBehavior}
     />
   );
 };

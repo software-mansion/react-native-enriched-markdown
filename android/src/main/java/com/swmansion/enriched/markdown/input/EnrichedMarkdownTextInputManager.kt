@@ -296,6 +296,14 @@ class EnrichedMarkdownTextInputManager :
     view?.setMentionIndicators(indicators)
   }
 
+  @ReactProp(name = "writingToolsBehavior")
+  override fun setWritingToolsBehavior(
+    view: EnrichedMarkdownTextInputView?,
+    value: String?,
+  ) {
+    // iOS-only prop, no-op on Android
+  }
+
   override fun updateProperties(
     view: EnrichedMarkdownTextInputView,
     props: ReactStylesDiffMap,

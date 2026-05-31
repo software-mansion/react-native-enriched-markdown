@@ -442,6 +442,37 @@ Style for the input view. Accepts `ViewStyle` and `TextStyle` properties (e.g., 
 | ----------------------- | ------------- | -------- |
 | `ViewStyle \| TextStyle` | -             | Both     |
 
+### `writingToolsBehavior`
+
+Controls the Writing Tools experience (rewrite, proofread, etc.) in the text selection menu. Maps to `UIWritingToolsBehavior` (iOS 18+). On earlier iOS versions and on Android, this prop is ignored.
+
+| Type                                              | Default Value | Platform |
+| ------------------------------------------------- | ------------- | -------- |
+| `'default' \| 'none' \| 'limited' \| 'complete'` | `'default'`   | iOS      |
+
+**Values:**
+
+- **`'default'`** — system chooses the appropriate experience for the current device.
+- **`'none'`** — disable Writing Tools for this field entirely.
+- **`'limited'`** — panel-only experience (no inline rewrite).
+- **`'complete'`** — full experience including inline rewrite.
+
+**Example:**
+
+```tsx
+// Disable Writing Tools for a sensitive input
+<EnrichedMarkdownTextInput
+  writingToolsBehavior="none"
+  placeholder="Enter password..."
+/>
+
+// Full inline Writing Tools experience
+<EnrichedMarkdownTextInput
+  writingToolsBehavior="complete"
+  placeholder="Write something..."
+/>
+```
+
 ### Events
 
 ### `onChangeText`
