@@ -1,63 +1,38 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
+  Button,
   ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
   StyleSheet,
 } from 'react-native';
 import { EnrichedMarkdownText } from 'react-native-enriched-markdown';
 import type { EnrichedMarkdownTextProps } from 'react-native-enriched-markdown';
-import { ControlRow, initControlState, setPath } from '../common/StoryControls';
-import type { StoryControl } from '../common/StoryControls';
-import ExpandIcon from '../../../../src/assets/icons/expand_all_24dp.svg';
-import CollapseIcon from '../../../../src/assets/icons/collapse_all_24dp.svg';
 
-type EnrichedMarkdownTextStoryProps = {
+type Props = {
   title: string;
   description: string;
-  markdown: string;
-  controls?: StoryControl[];
-};
+  // 'style' is the short Controls-panel key for markdownStyle
+  style?: EnrichedMarkdownTextProps['markdownStyle'];
+} & EnrichedMarkdownTextProps;
 
 export function EnrichedMarkdownTextStory({
   title,
   description,
   markdown: initialMarkdown,
-  controls = [],
-}: EnrichedMarkdownTextStoryProps) {
+  style,
+  ...props
+}: Props) {
   const [markdown, setMarkdown] = useState(initialMarkdown);
-  const [controlState, setControlState] = useState<Record<string, unknown>>(
-    () => initControlState(controls)
-  );
-  const [styleJson, setStyleJson] = useState('');
-  const [styleExpanded, setStyleExpanded] = useState(false);
-
-  const assembledProps = useMemo<Partial<EnrichedMarkdownTextProps>>(() => {
-    let props: Record<string, unknown> = {};
-    for (const [path, value] of Object.entries(controlState)) {
-      props = setPath(props, path, value);
-    }
-    if (styleJson.trim()) {
-      try {
-        props.markdownStyle = JSON.parse(styleJson);
-      } catch {
-        // invalid JSON — keep previous
-      }
-    }
-    return props as Partial<EnrichedMarkdownTextProps>;
-  }, [controlState, styleJson]);
-
-  console.log(assembledProps);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
 
-      <View style={styles.innerContainer}>
-        <Text style={styles.sectionLabel}>Markdown</Text>
+      <View style={styles.block}>
+        <Text style={styles.label}>Markdown</Text>
         <TextInput
           style={styles.markdownInput}
           value={markdown}
@@ -68,56 +43,43 @@ export function EnrichedMarkdownTextStory({
         />
       </View>
 
-      {controls.length > 0 && (
-        <View style={styles.innerContainer}>
-          <Text style={styles.sectionLabel}>Settings</Text>
-          {controls.map((ctrl) => (
-            <ControlRow
-              key={ctrl.prop}
-              control={ctrl}
-              value={controlState[ctrl.prop]}
-              onChange={(v) =>
-                setControlState((prev) => ({ ...prev, [ctrl.prop]: v }))
-              }
-            />
-          ))}
-        </View>
-      )}
-
-      <View style={styles.innerContainer}>
-        <TouchableOpacity
-          style={styles.collapseHeader}
-          onPress={() => setStyleExpanded((v) => !v)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.sectionLabel}>Global Style</Text>
-          {styleExpanded ? (
-            <CollapseIcon width={16} height={16} color="#555" />
-          ) : (
-            <ExpandIcon width={16} height={16} color="#555" />
-          )}
-        </TouchableOpacity>
-        {styleExpanded && (
-          <TextInput
-            style={[styles.markdownInput, styles.codeInput]}
-            value={styleJson}
-            onChangeText={setStyleJson}
-            multiline
-            autoCorrect={false}
-            autoCapitalize="none"
-            placeholder={'{\n  "body": { "fontSize": 16 }\n}'}
-            placeholderTextColor="#aaa"
-          />
-        )}
-      </View>
-
-      <View style={styles.innerContainer}>
-        <Text style={styles.sectionLabel}>Output</Text>
+      <View style={styles.block}>
+        <Text style={styles.label}>Output</Text>
         <View style={styles.output}>
-          <EnrichedMarkdownText markdown={markdown} {...assembledProps} />
+          <EnrichedMarkdownText
+            markdown={markdown}
+            markdownStyle={style}
+            {...props}
+          />
         </View>
       </View>
     </ScrollView>
+  );
+}
+
+export function SpoilerStory({
+  overlay,
+  onReloadSpoiler,
+  ...props
+}: EnrichedMarkdownTextProps & Record<string, any>) {
+  const [key, setKey] = React.useState(0);
+  return (
+    <View>
+      <EnrichedMarkdownTextStory
+        key={key}
+        {...props}
+        spoilerOverlay={overlay}
+      />
+      <View style={styles.reloadButton}>
+        <Button
+          onPress={() => {
+            setKey((k) => k + 1);
+            onReloadSpoiler?.();
+          }}
+          title="Reload Spoiler"
+        />
+      </View>
+    </View>
   );
 }
 
@@ -126,7 +88,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
   },
-  innerContainer: {
+  block: {
     paddingVertical: 8,
   },
   title: {
@@ -138,12 +100,13 @@ const styles = StyleSheet.create({
     color: '#555',
     marginBottom: 4,
   },
-  sectionLabel: {
+  label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#888',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: 6,
   },
   markdownInput: {
     borderWidth: 1,
@@ -155,9 +118,6 @@ const styles = StyleSheet.create({
     minHeight: 80,
     color: '#222',
   },
-  codeInput: {
-    minHeight: 100,
-  },
   output: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -165,10 +125,8 @@ const styles = StyleSheet.create({
     padding: 10,
     minHeight: 48,
   },
-  collapseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
+  reloadButton: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
 });
