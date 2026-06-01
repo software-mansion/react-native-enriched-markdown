@@ -206,7 +206,7 @@ export const Links: Story = {
   render: ({ preview, ...args }) => (
     <EnrichedMarkdownTextStory
       title="Links"
-      description={`[text](url) renders a tappable link. Long-press shows a preview sheet (when enabled)\n\nNote: selectionHandleColor has no effect on iOS (Android-only, API 29+).`}
+      description={`[text](url) renders a tappable link. Long-press shows a preview sheet (when enabled, iOS only - Android has no native link preview).\n\nNote: selectionHandleColor has no effect on iOS (Android-only, API 29+).`}
       {...args}
       enableLinkPreview={preview}
     />
