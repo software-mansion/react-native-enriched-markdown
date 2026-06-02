@@ -34,14 +34,14 @@ type Story = Omit<StoryObj<typeof meta>, 'args' | 'render' | 'argTypes'> & {
   argTypes?: Record<string, any>;
 };
 
-export const Default: Story = {
+export const Formatting: Story = {
   args: {
     initialMarkdown:
       '**Bold**, *italic*, _underline_, ~~strikethrough~~, ||spoiler|| [link](https://example.com)',
   },
   render: (args) => (
     <EnrichedMarkdownTextInputStory
-      title="Default"
+      title="Formatting"
       description="Rich text editor with a formatting toolbar. Select text or position the cursor and tap a button to apply styles."
       {...args}
     />
