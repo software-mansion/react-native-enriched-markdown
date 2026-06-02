@@ -38,31 +38,16 @@ class EnrichedMarkdownTextManager :
     view.onContextMenuItemPressCallback = { itemText, selectedText, selectionStart, selectionEnd ->
       emitContextMenuItemPress(view, itemText, selectedText, selectionStart, selectionEnd)
     }
-    return view
-  }
 
-  override fun onDropViewInstance(view: EnrichedMarkdownText) {
-    super.onDropViewInstance(view)
-    MeasurementStore.clearFontScalingSettings(view.id)
-    view.layoutManager.releaseMeasurementStore()
-  }
-
-  override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> = markdownEventTypeConstants()
-
-  @ReactProp(name = "markdown")
-  override fun setMarkdown(
-    view: EnrichedMarkdownText?,
-    markdown: String?,
-  ) {
-    view?.setOnLinkPressCallback { url ->
+    view.setOnLinkPressCallback { url ->
       emitLinkPress(view, url)
     }
 
-    view?.setOnLinkLongPressCallback { url ->
+    view.setOnLinkLongPressCallback { url ->
       emitLinkLongPress(view, url)
     }
 
-    view?.setOnTaskListItemPressCallback { taskIndex, checked, itemText ->
+    view.setOnTaskListItemPressCallback { taskIndex, checked, itemText ->
       val newChecked = !checked
 
       val styleConfig = view.markdownStyle
@@ -80,8 +65,23 @@ class EnrichedMarkdownTextManager :
 
       emitTaskListItemPress(view, taskIndex, newChecked, itemText)
     }
+    return view
+  }
 
-    view?.setMarkdownContent(markdown ?: "No markdown content")
+  override fun onDropViewInstance(view: EnrichedMarkdownText) {
+    super.onDropViewInstance(view)
+    MeasurementStore.clearFontScalingSettings(view.id)
+    view.layoutManager.releaseMeasurementStore()
+  }
+
+  override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> = markdownEventTypeConstants()
+
+  @ReactProp(name = "markdown")
+  override fun setMarkdown(
+    view: EnrichedMarkdownText?,
+    markdown: String?,
+  ) {
+    view?.setMarkdownContent(markdown ?: "")
   }
 
   @ReactProp(name = "markdownStyle")
