@@ -22,10 +22,13 @@
   blockStart += applyBlockSpacingBefore(output, blockStart, marginTop);
 
   // Top Padding: Inserted as a spacer character inside the background area
-  [output appendAttributedString:kNewlineAttributedString];
-  NSMutableParagraphStyle *topSpacerStyle = [context spacerStyleWithHeight:padding spacing:0];
-  topSpacerStyle.baseWritingDirection = NSWritingDirectionLeftToRight;
-  [output addAttribute:NSParagraphStyleAttributeName value:topSpacerStyle range:NSMakeRange(blockStart, 1)];
+  // apply only when positive
+  if (padding > 0) {
+    [output appendAttributedString:kNewlineAttributedString];
+    NSMutableParagraphStyle *topSpacerStyle = [context spacerStyleWithHeight:padding spacing:0];
+    topSpacerStyle.baseWritingDirection = NSWritingDirectionLeftToRight;
+    [output addAttribute:NSParagraphStyleAttributeName value:topSpacerStyle range:NSMakeRange(blockStart, 1)];
+  }
 
   NSUInteger contentStart = output.length;
   @try {
@@ -63,11 +66,16 @@
   [output addAttribute:NSParagraphStyleAttributeName value:baseStyle range:contentRange];
 
   // Bottom Padding: Inserted as a spacer character inside the background area
-  NSUInteger bottomPaddingStart = output.length;
-  [output appendAttributedString:kNewlineAttributedString];
-  NSMutableParagraphStyle *bottomPaddingStyle = [context spacerStyleWithHeight:padding spacing:0];
-  bottomPaddingStyle.baseWritingDirection = NSWritingDirectionLeftToRight;
-  [output addAttribute:NSParagraphStyleAttributeName value:bottomPaddingStyle range:NSMakeRange(bottomPaddingStart, 1)];
+  // apply it only when positive
+  if (padding > 0) {
+    NSUInteger bottomPaddingStart = output.length;
+    [output appendAttributedString:kNewlineAttributedString];
+    NSMutableParagraphStyle *bottomPaddingStyle = [context spacerStyleWithHeight:padding spacing:0];
+    bottomPaddingStyle.baseWritingDirection = NSWritingDirectionLeftToRight;
+    [output addAttribute:NSParagraphStyleAttributeName
+                   value:bottomPaddingStyle
+                   range:NSMakeRange(bottomPaddingStart, 1)];
+  }
 
   // Define the range for background rendering (includes padding, excludes margins)
   NSRange backgroundRange = NSMakeRange(blockStart, output.length - blockStart);
