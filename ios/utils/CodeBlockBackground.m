@@ -23,11 +23,17 @@
   NSTextStorage *textStorage = layoutManager.textStorage;
   NSRange charRange = [layoutManager characterRangeForGlyphRange:glyphsToShow actualGlyphRange:NULL];
 
+  // Enumerate over the full storage range so each code block's full rect is drawn.
+  // Restricting to charRange causes partial rects per draw pass, which produces
+  // multiple stacked oval shapes when border radius is large.
+  // The graphics context clip ensures only the visible portion is painted.
   [textStorage enumerateAttribute:CodeBlockAttributeName
-                          inRange:charRange
+                          inRange:NSMakeRange(0, textStorage.length)
                           options:0
                        usingBlock:^(id value, NSRange range, BOOL *stop) {
                          if (!value)
+                           return;
+                         if (NSIntersectionRange(range, charRange).length == 0)
                            return;
                          [self drawCodeBlockBackgroundForRange:range
                                                  layoutManager:layoutManager
@@ -51,8 +57,9 @@
   blockRect.origin.y += origin.y;
   blockRect.size.width = textContainer.size.width;
 
-  // We extend the background specifically to cover the bottom padding spacer,
-  // excluding any additional marginBottom applied via measurement.
+  // boundingRectForGlyphRange: excludes the extra line fragment that TextKit appends
+  // after the final \n in the text storage, so the last code block's bottom padding
+  // spacer is not accounted for. Extend the rect to cover it.
   BOOL isLastCodeBlock = (NSMaxRange(range) == layoutManager.textStorage.length);
   if (isLastCodeBlock) {
     blockRect.size.height += [_config codeBlockPadding];
