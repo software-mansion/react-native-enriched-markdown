@@ -2,7 +2,6 @@ package com.swmansion.enriched.markdown
 
 import android.content.Context
 import android.graphics.Typeface
-import android.graphics.text.LineBreaker
 import android.os.Build
 import android.text.SpannableString
 import android.text.StaticLayout
@@ -27,6 +26,7 @@ import com.swmansion.enriched.markdown.utils.common.TableStreamingMode
 import com.swmansion.enriched.markdown.utils.common.getBooleanOrDefault
 import com.swmansion.enriched.markdown.utils.common.getMapOrNull
 import com.swmansion.enriched.markdown.utils.common.getStringOrDefault
+import com.swmansion.enriched.markdown.utils.common.resolveBreakStrategy
 import com.swmansion.enriched.markdown.utils.common.splitASTIntoSegments
 import com.swmansion.enriched.markdown.utils.text.extensions.replaceMathSpansWithPlaceholders
 import com.swmansion.enriched.markdown.views.TableContainerView
@@ -461,8 +461,9 @@ object MeasurementStore {
       .setIncludePad(false)
       .setLineSpacing(0f, 1f)
       .apply {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-          setBreakStrategy(LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          @Suppress("WrongConstant")
+          setBreakStrategy(resolveBreakStrategy())
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
           setUseLineSpacingFromFallbacks(true)
@@ -539,8 +540,9 @@ object MeasurementStore {
         .setIncludePad(false)
         .setLineSpacing(0f, 1f)
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      builder.setBreakStrategy(LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      @Suppress("WrongConstant")
+      builder.setBreakStrategy(resolveBreakStrategy())
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -576,8 +578,9 @@ object MeasurementStore {
         .setIncludePad(false)
         .setLineSpacing(0f, 1f)
         .apply {
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            setBreakStrategy(LineBreaker.BREAK_STRATEGY_HIGH_QUALITY)
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            @Suppress("WrongConstant")
+            setBreakStrategy(resolveBreakStrategy())
           }
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             setUseLineSpacingFromFallbacks(true)
