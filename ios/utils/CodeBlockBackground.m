@@ -57,9 +57,8 @@
   blockRect.origin.y += origin.y;
   blockRect.size.width = textContainer.size.width;
 
-  // boundingRectForGlyphRange: excludes the extra line fragment that TextKit appends
-  // after the final \n in the text storage, so the last code block's bottom padding
-  // spacer is not accounted for. Extend the rect to cover it.
+  // We extend the background specifically to cover the bottom padding spacer,
+  // excluding any additional marginBottom applied via measurement.
   BOOL isLastCodeBlock = (NSMaxRange(range) == layoutManager.textStorage.length);
   if (isLastCodeBlock) {
     blockRect.size.height += [_config codeBlockPadding];
