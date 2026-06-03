@@ -127,7 +127,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Build library and generate codegen
+      - name: Build library
         run: yarn prepare
 
       - name: Set up Xcode
@@ -166,7 +166,7 @@ jobs:
             ${{ runner.os }}-cocoapods-
 
       - name: Install cocoapods
-        if: env.turbo_cache_hit != 1 && steps.cocoapods-cache.outputs.cache-hit != 'true'
+        if: env.turbo_cache_hit != 1
         run: |
           gem install cocoapods-spm
           cd apps/example/ios
@@ -180,7 +180,7 @@ jobs:
         with:
           path: |
             **/ios/Pods
-          key: ${{ steps.cocoapods-cache.outputs.cache-key }}
+          key: ${{ steps.cocoapods-cache.outputs.cache-primary-key }}
 
       - name: Build example for iOS
         run: |
