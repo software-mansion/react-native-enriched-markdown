@@ -442,6 +442,22 @@ Style for the input view. Accepts `ViewStyle` and `TextStyle` properties (e.g., 
 | ----------------------- | ------------- | -------- |
 | `ViewStyle \| TextStyle` | -             | Both     |
 
+### `nativeID`
+
+Identifier forwarded to the underlying native view. Useful for integrations that need to reference the input natively, e.g. `react-native-keyboard-controller`'s `textInputNativeID`.
+
+| Type     | Default Value | Platform |
+| -------- | ------------- | -------- |
+| `string` | -             | Both     |
+
+### `testID`
+
+Identifier forwarded to the underlying native view for use in end-to-end and unit tests.
+
+| Type     | Default Value | Platform |
+| -------- | ------------- | -------- |
+| `string` | -             | Both     |
+
 ### Events
 
 ### `onChangeText`

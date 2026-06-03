@@ -125,6 +125,10 @@ export interface EnrichedMarkdownTextInputProps {
   selectionColor?: ColorValue;
   markdownStyle?: MarkdownTextInputStyle;
   style?: ViewStyle | TextStyle;
+  /** Native identifier forwarded to the underlying view (e.g. for `react-native-keyboard-controller`'s `textInputNativeID`). */
+  nativeID?: string;
+  /** Test identifier forwarded to the underlying view. */
+  testID?: string;
   onChangeText?: (text: string) => void;
   onChangeMarkdown?: (markdown: string) => void;
   onChangeSelection?: (selection: { start: number; end: number }) => void;
@@ -159,6 +163,8 @@ export const EnrichedMarkdownTextInput = ({
   ref,
   markdownStyle,
   style,
+  nativeID,
+  testID,
   defaultValue,
   placeholder,
   placeholderTextColor,
@@ -407,6 +413,8 @@ export const EnrichedMarkdownTextInput = ({
     <EnrichedMarkdownTextInputNativeComponent
       ref={nativeRef}
       style={style}
+      nativeID={nativeID}
+      testID={testID}
       markdownStyle={normalizedStyle}
       defaultValue={defaultValue}
       placeholder={placeholder}
