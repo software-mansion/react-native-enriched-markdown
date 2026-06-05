@@ -44,5 +44,22 @@ Pod::Spec.new do |s|
     'DEFINES_MODULE' => 'YES'
   }
 
+  if enable_math
+    # Xcode generates a module.modulemap at ${BUILT_PRODUCTS_DIR}/include/ for SPM
+    # packages that re-declares RaTeXFFI — but the RaTeX XCFramework already ships
+    # its own definition. Strip the duplicate before compile.
+    s.script_phases = [
+      {
+        name: 'Fix RaTeXFFI Module Redefinition',
+        script: <<~'SCRIPT',
+          MODULEMAP="${BUILT_PRODUCTS_DIR}/include/module.modulemap"
+          [ -f "$MODULEMAP" ] || exit 0
+          sed -i '' -E '/^(framework )?module RaTeXFFI /,/^\}/d' "$MODULEMAP"
+        SCRIPT
+        execution_position: :before_compile
+      }
+    ]
+  end
+
   install_modules_dependencies(s)
 end
