@@ -44,24 +44,19 @@ Pod::Spec.new do |s|
   }
 
   if enable_math
-    # cocoapods-spm generates a module.modulemap at ${BUILT_PRODUCTS_DIR}/include/
-    # that defines RaTeXFFI. The RaTeX XCFramework ships its own definition too.
-    # When both are visible the compiler raises "redefinition of module 'RaTeXFFI'".
-    # Only strip the shared entry when a second definition actually exists; otherwise
-    # local Xcode builds that rely on it as the sole source would break.
+    # React Native's spm_dependency generates a module.modulemap at
+    # ${BUILT_PRODUCTS_DIR}/include/ that re-declares RaTeXFFI, but the RaTeX
+    # XCFramework already ships its own definition. Strip the duplicate to
+    # prevent "redefinition of module 'RaTeXFFI'" during compilation.
     s.script_phases = [
       {
         name: 'Fix RaTeXFFI Module Redefinition',
         script: <<~'SCRIPT',
-          MODULEMAP="${BUILT_PRODUCTS_DIR}/include/module.modulemap"
+          # The shared module.modulemap lives in the platform build-products dir,
+          # one level above the per-target BUILT_PRODUCTS_DIR that CocoaPods sets.
+          MODULEMAP="${BUILT_PRODUCTS_DIR}/../include/module.modulemap"
           [ -f "$MODULEMAP" ] || exit 0
-          grep -q 'module RaTeXFFI' "$MODULEMAP" || exit 0
-
-          MAPS=$(find "${BUILT_PRODUCTS_DIR}" -name "module.modulemap" \
-                 -exec grep -l 'module RaTeXFFI' {} + 2>/dev/null | wc -l)
-          if [ "$MAPS" -gt 1 ]; then
-            sed -i '' -E '/^(framework )?module RaTeXFFI /,/^\}/d' "$MODULEMAP"
-          fi
+          sed -i '' -E '/^(framework )?module RaTeXFFI /,/^\}/d' "$MODULEMAP"
         SCRIPT
         execution_position: :before_compile
       }

@@ -2563,7 +2563,7 @@ SPEC CHECKSUMS:
   ReactCodegen: 7016a2114079361a2f1536b3c91a15ceb8eb7ca4
   ReactCommon: 7dfc3250793bf36cf221096ff59e1179e13eef7f
   ReactNativeDependencies: b8ec997507405a87f23927c21c3693d5859efb9a
-  ReactNativeEnrichedMarkdown: 78717ccccb7362dcc843ea50ae09342b2198dd38
+  ReactNativeEnrichedMarkdown: 255466bca4c9778a2d4f7c6cfb974c7e8a277ee2
   RNCAsyncStorage: 7d913885caaae13f5fb62dd0bd04c674ea8bf97b
   RNDateTimePicker: afe0288e6c7855994f7f2617b7b2c05799fea7f3
   RNGestureHandler: a97cc64efbfcb7a53969a38310a189a3d5246c65
