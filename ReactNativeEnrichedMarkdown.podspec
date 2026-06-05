@@ -44,26 +44,5 @@ Pod::Spec.new do |s|
     'DEFINES_MODULE' => 'YES'
   }
 
-  if enable_math
-    # cocoapods-spm adds SWIFT_INCLUDE_PATHS on this target pointing to the build dir,
-    # which contains include/module.modulemap that defines RaTeXFFI. With
-    # use_frameworks! :linkage => :dynamic, RaTeXFFI is ALSO embedded in its XCFramework,
-    # so the compiler finds it twice and raises "redefinition of module 'RaTeXFFI'".
-    # This script runs before compile and removes the duplicate RaTeXFFI entry from the
-    # shared module map, while the XCFramework copy (accessible via framework search
-    # paths) remains the authoritative definition.
-    s.script_phases = [
-      {
-        name: 'Fix RaTeXFFI Module Redefinition',
-        script: <<~'SCRIPT',
-          MODULEMAP="${BUILT_PRODUCTS_DIR}/include/module.modulemap"
-          [ -f "$MODULEMAP" ] || exit 0
-          ruby -e 'f=ARGV[0]; c=File.read(f); c2=c.gsub(/\n?(?:framework\s+)?module\s+RaTeXFFI\s*\{[^}]*\}/m,""); File.write(f,c2) if c2!=c' "$MODULEMAP"
-        SCRIPT
-        execution_position: :before_compile
-      }
-    ]
-  end
-
   install_modules_dependencies(s)
 end

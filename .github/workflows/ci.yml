@@ -168,7 +168,6 @@ jobs:
       - name: Install cocoapods
         if: env.turbo_cache_hit != 1
         run: |
-          gem install cocoapods-spm
           cd apps/example/ios
           pod install
         env:
