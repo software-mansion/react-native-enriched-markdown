@@ -31,6 +31,7 @@ export type {
 import type {
   HostInstance,
   NativeSyntheticEvent,
+  ViewProps,
   ViewStyle,
   TextStyle,
   ColorValue,
@@ -111,7 +112,8 @@ export interface EnrichedMarkdownTextInputInstance {
   getCaretRect: () => Promise<CaretRect>;
 }
 
-export interface EnrichedMarkdownTextInputProps {
+export interface EnrichedMarkdownTextInputProps
+  extends Omit<ViewProps, 'style'> {
   ref?: RefObject<EnrichedMarkdownTextInputInstance | null>;
   defaultValue?: string;
   placeholder?: string;
@@ -125,10 +127,6 @@ export interface EnrichedMarkdownTextInputProps {
   selectionColor?: ColorValue;
   markdownStyle?: MarkdownTextInputStyle;
   style?: ViewStyle | TextStyle;
-  /** Native identifier forwarded to the underlying view (e.g. for `react-native-keyboard-controller`'s `textInputNativeID`). */
-  nativeID?: string;
-  /** Test identifier forwarded to the underlying view. */
-  testID?: string;
   onChangeText?: (text: string) => void;
   onChangeMarkdown?: (markdown: string) => void;
   onChangeSelection?: (selection: { start: number; end: number }) => void;
@@ -163,8 +161,6 @@ export const EnrichedMarkdownTextInput = ({
   ref,
   markdownStyle,
   style,
-  nativeID,
-  testID,
   defaultValue,
   placeholder,
   placeholderTextColor,
@@ -189,6 +185,7 @@ export const EnrichedMarkdownTextInput = ({
   onBlur,
   contextMenuItems,
   linkRegex: _linkRegex,
+  ...rest
 }: EnrichedMarkdownTextInputProps) => {
   const nativeRef = useRef<NativeRef | null>(null);
 
@@ -411,10 +408,9 @@ export const EnrichedMarkdownTextInput = ({
 
   return (
     <EnrichedMarkdownTextInputNativeComponent
+      {...rest}
       ref={nativeRef}
       style={style}
-      nativeID={nativeID}
-      testID={testID}
       markdownStyle={normalizedStyle}
       defaultValue={defaultValue}
       placeholder={placeholder}
