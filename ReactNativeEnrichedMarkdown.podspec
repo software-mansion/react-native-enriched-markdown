@@ -19,10 +19,9 @@ Pod::Spec.new do |s|
   # When math is enabled, consumers must use `use_frameworks! :linkage => :dynamic` (required for SPM interop).
   enable_math = ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] != '0'
 
-  if enable_math
-    s.source_files = "ios/**/*.{h,m,mm,cpp,swift}", "cpp/md4c/*.{c,h}", "cpp/parser/*.{hpp,cpp}"
-  else
-    s.source_files = "ios/**/*.{h,m,mm,cpp}", "cpp/md4c/*.{c,h}", "cpp/parser/*.{hpp,cpp}"
+  s.source_files = "ios/**/*.{h,m,mm,cpp,swift}", "cpp/md4c/*.{c,h}", "cpp/parser/*.{hpp,cpp}"
+  unless enable_math
+    s.exclude_files = "ios/math/**/*.swift"
   end
 
   preprocessor_defs = '$(inherited) MD4C_USE_UTF8=1'
@@ -45,16 +44,24 @@ Pod::Spec.new do |s|
   }
 
   if enable_math
-    # Xcode generates a module.modulemap at ${BUILT_PRODUCTS_DIR}/include/ for SPM
-    # packages that re-declares RaTeXFFI — but the RaTeX XCFramework already ships
-    # its own definition. Strip the duplicate before compile.
+    # cocoapods-spm generates a module.modulemap at ${BUILT_PRODUCTS_DIR}/include/
+    # that defines RaTeXFFI. The RaTeX XCFramework ships its own definition too.
+    # When both are visible the compiler raises "redefinition of module 'RaTeXFFI'".
+    # Only strip the shared entry when a second definition actually exists; otherwise
+    # local Xcode builds that rely on it as the sole source would break.
     s.script_phases = [
       {
         name: 'Fix RaTeXFFI Module Redefinition',
         script: <<~'SCRIPT',
           MODULEMAP="${BUILT_PRODUCTS_DIR}/include/module.modulemap"
           [ -f "$MODULEMAP" ] || exit 0
-          sed -i '' -E '/^(framework )?module RaTeXFFI /,/^\}/d' "$MODULEMAP"
+          grep -q 'module RaTeXFFI' "$MODULEMAP" || exit 0
+
+          MAPS=$(find "${BUILT_PRODUCTS_DIR}" -name "module.modulemap" \
+                 -exec grep -l 'module RaTeXFFI' {} + 2>/dev/null | wc -l)
+          if [ "$MAPS" -gt 1 ]; then
+            sed -i '' -E '/^(framework )?module RaTeXFFI /,/^\}/d' "$MODULEMAP"
+          fi
         SCRIPT
         execution_position: :before_compile
       }
