@@ -18,12 +18,13 @@ type Props = {
   title: string;
   description: string;
   initialMarkdown?: string;
-} & Omit<EnrichedMarkdownTextInputProps, 'style'>;
+} & EnrichedMarkdownTextInputProps;
 
 export function EnrichedMarkdownTextInputStory({
   title,
   description,
   initialMarkdown,
+  style,
   ...props
 }: Props) {
   const inputRef = useRef<EnrichedMarkdownTextInputInstance>(null);
@@ -48,7 +49,7 @@ export function EnrichedMarkdownTextInputStory({
             ref={inputRef}
             placeholder="Type markdown here..."
             placeholderTextColor="#9CA3AF"
-            style={styles.input}
+            style={{ ...styles.input, ...style }}
             onChangeState={setState}
             onChangeSelection={(sel) => setHasSelection(sel.start !== sel.end)}
             {...props}
