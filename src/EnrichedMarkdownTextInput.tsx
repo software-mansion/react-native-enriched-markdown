@@ -113,7 +113,7 @@ export interface EnrichedMarkdownTextInputInstance {
 }
 
 export interface EnrichedMarkdownTextInputProps
-  extends Omit<ViewProps, 'style'> {
+  extends Omit<ViewProps, 'style' | 'children'> {
   ref?: RefObject<EnrichedMarkdownTextInputInstance | null>;
   defaultValue?: string;
   placeholder?: string;
@@ -408,7 +408,6 @@ export const EnrichedMarkdownTextInput = ({
 
   return (
     <EnrichedMarkdownTextInputNativeComponent
-      {...rest}
       ref={nativeRef}
       style={style}
       markdownStyle={normalizedStyle}
@@ -450,6 +449,7 @@ export const EnrichedMarkdownTextInput = ({
       onStartMention={handleStartMention as NativeProps['onStartMention']}
       onChangeMention={handleChangeMention as NativeProps['onChangeMention']}
       onEndMention={handleEndMention as NativeProps['onEndMention']}
+      {...rest}
     />
   );
 };
