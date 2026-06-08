@@ -387,6 +387,18 @@ export interface NativeProps extends ViewProps {
    * Receives the item label, the currently selected text, and the selection range.
    */
   onContextMenuItemPress?: CodegenTypes.BubblingEventHandler<OnContextMenuItemPressEvent>;
+  /**
+   * Sets the text break strategy on Android (API 23+).
+   * @default 'simple'
+   * @platform android
+   */
+  textBreakStrategy?: CodegenTypes.WithDefault<string, 'simple'>;
+  /**
+   * Sets the line break strategy on iOS 14+.
+   * @default 'none'
+   * @platform ios
+   */
+  lineBreakStrategyIOS?: CodegenTypes.WithDefault<string, 'none'>;
 }
 
 export default codegenNativeComponent<NativeProps>('EnrichedMarkdownText', {

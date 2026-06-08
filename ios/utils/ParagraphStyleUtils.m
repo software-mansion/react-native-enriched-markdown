@@ -3,6 +3,20 @@
 
 NSAttributedString *kNewlineAttributedString;
 static NSParagraphStyle *kBlockSpacerTemplate;
+static NSLineBreakStrategy gLineBreakStrategy = NSLineBreakStrategyNone;
+
+void ENRMSetLineBreakStrategy(NSString *strategy)
+{
+  if ([strategy isEqualToString:@"standard"]) {
+    gLineBreakStrategy = NSLineBreakStrategyStandard;
+  } else if ([strategy isEqualToString:@"hangul-word"]) {
+    gLineBreakStrategy = NSLineBreakStrategyHangulWordPriority;
+  } else if ([strategy isEqualToString:@"push-out"]) {
+    gLineBreakStrategy = NSLineBreakStrategyPushOut;
+  } else {
+    gLineBreakStrategy = NSLineBreakStrategyNone;
+  }
+}
 
 __attribute__((constructor)) static void initParagraphStyleUtils(void)
 {
@@ -25,6 +39,7 @@ NSMutableParagraphStyle *getOrCreateParagraphStyle(NSMutableAttributedString *ou
   NSParagraphStyle *existing = [output attribute:NSParagraphStyleAttributeName atIndex:index effectiveRange:NULL];
   NSMutableParagraphStyle *style = existing ? [existing mutableCopy] : [[NSMutableParagraphStyle alloc] init];
   style.baseWritingDirection = currentWritingDirection();
+  style.lineBreakStrategy = gLineBreakStrategy;
   return style;
 }
 

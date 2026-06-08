@@ -14,6 +14,7 @@ import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
 import com.swmansion.enriched.markdown.spoiler.SpoilerOverlay
 import com.swmansion.enriched.markdown.styles.StyleConfig
+import com.swmansion.enriched.markdown.utils.common.BreakStrategyUtils
 import com.swmansion.enriched.markdown.utils.common.FeatureFlags
 import com.swmansion.enriched.markdown.utils.common.MarkdownSegmentRenderer
 import com.swmansion.enriched.markdown.utils.common.RenderedSegment
@@ -183,6 +184,17 @@ class EnrichedMarkdown
       if (selectionHandleColor == color) return
       selectionHandleColor = color
       applySelectionColorsToSegments()
+    }
+
+    fun setTextBreakStrategy(strategy: String) {
+      BreakStrategyUtils.setStrategy(strategy)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        segmentViews.filterIsInstance<EnrichedMarkdownInternalText>().forEach {
+          it.breakStrategy = BreakStrategyUtils.resolveBreakStrategy()
+        }
+      }
+      dirtyFlags += DirtyFlag.FORCE_HEIGHT
+      renderPending = true
     }
 
     private fun applySelectionColorsToSegments() {

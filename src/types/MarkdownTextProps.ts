@@ -213,4 +213,26 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    * @platform web
    */
   dir?: 'ltr' | 'rtl' | 'auto';
+  /**
+   * Sets the text break strategy on Android (API 23+).
+   * - `'simple'`: no hyphenation, minimal line-break work.
+   * - `'highQuality'` (default): full paragraph optimization with hyphenation.
+   * - `'balanced'`: balances line lengths, no hyphenation.
+   *
+   * Both the measurement pass and the render pass use this value so that
+   * measured line counts match rendered line counts.
+   * @default 'simple'
+   * @platform android
+   */
+  textBreakStrategy?: 'simple' | 'highQuality' | 'balanced';
+  /**
+   * Sets the line break strategy on iOS (iOS 14+).
+   * - `'none'` (default): no additional line break strategy.
+   * - `'standard'`: standard line breaking rules.
+   * - `'hangul-word'`: Korean word-boundary breaking.
+   * - `'push-out'`: pushes text out to avoid orphaned words.
+   * @default 'none'
+   * @platform ios
+   */
+  lineBreakStrategyIOS?: 'none' | 'standard' | 'hangul-word' | 'push-out';
 }

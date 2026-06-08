@@ -148,6 +148,14 @@ class EnrichedMarkdownManager :
     // No-op on Android — only used on iOS
   }
 
+  @ReactProp(name = "lineBreakStrategyIOS")
+  override fun setLineBreakStrategyIOS(
+    view: EnrichedMarkdown?,
+    strategy: String?,
+  ) {
+    // No-op on Android — only used on iOS
+  }
+
   @ReactProp(name = "streamingAnimation", defaultBoolean = false)
   override fun setStreamingAnimation(
     view: EnrichedMarkdown?,
@@ -176,6 +184,14 @@ class EnrichedMarkdownManager :
     mode: String?,
   ) {
     view?.spoilerOverlay = SpoilerOverlay.fromString(mode)
+  }
+
+  @ReactProp(name = "textBreakStrategy")
+  override fun setTextBreakStrategy(
+    view: EnrichedMarkdown?,
+    strategy: String?,
+  ) {
+    view?.setTextBreakStrategy(strategy ?: "simple")
   }
 
   @ReactProp(name = "contextMenuItems")

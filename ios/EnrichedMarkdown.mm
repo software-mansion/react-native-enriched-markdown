@@ -28,6 +28,7 @@
 #import "MarkdownAccessibilityElementBuilder.h"
 #import "MarkdownExtractor.h"
 #import "MeasurementCache.h"
+#import "ParagraphStyleUtils.h"
 #import "RenderedMarkdownSegment.h"
 #import "RuntimeKeys.h"
 #import "SegmentReconciler.h"
@@ -750,8 +751,15 @@ static char kENRMSegmentFadeAnimatorKey;
     }
   }
 
+  BOOL lineBreakStrategyChanged = newViewProps.lineBreakStrategyIOS != oldViewProps.lineBreakStrategyIOS;
+  if (lineBreakStrategyChanged) {
+    NSString *strategy = [[NSString alloc] initWithUTF8String:newViewProps.lineBreakStrategyIOS.c_str()];
+    ENRMSetLineBreakStrategy(strategy);
+    _dirtyFlags |= ENRMDirtyForceHeight;
+  }
+
   if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
-      streamingAnimationChanged || streamingConfigChanged) {
+      streamingAnimationChanged || streamingConfigChanged || lineBreakStrategyChanged) {
     _pendingStyleFingerprint =
         computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];

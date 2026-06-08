@@ -18,6 +18,7 @@ import com.swmansion.enriched.markdown.spans.MathMeasureRequest
 import com.swmansion.enriched.markdown.spans.MathMetrics
 import com.swmansion.enriched.markdown.spans.MathRenderMode
 import com.swmansion.enriched.markdown.styles.StyleConfig
+import com.swmansion.enriched.markdown.utils.common.BreakStrategyUtils
 import com.swmansion.enriched.markdown.utils.common.FeatureFlags
 import com.swmansion.enriched.markdown.utils.common.MarkdownSegmentRenderer
 import com.swmansion.enriched.markdown.utils.common.RenderedSegment
@@ -26,7 +27,6 @@ import com.swmansion.enriched.markdown.utils.common.TableStreamingMode
 import com.swmansion.enriched.markdown.utils.common.getBooleanOrDefault
 import com.swmansion.enriched.markdown.utils.common.getMapOrNull
 import com.swmansion.enriched.markdown.utils.common.getStringOrDefault
-import com.swmansion.enriched.markdown.utils.common.resolveBreakStrategy
 import com.swmansion.enriched.markdown.utils.common.splitASTIntoSegments
 import com.swmansion.enriched.markdown.utils.text.extensions.replaceMathSpansWithPlaceholders
 import com.swmansion.enriched.markdown.views.TableContainerView
@@ -463,7 +463,7 @@ object MeasurementStore {
       .apply {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
           @Suppress("WrongConstant")
-          setBreakStrategy(resolveBreakStrategy())
+          setBreakStrategy(BreakStrategyUtils.resolveBreakStrategy())
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
           setUseLineSpacingFromFallbacks(true)
@@ -542,7 +542,7 @@ object MeasurementStore {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       @Suppress("WrongConstant")
-      builder.setBreakStrategy(resolveBreakStrategy())
+      builder.setBreakStrategy(BreakStrategyUtils.resolveBreakStrategy())
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -580,7 +580,7 @@ object MeasurementStore {
         .apply {
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             @Suppress("WrongConstant")
-            setBreakStrategy(resolveBreakStrategy())
+            setBreakStrategy(BreakStrategyUtils.resolveBreakStrategy())
           }
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             setUseLineSpacingFromFallbacks(true)

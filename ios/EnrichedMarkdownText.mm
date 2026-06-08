@@ -507,7 +507,15 @@ using namespace facebook::react;
     _spoilerManager.spoilerOverlay = ENRMSpoilerOverlayFromString(modeStr);
   }
 
-  if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged) {
+  BOOL lineBreakStrategyChanged = newViewProps.lineBreakStrategyIOS != oldViewProps.lineBreakStrategyIOS;
+  if (lineBreakStrategyChanged) {
+    NSString *strategy = [[NSString alloc] initWithUTF8String:newViewProps.lineBreakStrategyIOS.c_str()];
+    ENRMSetLineBreakStrategy(strategy);
+    _forceHeightUpdateOnNextRender = YES;
+  }
+
+  if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
+      lineBreakStrategyChanged) {
     _pendingStyleFingerprint =
         computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];

@@ -55,6 +55,8 @@ export const EnrichedMarkdownText = ({
   selectionMenuConfig,
   selectionColor,
   selectionHandleColor,
+  textBreakStrategy = 'simple',
+  lineBreakStrategyIOS,
   ...rest
 }: EnrichedMarkdownTextProps) => {
   const normalizedStyleRef = useRef<MarkdownStyleInternal | null>(null);
@@ -166,6 +168,8 @@ export const EnrichedMarkdownText = ({
     onContextMenuItemPress: handleContextMenuItemPress,
     selectionColor,
     selectionHandleColor,
+    textBreakStrategy,
+    lineBreakStrategyIOS,
     ...rest,
   };
 

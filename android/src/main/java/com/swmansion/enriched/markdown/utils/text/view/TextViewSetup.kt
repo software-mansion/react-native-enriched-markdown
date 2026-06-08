@@ -6,13 +6,13 @@ import android.view.textclassifier.TextClassifier
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.view.ViewCompat
 import com.swmansion.enriched.markdown.accessibility.AccessibleMarkdownTextView
-import com.swmansion.enriched.markdown.utils.common.resolveBreakStrategy
+import com.swmansion.enriched.markdown.utils.common.BreakStrategyUtils
 
 fun AccessibleMarkdownTextView.setupAsMarkdownTextView() {
   setBackgroundColor(Color.TRANSPARENT)
   includeFontPadding = false
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-    breakStrategy = resolveBreakStrategy()
+    breakStrategy = BreakStrategyUtils.resolveBreakStrategy()
   }
   movementMethod = LinkLongPressMovementMethod.createInstance()
   setTextIsSelectable(true)

@@ -16,6 +16,8 @@ void applyBlockSpacingAfter(NSMutableAttributedString *output, CGFloat marginBot
 void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat lineHeight);
 void applyTextAlignment(NSMutableAttributedString *output, NSRange range, NSTextAlignment textAlign);
 NSTextAlignment textAlignmentFromString(NSString *textAlign);
+void ENRMSetLineBreakStrategy(NSString *strategy);
+void ENRMSetLineBreakStrategy(NSString *strategy);
 
 __END_DECLS
 
