@@ -112,8 +112,10 @@ export interface EnrichedMarkdownTextInputInstance {
   getCaretRect: () => Promise<CaretRect>;
 }
 
-export interface EnrichedMarkdownTextInputProps
-  extends Omit<ViewProps, 'style' | 'children'> {
+export interface EnrichedMarkdownTextInputProps extends Omit<
+  ViewProps,
+  'style' | 'children'
+> {
   ref?: RefObject<EnrichedMarkdownTextInputInstance | null>;
   defaultValue?: string;
   placeholder?: string;

@@ -81,13 +81,7 @@ To fix formatting errors, run the following:
 yarn lint --fix
 ```
 
-Remember to add tests for your change if possible. Run the unit tests by:
-
-```sh
-yarn test
-```
-
-To run the E2E tests with [Maestro](https://maestro.mobile.dev/), use:
+Remember to add Maestro E2E tests for your change when behavior is user-visible. To run the E2E tests with [Maestro](https://maestro.mobile.dev/), use:
 
 ```sh
 yarn test:e2e:ios
@@ -139,13 +133,13 @@ We follow the [conventional commits specification](https://www.conventionalcommi
 
 Our pre-commit hooks verify that your commit message matches this format when committing.
 
-### Linting and tests
+### Linting and type checking
 
 [ESLint](https://eslint.org/), [Prettier](https://prettier.io/), [TypeScript](https://www.typescriptlang.org/)
 
-We use [TypeScript](https://www.typescriptlang.org/) for type checking, [ESLint](https://eslint.org/) with [Prettier](https://prettier.io/) for linting and formatting the code, and [Jest](https://jestjs.io/) for testing.
+We use [TypeScript](https://www.typescriptlang.org/) for type checking and [ESLint](https://eslint.org/) with [Prettier](https://prettier.io/) for linting and formatting the code. User-facing behavior is covered by Maestro E2E tests.
 
-Our pre-commit hooks verify that the linter and tests pass when committing.
+Our pre-commit hooks verify that lint and typecheck pass when committing.
 
 ### Publishing to npm
 
@@ -165,7 +159,6 @@ The `package.json` file contains various scripts for common tasks:
 - `yarn prepare`: build the library (required before running any app).
 - `yarn typecheck`: type-check files with TypeScript.
 - `yarn lint`: lint files with ESLint.
-- `yarn test`: run unit tests with Jest.
 - `yarn example start`: start the Metro server for the example app.
 - `yarn example android`: run the example app on Android.
 - `yarn example ios`: run the example app on iOS.
@@ -189,7 +182,7 @@ The `package.json` file contains various scripts for common tasks:
 When you're sending a pull request:
 
 - Prefer small pull requests focused on one change.
-- Verify that linters and tests are passing.
+- Verify that lint and typecheck are passing.
 - Review the documentation to make sure it looks good.
 - Follow the pull request template when opening a pull request.
 - For pull requests that change the API or implementation, discuss with maintainers first by opening an issue.

@@ -6,8 +6,10 @@ import type {
   TaskListItemPressEvent,
 } from './events';
 
-export interface EnrichedMarkdownTextProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'style' | 'dir'> {
+export interface EnrichedMarkdownTextProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'style' | 'dir'
+> {
   /**
    * Markdown content to render.
    * @platform ios, android, web
