@@ -24,6 +24,7 @@
     "noUnusedParameters": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "types": ["node"],
     "strict": true,
     "target": "ESNext",
     "verbatimModuleSyntax": true

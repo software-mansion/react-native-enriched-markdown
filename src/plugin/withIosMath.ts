@@ -22,7 +22,7 @@ export const withIosMath: ConfigPlugin<{ enableMath?: boolean }> = (
 
       const lines = contents.split('\n');
       const filteredLines = lines.filter(
-        (line) => !line.includes('ENRICHED_MARKDOWN_ENABLE_MATH')
+        (line: string) => !line.includes('ENRICHED_MARKDOWN_ENABLE_MATH')
       );
 
       filteredLines.unshift(IOS_MATH_OPTION);
