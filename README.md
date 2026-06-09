@@ -1,4 +1,7 @@
 <img src="https://github.com/user-attachments/assets/83cb462c-17df-4809-8b8a-fa4abb258cb3" alt="react-native-enriched-markdown by Software Mansion" width="100%">
+<a href="https://swm-delivery.com/www/delivery/ck-slug.php?zoneid=zone-gh-react-native-enriched-1&n=1"><img src="https://swm-delivery.com/www/images/zone-gh-react-native-enriched-1?n=1" /></a>
+<a href="https://swm-delivery.com/www/delivery/ck-slug.php?zoneid=zone-gh-react-native-enriched-2&n=1"><img src="https://swm-delivery.com/www/images/zone-gh-react-native-enriched-2?n=1" /></a>
+<a href="https://swm-delivery.com/www/delivery/ck-slug.php?zoneid=zone-gh-react-native-enriched-3&n=1"><img src="https://swm-delivery.com/www/images/zone-gh-react-native-enriched-3?n=1" /></a>
 
 # react-native-enriched-markdown
 
