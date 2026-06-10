@@ -25,7 +25,6 @@ NSString *const HighlightAttributeName = @"EnrichedMarkdownHighlight";
                                                             blockColor:blockStyle.color];
   [output addAttribute:NSForegroundColorAttributeName value:foregroundColor range:range];
   [output addAttribute:NSBackgroundColorAttributeName value:[_config highlightBackgroundColor] range:range];
-
   [output addAttribute:HighlightAttributeName value:@YES range:range];
 }
 
