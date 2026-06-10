@@ -322,6 +322,13 @@ function subscriptStyle(style: MarkdownStyleInternal): CSSProperties {
   };
 }
 
+function highlightStyle(style: MarkdownStyleInternal): CSSProperties {
+  return {
+    backgroundColor: style.highlight.backgroundColor,
+    color: style.highlight.color,
+  };
+}
+
 function mathInlineStyle(style: MarkdownStyleInternal): CSSProperties {
   return { color: style.inlineMath.color };
 }
@@ -469,6 +476,7 @@ export interface Styles {
   underline: CSSProperties;
   superscript: CSSProperties;
   subscript: CSSProperties;
+  highlight: CSSProperties;
   mathInline: CSSProperties;
   mathDisplay: CSSProperties;
   table: CSSProperties;
@@ -513,6 +521,7 @@ export function buildStyles(style: MarkdownStyleInternal): Styles {
     underline: underlineStyle(style),
     superscript: superscriptStyle(style),
     subscript: subscriptStyle(style),
+    highlight: highlightStyle(style),
     mathInline: mathInlineStyle(style),
     mathDisplay: mathDisplayStyle(style),
     table: tableStyle(style),

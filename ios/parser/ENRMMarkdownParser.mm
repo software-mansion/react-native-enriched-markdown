@@ -12,6 +12,7 @@ extern MarkdownASTNode *parseMarkdownWithCppParser(NSString *markdown, ENRMMd4cF
     _latexMath = YES;
     _superscript = NO;
     _subscript = NO;
+    _highlight = NO;
   }
   return self;
 }
@@ -28,6 +29,7 @@ extern MarkdownASTNode *parseMarkdownWithCppParser(NSString *markdown, ENRMMd4cF
   copy.latexMath = self.latexMath;
   copy.superscript = self.superscript;
   copy.subscript = self.subscript;
+  copy.highlight = self.highlight;
   return copy;
 }
 

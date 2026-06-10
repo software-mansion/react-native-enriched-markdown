@@ -70,6 +70,8 @@ static jint nodeTypeToJavaOrdinal(NodeType type) {
       return 27;
     case NodeType::Subscript:
       return 28;
+    case NodeType::Highlight:
+      return 29;
     default:
       return 0;
   }
@@ -217,6 +219,10 @@ JNIEXPORT jobject JNICALL Java_com_swmansion_enriched_markdown_parser_Parser_nat
         jfieldID subscriptField = env->GetFieldID(flagsClass, "subscript", "Z");
         if (subscriptField) {
           md4cFlags.subscript = env->GetBooleanField(flags, subscriptField) == JNI_TRUE;
+        }
+        jfieldID highlightField = env->GetFieldID(flagsClass, "highlight", "Z");
+        if (highlightField) {
+          md4cFlags.highlight = env->GetBooleanField(flags, highlightField) == JNI_TRUE;
         }
         jfieldID permissiveAutolinksField = env->GetFieldID(flagsClass, "permissiveAutolinks", "Z");
         if (permissiveAutolinksField) {

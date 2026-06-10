@@ -171,6 +171,11 @@ interface SubscriptStyleInternal {
   baselineOffsetScale: number;
 }
 
+interface HighlightStyleInternal {
+  color: string;
+  backgroundColor: string;
+}
+
 export interface MarkdownStyleInternal {
   paragraph: ParagraphStyleInternal;
   h1: HeadingStyleInternal;
@@ -199,4 +204,5 @@ export interface MarkdownStyleInternal {
   spoiler: SpoilerStyleInternal;
   superscript: SuperscriptStyleInternal;
   subscript: SubscriptStyleInternal;
+  highlight: HighlightStyleInternal;
 }

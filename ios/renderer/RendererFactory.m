@@ -12,6 +12,7 @@
 #endif
 #import "ENRMSpoilerRenderer.h"
 #import "HeadingRenderer.h"
+#import "HighlightRenderer.h"
 #import "LinkRenderer.h"
 #import "ListItemRenderer.h"
 #import "ListRenderer.h"
@@ -84,6 +85,8 @@
       return [[SuperscriptRenderer alloc] initWithRendererFactory:self config:_config];
     case MarkdownNodeTypeSubscript:
       return [[SubscriptRenderer alloc] initWithRendererFactory:self config:_config];
+    case MarkdownNodeTypeHighlight:
+      return [[HighlightRenderer alloc] initWithRendererFactory:self config:_config];
     case MarkdownNodeTypeParagraph:
       return [[ParagraphRenderer alloc] initWithRendererFactory:self config:_config];
     case MarkdownNodeTypeLink:

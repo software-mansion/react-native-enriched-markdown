@@ -188,6 +188,11 @@ NS_ASSUME_NONNULL_END
 // Strikethrough properties
 - (RCTUIColor *)strikethroughColor;
 - (void)setStrikethroughColor:(RCTUIColor *)newValue;
+// Highlight properties
+- (nullable RCTUIColor *)highlightColor;
+- (void)setHighlightColor:(nullable RCTUIColor *)newValue;
+- (nullable RCTUIColor *)highlightBackgroundColor;
+- (void)setHighlightBackgroundColor:(nullable RCTUIColor *)newValue;
 // Underline properties
 - (RCTUIColor *)underlineColor;
 - (void)setUnderlineColor:(RCTUIColor *)newValue;

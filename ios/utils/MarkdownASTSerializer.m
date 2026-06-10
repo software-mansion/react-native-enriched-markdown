@@ -61,6 +61,12 @@ static void serializeNode(MarkdownASTNode *node, NSMutableString *buffer)
       [buffer appendString:@"~"];
       break;
 
+    case MarkdownNodeTypeHighlight:
+      [buffer appendString:@"=="];
+      serializeChildren(node, buffer);
+      [buffer appendString:@"=="];
+      break;
+
     case MarkdownNodeTypeCode:
       [buffer appendString:@"`"];
       serializeChildren(node, buffer);

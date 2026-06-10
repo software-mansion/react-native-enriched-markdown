@@ -375,6 +375,18 @@ export const subscriptStyledDefaults: SubscriptStyleControls = {
   baselineOffsetScale: 0.2,
 };
 
+export type HighlightStyleControls = {
+  highlight: boolean;
+  color: string;
+  backgroundColor: string;
+};
+
+export const highlightStyledDefaults: HighlightStyleControls = {
+  highlight: true,
+  color: '#1e3a5f',
+  backgroundColor: '#fef08a',
+};
+
 type NumberControlRange = {
   min: number;
   max: number;

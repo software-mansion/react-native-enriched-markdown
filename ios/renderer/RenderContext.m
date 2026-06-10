@@ -277,6 +277,9 @@
   return (attrs[NSLinkAttributeName] != nil || attrs[CodeAttributeName] != nil);
 }
 
+// TODO: Unify calculateStrongColor and calculateHighlightColor into a single helper that
+// resolves inline foreground color from (configColor, inheritanceBaseline, blockColor).
+
 /**
  * Calculates whether a strong color should override the block color.
  */
@@ -286,6 +289,16 @@
     return blockColor;
   }
   return configStrongColor;
+}
+
++ (RCTUIColor *)calculateHighlightColor:(RCTUIColor *)configHighlightColor
+                         paragraphColor:(RCTUIColor *)paragraphColor
+                             blockColor:(RCTUIColor *)blockColor
+{
+  if ([configHighlightColor isEqual:paragraphColor]) {
+    return blockColor;
+  }
+  return configHighlightColor;
 }
 
 /**
