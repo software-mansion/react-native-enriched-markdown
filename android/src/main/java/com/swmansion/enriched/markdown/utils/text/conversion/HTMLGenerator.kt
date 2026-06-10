@@ -773,9 +773,12 @@ object HTMLGenerator {
       html
         .append("<mark style=\"background-color: ")
         .append(styles.highlightBackgroundColor)
-        .append("; color: ")
-        .append(styles.highlightColor)
-        .append(";\">")
+      if (styles.highlightColor != styles.paragraphColor) {
+        html
+          .append("; color: ")
+          .append(styles.highlightColor)
+      }
+      html.append(";\">")
     }
 
     link?.let {

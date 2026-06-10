@@ -518,10 +518,12 @@ static void generateInlineHTML(NSMutableString *html, NSAttributedString *attrib
                         BOOL isHighlight = [attrs[HighlightAttributeName] boolValue];
 
                         if (isHighlight) {
-                          NSString *foregroundCSS =
-                              colorToCSS(attrs[NSForegroundColorAttributeName]) ?: styles.highlightColor;
-                          [html appendFormat:@"<mark style=\"background-color: %@; color: %@;\">",
-                                             styles.highlightBackgroundColor, foregroundCSS];
+                          NSMutableString *markStyle = [NSMutableString
+                              stringWithFormat:@"background-color: %@", styles.highlightBackgroundColor];
+                          if (styles.highlightColor && ![styles.highlightColor isEqualToString:styles.paragraphColor]) {
+                            [markStyle appendFormat:@"; color: %@", styles.highlightColor];
+                          }
+                          [html appendFormat:@"<mark style=\"%@\">", markStyle];
                         }
 
                         if (linkAttr) {
