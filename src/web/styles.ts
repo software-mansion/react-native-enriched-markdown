@@ -323,13 +323,13 @@ function subscriptStyle(style: MarkdownStyleInternal): CSSProperties {
 }
 
 function highlightStyle(style: MarkdownStyleInternal): CSSProperties {
-  const result: CSSProperties = {
+  return {
     backgroundColor: style.highlight.backgroundColor,
+    color:
+      style.highlight.color !== style.paragraph.color
+        ? style.highlight.color
+        : 'inherit',
   };
-  if (style.highlight.color !== style.paragraph.color) {
-    result.color = style.highlight.color;
-  }
-  return result;
 }
 
 function mathInlineStyle(style: MarkdownStyleInternal): CSSProperties {

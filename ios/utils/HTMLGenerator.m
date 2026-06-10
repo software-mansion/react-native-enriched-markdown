@@ -522,6 +522,8 @@ static void generateInlineHTML(NSMutableString *html, NSAttributedString *attrib
                               stringWithFormat:@"background-color: %@", styles.highlightBackgroundColor];
                           if (styles.highlightColor && ![styles.highlightColor isEqualToString:styles.paragraphColor]) {
                             [markStyle appendFormat:@"; color: %@", styles.highlightColor];
+                          } else {
+                            [markStyle appendString:@"; color: inherit"];
                           }
                           [html appendFormat:@"<mark style=\"%@\">", markStyle];
                         }

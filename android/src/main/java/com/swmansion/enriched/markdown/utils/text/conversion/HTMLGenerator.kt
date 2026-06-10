@@ -777,6 +777,8 @@ object HTMLGenerator {
         html
           .append("; color: ")
           .append(styles.highlightColor)
+      } else {
+        html.append("; color: inherit")
       }
       html.append(";\">")
     }
