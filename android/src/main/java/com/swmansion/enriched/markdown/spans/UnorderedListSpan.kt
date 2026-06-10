@@ -35,11 +35,14 @@ class UnorderedListSpan(
   }
 
   private val radius: Float = listStyle.bulletSize / 2f
+  private val ringStrokeWidth: Float = radius * 0.3f
   private val markerColumnWidth: Float = listStyle.effectiveMarkerWidth(radius)
 
   private fun configureBulletPaint(): Paint =
     sharedBulletPaint.apply {
       color = listStyle.bulletColor
+      style = Paint.Style.FILL
+      strokeWidth = 0f
     }
 
   override fun getMarkerWidth(): Float = markerColumnWidth
@@ -64,6 +67,26 @@ class UnorderedListSpan(
     val fontMetrics = paint.fontMetrics
     val bulletY = baseline + (fontMetrics.ascent + fontMetrics.descent) / 2f
 
-    canvas.drawCircle(bulletX, bulletY, radius, bulletPaint)
+    when (depth) {
+      0 -> {
+        canvas.drawCircle(bulletX, bulletY, radius, bulletPaint)
+      }
+
+      1 -> {
+        bulletPaint.style = Paint.Style.STROKE
+        bulletPaint.strokeWidth = ringStrokeWidth
+        canvas.drawCircle(bulletX, bulletY, radius - ringStrokeWidth / 2f, bulletPaint)
+      }
+
+      else -> {
+        canvas.drawRect(
+          bulletX - radius,
+          bulletY - radius,
+          bulletX + radius,
+          bulletY + radius,
+          bulletPaint,
+        )
+      }
+    }
   }
 }
