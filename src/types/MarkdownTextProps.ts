@@ -221,7 +221,7 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    *
    * Both the measurement pass and the render pass use this value so that
    * measured line counts match rendered line counts.
-   * @default 'simple'
+   * @default 'highQuality'
    * @platform android
    */
   textBreakStrategy?: 'simple' | 'highQuality' | 'balanced';

@@ -390,10 +390,10 @@ export interface NativeProps extends ViewProps {
   onContextMenuItemPress?: CodegenTypes.BubblingEventHandler<OnContextMenuItemPressEvent>;
   /**
    * Sets the text break strategy on Android (API 23+).
-   * @default 'simple'
+   * @default 'highQuality'
    * @platform android
    */
-  textBreakStrategy?: CodegenTypes.WithDefault<string, 'simple'>;
+  textBreakStrategy?: CodegenTypes.WithDefault<string, 'highQuality'>;
   /**
    * Sets the line break strategy on iOS 14+.
    * @default 'none'

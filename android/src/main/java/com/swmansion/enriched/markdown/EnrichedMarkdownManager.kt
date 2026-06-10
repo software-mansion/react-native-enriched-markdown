@@ -191,7 +191,7 @@ class EnrichedMarkdownManager :
     view: EnrichedMarkdown?,
     strategy: String?,
   ) {
-    view?.setTextBreakStrategy(strategy ?: "simple")
+    view?.setTextBreakStrategy(strategy ?: "highQuality")
   }
 
   @ReactProp(name = "contextMenuItems")
