@@ -11,6 +11,7 @@ struct Md4cFlags {
     bool latexMath = true;
     bool superscript = false;
     bool subscript = false;
+    bool highlight = false;
     bool permissiveAutolinks = true;
 };
 

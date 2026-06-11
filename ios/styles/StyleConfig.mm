@@ -121,6 +121,9 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   RCTUIColor *_emphasisColor;
   // Strikethrough properties
   RCTUIColor *_strikethroughColor;
+  // Highlight properties
+  RCTUIColor *_highlightColor;
+  RCTUIColor *_highlightBackgroundColor;
   // Underline properties
   RCTUIColor *_underlineColor;
   // Code properties
@@ -394,6 +397,8 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_emphasisFontStyle = [_emphasisFontStyle copy];
   copy->_emphasisColor = [_emphasisColor copy];
   copy->_strikethroughColor = [_strikethroughColor copy];
+  copy->_highlightColor = [_highlightColor copy];
+  copy->_highlightBackgroundColor = [_highlightBackgroundColor copy];
   copy->_underlineColor = [_underlineColor copy];
   copy->_codeFontFamily = [_codeFontFamily copy];
   copy->_codeFontSize = _codeFontSize;
@@ -1406,6 +1411,26 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setStrikethroughColor:(RCTUIColor *)newValue
 {
   _strikethroughColor = newValue;
+}
+
+- (RCTUIColor *)highlightColor
+{
+  return _highlightColor;
+}
+
+- (void)setHighlightColor:(RCTUIColor *)newValue
+{
+  _highlightColor = newValue;
+}
+
+- (RCTUIColor *)highlightBackgroundColor
+{
+  return _highlightBackgroundColor;
+}
+
+- (void)setHighlightBackgroundColor:(RCTUIColor *)newValue
+{
+  _highlightBackgroundColor = newValue;
 }
 
 - (RCTUIColor *)underlineColor

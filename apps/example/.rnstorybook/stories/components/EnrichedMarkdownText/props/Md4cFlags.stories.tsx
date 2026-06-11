@@ -11,6 +11,7 @@ type Md4cFlagsStoryExtra = {
   underline: boolean;
   superscript: boolean;
   subscript: boolean;
+  highlight: boolean;
   latexMath: boolean;
   flavor: MarkdownFlavor;
 };
@@ -20,6 +21,8 @@ const MARKDOWN = `_underline_
 text^superscript^
 
 text~subscript~
+
+==highlight==
 
 $E = mc^2$`;
 
@@ -38,6 +41,10 @@ const argTypes = {
     description:
       'md4cFlags.subscript — ~text~ parsing (disables single-tilde strikethrough).',
   },
+  highlight: {
+    control: 'boolean',
+    description: 'md4cFlags.highlight — ==text== parsing.',
+  },
   latexMath: {
     control: 'boolean',
     description: 'md4cFlags.latexMath — $...$ and $$...$$ math parsing.',
@@ -54,16 +61,24 @@ export const Default: TextStory<Md4cFlagsStoryExtra> = {
     underline: true,
     superscript: true,
     subscript: true,
+    highlight: true,
     latexMath: true,
     flavor: 'github',
   },
   argTypes,
-  render: ({ underline, superscript, subscript, latexMath, ...args }) => (
+  render: ({
+    underline,
+    superscript,
+    subscript,
+    highlight,
+    latexMath,
+    ...args
+  }) => (
     <EnrichedMarkdownTextStory
       title="Md4c-Flags"
       description="Cross-cutting md4cFlags demo. Individual inline/block stories also expose the minimum flag each syntax needs."
       {...args}
-      md4cFlags={{ underline, superscript, subscript, latexMath }}
+      md4cFlags={{ underline, superscript, subscript, highlight, latexMath }}
     />
   ),
 };

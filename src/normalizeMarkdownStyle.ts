@@ -221,6 +221,10 @@ const DEFAULT_NORMALIZED_STYLE = Object.freeze({
     fontScale: Platform.select({ android: 0.65, default: 0.75 }),
     baselineOffsetScale: 0.2,
   },
+  highlight: {
+    color: defaultTextColor,
+    backgroundColor: normalizeColor('#FEF08A')!,
+  },
 }) as MarkdownStyleInternal;
 
 const refCache = new WeakMap<MarkdownStyle, MarkdownStyleInternal>();
@@ -287,6 +291,14 @@ export const normalizeMarkdownStyle = (
     (result.taskList as { checkboxSize: number }).checkboxSize = Math.round(
       listSize * 0.9
     );
+  }
+
+  if (!style.highlight?.color) {
+    const paragraphColor = (
+      result.paragraph as MarkdownStyleInternal['paragraph']
+    ).color;
+    (result.highlight as MarkdownStyleInternal['highlight']).color =
+      paragraphColor;
   }
 
   const finalResult = Object.freeze(result) as unknown as MarkdownStyleInternal;

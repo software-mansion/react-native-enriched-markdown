@@ -257,6 +257,14 @@ class StyleConfig(
     SubscriptStyle.fromReadableMap(map)
   }
 
+  val highlightStyle: HighlightStyle by lazy {
+    val map =
+      requireNotNull(style.getMap("highlight")) {
+        "Highlight style not found. JS should always provide defaults."
+      }
+    HighlightStyle.fromReadableMap(map, styleParser)
+  }
+
   val tableTypeface: Typeface? by lazy {
     val fontFamily = tableStyle.fontFamily.takeIf { it.isNotEmpty() }
     val fontWeight = parseFontWeight(tableStyle.fontWeight)
@@ -323,7 +331,8 @@ class StyleConfig(
       inlineMathStyle == other.inlineMathStyle &&
       spoilerStyle == other.spoilerStyle &&
       superscriptStyle == other.superscriptStyle &&
-      subscriptStyle == other.subscriptStyle
+      subscriptStyle == other.subscriptStyle &&
+      highlightStyle == other.highlightStyle
   }
 
   override fun hashCode(): Int {
@@ -349,6 +358,7 @@ class StyleConfig(
     result = 31 * result + spoilerStyle.hashCode()
     result = 31 * result + superscriptStyle.hashCode()
     result = 31 * result + subscriptStyle.hashCode()
+    result = 31 * result + highlightStyle.hashCode()
     return result
   }
 }

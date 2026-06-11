@@ -16,6 +16,7 @@ import type {
   ParagraphStyleControls,
   SingleHeadingStyleControls,
   SpoilerStyleControls,
+  HighlightStyleControls,
   StrikethroughStyleControls,
   StrongStyleControls,
   SubscriptStyleControls,
@@ -324,6 +325,15 @@ export function toSubscriptStyle(
   return {
     fontScale: controls.fontScale,
     baselineOffsetScale: controls.baselineOffsetScale,
+  };
+}
+
+export function toHighlightStyle(
+  controls: Omit<HighlightStyleControls, 'highlight'>
+): NonNullable<MarkdownStyle['highlight']> {
+  return {
+    ...(controls.color ? { color: controls.color } : {}),
+    backgroundColor: controls.backgroundColor,
   };
 }
 

@@ -123,6 +123,59 @@ void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat l
   [output addAttribute:NSParagraphStyleAttributeName value:style range:range];
 }
 
+// TODO: Extend baseline offset to every block that calls applyLineHeight (headings, blockquotes,
+// code blocks, list items). Keep per-block range scoping — not a whole-document pass like RN Text,
+// since blocks can use different line heights. Optionally consolidate into a single post-pass in
+// AttributedRenderer; evaluate RN's per-line mode (enableIOSTextBaselineOffsetPerLine) if needed.
+void applyBaselineOffset(NSMutableAttributedString *output, NSRange range)
+{
+  if (range.length == 0) {
+    return;
+  }
+
+  __block CGFloat maximumLineHeight = 0;
+  [output enumerateAttribute:NSParagraphStyleAttributeName
+                     inRange:range
+                     options:NSAttributedStringEnumerationLongestEffectiveRangeNotRequired
+                  usingBlock:^(NSParagraphStyle *paragraphStyle, __unused NSRange subrange, __unused BOOL *stop) {
+                    if (!paragraphStyle) {
+                      return;
+                    }
+                    maximumLineHeight = MAX(paragraphStyle.maximumLineHeight, maximumLineHeight);
+                  }];
+
+  if (maximumLineHeight <= 0) {
+    return;
+  }
+
+  __block CGFloat maximumFontLineHeight = 0;
+  [output enumerateAttribute:NSFontAttributeName
+                     inRange:range
+                     options:NSAttributedStringEnumerationLongestEffectiveRangeNotRequired
+                  usingBlock:^(UIFont *font, __unused NSRange subrange, __unused BOOL *stop) {
+                    if (!font) {
+                      return;
+                    }
+                    maximumFontLineHeight = MAX(font.lineHeight, maximumFontLineHeight);
+                  }];
+
+  if (maximumFontLineHeight <= 0 || maximumLineHeight < maximumFontLineHeight) {
+    return;
+  }
+
+  CGFloat baseLineOffset = (maximumLineHeight - maximumFontLineHeight) / 2.0;
+
+  [output enumerateAttribute:NSBaselineOffsetAttributeName
+                     inRange:range
+                     options:0
+                  usingBlock:^(NSNumber *existingOffset, NSRange subrange, BOOL *stop) {
+                    if (existingOffset != nil) {
+                      return;
+                    }
+                    [output addAttribute:NSBaselineOffsetAttributeName value:@(baseLineOffset) range:subrange];
+                  }];
+}
+
 void applyTextAlignment(NSMutableAttributedString *output, NSRange range, NSTextAlignment textAlign)
 {
   NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location);

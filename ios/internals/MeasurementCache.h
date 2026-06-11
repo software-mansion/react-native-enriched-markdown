@@ -38,6 +38,7 @@ struct MeasurementCacheKey {
   bool md4cFlagsUnderline;
   bool md4cFlagsSuperscript;
   bool md4cFlagsSubscript;
+  bool md4cFlagsHighlight;
   bool md4cFlagsLatexMath;
   size_t styleFingerprint;
   CGFloat fontScale;
@@ -46,12 +47,12 @@ struct MeasurementCacheKey {
   bool operator==(const MeasurementCacheKey &other) const
   {
     return std::tie(markdown, maxWidth, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier,
-                    md4cFlagsUnderline, md4cFlagsSuperscript, md4cFlagsSubscript, md4cFlagsLatexMath, styleFingerprint,
-                    fontScale, flavor) == std::tie(other.markdown, other.maxWidth, other.allowTrailingMargin,
-                                                   other.allowFontScaling, other.maxFontSizeMultiplier,
-                                                   other.md4cFlagsUnderline, other.md4cFlagsSuperscript,
-                                                   other.md4cFlagsSubscript, other.md4cFlagsLatexMath,
-                                                   other.styleFingerprint, other.fontScale, other.flavor);
+                    md4cFlagsUnderline, md4cFlagsSuperscript, md4cFlagsSubscript, md4cFlagsHighlight,
+                    md4cFlagsLatexMath, styleFingerprint, fontScale, flavor) ==
+           std::tie(other.markdown, other.maxWidth, other.allowTrailingMargin, other.allowFontScaling,
+                    other.maxFontSizeMultiplier, other.md4cFlagsUnderline, other.md4cFlagsSuperscript,
+                    other.md4cFlagsSubscript, other.md4cFlagsHighlight, other.md4cFlagsLatexMath,
+                    other.styleFingerprint, other.fontScale, other.flavor);
   }
 };
 
@@ -67,6 +68,7 @@ struct MeasurementCacheKeyHash {
     HashUtils::hash_one(h, key.md4cFlagsUnderline);
     HashUtils::hash_one(h, key.md4cFlagsSuperscript);
     HashUtils::hash_one(h, key.md4cFlagsSubscript);
+    HashUtils::hash_one(h, key.md4cFlagsHighlight);
     HashUtils::hash_one(h, key.md4cFlagsLatexMath);
     HashUtils::hash_one(h, key.styleFingerprint);
     HashUtils::hash_one(h, key.fontScale);
@@ -117,6 +119,7 @@ template <typename StyleStruct> inline size_t computeStyleFingerprint(const Styl
              s.codeBlock.borderWidth);
   hashFields(s.code.fontFamily, s.code.fontSize);
   hashFields(s.link.fontFamily, s.strong.fontFamily, s.strong.fontWeight, s.em.fontFamily, s.em.fontStyle);
+  hashFields(s.highlight.backgroundColor, s.highlight.color);
 
   // Visual/Spacing Elements
   hashFields(s.image.height, s.image.marginTop, s.image.marginBottom);
@@ -146,6 +149,7 @@ inline MeasurementCacheKey buildMeasurementCacheKey(const PropsType &props, CGFl
       .md4cFlagsUnderline = props.md4cFlags.underline,
       .md4cFlagsSuperscript = props.md4cFlags.superscript,
       .md4cFlagsSubscript = props.md4cFlags.subscript,
+      .md4cFlagsHighlight = props.md4cFlags.highlight,
       .md4cFlagsLatexMath = props.md4cFlags.latexMath,
       .styleFingerprint = computeStyleFingerprint(props.markdownStyle),
       .fontScale = fontScale,

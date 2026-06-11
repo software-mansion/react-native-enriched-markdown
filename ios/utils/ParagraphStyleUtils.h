@@ -14,6 +14,7 @@ NSUInteger applyParagraphSpacingBefore(NSMutableAttributedString *output, NSRang
 NSUInteger applyBlockSpacingBefore(NSMutableAttributedString *output, NSUInteger insertionPoint, CGFloat marginTop);
 void applyBlockSpacingAfter(NSMutableAttributedString *output, CGFloat marginBottom);
 void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat lineHeight);
+void applyBaselineOffset(NSMutableAttributedString *output, NSRange range);
 void applyTextAlignment(NSMutableAttributedString *output, NSRange range, NSTextAlignment textAlign);
 NSTextAlignment textAlignmentFromString(NSString *textAlign);
 
