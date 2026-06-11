@@ -72,14 +72,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/software-mansion-labs/react-native-enriched-markdown.git"
+    "url": "git+https://github.com/software-mansion/react-native-enriched-markdown.git"
   },
   "author": "Gregory Moskaliuk <mosckalyuck@gmail.com> (https://github.com/hryhoriiK97)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/software-mansion-labs/react-native-enriched-markdown/issues"
+    "url": "https://github.com/software-mansion/react-native-enriched-markdown/issues"
   },
-  "homepage": "https://github.com/software-mansion-labs/react-native-enriched-markdown#readme",
+  "homepage": "https://github.com/software-mansion/react-native-enriched-markdown#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

@@ -16,7 +16,7 @@ To get started with the project, make sure you have the correct version of [Node
 ### Cloning the Repository
 
 ```sh
-git clone https://github.com/software-mansion-labs/react-native-enriched-markdown.git
+git clone https://github.com/software-mansion/react-native-enriched-markdown.git
 cd react-native-enriched-markdown
 ```
 
