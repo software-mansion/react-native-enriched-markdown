@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/erweixin/RaTeX.git",
       "state" : {
-        "revision" : "2d0233e6323f449b95d369264a0090e2ce1ee4cb",
-        "version" : "0.1.9"
+        "revision" : "f45ce1b7155390257ced1a5f6931ace65c4a3074",
+        "version" : "0.1.11"
       }
     }
   ],
