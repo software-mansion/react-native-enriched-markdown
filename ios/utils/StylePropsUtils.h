@@ -613,6 +613,20 @@ BOOL applyMarkdownStyleToConfig(StyleConfig *config, const MarkdownStyle &newSty
     changed = YES;
   }
 
+  // ── Highlight ──────────────────────────────────────────────────────────────
+
+  if (newStyle.highlight.color != oldStyle.highlight.color) {
+    RCTUIColor *highlightColor = RCTUIColorFromSharedColor(newStyle.highlight.color);
+    [config setHighlightColor:highlightColor];
+    changed = YES;
+  }
+
+  if (newStyle.highlight.backgroundColor != oldStyle.highlight.backgroundColor) {
+    RCTUIColor *highlightBackgroundColor = RCTUIColorFromSharedColor(newStyle.highlight.backgroundColor);
+    [config setHighlightBackgroundColor:highlightBackgroundColor];
+    changed = YES;
+  }
+
   // ── Underline ──────────────────────────────────────────────────────────────
 
   if (newStyle.underline.color != oldStyle.underline.color) {

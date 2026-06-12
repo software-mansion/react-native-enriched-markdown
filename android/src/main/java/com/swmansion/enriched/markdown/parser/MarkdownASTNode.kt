@@ -36,6 +36,7 @@ data class MarkdownASTNode(
     Spoiler,
     Superscript,
     Subscript,
+    Highlight,
   }
 
   fun getAttribute(key: String): String? = attributes[key]

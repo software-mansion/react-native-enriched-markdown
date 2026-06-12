@@ -27,7 +27,7 @@ on:
 
 jobs:
   npm-build:
-    if: github.repository == 'software-mansion-labs/react-native-enriched-markdown'
+    if: github.repository == 'software-mansion/react-native-enriched-markdown'
     runs-on: ubuntu-latest
 
     permissions:
@@ -51,7 +51,7 @@ jobs:
 
       - name: Publish manual release
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: software-mansion-labs/npm-package-publish@main
+        uses: software-mansion/npm-package-publish@main
         with:
           package-name: 'react-native-enriched-markdown'
           package-json-path: 'package.json'
@@ -62,7 +62,7 @@ jobs:
 
       - name: Publish automatic nightly release
         if: ${{ github.event_name == 'schedule' }}
-        uses: software-mansion-labs/npm-package-publish@main
+        uses: software-mansion/npm-package-publish@main
         with:
           package-name: 'react-native-enriched-markdown'
           package-json-path: 'package.json'

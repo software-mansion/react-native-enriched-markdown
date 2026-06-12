@@ -94,6 +94,13 @@ typedef NS_ENUM(NSInteger, ListType) { ListTypeUnordered, ListTypeOrdered };
 + (RCTUIColor *)calculateStrongColor:(RCTUIColor *)configStrongColor blockColor:(RCTUIColor *)blockColor;
 
 /**
+ * Resolves highlight foreground color: uses block color when config matches paragraph default.
+ */
++ (RCTUIColor *)calculateHighlightColor:(RCTUIColor *)configHighlightColor
+                         paragraphColor:(RCTUIColor *)paragraphColor
+                             blockColor:(RCTUIColor *)blockColor;
+
+/**
  * Calculates the range for content rendered between start and current output length.
  * Returns a range with length 0 if no content was rendered.
  */

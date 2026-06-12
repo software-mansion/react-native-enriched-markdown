@@ -196,6 +196,9 @@ The library provides sensible default styles for all Markdown elements out of th
       fontScale: 0.75,
       baselineOffsetScale: 0.20,
     },
+    highlight: {
+      backgroundColor: '#FEF08A',
+    },
   }}
 />
 ```
@@ -357,6 +360,30 @@ function App() {
 | Property | Type | Description |
 |----------|------|-------------|
 | `color` | `string` | Underline color (iOS only) |
+
+### Highlight-specific
+
+Styles for highlighted text (`==text==`). Requires `md4cFlags={{ highlight: true }}` to enable the parser. Font size, family, and weight inherit from the surrounding block; only `color` and `backgroundColor` are overridden.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `color` | `string` | Text color inside the highlight. Inherits the block color when omitted |
+| `backgroundColor` | `string` | Background color of the highlight span. Default: `#FEF08A` |
+
+```tsx
+<EnrichedMarkdownText
+  markdown="This is ==important== text with ==**bold**== inside."
+  md4cFlags={{ highlight: true }}
+  markdownStyle={{
+    highlight: {
+      backgroundColor: '#FEF08A',
+    },
+  }}
+/>
+```
+
+> [!NOTE]
+> When `highlight.color` is omitted, it inherits the surrounding block color. When set explicitly, it applies to the entire `==...==` span, including nested bold or italic text. Nested formatting (bold, italic, links) is preserved.
 
 ### Image-specific
 

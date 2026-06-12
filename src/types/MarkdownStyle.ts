@@ -220,6 +220,19 @@ interface SubscriptStyle {
   baselineOffsetScale?: number;
 }
 
+interface HighlightStyle {
+  /**
+   * Text color inside the highlight span.
+   * Inherits the surrounding block color when omitted.
+   */
+  color?: string;
+  /**
+   * Background color of the highlight span.
+   * @default '#FEF08A'
+   */
+  backgroundColor?: string;
+}
+
 export interface MarkdownStyle {
   paragraph?: ParagraphStyle;
   h1?: HeadingStyle;
@@ -266,6 +279,7 @@ export interface MarkdownStyle {
   spoiler?: SpoilerStyle;
   superscript?: SuperscriptStyle;
   subscript?: SubscriptStyle;
+  highlight?: HighlightStyle;
 }
 
 /**
@@ -302,4 +316,11 @@ export interface Md4cFlags {
    * @default true
    */
   latexMath?: boolean;
+  /**
+   * Enable highlight span parsing (==text==).
+   * When enabled, double equals are treated as highlight markers.
+   * When disabled, equals signs are treated as plain text.
+   * @default false
+   */
+  highlight?: boolean;
 }

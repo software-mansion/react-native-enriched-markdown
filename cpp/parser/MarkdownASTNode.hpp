@@ -36,7 +36,8 @@ enum class NodeType {
     LatexMathDisplay,
     Spoiler,
     Superscript,
-    Subscript
+    Subscript,
+    Highlight
 };
 
 struct MarkdownASTNode {

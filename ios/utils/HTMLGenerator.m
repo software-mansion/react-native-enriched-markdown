@@ -3,6 +3,7 @@
 #import "CodeBackground.h"
 #import "ENRMFeatureFlags.h"
 #import "ENRMImageAttachment.h"
+#import "HighlightRenderer.h"
 #if ENRICHED_MARKDOWN_MATH
 #import "ENRMMathInlineAttachment.h"
 #endif
@@ -115,6 +116,8 @@ typedef struct {
 @property (nonatomic) CGFloat thematicBreakMarginBottom;
 @property (nonatomic, copy) NSString *strikethroughColor;
 @property (nonatomic, copy) NSString *underlineColor;
+@property (nonatomic, copy) NSString *highlightColor;
+@property (nonatomic, copy) NSString *highlightBackgroundColor;
 @end
 
 @implementation CachedStyles
@@ -299,6 +302,8 @@ static CachedStyles *cacheStyles(StyleConfig *styleConfig)
   cache.thematicBreakMarginBottom = [styleConfig thematicBreakMarginBottom];
   cache.strikethroughColor = colorToCSS([styleConfig strikethroughColor]);
   cache.underlineColor = colorToCSS([styleConfig underlineColor]);
+  cache.highlightColor = colorToCSS([styleConfig highlightColor]);
+  cache.highlightBackgroundColor = colorToCSS([styleConfig highlightBackgroundColor]);
 
   return cache;
 }
@@ -510,6 +515,19 @@ static void generateInlineHTML(NSMutableString *html, NSAttributedString *attrib
                           isItalic = (traits & UIFontDescriptorTraitItalic) != 0;
                         }
 
+                        BOOL isHighlight = [attrs[HighlightAttributeName] boolValue];
+
+                        if (isHighlight) {
+                          NSMutableString *markStyle = [NSMutableString
+                              stringWithFormat:@"background-color: %@", styles.highlightBackgroundColor];
+                          if (styles.highlightColor && ![styles.highlightColor isEqualToString:styles.paragraphColor]) {
+                            [markStyle appendFormat:@"; color: %@", styles.highlightColor];
+                          } else {
+                            [markStyle appendString:@"; color: inherit"];
+                          }
+                          [html appendFormat:@"<mark style=\"%@\">", markStyle];
+                        }
+
                         if (linkAttr) {
                           NSString *href =
                               [linkAttr isKindOfClass:[NSURL class]] ? [(NSURL *)linkAttr absoluteString] : linkAttr;
@@ -580,6 +598,8 @@ static void generateInlineHTML(NSMutableString *html, NSAttributedString *attrib
                           [html appendString:@"</code>"];
                         if (linkAttr)
                           [html appendString:@"</a>"];
+                        if (isHighlight)
+                          [html appendString:@"</mark>"];
                       }];
 }
 

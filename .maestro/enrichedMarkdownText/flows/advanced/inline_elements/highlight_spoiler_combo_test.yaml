@@ -1,0 +1,24 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - advanced
+  - inline
+  - highlight
+  - spoiler
+  - text
+---
+# checks highlight combined with spoiler (nested both ways)
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        ==||Spoiler inside highlight||== and ||==highlight inside spoiler==||.
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'highlight_spoiler_combo_display'

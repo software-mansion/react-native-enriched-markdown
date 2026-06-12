@@ -85,6 +85,7 @@ fun parseMd4cFlags(flags: ReadableMap?): Md4cFlags =
     latexMath = FeatureFlags.IS_MATH_ENABLED && (flags?.getBoolean("latexMath") ?: true),
     superscript = flags?.getBoolean("superscript") ?: false,
     subscript = flags?.getBoolean("subscript") ?: false,
+    highlight = flags?.getBoolean("highlight") ?: false,
   )
 
 fun parseContextMenuItems(value: ReadableArray?): List<String> =

@@ -15,8 +15,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) RCTUIColor *backgroundColor;
 @end
 
-NS_ASSUME_NONNULL_END
-
 @interface StyleConfig : NSObject <NSCopying>
 - (instancetype)init;
 - (CGFloat)fontScaleMultiplier;
@@ -188,6 +186,11 @@ NS_ASSUME_NONNULL_END
 // Strikethrough properties
 - (RCTUIColor *)strikethroughColor;
 - (void)setStrikethroughColor:(RCTUIColor *)newValue;
+// Highlight properties
+- (nullable RCTUIColor *)highlightColor;
+- (void)setHighlightColor:(nullable RCTUIColor *)newValue;
+- (nullable RCTUIColor *)highlightBackgroundColor;
+- (void)setHighlightBackgroundColor:(nullable RCTUIColor *)newValue;
 // Underline properties
 - (RCTUIColor *)underlineColor;
 - (void)setUnderlineColor:(RCTUIColor *)newValue;
@@ -400,3 +403,5 @@ NS_ASSUME_NONNULL_END
 - (void)setSubscriptBaselineOffsetScale:(CGFloat)newValue;
 
 @end
+
+NS_ASSUME_NONNULL_END

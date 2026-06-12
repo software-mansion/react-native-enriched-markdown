@@ -44,6 +44,9 @@ class SpanStyleCache(
   val superscriptBaselineOffsetScale: Float = style.superscriptStyle.baselineOffsetScale
   val subscriptFontScale: Float = style.subscriptStyle.fontScale
   val subscriptBaselineOffsetScale: Float = style.subscriptStyle.baselineOffsetScale
+  val highlightColor: Int = style.highlightStyle.color
+  val highlightBackgroundColor: Int = style.highlightStyle.backgroundColor
+  private val paragraphColor: Int = style.paragraphStyle.color
 
   private fun buildColorsToPreserve(style: StyleConfig): IntArray {
     val paragraphColor = style.paragraphStyle.color
@@ -74,6 +77,8 @@ class SpanStyleCache(
   }
 
   fun getStrongColorFor(blockColor: Int): Int = strongColor ?: blockColor
+
+  fun getHighlightColorFor(blockColor: Int): Int = if (highlightColor == paragraphColor) blockColor else highlightColor
 
   fun getEmphasisColorFor(
     blockColor: Int,

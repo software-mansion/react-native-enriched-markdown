@@ -196,6 +196,10 @@ const DEFAULT_NORMALIZED_STYLE: MarkdownStyleInternal = Object.freeze({
   },
   superscript: { fontScale: 0.75, baselineOffsetScale: 0.35 },
   subscript: { fontScale: 0.75, baselineOffsetScale: 0.2 },
+  highlight: {
+    color: defaultTextColor,
+    backgroundColor: '#FEF08A',
+  },
 });
 
 const refCache = new WeakMap<MarkdownStyle, MarkdownStyleInternal>();
@@ -258,6 +262,14 @@ export const normalizeMarkdownStyle = (
     (result.taskList as { checkboxSize: number }).checkboxSize = Math.round(
       listSize * 0.9
     );
+  }
+
+  if (!style.highlight?.color) {
+    const paragraphColor = (
+      result.paragraph as MarkdownStyleInternal['paragraph']
+    ).color;
+    (result.highlight as MarkdownStyleInternal['highlight']).color =
+      paragraphColor;
   }
 
   const finalResult = Object.freeze(result) as unknown as MarkdownStyleInternal;

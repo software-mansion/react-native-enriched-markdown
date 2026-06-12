@@ -80,8 +80,10 @@ extern NSString *const TaskCheckedAttribute;
                                                  checked:checked];
                                  } else if ([attrs[ListTypeAttribute] integerValue] == ListTypeUnordered) {
                                    UIFont *font = attrs[NSFontAttributeName] ?: [self defaultFont];
+                                   NSInteger depth = [attrs[ListDepthAttribute] integerValue];
                                    [self drawBulletAtX:markerX
-                                               centerY:baselineY - (font.xHeight + font.capHeight) / 4.0];
+                                               centerY:baselineY - (font.xHeight + font.capHeight) / 4.0
+                                                 depth:depth];
                                  } else {
                                    [self drawOrderedMarkerAtX:markerX attrs:attrs baselineY:baselineY isRTL:isRTL];
                                  }
@@ -138,13 +140,29 @@ extern NSString *const TaskCheckedAttribute;
   [checkmark stroke];
 }
 
-- (void)drawBulletAtX:(CGFloat)x centerY:(CGFloat)y
+- (void)drawBulletAtX:(CGFloat)x centerY:(CGFloat)y depth:(NSInteger)depth
 {
+  CGFloat size = [_config listStyleBulletSize];
+  CGRect rect = CGRectMake(x - size / 2.0, y - size / 2.0, size, size);
   [self
       executeDrawing:^(CGContextRef ctx) {
-        [[_config listStyleBulletColor] setFill];
-        CGFloat size = [_config listStyleBulletSize];
-        CGContextFillEllipseInRect(ctx, CGRectMake(x - size / 2.0, y - size / 2.0, size, size));
+        switch (depth) {
+          case 0:
+            [[_config listStyleBulletColor] setFill];
+            CGContextFillEllipseInRect(ctx, rect);
+            break;
+          case 1: {
+            CGFloat lineWidth = MAX(1.0, size * 0.15);
+            [[_config listStyleBulletColor] setStroke];
+            CGContextSetLineWidth(ctx, lineWidth);
+            CGContextStrokeEllipseInRect(ctx, CGRectInset(rect, lineWidth / 2.0, lineWidth / 2.0));
+            break;
+          }
+          default:
+            [[_config listStyleBulletColor] setFill];
+            CGContextFillRect(ctx, rect);
+            break;
+        }
       }
                  atX:x
                    y:y];

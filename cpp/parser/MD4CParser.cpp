@@ -316,6 +316,11 @@ public:
         break;
       }
 
+      case MD_SPAN_MARK: {
+        impl->pushNode(std::make_shared<MarkdownASTNode>(NodeType::Highlight));
+        break;
+      }
+
       default:
         break;
     }
@@ -492,6 +497,9 @@ std::shared_ptr<MarkdownASTNode> MD4CParser::parse(const std::string &markdown, 
   }
   if (md4cFlags.subscript) {
     flags |= MD_FLAG_SUBSCRIPTS;
+  }
+  if (md4cFlags.highlight) {
+    flags |= MD_FLAG_HIGHLIGHT;
   }
 
   // Configure MD4C parser with callbacks

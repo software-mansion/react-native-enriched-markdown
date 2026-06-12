@@ -40,6 +40,10 @@ function SubscriptRenderer({ node, styles, renderChildren }: RendererProps) {
   return <sub style={styles.subscript}>{renderChildren(node)}</sub>;
 }
 
+function HighlightRenderer({ node, styles, renderChildren }: RendererProps) {
+  return <mark style={styles.highlight}>{renderChildren(node)}</mark>;
+}
+
 function CodeRenderer({ node, styles, renderChildren }: RendererProps) {
   return (
     <code style={styles.code}>{node.content ?? renderChildren(node)}</code>
@@ -110,6 +114,7 @@ export const inlineRenderers: RendererMap = {
   Underline: UnderlineRenderer,
   Superscript: SuperscriptRenderer,
   Subscript: SubscriptRenderer,
+  Highlight: HighlightRenderer,
   Code: CodeRenderer,
   Link: LinkRenderer,
   LatexMathInline: LatexMathInlineRenderer,
