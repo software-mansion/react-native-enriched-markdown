@@ -292,9 +292,9 @@ class EnrichedMarkdownText
     }
 
     fun setTextBreakStrategy(strategy: String) {
-      BreakStrategyUtils.setStrategy(strategy)
+      MeasurementStore.updateBreakStrategy(id, strategy)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        breakStrategy = BreakStrategyUtils.resolveBreakStrategy()
+        breakStrategy = BreakStrategyUtils.resolveBreakStrategy(strategy)
       }
       MeasurementStore.invalidate(id)
       scheduleRenderIfNeeded()

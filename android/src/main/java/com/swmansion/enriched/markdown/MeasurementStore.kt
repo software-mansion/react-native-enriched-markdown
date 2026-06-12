@@ -63,6 +63,8 @@ object MeasurementStore {
 
   private val fontScalingSettings = ConcurrentHashMap<Int, FontScalingSettings>()
 
+  private val breakStrategies = ConcurrentHashMap<Int, String>()
+
   private val streamingTableModes = ConcurrentHashMap<Int, TableStreamingMode>()
 
   private fun resolveFontScalingSettings(
@@ -100,7 +102,7 @@ object MeasurementStore {
     val existingHash = cached?.markdownHash ?: 0
     val paintParams = PaintParams(paint.typeface ?: Typeface.DEFAULT, paint.textSize)
 
-    val newSize = measure(width, spannable, paint)
+    val newSize = measure(width, spannable, paint, id)
     data[id] = MeasurementParams(width, newSize, spannable, paintParams, existingHash)
     return oldSize != newSize
   }
@@ -156,6 +158,19 @@ object MeasurementStore {
     fontScalingSettings.remove(viewId)
   }
 
+  fun updateBreakStrategy(
+    viewId: Int,
+    strategy: String,
+  ) {
+    breakStrategies[viewId] = strategy
+  }
+
+  fun clearBreakStrategy(viewId: Int) {
+    breakStrategies.remove(viewId)
+  }
+
+  private fun resolveBreakStrategy(viewId: Int?): Int = BreakStrategyUtils.resolveBreakStrategy(viewId?.let { breakStrategies[it] })
+
   fun updateStreamingTableMode(
     viewId: Int,
     mode: TableStreamingMode,
@@ -194,7 +209,7 @@ object MeasurementStore {
 
     // Width changed - re-measure with cached spannable
     if (cached.cachedWidth != width) {
-      val newSize = measure(width, cached.spannable, cached.paintParams)
+      val newSize = measure(width, cached.spannable, cached.paintParams, safeId)
       data[safeId] = cached.copy(cachedWidth = width, cachedSize = newSize)
       return newSize
     }
@@ -285,7 +300,7 @@ object MeasurementStore {
     val spannable = tryRenderMarkdown(markdown, styleMap, context, md4cFlags, allowFontScaling, maxFontSizeMultiplier)
     spannable?.replaceMathSpansWithPlaceholders(context)
     val textToMeasure = spannable ?: markdown
-    val (size, _) = measureWithLayout(width, textToMeasure, measurePaint)
+    val (size, _) = measureWithLayout(width, textToMeasure, measurePaint, id)
 
     // 3. Calculate Margin
     val allowTrailingMargin = props.getBooleanOrDefault("allowTrailingMargin", false)
@@ -405,7 +420,7 @@ object MeasurementStore {
           is RenderedSegment.Text -> {
             segment.styledText.replaceMathSpansWithPlaceholders(context)
 
-            val layout = createStaticLayout(segment.styledText, fontSize, widthPx)
+            val layout = createStaticLayout(segment.styledText, fontSize, widthPx, id)
             totalHeightPx += layout.height
 
             val segmentMaxLineWidth = (0 until layout.lineCount).maxOfOrNull { layout.getLineWidth(it) } ?: 0f
@@ -454,6 +469,7 @@ object MeasurementStore {
     text: CharSequence,
     fontSize: Float,
     widthPx: Int,
+    viewId: Int?,
   ): StaticLayout {
     measurePaint.textSize = fontSize
     return StaticLayout.Builder
@@ -463,7 +479,7 @@ object MeasurementStore {
       .apply {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
           @Suppress("WrongConstant")
-          setBreakStrategy(BreakStrategyUtils.resolveBreakStrategy())
+          setBreakStrategy(resolveBreakStrategy(viewId))
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
           setUseLineSpacingFromFallbacks(true)
@@ -519,17 +535,19 @@ object MeasurementStore {
     maxWidth: Float,
     text: CharSequence?,
     paintParams: PaintParams,
+    viewId: Int?,
   ): Long {
     measurePaint.reset()
     measurePaint.typeface = paintParams.typeface
     measurePaint.textSize = paintParams.fontSize
-    return measure(maxWidth, text, measurePaint)
+    return measure(maxWidth, text, measurePaint, viewId)
   }
 
   private fun measure(
     maxWidth: Float,
     text: CharSequence?,
     paint: TextPaint,
+    viewId: Int?,
   ): Long {
     val content = text ?: ""
     val safeWidth = ceil(maxWidth).toInt().coerceAtLeast(1)
@@ -542,7 +560,7 @@ object MeasurementStore {
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       @Suppress("WrongConstant")
-      builder.setBreakStrategy(BreakStrategyUtils.resolveBreakStrategy())
+      builder.setBreakStrategy(resolveBreakStrategy(viewId))
     }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -568,6 +586,7 @@ object MeasurementStore {
     maxWidth: Float,
     text: CharSequence?,
     paint: TextPaint,
+    viewId: Int?,
   ): Pair<Long, StaticLayout> {
     val content = text ?: ""
     val widthPx = ceil(maxWidth).toInt().coerceAtLeast(1)
@@ -580,7 +599,7 @@ object MeasurementStore {
         .apply {
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             @Suppress("WrongConstant")
-            setBreakStrategy(BreakStrategyUtils.resolveBreakStrategy())
+            setBreakStrategy(resolveBreakStrategy(viewId))
           }
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             setUseLineSpacingFromFallbacks(true)

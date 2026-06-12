@@ -3,6 +3,7 @@
 #import "FontUtils.h"
 #import "MarkdownASTNode.h"
 #import "ParagraphStyleUtils.h"
+#import "RenderContext.h"
 #import "RendererFactory.h"
 #import "StyleConfig.h"
 
@@ -34,7 +35,7 @@ static NSString *const kNestedInfoRangeKey = @"range";
     return;
   }
 
-  [self applyStylingAndSpacing:output start:start end:end currentDepth:currentDepth];
+  [self applyStylingAndSpacing:output start:start end:end currentDepth:currentDepth context:context];
 }
 
 #pragma mark - Styling and Spacing
@@ -43,6 +44,7 @@ static NSString *const kNestedInfoRangeKey = @"range";
                          start:(NSUInteger)start
                            end:(NSUInteger)end
                   currentDepth:(NSInteger)currentDepth
+                       context:(RenderContext *)context
 {
   NSUInteger contentStart = start;
   if (currentDepth == 0) {
@@ -59,11 +61,15 @@ static NSString *const kNestedInfoRangeKey = @"range";
                            depth:currentDepth
                     levelSpacing:levelSpacing
                  backgroundColor:[_config blockquoteBackgroundColor]
-                      lineHeight:[_config blockquoteLineHeight]];
+                      lineHeight:[_config blockquoteLineHeight]
+               lineBreakStrategy:context.lineBreakStrategy];
 
   // Re-apply nested blockquote styles to restore their correct indentation
   // (applyBaseBlockquoteStyle overwrites nested indents with the parent's indent)
-  [self reapplyNestedStyles:output nestedInfo:nestedInfo levelSpacing:levelSpacing];
+  [self reapplyNestedStyles:output
+                 nestedInfo:nestedInfo
+               levelSpacing:levelSpacing
+          lineBreakStrategy:context.lineBreakStrategy];
 
   if (currentDepth == 0) {
     applyBlockSpacingAfter(output, [_config blockquoteMarginBottom]);
@@ -99,8 +105,10 @@ static NSString *const kNestedInfoRangeKey = @"range";
                     levelSpacing:(CGFloat)levelSpacing
                  backgroundColor:(RCTUIColor *)backgroundColor
                       lineHeight:(CGFloat)lineHeight
+               lineBreakStrategy:(NSLineBreakStrategy)lineBreakStrategy
 {
-  NSMutableParagraphStyle *paragraphStyle = getOrCreateParagraphStyle(output, blockquoteRange.location);
+  NSMutableParagraphStyle *paragraphStyle =
+      getOrCreateParagraphStyle(output, blockquoteRange.location, lineBreakStrategy);
   CGFloat totalIndent = [self calculateIndentForDepth:currentDepth levelSpacing:levelSpacing];
   paragraphStyle.firstLineHeadIndent = totalIndent;
   paragraphStyle.headIndent = totalIndent;
@@ -113,19 +121,20 @@ static NSString *const kNestedInfoRangeKey = @"range";
   }
   [output addAttributes:newAttributes range:blockquoteRange];
 
-  applyLineHeight(output, blockquoteRange, lineHeight);
+  applyLineHeight(output, blockquoteRange, lineHeight, lineBreakStrategy);
 }
 
 - (void)reapplyNestedStyles:(NSMutableAttributedString *)output
                  nestedInfo:(NSArray<NSDictionary *> *)nestedInfo
                levelSpacing:(CGFloat)levelSpacing
+          lineBreakStrategy:(NSLineBreakStrategy)lineBreakStrategy
 {
   // Re-apply indentation to nested blockquotes since applyBaseBlockquoteStyle
   // overwrote them with the parent's indentation
   for (NSDictionary *info in nestedInfo) {
     NSRange nestedRange = [info[kNestedInfoRangeKey] rangeValue];
     NSInteger nestedDepth = [info[kNestedInfoDepthKey] integerValue];
-    NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, nestedRange.location);
+    NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, nestedRange.location, lineBreakStrategy);
 
     CGFloat indent = [self calculateIndentForDepth:nestedDepth levelSpacing:levelSpacing];
     style.firstLineHeadIndent = indent;

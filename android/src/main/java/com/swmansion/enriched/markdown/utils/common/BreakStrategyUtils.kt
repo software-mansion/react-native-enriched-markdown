@@ -3,19 +3,16 @@ package com.swmansion.enriched.markdown.utils.common
 import android.text.Layout
 
 /**
- * Singleton that resolves the break strategy for StaticLayout and TextView.
+ * Resolves a textBreakStrategy prop value (string) to the integer constant used
+ * by StaticLayout.Builder.setBreakStrategy() and TextView.setBreakStrategy().
  *
- * Both Measurement (via MeasurementStore) and the render (via rendered TextView)
- * must use the same value - a mismatch causes the measured line count to differ
- * from the rendered line count, which results in the view being sized incorrectly
- * and ScrollingMovementMethod (inherited via LinkMovementMethod) silently
- * scrolling the overflow.
- *
- * The strategy is set from the `textBreakStrategy` prop via the view's setter,
- * which updates this object before invalidating measurement and triggering a
- * re-render. Both MeasurementStore (StaticLayout.Builder) and TextViewSetup
- * (TextView.breakStrategy) call resolveBreakStrategy(), so updating it here
- * is enough for both paths.
+ * Stateless on purpose: textBreakStrategy is a per-view prop. Storage lives in
+ * [com.swmansion.enriched.markdown.MeasurementStore] (per viewId), and each
+ * view applies the resolved value to its own TextView. Both measurement and
+ * render paths must use the same value — mismatch causes measured line count
+ * to differ from the rendered line count, sizing the view incorrectly and
+ * causing ScrollingMovementMethod (inherited via LinkMovementMethod) to
+ * silently scroll the overflow.
  *
  * Note: call sites in StaticLayout.Builder suppress "WrongConstant" lint. This is
  * intentional - Layout.BREAK_STRATEGY_SIMPLE and LineBreaker.BREAK_STRATEGY_SIMPLE
@@ -24,16 +21,12 @@ import android.text.Layout
  * The suppression is safe; the Layout.* constants share the same integer values.
  */
 object BreakStrategyUtils {
-  private var strategy: String = "simple"
+  const val DEFAULT_STRATEGY = "highQuality"
 
-  fun setStrategy(newStrategy: String?) {
-    strategy = newStrategy ?: "simple"
-  }
-
-  fun resolveBreakStrategy(): Int =
+  fun resolveBreakStrategy(strategy: String?): Int =
     when (strategy) {
-      "highQuality" -> Layout.BREAK_STRATEGY_HIGH_QUALITY
+      "simple" -> Layout.BREAK_STRATEGY_SIMPLE
       "balanced" -> Layout.BREAK_STRATEGY_BALANCED
-      else -> Layout.BREAK_STRATEGY_SIMPLE
+      else -> Layout.BREAK_STRATEGY_HIGH_QUALITY
     }
 }

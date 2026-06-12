@@ -44,6 +44,7 @@ class EnrichedMarkdownTextManager :
   override fun onDropViewInstance(view: EnrichedMarkdownText) {
     super.onDropViewInstance(view)
     MeasurementStore.clearFontScalingSettings(view.id)
+    MeasurementStore.clearBreakStrategy(view.id)
     view.layoutManager.releaseMeasurementStore()
   }
 

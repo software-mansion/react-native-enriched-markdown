@@ -2,6 +2,7 @@
 #import "FontUtils.h"
 #import "MarkdownASTNode.h"
 #import "ParagraphStyleUtils.h"
+#import "RenderContext.h"
 #import "RendererFactory.h"
 #import "StyleConfig.h"
 
@@ -47,10 +48,10 @@
 
   // Avoid standard line height on block images to prevent vertical alignment issues
   if (!isBlockImage) {
-    applyLineHeight(output, range, _config.paragraphLineHeight);
+    applyLineHeight(output, range, _config.paragraphLineHeight, context.lineBreakStrategy);
   }
 
-  applyTextAlignment(output, range, _config.paragraphTextAlign);
+  applyTextAlignment(output, range, _config.paragraphTextAlign, context.lineBreakStrategy);
 
   // Skip marginTop for the first block — already handled by applyBlockSpacingBefore above
   if (shouldApplyMargin && contentStart != 1) {
@@ -63,7 +64,7 @@
     marginBottom = isBlockImage ? _config.imageMarginBottom : _config.paragraphMarginBottom;
   }
 
-  applyParagraphSpacingAfter(output, start, marginBottom);
+  applyParagraphSpacingAfter(output, start, marginBottom, context.lineBreakStrategy);
 }
 
 @end

@@ -51,6 +51,7 @@ class EnrichedMarkdownManager :
     view.cleanup()
     MeasurementStore.release(view.id)
     MeasurementStore.clearStreamingTableMode(view.id)
+    MeasurementStore.clearBreakStrategy(view.id)
   }
 
   override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> = markdownEventTypeConstants()

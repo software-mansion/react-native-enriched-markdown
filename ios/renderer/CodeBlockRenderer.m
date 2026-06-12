@@ -50,11 +50,12 @@
   }
 
   if (lineHeight > 0) {
-    applyLineHeight(output, contentRange, lineHeight);
+    applyLineHeight(output, contentRange, lineHeight, context.lineBreakStrategy);
   }
 
   // Code is always LTR regardless of app writing direction
-  NSMutableParagraphStyle *baseStyle = [getOrCreateParagraphStyle(output, contentStart) mutableCopy];
+  NSMutableParagraphStyle *baseStyle =
+      [getOrCreateParagraphStyle(output, contentStart, context.lineBreakStrategy) mutableCopy];
   baseStyle.baseWritingDirection = NSWritingDirectionLeftToRight;
   baseStyle.alignment = NSTextAlignmentLeft;
   baseStyle.firstLineHeadIndent = padding;

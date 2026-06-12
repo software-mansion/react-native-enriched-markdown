@@ -82,6 +82,7 @@ class EnrichedMarkdown
     private var selectionColor: Int? = null
     private var selectionHandleColor: Int? = null
     private var selectionMenuConfig = SelectionMenuConfig()
+    private var textBreakStrategy: String = BreakStrategyUtils.DEFAULT_STRATEGY
 
     private var onLinkPressCallback: ((String) -> Unit)? = null
     private var onLinkLongPressCallback: ((String) -> Unit)? = null
@@ -187,10 +188,13 @@ class EnrichedMarkdown
     }
 
     fun setTextBreakStrategy(strategy: String) {
-      BreakStrategyUtils.setStrategy(strategy)
+      if (textBreakStrategy == strategy) return
+      textBreakStrategy = strategy
+      MeasurementStore.updateBreakStrategy(id, strategy)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val resolved = BreakStrategyUtils.resolveBreakStrategy(strategy)
         segmentViews.filterIsInstance<EnrichedMarkdownInternalText>().forEach {
-          it.breakStrategy = BreakStrategyUtils.resolveBreakStrategy()
+          it.breakStrategy = resolved
         }
       }
       dirtyFlags += DirtyFlag.FORCE_HEIGHT
@@ -430,6 +434,9 @@ class EnrichedMarkdown
         spoilerOverlay = this@EnrichedMarkdown.spoilerOverlay
         selectionMenuConfig = this@EnrichedMarkdown.selectionMenuConfig
         setIsSelectable(selectable)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          breakStrategy = BreakStrategyUtils.resolveBreakStrategy(textBreakStrategy)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && segment.needsJustify) {
           justificationMode = android.text.Layout.JUSTIFICATION_MODE_INTER_WORD
         }

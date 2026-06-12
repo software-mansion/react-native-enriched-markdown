@@ -57,15 +57,15 @@ static NSString *const kHeadingTypes[] = {nil,          @"heading-1", @"heading-
   // Metadata attribute used for post-processing (e.g., Export to Markdown/HTML)
   [output addAttribute:MarkdownTypeAttributeName value:kHeadingTypes[level] range:range];
 
-  applyLineHeight(output, range, style.lineHeight);
-  applyTextAlignment(output, range, style.textAlign);
+  applyLineHeight(output, range, style.lineHeight, context.lineBreakStrategy);
+  applyTextAlignment(output, range, style.textAlign, context.lineBreakStrategy);
 
   // Skip marginTop for the first block — already handled by applyBlockSpacingBefore above
   if (contentStart != 1) {
     NSUInteger inserted = applyParagraphSpacingBefore(output, range, style.marginTop);
     start += inserted;
   }
-  applyParagraphSpacingAfter(output, start, style.marginBottom);
+  applyParagraphSpacingAfter(output, start, style.marginBottom, context.lineBreakStrategy);
 }
 
 #pragma mark - Style Mapping

@@ -12,7 +12,7 @@ fun AccessibleMarkdownTextView.setupAsMarkdownTextView() {
   setBackgroundColor(Color.TRANSPARENT)
   includeFontPadding = false
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-    breakStrategy = BreakStrategyUtils.resolveBreakStrategy()
+    breakStrategy = BreakStrategyUtils.resolveBreakStrategy(null)
   }
   movementMethod = LinkLongPressMovementMethod.createInstance()
   setTextIsSelectable(true)
