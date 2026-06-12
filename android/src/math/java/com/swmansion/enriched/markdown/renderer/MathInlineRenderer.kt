@@ -5,6 +5,7 @@ import android.text.SpannableStringBuilder
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.spans.MathInlineSpan
 import com.swmansion.enriched.markdown.utils.text.span.SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE
+import io.ratex.RaTeXFontLoader
 
 class MathInlineRenderer(
   private val config: RendererConfig,
@@ -17,6 +18,8 @@ class MathInlineRenderer(
     onLinkLongPress: ((String) -> Unit)?,
     factory: RendererFactory,
   ) {
+    RaTeXFontLoader.ensureLoaded(context)
+
     val latex = extractLatex(node)
     if (latex.isEmpty()) return
 

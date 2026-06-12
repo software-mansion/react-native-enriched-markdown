@@ -1,49 +1,23 @@
 package com.swmansion.enriched.markdown.spans
 
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
-import android.view.View.MeasureSpec
-import com.agog.mathdisplay.MTMathView
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import android.util.Log
+import io.ratex.RaTeXEngine
+import io.ratex.RaTeXFontLoader
+import io.ratex.RaTeXRenderer
 
 object MathMeasureHelper {
-  private const val BASE_TIMEOUT_MS = 500L
-  private const val PER_ITEM_TIMEOUT_MS = 50L
-  private val mainHandler = Handler(Looper.getMainLooper())
-  private var sharedMathView: MTMathView? = null
-
   @JvmStatic
-  fun measureOnMainThread(
+  fun measure(
     context: Context,
     requests: List<MathMeasureRequest>,
   ): List<MathMetrics> {
     if (requests.isEmpty()) return emptyList()
 
-    if (Looper.myLooper() == Looper.getMainLooper()) {
-      return requests.map { measureSingle(context, it) }
-    }
+    RaTeXFontLoader.ensureLoaded(context)
 
-    val results = mutableListOf<MathMetrics?>()
-    val latch = CountDownLatch(1)
-    val timeout = BASE_TIMEOUT_MS + (PER_ITEM_TIMEOUT_MS * requests.size)
-
-    mainHandler.post {
-      requests.mapTo(results) { request ->
-        runCatching { measureSingle(context, request) }.getOrNull()
-      }
-      latch.countDown()
-    }
-
-    val completed = latch.await(timeout, TimeUnit.MILLISECONDS)
-
-    return requests.mapIndexed { i, req ->
-      if (completed) {
-        results.getOrNull(i) ?: estimateFallback(req)
-      } else {
-        estimateFallback(req)
-      }
+    return requests.map { request ->
+      runCatching { measureSingle(context, request) }.getOrElse { estimateFallback(request) }
     }
   }
 
@@ -51,34 +25,22 @@ object MathMeasureHelper {
     context: Context,
     request: MathMeasureRequest,
   ): MathMetrics {
-    val mathView =
-      (
-        sharedMathView ?: MTMathView(context.applicationContext).also {
-          sharedMathView = it
-        }
-      ).apply {
-        labelMode =
-          when (request.mode) {
-            MathRenderMode.Display -> MTMathView.MTMathViewMode.KMTMathViewModeDisplay
-            else -> MTMathView.MTMathViewMode.KMTMathViewModeText
-          }
-        textAlignment = MTMathView.MTTextAlignment.KMTTextAlignmentLeft
-        fontSize = request.fontSize
-        latex = request.latex
+    val displayList =
+      RaTeXEngine.parseBlocking(
+        request.latex,
+        displayMode = request.mode == MathRenderMode.Display,
+      )
+
+    val renderer =
+      RaTeXRenderer(displayList, request.fontSize) {
+        RaTeXFontLoader.getTypeface(it)
       }
 
-    val spec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
-    mathView.measure(spec, spec)
-
-    val width = mathView.measuredWidth.coerceAtLeast(1)
-    val height = mathView.measuredHeight.coerceAtLeast(1).toFloat()
-
-    return runCatching {
-      val dl = displayListField?.get(mathView) ?: throw Exception()
-      val ascent = getAscentMethod?.invoke(dl) as Float
-      val descent = getDescentMethod?.invoke(dl) as Float
-      MathMetrics(width, ascent, descent)
-    }.getOrDefault(MathMetrics(width, height * 0.7f, height * 0.3f))
+    return MathMetrics(
+      renderer.widthPx.toInt(),
+      renderer.heightPx,
+      renderer.depthPx,
+    )
   }
 
   private fun estimateFallback(request: MathMeasureRequest): MathMetrics {
@@ -92,12 +54,4 @@ object MathMeasureHelper {
       descent = h * 0.3f,
     )
   }
-
-  private val displayListField =
-    runCatching {
-      MTMathView::class.java.getDeclaredField("displayList").apply { isAccessible = true }
-    }.getOrNull()
-
-  private val getAscentMethod = runCatching { displayListField?.type?.getMethod("getAscent") }.getOrNull()
-  private val getDescentMethod = runCatching { displayListField?.type?.getMethod("getDescent") }.getOrNull()
 }

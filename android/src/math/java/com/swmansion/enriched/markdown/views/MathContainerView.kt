@@ -3,18 +3,23 @@ package com.swmansion.enriched.markdown.views
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.graphics.Canvas
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
-import com.agog.mathdisplay.MTMathView
 import com.swmansion.enriched.markdown.spans.MathMeasureHelper
 import com.swmansion.enriched.markdown.spans.MathMeasureRequest
 import com.swmansion.enriched.markdown.spans.MathRenderMode
 import com.swmansion.enriched.markdown.styles.MathStyle
 import com.swmansion.enriched.markdown.styles.StyleConfig
+import io.ratex.RaTeXEngine
+import io.ratex.RaTeXFontLoader
+import io.ratex.RaTeXRenderer
+import kotlin.math.ceil
 
 class MathContainerView(
   context: Context,
@@ -22,35 +27,31 @@ class MathContainerView(
 ) : FrameLayout(context),
   BlockSegmentView {
   private val mathStyle: MathStyle = styleConfig.mathStyle
-  private val mathView = MTMathView(context)
   private val scrollView = HorizontalScrollView(context)
   private var cachedLatex: String = ""
 
   override val segmentMarginTop: Int get() = mathStyle.marginTop.toInt()
   override val segmentMarginBottom: Int get() = mathStyle.marginBottom.toInt()
 
-  private val alignmentPair =
+  private val mathGravity =
     when (mathStyle.textAlign) {
-      "left" -> MTMathView.MTTextAlignment.KMTTextAlignmentLeft to Gravity.START
-      "right" -> MTMathView.MTTextAlignment.KMTTextAlignmentRight to Gravity.END
-      else -> MTMathView.MTTextAlignment.KMTTextAlignmentCenter to Gravity.CENTER_HORIZONTAL
+      "left" -> Gravity.START
+      "right" -> Gravity.END
+      else -> Gravity.CENTER_HORIZONTAL
     }
+
+  private val mathView = RaTeXCanvasView(context)
 
   init {
     setBackgroundColor(mathStyle.backgroundColor)
 
     val paddingPx = mathStyle.padding.toInt()
 
-    mathView.apply {
-      labelMode = MTMathView.MTMathViewMode.KMTMathViewModeDisplay
-      fontSize = mathStyle.fontSize
-      textColor = mathStyle.color
-      textAlignment = alignmentPair.first
-    }
+    RaTeXFontLoader.ensureLoaded(context)
 
     val mathLayoutParams =
       FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply {
-        gravity = alignmentPair.second
+        gravity = mathGravity
       }
 
     val mathWrapper =
@@ -80,7 +81,15 @@ class MathContainerView(
 
   fun applyLatex(latex: String) {
     cachedLatex = latex
-    mathView.latex = latex
+    try {
+      val displayList = RaTeXEngine.parseBlocking(latex, displayMode = true, color = mathStyle.color)
+      mathView.renderer = RaTeXRenderer(displayList, mathStyle.fontSize) { RaTeXFontLoader.getTypeface(it) }
+    } catch (e: Exception) {
+      Log.e(TAG, "Failed to render LaTeX", e)
+      mathView.renderer = null
+    }
+    mathView.requestLayout()
+    mathView.invalidate()
   }
 
   private fun showContextMenu(anchor: View) {
@@ -92,6 +101,29 @@ class MathContainerView(
       item(ContextMenuPopup.Icon.DOCUMENT, "Copy as Markdown") {
         clipboard.setPrimaryClip(ClipData.newPlainText("Math", "$$\n$cachedLatex\n$$"))
       }
+    }
+  }
+
+  private class RaTeXCanvasView(
+    context: Context,
+  ) : View(context) {
+    var renderer: RaTeXRenderer? = null
+
+    override fun onMeasure(
+      widthMeasureSpec: Int,
+      heightMeasureSpec: Int,
+    ) {
+      val currentRenderer =
+        renderer
+          ?: return setMeasuredDimension(0, 0)
+      setMeasuredDimension(
+        ceil(currentRenderer.widthPx).toInt().coerceAtLeast(1),
+        ceil(currentRenderer.totalHeightPx).toInt().coerceAtLeast(1),
+      )
+    }
+
+    override fun onDraw(canvas: Canvas) {
+      renderer?.draw(canvas)
     }
   }
 
@@ -107,8 +139,10 @@ class MathContainerView(
           latex = latex,
           mode = MathRenderMode.Display,
         )
-      val metrics = MathMeasureHelper.measureOnMainThread(context, listOf(request)).first()
-      return (metrics.ascent + metrics.descent).toInt() + (mathStyle.padding * 2)
+      val metrics = MathMeasureHelper.measure(context, listOf(request)).first()
+      return ceil(metrics.ascent + metrics.descent).toInt() + (mathStyle.padding * 2)
     }
+
+    private const val TAG = "MathContainerView"
   }
 }

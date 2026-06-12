@@ -37,7 +37,7 @@ fun SpannableString.replaceMathSpansWithPlaceholders(context: Context) {
       }
 
     val mathMeasureHelperClass = Class.forName("com.swmansion.enriched.markdown.spans.MathMeasureHelper")
-    val measureMethod = mathMeasureHelperClass.getMethod("measureOnMainThread", Context::class.java, List::class.java)
+    val measureMethod = mathMeasureHelperClass.getMethod("measure", Context::class.java, List::class.java)
 
     @Suppress("UNCHECKED_CAST")
     val results = measureMethod.invoke(null, context, requests) as? List<MathMetrics> ?: return
