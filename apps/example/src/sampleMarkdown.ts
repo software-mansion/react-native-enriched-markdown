@@ -389,4 +389,40 @@ By understanding their importance and taking action to protect them, we can ensu
 Learn more about forest conservation at [World Wildlife Fund](https://www.worldwildlife.org/habitats/forest-habitat) or [Rainforest Alliance](https://www.rainforest-alliance.org).
 
 *Together, we can protect the forests that protect us.*
+
+---
+
+## Data Detection Demo
+
+The text below contains entities that are **auto-detected** — none of these are written as markdown links:
+
+### Phone Numbers
+
+- US format: +1 (415) 555-0198
+- International: +44 20 7946 0958
+- Simple: 800-555-1234
+
+### Email Addresses
+
+For general inquiries: info@forestconservation.org
+
+Report illegal logging to whistleblower@greenwatch.eu or contact Dr. Sarah Chen at s.chen@stanford.edu.
+
+### URLs (bare, not in markdown link syntax)
+
+Check our volunteer portal at www.forestvolunteers.org or read the latest research at https://nature.com/articles/forest-carbon-2025.
+
+### Physical Addresses
+
+Our main office is at 1600 Pennsylvania Avenue NW, Washington, DC 20500.
+
+The field station is located at 742 Evergreen Terrace, Springfield, IL 62704, United States.
+
+### Dates & Times
+
+The annual reforestation summit is on June 21, 2025 at 10:00 AM. Registration closes December 1, 2024. The next board meeting is scheduled for January 15, 2026 at 3:30 PM.
+
+### Mixed Content (detection should skip existing markdown links)
+
+Contact us at support@treeplanting.com or call +1 (800) 555-TREE. You can also visit our [official website](https://www.treeplanting.com) — note that the markdown link should use \`onLinkPress\`, while the phone and email above should fire \`onDataDetectorPress\`.
 `;

@@ -347,6 +347,90 @@ interface SelectionMenuConfig {
 
 > **Note:** When using `flavor="github"`, `selection.start` and `selection.end` are relative to the text segment the selection is in, not the full markdown string. With `flavor="commonmark"` (default) they are always absolute within the full rendered text.
 
+### `dataDetectorTypes`
+
+Entity types to auto-detect in rendered text. When set to a non-empty array, the native platform runs data detection after rendering and makes detected entities tappable.
+
+| Type                 | Default Value | Platform |
+| -------------------- | ------------- | -------- |
+| `DataDetectorType[]` | -             | Both     |
+
+**`DataDetectorType`:** `'phoneNumber' | 'link' | 'email' | 'address' | 'date'`
+
+**Platform details:**
+
+| | iOS | Android |
+|---|---|---|
+| Engine | NSDataDetector | ML Kit Entity Extraction |
+| Availability | Always (built into OS) | Requires compile-time opt-in |
+| Model download | Not needed | ~5.6 MB per language, on-device at runtime |
+| Min SDK | iOS 15.1+ | **Android API 26+ (minSdkVersion 26)** |
+
+**Android setup:**
+
+1. Set `enrichedMarkdown.enableDataDetector=true` in your app's `gradle.properties`.
+2. Ensure your app's `minSdkVersion` is at least **26** (required by ML Kit Entity Extraction).
+
+```properties
+# android/gradle.properties
+enrichedMarkdown.enableDataDetector=true
+```
+
+**Example:**
+
+```tsx
+<EnrichedMarkdownText
+  markdown="Call me at 555-1234 or email john@example.com"
+  dataDetectorTypes={['phoneNumber', 'email', 'link', 'address', 'date']}
+  onDataDetectorPress={(event) => {
+    console.log(event.type, event.text, event.data);
+  }}
+/>
+```
+
+### `dataDetectorLanguage`
+
+Language model for entity extraction on Android (ML Kit). Ignored on iOS where NSDataDetector is language-agnostic. Each language is a separate ~5.6 MB on-device model, downloaded on demand.
+
+| Type     | Default Value | Platform |
+| -------- | ------------- | -------- |
+| `string` | `'en'`        | Android  |
+
+**Supported languages:** `ar`, `nl`, `en`, `fr`, `de`, `it`, `ja`, `ko`, `pl`, `pt`, `ru`, `es`, `th`, `tr`, `zh`
+
+### `onDataDetectorPress`
+
+Fired when a data-detected entity is tapped. If not provided, taps on link, email, and phone number entities fall through to `onLinkPress` with the composed URL.
+
+| Type                                        | Default Value | Platform |
+| ------------------------------------------- | ------------- | -------- |
+| `(event: DataDetectorPressEvent) => void`  | -             | Both     |
+
+**`DataDetectorPressEvent` shape:**
+
+```ts
+interface DataDetectorPressEvent {
+  /** The type of detected entity. */
+  type: 'phoneNumber' | 'link' | 'email' | 'address' | 'date';
+  /** The matched text substring. */
+  text: string;
+  /** Composed URL (tel:, mailto:, https://, etc.). For address/date, this is the raw text. */
+  url: string;
+  /** Structured metadata for the entity. */
+  data: Record<string, string>;
+}
+```
+
+**Entity data by type:**
+
+| Type | `data` fields |
+|------|--------------|
+| `phoneNumber` | `{ phoneNumber }` |
+| `link` | `{ url }` |
+| `email` | `{ email }` |
+| `address` | iOS: `{ street, city, state, zip, country }` / Android: `{ address }` |
+| `date` | `{ date }` (ISO 8601 string) |
+
 ---
 
 ## EnrichedMarkdownTextInput

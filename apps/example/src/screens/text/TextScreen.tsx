@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { ScrollView, StyleSheet, Platform, Alert, Linking } from 'react-native';
 import {
   EnrichedMarkdownText,
   type LinkPressEvent,
+  type DataDetectorPressEvent,
 } from 'react-native-enriched-markdown';
 import { sampleMarkdown } from '../../sampleMarkdown';
 import { customMarkdownStyle } from '../../markdownStyles';
@@ -50,6 +51,28 @@ export default function TextScreen() {
     ]);
   };
 
+  const handleDataDetectorPress = useCallback(
+    (event: DataDetectorPressEvent) => {
+      const dataStr = Object.entries(event.data)
+        .map(([k, v]) => `  ${k}: ${v}`)
+        .join('\n');
+      Alert.alert(
+        `Data Detected: ${event.type}`,
+        `Text: "${event.text}"\nURL: ${event.url}${dataStr ? `\nData:\n${dataStr}` : ''}`,
+        [
+          {
+            text: 'Open',
+            onPress: () => {
+              Linking.openURL(event.url).catch(() => {});
+            },
+          },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+    },
+    []
+  );
+
   return (
     <ScrollView
       style={styles.scrollView}
@@ -60,6 +83,8 @@ export default function TextScreen() {
         flavor="github"
         markdown={sampleMarkdown}
         onLinkPress={handleLinkPress}
+        onDataDetectorPress={handleDataDetectorPress}
+        dataDetectorTypes={['phoneNumber', 'email', 'link', 'date', 'address']}
         markdownStyle={markdownStyle}
         contextMenuItems={contextMenuItems}
         selectionColor={Platform.OS === 'ios' ? '#5A52FA' : '#DCDDFE'}

@@ -11,6 +11,8 @@ export type {
   LinkPressEvent,
   LinkLongPressEvent,
   TaskListItemPressEvent,
+  DataDetectorPressEvent,
+  DataDetectorType,
 } from './types/events';
 
 export { EnrichedMarkdownTextInput } from './EnrichedMarkdownTextInput';

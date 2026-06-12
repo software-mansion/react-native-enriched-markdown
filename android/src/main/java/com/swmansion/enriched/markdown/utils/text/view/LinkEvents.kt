@@ -6,6 +6,7 @@ import android.widget.TextView
 import com.facebook.react.bridge.ReactContext
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.uimanager.events.NativeGestureUtil
+import com.swmansion.enriched.markdown.events.DataDetectorPressEvent
 import com.swmansion.enriched.markdown.events.LinkLongPressEvent
 import com.swmansion.enriched.markdown.events.LinkPressEvent
 
@@ -21,6 +22,18 @@ fun View.emitLinkLongPressEvent(url: String) {
   val surfaceId = UIManagerHelper.getSurfaceId(reactContext)
   val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(reactContext, id)
   dispatcher?.dispatchEvent(LinkLongPressEvent(surfaceId, id, url))
+}
+
+fun View.emitDataDetectorPressEvent(
+  type: String,
+  text: String,
+  url: String,
+  data: String,
+) {
+  val reactContext = context as? ReactContext ?: return
+  val surfaceId = UIManagerHelper.getSurfaceId(reactContext)
+  val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(reactContext, id)
+  dispatcher?.dispatchEvent(DataDetectorPressEvent(surfaceId, id, type, text, url, data))
 }
 
 /**

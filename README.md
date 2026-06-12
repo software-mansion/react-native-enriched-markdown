@@ -26,6 +26,7 @@
 - 🌐 Native platform features (Translate, Look Up, Search Web, Share)
 - 🗣️ Accessibility support (VoiceOver on iOS, TalkBack on Android, semantic HTML on web)
 - 🔄 Full RTL (right-to-left) support including text, lists, blockquotes, tables, and task lists
+- 🔍 Data detection for phone numbers, emails, URLs, addresses, and dates (NSDataDetector on iOS, ML Kit on Android)
 
 ### EnrichedMarkdownTextInput
 
@@ -56,6 +57,7 @@ We can help you build your next dream product –
   - [LaTeX Math](docs/LATEX_MATH.md)
   - [Image Caching](docs/IMAGE_CACHING.md)
   - [Markdown Streaming](docs/MARKDOWN_STREAMING.md)
+  - [Data Detection](#data-detection)
 - [EnrichedMarkdownTextInput](#enrichedmarkdowntextinput-1)
   - [Usage](docs/INPUT.md#usage)
   - [Inline Styles](docs/INPUT.md#inline-styles)
@@ -179,6 +181,45 @@ See [Web Support](docs/WEB.md) for details on supported features, web-specific p
 ## macOS Support
 
 `react-native-enriched-markdown` supports macOS via [react-native-macos](https://github.com/microsoft/react-native-macos). See [macOS Support](docs/MACOS.md) for details on macOS-specific features, known limitations, and the example app.
+
+## Data Detection
+
+`EnrichedMarkdownText` supports automatic detection of phone numbers, emails, URLs, addresses, and dates in rendered text. Detected entities become tappable and emit structured event data.
+
+- **iOS**: Uses `NSDataDetector` — always available, no setup needed.
+- **Android**: Uses ML Kit Entity Extraction — requires opt-in and **`minSdkVersion 26`**.
+
+### Android Setup
+
+1. Add to your app's `android/gradle.properties`:
+
+```properties
+enrichedMarkdown.enableDataDetector=true
+```
+
+2. Ensure `minSdkVersion` is at least **26** in your `android/build.gradle`:
+
+```groovy
+minSdkVersion = 26
+```
+
+The ML Kit model (~5.6 MB per language) is downloaded on-device at runtime on first use.
+
+### Usage
+
+```tsx
+<EnrichedMarkdownText
+  markdown="Call 555-1234 or email hello@example.com"
+  dataDetectorTypes={['phoneNumber', 'email', 'link', 'address', 'date']}
+  dataDetectorLanguage="en"
+  onDataDetectorPress={(event) => {
+    // event.type, event.text, event.url, event.data
+    Linking.openURL(event.url);
+  }}
+/>
+```
+
+See [`dataDetectorTypes`](docs/API_REFERENCE.md#datadetectortypes) in the API Reference for full details on supported types, the event payload, and platform differences.
 
 ## Future Plans
 

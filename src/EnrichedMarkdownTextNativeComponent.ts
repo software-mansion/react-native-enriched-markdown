@@ -239,6 +239,13 @@ export interface OnContextMenuItemPressEvent {
   selectionEnd: CodegenTypes.Int32;
 }
 
+export interface DataDetectorPressEvent {
+  type: string;
+  text: string;
+  url: string;
+  data: string;
+}
+
 /**
  * MD4C parser flags configuration.
  * Controls how the markdown parser interprets certain syntax.
@@ -398,6 +405,21 @@ export interface NativeProps extends ViewProps {
    * Receives the item label, the currently selected text, and the selection range.
    */
   onContextMenuItemPress?: CodegenTypes.BubblingEventHandler<OnContextMenuItemPressEvent>;
+  /**
+   * Entity types to auto-detect in rendered text.
+   * When non-empty, runs platform data detection after rendering.
+   */
+  dataDetectorTypes?: ReadonlyArray<string>;
+  /**
+   * Language model for ML Kit entity extraction on Android.
+   * Ignored on iOS.
+   * @default 'en'
+   */
+  dataDetectorLanguage?: string;
+  /**
+   * Fired when a data-detected entity is tapped.
+   */
+  onDataDetectorPress?: CodegenTypes.BubblingEventHandler<DataDetectorPressEvent>;
   /**
    * Sets the text break strategy on Android (API 23+).
    * @default 'highQuality'

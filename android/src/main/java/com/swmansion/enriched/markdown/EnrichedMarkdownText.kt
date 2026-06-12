@@ -12,6 +12,7 @@ import android.util.Log
 import android.view.MotionEvent
 import com.facebook.react.bridge.ReadableMap
 import com.swmansion.enriched.markdown.accessibility.AccessibleMarkdownTextView
+import com.swmansion.enriched.markdown.datadetector.DataDetectorProvider
 import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
 import com.swmansion.enriched.markdown.renderer.Renderer
@@ -29,6 +30,7 @@ import com.swmansion.enriched.markdown.utils.text.view.applySelectionColors
 import com.swmansion.enriched.markdown.utils.text.view.cancelJSTouchForCheckboxTap
 import com.swmansion.enriched.markdown.utils.text.view.cancelJSTouchForLinkTap
 import com.swmansion.enriched.markdown.utils.text.view.createSelectionActionModeCallback
+import com.swmansion.enriched.markdown.utils.text.view.emitDataDetectorPressEvent
 import com.swmansion.enriched.markdown.utils.text.view.emitLinkLongPressEvent
 import com.swmansion.enriched.markdown.utils.text.view.emitLinkPressEvent
 import com.swmansion.enriched.markdown.utils.text.view.setupAsMarkdownTextView
@@ -89,6 +91,11 @@ class EnrichedMarkdownText
     private var selectionColor: Int? = null
     private var selectionHandleColor: Int? = null
     private var selectionMenuConfig = SelectionMenuConfig()
+
+    var dataDetectorTypes: Set<String> = emptySet()
+      private set
+    var dataDetectorLanguage: String = "en"
+      private set
 
     init {
       setupAsMarkdownTextView()
@@ -209,6 +216,8 @@ class EnrichedMarkdownText
       if (markdown.isEmpty()) return
 
       val renderId = ++currentRenderId
+      val detectorTypes = dataDetectorTypes
+      val detectorLanguage = dataDetectorLanguage
 
       executor.execute {
         try {
@@ -220,6 +229,17 @@ class EnrichedMarkdownText
 
           renderer.configure(style, context)
           val styledText = renderer.renderDocument(ast, onLinkPressCallback, onLinkLongPressCallback)
+
+          if (detectorTypes.isNotEmpty()) {
+            DataDetectorProvider.applyDataDetection(
+              styledText,
+              detectorTypes,
+              detectorLanguage,
+              renderer.spanStyleCache,
+              renderer.defaultBlockStyle,
+              context,
+            )
+          }
 
           mainHandler.post {
             if (renderId == currentRenderId) {
@@ -291,6 +311,18 @@ class EnrichedMarkdownText
       applySelectionColors(selectionColor, selectionHandleColor)
     }
 
+    fun setDataDetectorTypes(types: Set<String>) {
+      if (dataDetectorTypes == types) return
+      dataDetectorTypes = types
+      scheduleRenderIfNeeded()
+    }
+
+    fun setDataDetectorLanguage(language: String) {
+      if (dataDetectorLanguage == language) return
+      dataDetectorLanguage = language
+      scheduleRenderIfNeeded()
+    }
+
     fun setTextBreakStrategy(strategy: String) {
       MeasurementStore.updateBreakStrategy(id, strategy)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -306,6 +338,15 @@ class EnrichedMarkdownText
 
     fun emitOnLinkLongPress(url: String) {
       emitLinkLongPressEvent(url)
+    }
+
+    fun emitOnDataDetectorPress(
+      type: String,
+      text: String,
+      url: String,
+      data: String,
+    ) {
+      emitDataDetectorPressEvent(type, text, url, data)
     }
 
     fun setOnLinkPressCallback(callback: (String) -> Unit) {

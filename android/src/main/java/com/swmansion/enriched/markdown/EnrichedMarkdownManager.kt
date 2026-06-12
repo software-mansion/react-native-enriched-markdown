@@ -215,6 +215,29 @@ class EnrichedMarkdownManager :
     view.setSelectionMenuConfig(parseSelectionMenuConfig(value))
   }
 
+  @ReactProp(name = "dataDetectorTypes")
+  override fun setDataDetectorTypes(
+    view: EnrichedMarkdown?,
+    value: ReadableArray?,
+  ) {
+    if (view == null) return
+    val types = mutableSetOf<String>()
+    if (value != null) {
+      for (i in 0 until value.size()) {
+        value.getString(i)?.let { types.add(it) }
+      }
+    }
+    view.setDataDetectorTypes(types)
+  }
+
+  @ReactProp(name = "dataDetectorLanguage")
+  override fun setDataDetectorLanguage(
+    view: EnrichedMarkdown?,
+    language: String?,
+  ) {
+    view?.setDataDetectorLanguage(language ?: "en")
+  }
+
   override fun setPadding(
     view: EnrichedMarkdown,
     left: Int,

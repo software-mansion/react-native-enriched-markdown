@@ -1,6 +1,9 @@
 import { useMemo, useCallback, useRef, useEffect } from 'react';
 import EnrichedMarkdownTextNativeComponent from '../EnrichedMarkdownTextNativeComponent';
-import type { MarkdownStyleInternal } from '../EnrichedMarkdownTextNativeComponent';
+import type {
+  MarkdownStyleInternal,
+  DataDetectorPressEvent as NativeDataDetectorPressEvent,
+} from '../EnrichedMarkdownTextNativeComponent';
 import EnrichedMarkdownNativeComponent from '../EnrichedMarkdownNativeComponent';
 import { normalizeMarkdownStyle } from '../normalizeMarkdownStyle';
 import type { NativeSyntheticEvent } from 'react-native';
@@ -15,6 +18,8 @@ import type {
   LinkPressEvent,
   LinkLongPressEvent,
   TaskListItemPressEvent,
+  DataDetectorPressEvent,
+  DataDetectorType,
   OnContextMenuItemPressEvent,
 } from '../types/events';
 
@@ -25,7 +30,13 @@ export type {
   ContextMenuItem,
   SelectionMenuConfig,
 };
-export type { LinkPressEvent, LinkLongPressEvent, TaskListItemPressEvent };
+export type {
+  LinkPressEvent,
+  LinkLongPressEvent,
+  TaskListItemPressEvent,
+  DataDetectorPressEvent,
+  DataDetectorType,
+};
 
 const defaultMd4cFlags: Md4cFlags = {
   underline: false,
@@ -42,6 +53,7 @@ export const EnrichedMarkdownText = ({
   onLinkPress,
   onLinkLongPress,
   onTaskListItemPress,
+  onDataDetectorPress,
   enableLinkPreview,
   selectable = true,
   md4cFlags = defaultMd4cFlags,
@@ -56,6 +68,8 @@ export const EnrichedMarkdownText = ({
   selectionMenuConfig,
   selectionColor,
   selectionHandleColor,
+  dataDetectorTypes,
+  dataDetectorLanguage,
   textBreakStrategy,
   lineBreakStrategyIOS,
   ...rest
@@ -139,6 +153,30 @@ export const EnrichedMarkdownText = ({
     [onTaskListItemPress]
   );
 
+  const handleDataDetectorPress = useCallback(
+    (e: NativeSyntheticEvent<NativeDataDetectorPressEvent>) => {
+      const { type, text, url, data: dataJson } = e.nativeEvent;
+      if (onDataDetectorPress) {
+        let data: Record<string, string> = {};
+        try {
+          data = dataJson ? JSON.parse(dataJson) : {};
+        } catch {}
+        onDataDetectorPress({
+          type: type as DataDetectorPressEvent['type'],
+          text,
+          url,
+          data,
+        });
+      } else if (
+        onLinkPress &&
+        (type === 'link' || type === 'email' || type === 'phoneNumber')
+      ) {
+        onLinkPress({ url });
+      }
+    },
+    [onDataDetectorPress, onLinkPress]
+  );
+
   const tableMode = streamingConfig?.tableMode ?? 'progressive';
   const normalizedStreamingConfig = useMemo(() => ({ tableMode }), [tableMode]);
   const normalizedSelectionMenuConfig = useMemo(
@@ -155,6 +193,7 @@ export const EnrichedMarkdownText = ({
     onLinkPress: handleLinkPress,
     onLinkLongPress: handleLinkLongPress,
     onTaskListItemPress: handleTaskListItemPress,
+    onDataDetectorPress: handleDataDetectorPress,
     enableLinkPreview: onLinkLongPress == null && (enableLinkPreview ?? true),
     selectable,
     md4cFlags: normalizedMd4cFlags,
@@ -170,6 +209,8 @@ export const EnrichedMarkdownText = ({
     onContextMenuItemPress: handleContextMenuItemPress,
     selectionColor,
     selectionHandleColor,
+    dataDetectorTypes,
+    dataDetectorLanguage,
     textBreakStrategy,
     lineBreakStrategyIOS,
     ...rest,

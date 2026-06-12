@@ -187,6 +187,29 @@ class EnrichedMarkdownTextManager :
     view?.spoilerOverlay = SpoilerOverlay.fromString(mode)
   }
 
+  @ReactProp(name = "dataDetectorTypes")
+  override fun setDataDetectorTypes(
+    view: EnrichedMarkdownText?,
+    value: ReadableArray?,
+  ) {
+    if (view == null) return
+    val types = mutableSetOf<String>()
+    if (value != null) {
+      for (i in 0 until value.size()) {
+        value.getString(i)?.let { types.add(it) }
+      }
+    }
+    view.setDataDetectorTypes(types)
+  }
+
+  @ReactProp(name = "dataDetectorLanguage")
+  override fun setDataDetectorLanguage(
+    view: EnrichedMarkdownText?,
+    language: String?,
+  ) {
+    view?.setDataDetectorLanguage(language ?: "en")
+  }
+
   @ReactProp(name = "textBreakStrategy")
   override fun setTextBreakStrategy(
     view: EnrichedMarkdownText?,

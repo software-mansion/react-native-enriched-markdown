@@ -110,4 +110,32 @@ class Renderer {
    * Provides the EnrichedMarkdownText with the exact list of spans that need registration.
    */
   fun getCollectedImageSpans(): List<ImageSpan> = collectedImageSpans
+
+  /**
+   * Returns the SpanStyleCache for the current style configuration.
+   * Must be called after configure().
+   */
+  val spanStyleCache: SpanStyleCache
+    get() =
+      requireNotNull(cachedFactory) {
+        "Renderer must be configured before accessing spanStyleCache."
+      }.styleCache
+
+  /**
+   * Returns a default BlockStyle from the paragraph style for data detection spans.
+   * Must be called after configure().
+   */
+  val defaultBlockStyle: BlockStyle
+    get() {
+      val style =
+        requireNotNull(cachedStyle) {
+          "Renderer must be configured before accessing defaultBlockStyle."
+        }
+      return BlockStyle(
+        fontSize = style.paragraphStyle.fontSize,
+        fontFamily = style.paragraphStyle.fontFamily,
+        fontWeight = style.paragraphStyle.fontWeight,
+        color = style.paragraphStyle.color,
+      )
+    }
 }

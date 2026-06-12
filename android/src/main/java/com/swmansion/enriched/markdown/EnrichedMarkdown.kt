@@ -10,8 +10,11 @@ import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import com.facebook.react.bridge.ReadableMap
+import com.swmansion.enriched.markdown.datadetector.DataDetectorProvider
 import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
+import com.swmansion.enriched.markdown.renderer.BlockStyle
+import com.swmansion.enriched.markdown.renderer.SpanStyleCache
 import com.swmansion.enriched.markdown.spoiler.SpoilerOverlay
 import com.swmansion.enriched.markdown.styles.StyleConfig
 import com.swmansion.enriched.markdown.utils.common.BreakStrategyUtils
@@ -83,6 +86,9 @@ class EnrichedMarkdown
     private var selectionHandleColor: Int? = null
     private var selectionMenuConfig = SelectionMenuConfig()
     private var textBreakStrategy: String = BreakStrategyUtils.DEFAULT_STRATEGY
+
+    private var dataDetectorTypes: Set<String> = emptySet()
+    private var dataDetectorLanguage: String = "en"
 
     private var onLinkPressCallback: ((String) -> Unit)? = null
     private var onLinkLongPressCallback: ((String) -> Unit)? = null
@@ -234,6 +240,18 @@ class EnrichedMarkdown
       }
     }
 
+    fun setDataDetectorTypes(types: Set<String>) {
+      if (dataDetectorTypes == types) return
+      dataDetectorTypes = types
+      renderPending = true
+    }
+
+    fun setDataDetectorLanguage(language: String) {
+      if (dataDetectorLanguage == language) return
+      dataDetectorLanguage = language
+      renderPending = true
+    }
+
     private fun forwardContextMenuItemPress(
       itemText: String,
       selectedText: String,
@@ -258,6 +276,8 @@ class EnrichedMarkdown
       val markdown = currentMarkdown.takeIf { it.isNotEmpty() } ?: return
       val isStreaming = streamingAnimation
       val tableMode = tableStreamingMode
+      val detectorTypes = dataDetectorTypes
+      val detectorLanguage = dataDetectorLanguage
 
       val renderId = ++currentRenderId
 
@@ -290,6 +310,29 @@ class EnrichedMarkdown
               onLinkPressCallback,
               onLinkLongPressCallback,
             )
+
+          if (detectorTypes.isNotEmpty()) {
+            val styleCache = SpanStyleCache(style)
+            val blockStyle =
+              BlockStyle(
+                fontSize = style.paragraphStyle.fontSize,
+                fontFamily = style.paragraphStyle.fontFamily,
+                fontWeight = style.paragraphStyle.fontWeight,
+                color = style.paragraphStyle.color,
+              )
+            for (segment in renderedSegments) {
+              if (segment is RenderedSegment.Text) {
+                DataDetectorProvider.applyDataDetection(
+                  segment.styledText,
+                  detectorTypes,
+                  detectorLanguage,
+                  styleCache,
+                  blockStyle,
+                  context,
+                )
+              }
+            }
+          }
 
           postToMain(renderId) { applyRenderedSegments(renderedSegments, style) }
         } catch (e: Exception) {

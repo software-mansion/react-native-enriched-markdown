@@ -1,6 +1,7 @@
 #import "EnrichedMarkdownText.h"
 #import "CodeBlockBackground.h"
 #import "ContextMenuUtils.h"
+#import "DataDetectorUtils.h"
 #import "ENRMAsyncRenderCoordinator.h"
 #import "ENRMContextMenuTextView+macOS.h"
 #import "ENRMImageAttachment.h"
@@ -8,6 +9,7 @@
 #import "ENRMSpoilerOverlayManager.h"
 #import "ENRMSpoilerTapUtils.h"
 #import "ENRMTailFadeInAnimator.h"
+#import "ENRMTextHitTest.h"
 #import "ENRMTextInteractionUtils.h"
 #import "ENRMTextRenderer.h"
 #import "ENRMTextViewSetup.h"
@@ -46,6 +48,7 @@ using namespace facebook::react;
 - (void)setupLayoutManager;
 - (void)emitLinkPress:(NSString *)url;
 - (void)emitLinkLongPress:(NSString *)url;
+- (void)emitDataDetectorPress:(NSString *)type text:(NSString *)text url:(NSString *)url data:(NSString *)data;
 - (void)emitTaskListItemPress:(NSInteger)index checked:(BOOL)checked text:(NSString *)text;
 - (void)emitContextMenuItemPress:(NSString *)itemText
                     selectedText:(NSString *)selectedText
@@ -94,6 +97,8 @@ using namespace facebook::react;
   ENRMSelectionMenuConfig _selectionMenuConfig;
 
   ENRMSpoilerOverlayManager *_spoilerManager;
+
+  ENRMDataDetectorType _dataDetectorTypes;
 
   NSLineBreakStrategy _lineBreakStrategy;
 }
@@ -259,6 +264,7 @@ using namespace facebook::react;
   BOOL allowFontScaling = _fontScaleObserver.allowFontScaling;
   CGFloat maxFontSizeMultiplier = _maxFontSizeMultiplier;
   BOOL allowTrailingMargin = _allowTrailingMargin;
+  ENRMDataDetectorType dataDetectorTypes = _dataDetectorTypes;
   NSLineBreakStrategy lineBreakStrategy = _lineBreakStrategy;
 
   NSWritingDirection writingDirection = currentWritingDirection();
@@ -273,6 +279,11 @@ using namespace facebook::react;
 
         result = ENRMRenderASTNodes(ast.children, config, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier,
                                     writingDirection, lineBreakStrategy);
+
+        if (dataDetectorTypes != ENRMDataDetectorTypeNone) {
+          ENRMApplyDataDetection(result.attributedText, dataDetectorTypes, [config linkColor], [config linkUnderline],
+                                 [config linkFontFamily]);
+        }
         return YES;
       }
       apply:^{
@@ -313,6 +324,11 @@ using namespace facebook::react;
   NSMutableAttributedString *attributedText = [self parseAndRenderMarkdown:markdownString];
   if (!attributedText) {
     return;
+  }
+
+  if (_dataDetectorTypes != ENRMDataDetectorTypeNone) {
+    ENRMApplyDataDetection(attributedText, _dataDetectorTypes, [_config linkColor], [_config linkUnderline],
+                           [_config linkFontFamily]);
   }
 
   _textView.attributedText = attributedText;
@@ -516,6 +532,12 @@ using namespace facebook::react;
     _spoilerManager.spoilerOverlay = ENRMSpoilerOverlayFromString(modeStr);
   }
 
+  BOOL dataDetectorTypesChanged = NO;
+  if (newViewProps.dataDetectorTypes != oldViewProps.dataDetectorTypes) {
+    _dataDetectorTypes = ENRMParseDataDetectorTypes(newViewProps.dataDetectorTypes);
+    dataDetectorTypesChanged = YES;
+  }
+
   BOOL lineBreakStrategyChanged = newViewProps.lineBreakStrategyIOS != oldViewProps.lineBreakStrategyIOS;
   if (lineBreakStrategyChanged) {
     NSString *strategy = [[NSString alloc] initWithUTF8String:newViewProps.lineBreakStrategyIOS.c_str()];
@@ -524,7 +546,7 @@ using namespace facebook::react;
   }
 
   if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
-      lineBreakStrategyChanged) {
+      dataDetectorTypesChanged || lineBreakStrategyChanged) {
     _pendingStyleFingerprint =
         computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];
@@ -607,6 +629,16 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
     emitter->onLinkLongPress({.url = std::string(url.UTF8String)});
 }
 
+- (void)emitDataDetectorPress:(NSString *)type text:(NSString *)text url:(NSString *)url data:(NSString *)data
+{
+  auto emitter = std::static_pointer_cast<EnrichedMarkdownTextEventEmitter const>(_eventEmitter);
+  if (emitter)
+    emitter->onDataDetectorPress({.type = std::string(type.UTF8String),
+                                  .text = std::string(text.UTF8String),
+                                  .url = std::string(url.UTF8String),
+                                  .data = std::string(data.UTF8String ?: "{}")});
+}
+
 - (void)emitTaskListItemPress:(NSInteger)index checked:(BOOL)checked text:(NSString *)text
 {
   auto emitter = std::static_pointer_cast<EnrichedMarkdownTextEventEmitter const>(_eventEmitter);
@@ -646,7 +678,15 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
     return;
   }
 
-  ENRMHandleTapOnTextView(textView, recognizer, ^(NSString *url) { [self emitLinkPress:url]; });
+  ENRMHandleTapOnTextView(textView, recognizer, ^(NSString *url) {
+    NSUInteger charIndex = ENRMCharacterIndexForTap(textView, recognizer);
+    ENRMDataDetectorTapInfo *tapInfo = ENRMDataDetectorTapInfoAtIndex(ENRMGetAttributedText(textView), charIndex);
+    if (tapInfo) {
+      [self emitDataDetectorPress:tapInfo.type text:tapInfo.text url:url data:tapInfo.dataJson];
+    } else {
+      [self emitLinkPress:url];
+    }
+  });
 }
 
 #pragma mark - UITextViewDelegate (Link Interaction)

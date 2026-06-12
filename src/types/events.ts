@@ -30,3 +30,20 @@ export interface OnContextMenuItemPressEvent {
   selectionStart: number;
   selectionEnd: number;
 }
+
+export type DataDetectorType =
+  | 'phoneNumber'
+  | 'link'
+  | 'email'
+  | 'address'
+  | 'date';
+
+/**
+ * Event payload fired when a data-detected entity is tapped.
+ */
+export interface DataDetectorPressEvent {
+  type: DataDetectorType;
+  text: string;
+  url: string;
+  data: Record<string, string>;
+}

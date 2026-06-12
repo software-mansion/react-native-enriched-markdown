@@ -24,6 +24,7 @@ def getExtOrIntegerDefault(name) {
 }
 
 def enableMath = (rootProject.findProperty("enrichedMarkdown.enableMath") ?: findProperty("enrichedMarkdown.enableMath") ?: "true").toString().toBoolean()
+def enableDataDetector = (rootProject.findProperty("enrichedMarkdown.enableDataDetector") ?: findProperty("enrichedMarkdown.enableDataDetector") ?: "false").toString().toBoolean()
 
 android {
   namespace "com.swmansion.enriched.markdown"
@@ -35,6 +36,7 @@ android {
     targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
     consumerProguardFiles "consumer-rules.pro"
     buildConfigField "boolean", "ENABLE_MATH", "${enableMath}"
+    buildConfigField "boolean", "ENABLE_DATA_DETECTOR", "${enableDataDetector}"
   }
 
   buildFeatures {
@@ -65,6 +67,9 @@ android {
       if (enableMath) {
         java.srcDirs += ["src/math/java"]
       }
+      if (enableDataDetector) {
+        java.srcDirs += ["src/datadetector/java"]
+      }
     }
   }
 }
@@ -84,6 +89,10 @@ dependencies {
   // LaTeX math rendering (optional — set enrichedMarkdown.enableMath=false in gradle.properties to exclude)
   if (enableMath) {
     implementation("io.github.erweixin:ratex-android:0.1.10")
+  }
+  // ML Kit Entity Extraction (optional — set enrichedMarkdown.enableDataDetector=true in gradle.properties)
+  if (enableDataDetector) {
+    implementation "com.google.mlkit:entity-extraction:16.0.0-beta6"
   }
 }
 

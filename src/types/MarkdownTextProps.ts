@@ -4,6 +4,8 @@ import type {
   LinkPressEvent,
   LinkLongPressEvent,
   TaskListItemPressEvent,
+  DataDetectorPressEvent,
+  DataDetectorType,
 } from './events';
 
 /**
@@ -213,6 +215,32 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    * @platform web
    */
   dir?: 'ltr' | 'rtl' | 'auto';
+  /**
+   * Entity types to auto-detect in rendered text.
+   * When set to a non-empty array, the native platform runs data detection
+   * after rendering and makes detected entities tappable.
+   *
+   * Uses NSDataDetector on iOS (always available) and ML Kit Entity Extraction
+   * on Android (requires compile-time opt-in via `enrichedMarkdown.enableDataDetector=true`
+   * in gradle.properties and `minSdkVersion 26` or higher).
+   *
+   * @platform ios, android
+   */
+  dataDetectorTypes?: DataDetectorType[];
+  /**
+   * Language model for entity extraction on Android (ML Kit).
+   * Ignored on iOS where NSDataDetector is language-agnostic.
+   * @default 'en'
+   * @platform android
+   */
+  dataDetectorLanguage?: string;
+  /**
+   * Fired when a data-detected entity is tapped.
+   * If not provided, falls through to `onLinkPress` for link, email, and
+   * phone number types.
+   * @platform ios, android
+   */
+  onDataDetectorPress?: (event: DataDetectorPressEvent) => void;
   /**
    * Sets the text break strategy on Android (API 23+).
    * - `'simple'`: no hyphenation, minimal line-break work.

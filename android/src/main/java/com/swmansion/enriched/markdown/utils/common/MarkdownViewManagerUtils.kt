@@ -5,6 +5,7 @@ import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.uimanager.UIManagerHelper
 import com.swmansion.enriched.markdown.events.ContextMenuItemPressEvent
+import com.swmansion.enriched.markdown.events.DataDetectorPressEvent
 import com.swmansion.enriched.markdown.events.LinkLongPressEvent
 import com.swmansion.enriched.markdown.events.LinkPressEvent
 import com.swmansion.enriched.markdown.events.TaskListItemPressEvent
@@ -20,6 +21,8 @@ fun markdownEventTypeConstants(): MutableMap<String, Any> {
     mapOf("registrationName" to TaskListItemPressEvent.EVENT_NAME)
   map[ContextMenuItemPressEvent.EVENT_NAME] =
     mapOf("registrationName" to ContextMenuItemPressEvent.EVENT_NAME)
+  map[DataDetectorPressEvent.EVENT_NAME] =
+    mapOf("registrationName" to DataDetectorPressEvent.EVENT_NAME)
   return map
 }
 
