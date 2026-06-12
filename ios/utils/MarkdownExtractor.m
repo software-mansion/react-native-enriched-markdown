@@ -3,6 +3,7 @@
 #import "ENRMFeatureFlags.h"
 #import "ENRMImageAttachment.h"
 #import "ENRMUIKit.h"
+#import "HighlightRenderer.h"
 #include <TargetConditionals.h>
 #if ENRICHED_MARKDOWN_MATH
 #import "ENRMMathInlineAttachment.h"
@@ -80,7 +81,7 @@ static void extractFontTraits(NSDictionary *attrs, BOOL *isBold, BOOL *isItalic,
 
 static NSString *applyInlineFormatting(NSString *text, BOOL isBold, BOOL isItalic, BOOL isMonospace,
                                        BOOL isStrikethrough, BOOL isUnderline, BOOL isSuperscript, BOOL isSubscript,
-                                       NSString *linkURL)
+                                       BOOL isHighlight, NSString *linkURL)
 {
   NSMutableString *result = [NSMutableString stringWithString:text];
 
@@ -108,6 +109,9 @@ static NSString *applyInlineFormatting(NSString *text, BOOL isBold, BOOL isItali
   }
   if (linkURL) {
     result = [NSMutableString stringWithFormat:@"[%@](%@)", result, linkURL];
+  }
+  if (isHighlight) {
+    result = [NSMutableString stringWithFormat:@"==%@==", result];
   }
 
   return result;
@@ -300,9 +304,11 @@ NSString *_Nullable extractMarkdownFromAttributedString(NSAttributedString *attr
                         BOOL isSuperscript = baselineOffset != nil && [baselineOffset doubleValue] > 0;
                         BOOL isSubscript = baselineOffset != nil && [baselineOffset doubleValue] < 0;
 
+                        BOOL isHighlight = [attrs[HighlightAttributeName] boolValue];
                         NSString *linkURL = attrs[NSLinkAttributeName];
-                        NSString *segment = applyInlineFormatting(text, isBold, isItalic, isMonospace, isStrikethrough,
-                                                                  isUnderline, isSuperscript, isSubscript, linkURL);
+                        NSString *segment =
+                            applyInlineFormatting(text, isBold, isItalic, isMonospace, isStrikethrough, isUnderline,
+                                                  isSuperscript, isSubscript, isHighlight, linkURL);
 
                         // Add block prefixes at line start
                         if (isAtLineStart(result)) {

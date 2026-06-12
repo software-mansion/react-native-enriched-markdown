@@ -1,0 +1,27 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - advanced
+  - inline
+  - highlight
+  - bold
+  - text
+---
+# checks highlight combined with bold (nested both ways)
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- tapOn:
+    id: underline-button
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        ==**Bold inside highlight**== and **==highlight inside bold==**.
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'highlight_bold_combo_display'

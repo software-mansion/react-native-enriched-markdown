@@ -17,9 +17,11 @@ extern "C" {
  * @param latexMath  1 → enable $…$ / $$…$$ LaTeX math spans; 0 → disable.
  * @param superscript 1 → enable ^superscript^ spans; 0 → disable.
  * @param subscript  1 → enable ~subscript~ spans; 0 → disable.
+ * @param highlight  1 → enable ==highlight== spans; 0 → disable.
  * @return           Null-terminated UTF-8 JSON string, valid until the next call.
  */
-const char *parseMarkdown(const char *markdown, int underline, int latexMath, int superscript, int subscript) {
+const char *parseMarkdown(const char *markdown, int underline, int latexMath, int superscript, int subscript,
+                          int highlight) {
   if (!markdown) {
     g_resultBuffer = "{\"type\":\"Document\"}";
     return g_resultBuffer.c_str();
@@ -30,6 +32,7 @@ const char *parseMarkdown(const char *markdown, int underline, int latexMath, in
   flags.latexMath = (latexMath != 0);
   flags.superscript = (superscript != 0);
   flags.subscript = (subscript != 0);
+  flags.highlight = (highlight != 0);
 
   Markdown::MD4CParser parser;
   auto root = parser.parse(std::string(markdown), flags);

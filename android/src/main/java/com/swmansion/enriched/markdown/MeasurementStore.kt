@@ -291,6 +291,7 @@ object MeasurementStore {
         latexMath = FeatureFlags.IS_MATH_ENABLED && props.getMapOrNull("md4cFlags").getBooleanOrDefault("latexMath", true),
         superscript = props.getMapOrNull("md4cFlags").getBooleanOrDefault("superscript", false),
         subscript = props.getMapOrNull("md4cFlags").getBooleanOrDefault("subscript", false),
+        highlight = props.getMapOrNull("md4cFlags").getBooleanOrDefault("highlight", false),
       )
 
     val fontSize = getInitialFontSize(styleMap, context, allowFontScaling, fontScale, maxFontSizeMultiplier)
@@ -370,6 +371,7 @@ object MeasurementStore {
         latexMath = FeatureFlags.IS_MATH_ENABLED && props.getMapOrNull("md4cFlags").getBooleanOrDefault("latexMath", true),
         superscript = props.getMapOrNull("md4cFlags").getBooleanOrDefault("superscript", false),
         subscript = props.getMapOrNull("md4cFlags").getBooleanOrDefault("subscript", false),
+        highlight = props.getMapOrNull("md4cFlags").getBooleanOrDefault("highlight", false),
       )
     val allowTrailingMargin = props.getBooleanOrDefault("allowTrailingMargin", false)
     val fontSize = getInitialFontSize(styleMap, context, allowFontScaling, fontScale, maxFontSizeMultiplier)

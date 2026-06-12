@@ -696,6 +696,11 @@ static char kENRMSegmentFadeAnimatorKey;
     md4cFlagsChanged = YES;
     _dirtyFlags |= ENRMDirtyForceHeight;
   }
+  if (newViewProps.md4cFlags.highlight != oldViewProps.md4cFlags.highlight) {
+    _md4cFlags.highlight = newViewProps.md4cFlags.highlight;
+    md4cFlagsChanged = YES;
+    _dirtyFlags |= ENRMDirtyForceHeight;
+  }
   BOOL allowTrailingMarginChanged = newViewProps.allowTrailingMargin != oldViewProps.allowTrailingMargin;
 
   _enableLinkPreview = newViewProps.enableLinkPreview;

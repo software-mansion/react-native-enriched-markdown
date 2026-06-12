@@ -99,6 +99,7 @@ class RendererFactory(
       put(MarkdownASTNode.NodeType.Underline, UnderlineRenderer(config))
       put(MarkdownASTNode.NodeType.Superscript, SuperscriptRenderer())
       put(MarkdownASTNode.NodeType.Subscript, SubscriptRenderer())
+      put(MarkdownASTNode.NodeType.Highlight, HighlightRenderer())
       put(MarkdownASTNode.NodeType.Code, CodeRenderer(config))
       put(MarkdownASTNode.NodeType.Image, ImageRenderer())
       put(MarkdownASTNode.NodeType.LineBreak, lineBreakRenderer)

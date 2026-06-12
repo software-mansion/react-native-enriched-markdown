@@ -29,7 +29,8 @@ typedef NS_ENUM(NSInteger, MarkdownNodeType) {
   MarkdownNodeTypeLatexMathDisplay,
   MarkdownNodeTypeSpoiler,
   MarkdownNodeTypeSuperscript,
-  MarkdownNodeTypeSubscript
+  MarkdownNodeTypeSubscript,
+  MarkdownNodeTypeHighlight
 };
 
 @interface MarkdownASTNode : NSObject

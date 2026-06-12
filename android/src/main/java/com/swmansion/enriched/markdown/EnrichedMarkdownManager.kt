@@ -38,6 +38,23 @@ class EnrichedMarkdownManager :
     view.onContextMenuItemPressCallback = { itemText, selectedText, selectionStart, selectionEnd ->
       emitContextMenuItemPress(view, itemText, selectedText, selectionStart, selectionEnd)
     }
+
+    view.setOnLinkPressCallback { url ->
+      emitLinkPress(view, url)
+    }
+
+    view.setOnLinkLongPressCallback { url ->
+      emitLinkLongPress(view, url)
+    }
+
+    view.setOnTaskListItemPressCallback { taskIndex, checked, itemText ->
+      val newChecked = !checked
+      val updatedMarkdown = TaskListToggleUtils.toggleAtIndex(view.currentMarkdown, taskIndex, newChecked)
+      view.setMarkdownContent(updatedMarkdown)
+      view.commitProps()
+      emitTaskListItemPress(view, taskIndex, newChecked, itemText)
+    }
+
     return view
   }
 
@@ -61,21 +78,6 @@ class EnrichedMarkdownManager :
     view: EnrichedMarkdown?,
     markdown: String?,
   ) {
-    view?.setOnLinkPressCallback { url ->
-      emitLinkPress(view, url)
-    }
-
-    view?.setOnLinkLongPressCallback { url ->
-      emitLinkLongPress(view, url)
-    }
-
-    view?.setOnTaskListItemPressCallback { taskIndex, checked, itemText ->
-      val newChecked = !checked
-      val updatedMarkdown = TaskListToggleUtils.toggleAtIndex(view.currentMarkdown, taskIndex, newChecked)
-      view.setMarkdownContent(updatedMarkdown)
-      emitTaskListItemPress(view, taskIndex, newChecked, itemText)
-    }
-
     view?.setMarkdownContent(markdown ?: "")
   }
 

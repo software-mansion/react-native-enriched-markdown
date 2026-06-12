@@ -21,6 +21,7 @@ export type NodeType =
   | 'Underline'
   | 'Superscript'
   | 'Subscript'
+  | 'Highlight'
   | 'Code'
   | 'Image'
   | 'Blockquote'

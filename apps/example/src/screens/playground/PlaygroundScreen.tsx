@@ -47,6 +47,10 @@ const MARKDOWN_STYLE = {
     checkmarkColor: '#ffffff',
     checkedStrikethrough: true,
   },
+  highlight: {
+    color: '#111827',
+    backgroundColor: '#FEF08A',
+  },
 };
 
 const BLOCK_IMAGE_URI = Image.resolveAssetSource(
@@ -262,7 +266,7 @@ export default function PlaygroundScreen() {
               markdownStyle={MARKDOWN_STYLE}
               flavor="github"
               spoilerOverlay="solid"
-              md4cFlags={{ underline: underlineEnabled }}
+              md4cFlags={{ underline: underlineEnabled, highlight: true }}
               onLinkPress={({ url }) =>
                 Alert.alert('Link', url, [{ text: 'OK' }])
               }

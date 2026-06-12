@@ -172,6 +172,11 @@ interface SubscriptStyleInternal {
   baselineOffsetScale: CodegenTypes.Float;
 }
 
+interface HighlightStyleInternal {
+  color: ColorValue;
+  backgroundColor: ColorValue;
+}
+
 export interface MarkdownStyleInternal {
   paragraph: ParagraphStyleInternal;
   h1: HeadingStyleInternal;
@@ -200,6 +205,7 @@ export interface MarkdownStyleInternal {
   spoiler: SpoilerStyleInternal;
   superscript: SuperscriptStyleInternal;
   subscript: SubscriptStyleInternal;
+  highlight: HighlightStyleInternal;
 }
 
 export interface LinkPressEvent {
@@ -261,6 +267,11 @@ export interface Md4cFlagsInternal {
    * @default true
    */
   latexMath: boolean;
+  /**
+   * Enable highlight span parsing (==text==).
+   * @default false
+   */
+  highlight: boolean;
 }
 
 interface StreamingConfigInternal {
