@@ -71,6 +71,7 @@ class EnrichedMarkdownTextManager :
   override fun onDropViewInstance(view: EnrichedMarkdownText) {
     super.onDropViewInstance(view)
     MeasurementStore.clearFontScalingSettings(view.id)
+    MeasurementStore.clearBreakStrategy(view.id)
     view.layoutManager.releaseMeasurementStore()
   }
 
@@ -154,6 +155,14 @@ class EnrichedMarkdownTextManager :
     // No-op on Android — only used on iOS
   }
 
+  @ReactProp(name = "lineBreakStrategyIOS")
+  override fun setLineBreakStrategyIOS(
+    view: EnrichedMarkdownText?,
+    strategy: String?,
+  ) {
+    // No-op on Android — only used on iOS
+  }
+
   @ReactProp(name = "streamingAnimation", defaultBoolean = false)
   override fun setStreamingAnimation(
     view: EnrichedMarkdownText?,
@@ -199,6 +208,14 @@ class EnrichedMarkdownTextManager :
     language: String?,
   ) {
     view?.setDataDetectorLanguage(language ?: "en")
+  }
+
+  @ReactProp(name = "textBreakStrategy")
+  override fun setTextBreakStrategy(
+    view: EnrichedMarkdownText?,
+    strategy: String?,
+  ) {
+    view?.setTextBreakStrategy(strategy ?: "highQuality")
   }
 
   @ReactProp(name = "contextMenuItems")

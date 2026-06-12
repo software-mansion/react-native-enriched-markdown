@@ -30,6 +30,7 @@
 #import "MarkdownAccessibilityElementBuilder.h"
 #import "MarkdownExtractor.h"
 #import "MeasurementCache.h"
+#import "ParagraphStyleUtils.h"
 #import "RenderedMarkdownSegment.h"
 #import "RuntimeKeys.h"
 #import "SegmentReconciler.h"
@@ -110,6 +111,8 @@ static char kENRMSegmentFadeAnimatorKey;
   ENRMSpoilerOverlay _spoilerOverlay;
 
   ENRMDataDetectorType _dataDetectorTypes;
+
+  NSLineBreakStrategy _lineBreakStrategy;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -141,6 +144,7 @@ static char kENRMSegmentFadeAnimatorKey;
     _streamingAnimation = NO;
     _tableStreamingMode = ENRMTableStreamingModeProgressive;
     _selectionMenuConfig = (ENRMSelectionMenuConfig){.copyAsMarkdown = YES, .copyImageURL = YES};
+    _lineBreakStrategy = NSLineBreakStrategyNone;
 
     _fontScaleObserver = [[FontScaleObserver alloc] init];
     __weak EnrichedMarkdown *weakSelf = self;
@@ -367,6 +371,7 @@ static char kENRMSegmentFadeAnimatorKey;
   BOOL streamingAnimation = _streamingAnimation;
   ENRMTableStreamingMode tableStreamingMode = _tableStreamingMode;
   ENRMDataDetectorType dataDetectorTypes = _dataDetectorTypes;
+  NSLineBreakStrategy lineBreakStrategy = _lineBreakStrategy;
 
   __block NSArray<ENRMRenderedSegment *> *renderedSegments = nil;
   __block NSString *renderableMarkdown = nil;
@@ -385,8 +390,8 @@ static char kENRMSegmentFadeAnimatorKey;
         if (!ast)
           return NO;
 
-        renderedSegments =
-            ENRMRenderSegmentsFromAST(ast, config, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier);
+        renderedSegments = ENRMRenderSegmentsFromAST(ast, config, allowTrailingMargin, allowFontScaling,
+                                                     maxFontSizeMultiplier, lineBreakStrategy);
 
         if (dataDetectorTypes != ENRMDataDetectorTypeNone) {
           for (ENRMRenderedSegment *segment in renderedSegments) {
@@ -412,7 +417,7 @@ static char kENRMSegmentFadeAnimatorKey;
   }
 
   return ENRMRenderSegmentsFromAST(ast, _config, _allowTrailingMargin, _fontScaleObserver.allowFontScaling,
-                                   _maxFontSizeMultiplier);
+                                   _maxFontSizeMultiplier, _lineBreakStrategy);
 }
 
 /// Synchronous rendering for mock view measurement (no UI updates needed).
@@ -776,8 +781,15 @@ static char kENRMSegmentFadeAnimatorKey;
     dataDetectorTypesChanged = YES;
   }
 
+  BOOL lineBreakStrategyChanged = newViewProps.lineBreakStrategyIOS != oldViewProps.lineBreakStrategyIOS;
+  if (lineBreakStrategyChanged) {
+    NSString *strategy = [[NSString alloc] initWithUTF8String:newViewProps.lineBreakStrategyIOS.c_str()];
+    _lineBreakStrategy = ENRMResolveLineBreakStrategy(strategy);
+    _dirtyFlags |= ENRMDirtyForceHeight;
+  }
+
   if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
-      streamingAnimationChanged || streamingConfigChanged || dataDetectorTypesChanged) {
+      streamingAnimationChanged || streamingConfigChanged || dataDetectorTypesChanged || lineBreakStrategyChanged) {
     _pendingStyleFingerprint =
         computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];

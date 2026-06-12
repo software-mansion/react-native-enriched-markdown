@@ -31,8 +31,13 @@ if [ "$STATE" != "(Booted)" ]; then
   xcrun simctl boot "$UDID"
   # `bootstatus -b` exits before the app registry is ready on some runtimes.
   # Polling listapps for a built-in app is better signal that SpringBoard is up.
-  echo "Waiting for simulator to finish booting..."
+  echo "Waiting for simulator to finish booting (max 20s)..."
+  SECONDS=0
   until xcrun simctl listapps "$UDID" 2>/dev/null | grep -q "com.apple.Preferences"; do
+    if (( SECONDS >= 20 )); then
+      echo "Timed out waiting for SpringBoard; continuing to build step to unstick the simulator."
+      break
+    fi
     sleep 2
   done
 fi

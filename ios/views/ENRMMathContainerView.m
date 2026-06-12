@@ -4,7 +4,11 @@
 
 #if ENRICHED_MARKDOWN_MATH
 #import "PasteboardUtils.h"
-#import <IosMath/IosMath.h>
+#if __has_include("ReactNativeEnrichedMarkdown-Swift.h")
+#import "ReactNativeEnrichedMarkdown-Swift.h"
+#elif __has_include(<ReactNativeEnrichedMarkdown/ReactNativeEnrichedMarkdown-Swift.h>)
+#import <ReactNativeEnrichedMarkdown/ReactNativeEnrichedMarkdown-Swift.h>
+#endif
 #if TARGET_OS_OSX
 #import "ENRMMenuAction.h"
 #endif
@@ -12,13 +16,38 @@
 
 #if ENRICHED_MARKDOWN_MATH
 
+@interface ENRMRaTeXCanvasView : RCTUIView
+@property (nonatomic, strong, nullable) ENRMRaTeXRenderResult *renderResult;
+@end
+
+@implementation ENRMRaTeXCanvasView
+
+- (void)drawRect:(CGRect)rect
+{
+  if (!_renderResult)
+    return;
+  CGContextRef ctx = UIGraphicsGetCurrentContext();
+  if (!ctx)
+    return;
+  [_renderResult drawIn:ctx];
+}
+
+- (CGSize)intrinsicContentSize
+{
+  if (!_renderResult)
+    return CGSizeZero;
+  return CGSizeMake(ceil(_renderResult.width), ceil(_renderResult.totalHeight));
+}
+
+@end
+
 #if !TARGET_OS_OSX
 @interface ENRMMathContainerView () <UIContextMenuInteractionDelegate>
 @property (nonatomic, strong, readonly) RCTUIScrollView *scrollView;
 #else
 @interface ENRMMathContainerView ()
 #endif
-@property (nonatomic, strong, readonly) MTMathUILabel *mathLabel;
+@property (nonatomic, strong, readonly) ENRMRaTeXCanvasView *mathView;
 @property (nonatomic, copy, readwrite) NSString *cachedLatex;
 @end
 
@@ -31,8 +60,8 @@
     _config = config;
     _cachedLatex = @"";
 
-    _mathLabel = [[MTMathUILabel alloc] init];
-    _mathLabel.labelMode = kMTMathUILabelModeDisplay;
+    _mathView = [[ENRMRaTeXCanvasView alloc] initWithFrame:CGRectZero];
+    _mathView.backgroundColor = [RCTUIColor clearColor];
 
 #if !TARGET_OS_OSX
     _scrollView = [[RCTUIScrollView alloc] init];
@@ -42,20 +71,14 @@
     _scrollView.alwaysBounceHorizontal = NO;
     _scrollView.scrollEnabled = NO;
     [self addSubview:_scrollView];
-    [_scrollView addSubview:_mathLabel];
+    [_scrollView addSubview:_mathView];
 
     self.isAccessibilityElement = YES;
 
     UIContextMenuInteraction *contextMenu = [[UIContextMenuInteraction alloc] initWithDelegate:self];
     [self addInteraction:contextMenu];
 #else
-    // MTMathUILabel sets layer.geometryFlipped=YES for CoreText, but React Native
-    // macOS uses isFlipped=YES views. The combination causes rendering artifacts
-    // for sibling views. Disable the layer flip — MTMathUILabel's drawRect uses
-    // CoreText which respects the CGContext transform, and the label's isFlipped=NO
-    // combined with the parent's isFlipped=YES provides the correct coordinate system.
-    _mathLabel.layer.geometryFlipped = NO;
-    [self addSubview:_mathLabel];
+    [self addSubview:_mathView];
 #endif
   }
   return self;
@@ -67,20 +90,23 @@
 
   StyleConfig *config = self.config;
 
-  _mathLabel.latex = latex;
-  _mathLabel.fontSize = config.mathFontSize;
-  _mathLabel.textColor = config.mathColor;
-  _mathLabel.textAlignment = [self mapAlignment:config.mathTextAlign];
+  ENRMRaTeXRenderResult *result = [ENRMRaTeXBridge parse:latex
+                                             displayMode:YES
+                                                fontSize:config.mathFontSize
+                                                   color:config.mathColor];
+  _mathView.renderResult = result;
 
   CGFloat padding = config.mathPadding;
-#if !TARGET_OS_OSX
-  _mathLabel.contentInsets = UIEdgeInsetsMake(padding, padding, padding, padding);
-#else
-  _mathLabel.contentInsets = NSEdgeInsetsMake(padding, padding, padding, padding);
-#endif
+  _mathView.frame = CGRectMake(padding, padding, ceil(result.width), ceil(result.totalHeight));
 
   self.backgroundColor = config.mathBackgroundColor;
 
+  [_mathView invalidateIntrinsicContentSize];
+#if !TARGET_OS_OSX
+  [_mathView setNeedsDisplay];
+#else
+  [_mathView setNeedsDisplay:YES];
+#endif
   [self setNeedsLayout];
 }
 
@@ -129,45 +155,50 @@
   copyStringToPasteboard([NSString stringWithFormat:@"$$\n%@\n$$", _cachedLatex]);
 }
 
-- (MTTextAlignment)mapAlignment:(NSString *)align
+- (CGSize)mathViewIntrinsicSize
 {
-  if ([align isEqualToString:@"left"])
-    return kMTTextAlignmentLeft;
-  if ([align isEqualToString:@"right"])
-    return kMTTextAlignmentRight;
-  return kMTTextAlignmentCenter;
-}
-
-- (CGSize)mathLabelIntrinsicSize
-{
-#if !TARGET_OS_OSX
-  return [_mathLabel sizeThatFits:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)];
-#else
-  return _mathLabel.intrinsicContentSize;
-#endif
+  return _mathView.intrinsicContentSize;
 }
 
 - (CGFloat)measureHeight:(CGFloat)maxWidth
 {
-  return [self mathLabelIntrinsicSize].height;
+  CGFloat padding = self.config.mathPadding;
+  return [self mathViewIntrinsicSize].height + padding * 2;
+}
+
+- (CGFloat)alignedOriginXForWidth:(CGFloat)formulaWidth inBounds:(CGFloat)boundsWidth padding:(CGFloat)padding
+{
+  CGFloat available = boundsWidth - padding * 2;
+  if (formulaWidth >= available)
+    return padding;
+
+  NSString *align = self.config.mathTextAlign;
+  if ([align isEqualToString:@"left"])
+    return padding;
+  if ([align isEqualToString:@"right"])
+    return padding + available - formulaWidth;
+  return padding + (available - formulaWidth) / 2.0;
 }
 
 - (void)layoutSubviews
 {
   [super layoutSubviews];
 
-  CGSize intrinsicSize = [self mathLabelIntrinsicSize];
-  CGFloat contentWidth = MAX(intrinsicSize.width, self.bounds.size.width);
+  CGFloat padding = self.config.mathPadding;
+  CGSize intrinsicSize = [self mathViewIntrinsicSize];
+  CGFloat contentWidth = intrinsicSize.width + padding * 2;
   CGFloat contentHeight = self.bounds.size.height;
+  BOOL overflows = contentWidth > self.bounds.size.width;
+  CGFloat originX = [self alignedOriginXForWidth:intrinsicSize.width inBounds:self.bounds.size.width padding:padding];
 
 #if !TARGET_OS_OSX
   _scrollView.frame = self.bounds;
-  _scrollView.contentSize = CGSizeMake(contentWidth, contentHeight);
-  _scrollView.scrollEnabled = (intrinsicSize.width > self.bounds.size.width);
-  _mathLabel.frame = CGRectMake(0, 0, contentWidth, contentHeight);
+  _scrollView.contentSize = CGSizeMake(overflows ? contentWidth : self.bounds.size.width, contentHeight);
+  _scrollView.scrollEnabled = overflows;
+  _mathView.frame = CGRectMake(originX, padding, intrinsicSize.width, intrinsicSize.height);
 #else
-  _mathLabel.frame = CGRectMake(0, 0, contentWidth, contentHeight);
-  [_mathLabel setNeedsDisplay:YES];
+  _mathView.frame = CGRectMake(originX, padding, intrinsicSize.width, intrinsicSize.height);
+  [_mathView setNeedsDisplay:YES];
 #endif
 }
 

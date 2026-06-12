@@ -2,33 +2,30 @@
 
 #if ENRICHED_MARKDOWN_MATH
 
+#if __has_include("ReactNativeEnrichedMarkdown-Swift.h")
+#import "ReactNativeEnrichedMarkdown-Swift.h"
+#elif __has_include(<ReactNativeEnrichedMarkdown/ReactNativeEnrichedMarkdown-Swift.h>)
+#import <ReactNativeEnrichedMarkdown/ReactNativeEnrichedMarkdown-Swift.h>
+#endif
+
 @implementation ENRMMathInlineAttachment
 
 #if !TARGET_OS_OSX
 
 - (void)prepareIfNeeded
 {
-  if (_displayList)
+  if (_renderResult)
     return;
 
-  MTMathUILabel *mathLabel = [[MTMathUILabel alloc] init];
-  mathLabel.labelMode = kMTMathUILabelModeText;
-  mathLabel.textAlignment = kMTTextAlignmentLeft;
-  mathLabel.fontSize = self.fontSize;
-  mathLabel.latex = self.latex;
+  RCTUIColor *color = self.mathTextColor ?: [RCTUIColor blackColor];
+  ENRMRaTeXRenderResult *result = [ENRMRaTeXBridge parse:self.latex displayMode:NO fontSize:self.fontSize color:color];
+  if (!result)
+    return;
 
-  if (self.mathTextColor) {
-    mathLabel.textColor = self.mathTextColor;
-  }
-
-  [mathLabel layoutIfNeeded];
-
-  _displayList = mathLabel.displayList;
-  if (_displayList) {
-    _mathAscent = _displayList.ascent;
-    _mathDescent = _displayList.descent;
-    _cachedSize = CGSizeMake(_displayList.width, _mathAscent + _mathDescent);
-  }
+  _renderResult = result;
+  _mathAscent = result.ascent;
+  _mathDescent = result.descent;
+  _cachedSize = CGSizeMake(ceil(result.width), ceil(result.totalHeight));
 }
 
 - (CGRect)attachmentBoundsForTextContainer:(NSTextContainer *)textContainer
@@ -37,7 +34,6 @@
                             characterIndex:(NSUInteger)characterIndex
 {
   [self prepareIfNeeded];
-
   return CGRectMake(0, -_mathDescent, _cachedSize.width, _cachedSize.height);
 }
 
@@ -46,8 +42,7 @@
              characterIndex:(NSUInteger)characterIndex
 {
   [self prepareIfNeeded];
-
-  if (!_displayList)
+  if (!_renderResult)
     return nil;
 
   UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat preferredFormat];
@@ -57,15 +52,8 @@
 
   return [renderer imageWithActions:^(UIGraphicsImageRendererContext *rendererContext) {
     CGContextRef ctx = rendererContext.CGContext;
-
     CGContextSaveGState(ctx);
-
-    CGContextTranslateCTM(ctx, 0, _cachedSize.height);
-    CGContextScaleCTM(ctx, 1.0, -1.0);
-    _displayList.position = CGPointMake(0, _mathDescent);
-
-    [_displayList draw:ctx];
-
+    [_renderResult drawIn:ctx];
     CGContextRestoreGState(ctx);
   }];
 }

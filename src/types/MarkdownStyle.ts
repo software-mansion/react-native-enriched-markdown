@@ -312,7 +312,7 @@ export interface Md4cFlags {
    * Enable LaTeX math span parsing ($..$ and $$..$$).
    * When enabled, the parser recognizes LaTeX math delimiters.
    * When disabled, dollar signs are treated as plain text.
-   * Requires the optional iosMath (iOS) / AndroidMath (Android) native dependencies.
+   * Requires the optional RaTeX native dependency (iOS and Android).
    * @default true
    */
   latexMath?: boolean;

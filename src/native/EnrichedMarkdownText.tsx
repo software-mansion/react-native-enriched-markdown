@@ -70,6 +70,8 @@ export const EnrichedMarkdownText = ({
   selectionHandleColor,
   dataDetectorTypes,
   dataDetectorLanguage,
+  textBreakStrategy,
+  lineBreakStrategyIOS,
   ...rest
 }: EnrichedMarkdownTextProps) => {
   const normalizedStyleRef = useRef<MarkdownStyleInternal | null>(null);
@@ -209,6 +211,8 @@ export const EnrichedMarkdownText = ({
     selectionHandleColor,
     dataDetectorTypes,
     dataDetectorLanguage,
+    textBreakStrategy,
+    lineBreakStrategyIOS,
     ...rest,
   };
 

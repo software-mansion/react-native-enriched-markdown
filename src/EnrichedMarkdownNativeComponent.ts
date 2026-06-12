@@ -421,6 +421,18 @@ export interface NativeProps extends ViewProps {
    * Fired when a data-detected entity is tapped.
    */
   onDataDetectorPress?: CodegenTypes.BubblingEventHandler<DataDetectorPressEvent>;
+  /**
+   * Sets the text break strategy on Android (API 23+).
+   * @default 'highQuality'
+   * @platform android
+   */
+  textBreakStrategy?: CodegenTypes.WithDefault<string, 'highQuality'>;
+  /**
+   * Sets the line break strategy on iOS 14+.
+   * @default 'none'
+   * @platform ios
+   */
+  lineBreakStrategyIOS?: CodegenTypes.WithDefault<string, 'none'>;
 }
 
 export default codegenNativeComponent<NativeProps>('EnrichedMarkdown', {

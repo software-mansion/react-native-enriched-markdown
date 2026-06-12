@@ -68,6 +68,7 @@ class EnrichedMarkdownManager :
     view.cleanup()
     MeasurementStore.release(view.id)
     MeasurementStore.clearStreamingTableMode(view.id)
+    MeasurementStore.clearBreakStrategy(view.id)
   }
 
   override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> = markdownEventTypeConstants()
@@ -150,6 +151,14 @@ class EnrichedMarkdownManager :
     // No-op on Android — only used on iOS
   }
 
+  @ReactProp(name = "lineBreakStrategyIOS")
+  override fun setLineBreakStrategyIOS(
+    view: EnrichedMarkdown?,
+    strategy: String?,
+  ) {
+    // No-op on Android — only used on iOS
+  }
+
   @ReactProp(name = "streamingAnimation", defaultBoolean = false)
   override fun setStreamingAnimation(
     view: EnrichedMarkdown?,
@@ -178,6 +187,14 @@ class EnrichedMarkdownManager :
     mode: String?,
   ) {
     view?.spoilerOverlay = SpoilerOverlay.fromString(mode)
+  }
+
+  @ReactProp(name = "textBreakStrategy")
+  override fun setTextBreakStrategy(
+    view: EnrichedMarkdown?,
+    strategy: String?,
+  ) {
+    view?.setTextBreakStrategy(strategy ?: "highQuality")
   }
 
   @ReactProp(name = "contextMenuItems")

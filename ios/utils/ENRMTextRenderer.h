@@ -21,7 +21,7 @@ extern "C" {
 
 ENRMRenderResult *ENRMRenderASTNodes(NSArray<MarkdownASTNode *> *nodes, StyleConfig *config, BOOL allowTrailingMargin,
                                      BOOL allowFontScaling, CGFloat maxFontSizeMultiplier,
-                                     NSWritingDirection writingDirection);
+                                     NSWritingDirection writingDirection, NSLineBreakStrategy lineBreakStrategy);
 
 #ifdef __cplusplus
 }

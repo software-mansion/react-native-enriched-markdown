@@ -28,10 +28,8 @@ static NSArray *ENRMSplitASTIntoSegments(MarkdownASTNode *root)
       NSString *latex = child.children.count > 0 ? child.children.firstObject.content : child.content;
       [segments addObject:[ENRMMathSegment segmentWithLatex:latex ?: @""]];
 #else
-      // TODO: Fix block math rendering on macOS. Adding ENRMMathContainerView (which
-      // hosts MTMathUILabel) as a segment causes all preceding text segments to become
-      // invisible. Likely related to MTMathUILabel.layer.geometryFlipped interacting
-      // with NSTextView's coordinate system. Inline math ($...$) works.
+      // TODO: Fix block math rendering on macOS. Adding ENRMMathContainerView as a
+      // segment causes all preceding text segments to become invisible.
 #endif
     }
 #endif
@@ -49,7 +47,8 @@ static NSArray *ENRMSplitASTIntoSegments(MarkdownASTNode *root)
 
 NSArray<ENRMRenderedSegment *> *ENRMRenderSegmentsFromAST(MarkdownASTNode *ast, StyleConfig *config,
                                                           BOOL allowTrailingMargin, BOOL allowFontScaling,
-                                                          CGFloat maxFontSizeMultiplier)
+                                                          CGFloat maxFontSizeMultiplier,
+                                                          NSLineBreakStrategy lineBreakStrategy)
 {
   NSArray *segments = ENRMSplitASTIntoSegments(ast);
   NSMutableArray<ENRMRenderedSegment *> *renderedSegments = [NSMutableArray array];
@@ -61,8 +60,9 @@ NSArray<ENRMRenderedSegment *> *ENRMRenderSegmentsFromAST(MarkdownASTNode *ast, 
   for (id segment in segments) {
     if ([segment isKindOfClass:[ENRMTextSegment class]]) {
       ENRMTextSegment *textSegment = (ENRMTextSegment *)segment;
-      ENRMRenderResult *rendered = ENRMRenderASTNodes(textSegment.nodes, config, allowTrailingMargin, allowFontScaling,
-                                                      maxFontSizeMultiplier, currentWritingDirection());
+      ENRMRenderResult *rendered =
+          ENRMRenderASTNodes(textSegment.nodes, config, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier,
+                             currentWritingDirection(), lineBreakStrategy);
       uint64_t signature = ENRMSignatureForNodes(textSegment.nodes) ^ kTextKindSalt;
       [renderedSegments addObject:[ENRMRenderedSegment textSegmentWithResult:rendered signature:signature]];
     } else if ([segment isKindOfClass:[ENRMTableSegment class]]) {
