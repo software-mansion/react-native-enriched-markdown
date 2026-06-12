@@ -8,6 +8,10 @@ __BEGIN_DECLS
 extern NSAttributedString *kNewlineAttributedString;
 
 NSWritingDirection currentWritingDirection(void);
+NSLineBreakStrategy ENRMResolveLineBreakStrategy(NSString *_Nullable strategy);
+void ENRMApplyLineBreakStrategyToParagraphStyles(NSMutableAttributedString *output,
+                                                 NSLineBreakStrategy lineBreakStrategy);
+
 NSMutableParagraphStyle *getOrCreateParagraphStyle(NSMutableAttributedString *output, NSUInteger index);
 void applyParagraphSpacingAfter(NSMutableAttributedString *output, NSUInteger start, CGFloat marginBottom);
 NSUInteger applyParagraphSpacingBefore(NSMutableAttributedString *output, NSRange range, CGFloat marginTop);

@@ -14,7 +14,8 @@ extern "C" {
 
 NSArray<ENRMRenderedSegment *> *ENRMRenderSegmentsFromAST(MarkdownASTNode *ast, StyleConfig *config,
                                                           BOOL allowTrailingMargin, BOOL allowFontScaling,
-                                                          CGFloat maxFontSizeMultiplier);
+                                                          CGFloat maxFontSizeMultiplier,
+                                                          NSLineBreakStrategy lineBreakStrategy);
 
 #ifdef __cplusplus
 }

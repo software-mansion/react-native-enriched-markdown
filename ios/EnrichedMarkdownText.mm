@@ -94,6 +94,8 @@ using namespace facebook::react;
   ENRMSelectionMenuConfig _selectionMenuConfig;
 
   ENRMSpoilerOverlayManager *_spoilerManager;
+
+  NSLineBreakStrategy _lineBreakStrategy;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -156,6 +158,7 @@ using namespace facebook::react;
     _enableLinkPreview = YES;
     _forceHeightUpdateOnNextRender = NO;
     _selectionMenuConfig = (ENRMSelectionMenuConfig){.copyAsMarkdown = YES, .copyImageURL = YES};
+    _lineBreakStrategy = NSLineBreakStrategyNone;
 
     _fontScaleObserver = [[FontScaleObserver alloc] init];
     __weak EnrichedMarkdownText *weakSelf = self;
@@ -256,6 +259,7 @@ using namespace facebook::react;
   BOOL allowFontScaling = _fontScaleObserver.allowFontScaling;
   CGFloat maxFontSizeMultiplier = _maxFontSizeMultiplier;
   BOOL allowTrailingMargin = _allowTrailingMargin;
+  NSLineBreakStrategy lineBreakStrategy = _lineBreakStrategy;
 
   NSWritingDirection writingDirection = currentWritingDirection();
 
@@ -268,7 +272,7 @@ using namespace facebook::react;
           return NO;
 
         result = ENRMRenderASTNodes(ast.children, config, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier,
-                                    writingDirection);
+                                    writingDirection, lineBreakStrategy);
         return YES;
       }
       apply:^{
@@ -288,7 +292,7 @@ using namespace facebook::react;
 
   ENRMRenderResult *result =
       ENRMRenderASTNodes(ast.children, _config, _allowTrailingMargin, _fontScaleObserver.allowFontScaling,
-                         _maxFontSizeMultiplier, currentWritingDirection());
+                         _maxFontSizeMultiplier, currentWritingDirection(), _lineBreakStrategy);
 
   _lastElementMarginBottom = result.lastElementMarginBottom;
   _accessibilityInfo = result.accessibilityInfo;
@@ -512,7 +516,15 @@ using namespace facebook::react;
     _spoilerManager.spoilerOverlay = ENRMSpoilerOverlayFromString(modeStr);
   }
 
-  if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged) {
+  BOOL lineBreakStrategyChanged = newViewProps.lineBreakStrategyIOS != oldViewProps.lineBreakStrategyIOS;
+  if (lineBreakStrategyChanged) {
+    NSString *strategy = [[NSString alloc] initWithUTF8String:newViewProps.lineBreakStrategyIOS.c_str()];
+    _lineBreakStrategy = ENRMResolveLineBreakStrategy(strategy);
+    _forceHeightUpdateOnNextRender = YES;
+  }
+
+  if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
+      lineBreakStrategyChanged) {
     _pendingStyleFingerprint =
         computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];

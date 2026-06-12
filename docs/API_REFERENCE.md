@@ -176,6 +176,31 @@ Whether to preserve the bottom margin of the last block element.
 | --------- | ------------- | -------- |
 | `boolean` | `false`        | Both     |
 
+### `textBreakStrategy`
+
+Controls how Android breaks lines within paragraphs. Mirrors the prop of the same name on React Native's core `Text`. The same value is used for both the measurement pass (`StaticLayout.Builder`) and the rendered `TextView`, so measured and rendered line counts stay in sync. Requires API 23+; ignored on older Android versions.
+
+| Type                                          | Default Value   | Platform |
+| --------------------------------------------- | --------------- | -------- |
+| `'simple' \| 'highQuality' \| 'balanced'`     | `'highQuality'` | Android  |
+
+- **`'simple'`**: greedy, no hyphenation; cheapest.
+- **`'highQuality'`** (default): full paragraph optimization with hyphenation.
+- **`'balanced'`**: balances line lengths across the paragraph; no hyphenation.
+
+### `lineBreakStrategyIOS`
+
+Controls iOS line-breaking refinements. Mirrors the prop of the same name on React Native's core `Text`. Maps to `NSParagraphStyle.lineBreakStrategy`. Requires iOS 14+; on earlier versions the prop is ignored.
+
+| Type                                                       | Default Value | Platform |
+| ---------------------------------------------------------- | ------------- | -------- |
+| `'none' \| 'standard' \| 'hangul-word' \| 'push-out'`      | `'none'`      | iOS      |
+
+- **`'none'`** (default): no additional line-break strategy.
+- **`'standard'`**: enables the system's standard line-break refinements.
+- **`'hangul-word'`**: prefers breaking at Korean word boundaries.
+- **`'push-out'`**: avoids orphaned short trailing lines by pushing words to the next line.
+
 ### `flavor`
 
 Markdown flavor. Set to `'github'` to enable GitHub Flavored Markdown table support.

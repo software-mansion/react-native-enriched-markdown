@@ -2,6 +2,7 @@
 #import "AccessibilityInfo.h"
 #import "AttributedRenderer.h"
 #import "MarkdownASTNode.h"
+#import "ParagraphStyleUtils.h"
 #import "RenderContext.h"
 #import "StyleConfig.h"
 
@@ -10,7 +11,7 @@
 
 ENRMRenderResult *ENRMRenderASTNodes(NSArray<MarkdownASTNode *> *nodes, StyleConfig *config, BOOL allowTrailingMargin,
                                      BOOL allowFontScaling, CGFloat maxFontSizeMultiplier,
-                                     NSWritingDirection writingDirection)
+                                     NSWritingDirection writingDirection, NSLineBreakStrategy lineBreakStrategy)
 {
   MarkdownASTNode *root = [[MarkdownASTNode alloc] initWithType:MarkdownNodeTypeDocument];
   for (MarkdownASTNode *node in nodes) {
@@ -27,6 +28,7 @@ ENRMRenderResult *ENRMRenderASTNodes(NSArray<MarkdownASTNode *> *nodes, StyleCon
 
   NSMutableAttributedString *attributedText = [renderer renderRoot:root context:context];
   [context applyLinkAttributesToString:attributedText];
+  ENRMApplyLineBreakStrategyToParagraphStyles(attributedText, lineBreakStrategy);
 
   ENRMRenderResult *result = [[ENRMRenderResult alloc] init];
   result.attributedText = attributedText;

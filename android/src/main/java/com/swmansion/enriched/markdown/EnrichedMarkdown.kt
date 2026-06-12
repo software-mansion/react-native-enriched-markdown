@@ -14,6 +14,7 @@ import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
 import com.swmansion.enriched.markdown.spoiler.SpoilerOverlay
 import com.swmansion.enriched.markdown.styles.StyleConfig
+import com.swmansion.enriched.markdown.utils.common.BreakStrategyUtils
 import com.swmansion.enriched.markdown.utils.common.FeatureFlags
 import com.swmansion.enriched.markdown.utils.common.MarkdownSegmentRenderer
 import com.swmansion.enriched.markdown.utils.common.RenderedSegment
@@ -81,6 +82,7 @@ class EnrichedMarkdown
     private var selectionColor: Int? = null
     private var selectionHandleColor: Int? = null
     private var selectionMenuConfig = SelectionMenuConfig()
+    private var textBreakStrategy: String = BreakStrategyUtils.DEFAULT_STRATEGY
 
     private var onLinkPressCallback: ((String) -> Unit)? = null
     private var onLinkLongPressCallback: ((String) -> Unit)? = null
@@ -183,6 +185,20 @@ class EnrichedMarkdown
       if (selectionHandleColor == color) return
       selectionHandleColor = color
       applySelectionColorsToSegments()
+    }
+
+    fun setTextBreakStrategy(strategy: String) {
+      if (textBreakStrategy == strategy) return
+      textBreakStrategy = strategy
+      MeasurementStore.updateBreakStrategy(id, strategy)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val resolved = BreakStrategyUtils.resolveBreakStrategy(strategy)
+        segmentViews.filterIsInstance<EnrichedMarkdownInternalText>().forEach {
+          it.breakStrategy = resolved
+        }
+      }
+      dirtyFlags += DirtyFlag.FORCE_HEIGHT
+      renderPending = true
     }
 
     private fun applySelectionColorsToSegments() {
@@ -418,6 +434,9 @@ class EnrichedMarkdown
         spoilerOverlay = this@EnrichedMarkdown.spoilerOverlay
         selectionMenuConfig = this@EnrichedMarkdown.selectionMenuConfig
         setIsSelectable(selectable)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+          breakStrategy = BreakStrategyUtils.resolveBreakStrategy(textBreakStrategy)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && segment.needsJustify) {
           justificationMode = android.text.Layout.JUSTIFICATION_MODE_INTER_WORD
         }

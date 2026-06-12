@@ -4,6 +4,18 @@
 NSAttributedString *kNewlineAttributedString;
 static NSParagraphStyle *kBlockSpacerTemplate;
 
+NSLineBreakStrategy ENRMResolveLineBreakStrategy(NSString *strategy)
+{
+  if ([strategy isEqualToString:@"standard"]) {
+    return NSLineBreakStrategyStandard;
+  } else if ([strategy isEqualToString:@"hangul-word"]) {
+    return NSLineBreakStrategyHangulWordPriority;
+  } else if ([strategy isEqualToString:@"push-out"]) {
+    return NSLineBreakStrategyPushOut;
+  }
+  return NSLineBreakStrategyNone;
+}
+
 __attribute__((constructor)) static void initParagraphStyleUtils(void)
 {
   kNewlineAttributedString = [[NSAttributedString alloc] initWithString:@"\n"];
@@ -181,6 +193,25 @@ void applyTextAlignment(NSMutableAttributedString *output, NSRange range, NSText
   NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location);
   style.alignment = textAlign;
   [output addAttribute:NSParagraphStyleAttributeName value:style range:range];
+}
+
+void ENRMApplyLineBreakStrategyToParagraphStyles(NSMutableAttributedString *output,
+                                                 NSLineBreakStrategy lineBreakStrategy)
+{
+  if (output.length == 0) {
+    return;
+  }
+  [output enumerateAttribute:NSParagraphStyleAttributeName
+                     inRange:NSMakeRange(0, output.length)
+                     options:0
+                  usingBlock:^(NSParagraphStyle *value, NSRange range, BOOL *stop) {
+                    if (!value) {
+                      return;
+                    }
+                    NSMutableParagraphStyle *mutable = [value mutableCopy];
+                    mutable.lineBreakStrategy = lineBreakStrategy;
+                    [output addAttribute:NSParagraphStyleAttributeName value:mutable range:range];
+                  }];
 }
 
 NSTextAlignment textAlignmentFromString(NSString *textAlign)

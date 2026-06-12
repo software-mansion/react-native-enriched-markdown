@@ -19,6 +19,7 @@ import com.swmansion.enriched.markdown.spoiler.SpoilerCapable
 import com.swmansion.enriched.markdown.spoiler.SpoilerOverlay
 import com.swmansion.enriched.markdown.spoiler.SpoilerOverlayDrawer
 import com.swmansion.enriched.markdown.styles.StyleConfig
+import com.swmansion.enriched.markdown.utils.common.BreakStrategyUtils
 import com.swmansion.enriched.markdown.utils.text.TailFadeInAnimator
 import com.swmansion.enriched.markdown.utils.text.interaction.CheckboxTouchHelper
 import com.swmansion.enriched.markdown.utils.text.view.LinkLongPressMovementMethod
@@ -288,6 +289,15 @@ class EnrichedMarkdownText
       if (selectionHandleColor == color) return
       selectionHandleColor = color
       applySelectionColors(selectionColor, selectionHandleColor)
+    }
+
+    fun setTextBreakStrategy(strategy: String) {
+      MeasurementStore.updateBreakStrategy(id, strategy)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        breakStrategy = BreakStrategyUtils.resolveBreakStrategy(strategy)
+      }
+      MeasurementStore.invalidate(id)
+      scheduleRenderIfNeeded()
     }
 
     fun emitOnLinkPress(url: String) {
