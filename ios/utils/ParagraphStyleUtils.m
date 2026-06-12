@@ -32,24 +32,19 @@ NSWritingDirection currentWritingDirection(void)
   return isRTL ? NSWritingDirectionRightToLeft : NSWritingDirectionLeftToRight;
 }
 
-NSMutableParagraphStyle *getOrCreateParagraphStyle(NSMutableAttributedString *output, NSUInteger index,
-                                                   NSLineBreakStrategy lineBreakStrategy)
+NSMutableParagraphStyle *getOrCreateParagraphStyle(NSMutableAttributedString *output, NSUInteger index)
 {
   NSParagraphStyle *existing = [output attribute:NSParagraphStyleAttributeName atIndex:index effectiveRange:NULL];
   NSMutableParagraphStyle *style = existing ? [existing mutableCopy] : [[NSMutableParagraphStyle alloc] init];
   style.baseWritingDirection = currentWritingDirection();
-  if (@available(iOS 14.0, *)) {
-    style.lineBreakStrategy = lineBreakStrategy;
-  }
   return style;
 }
 
-void applyParagraphSpacingAfter(NSMutableAttributedString *output, NSUInteger start, CGFloat marginBottom,
-                                NSLineBreakStrategy lineBreakStrategy)
+void applyParagraphSpacingAfter(NSMutableAttributedString *output, NSUInteger start, CGFloat marginBottom)
 {
   [output appendAttributedString:kNewlineAttributedString];
 
-  NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, start, lineBreakStrategy);
+  NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, start);
   style.paragraphSpacing = marginBottom;
 
   NSRange range = NSMakeRange(start, output.length - start);
@@ -126,14 +121,13 @@ void applyBlockSpacingAfter(NSMutableAttributedString *output, CGFloat marginBot
   [output addAttribute:NSParagraphStyleAttributeName value:spacerStyle range:NSMakeRange(spacerLocation, 1)];
 }
 
-void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat lineHeight,
-                     NSLineBreakStrategy lineBreakStrategy)
+void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat lineHeight)
 {
   if (lineHeight <= 0) {
     return;
   }
 
-  NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location, lineBreakStrategy);
+  NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location);
 
   style.minimumLineHeight = lineHeight;
   style.maximumLineHeight = lineHeight;
@@ -141,12 +135,32 @@ void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat l
   [output addAttribute:NSParagraphStyleAttributeName value:style range:range];
 }
 
-void applyTextAlignment(NSMutableAttributedString *output, NSRange range, NSTextAlignment textAlign,
-                        NSLineBreakStrategy lineBreakStrategy)
+void applyTextAlignment(NSMutableAttributedString *output, NSRange range, NSTextAlignment textAlign)
 {
-  NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location, lineBreakStrategy);
+  NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location);
   style.alignment = textAlign;
   [output addAttribute:NSParagraphStyleAttributeName value:style range:range];
+}
+
+void ENRMApplyLineBreakStrategyToParagraphStyles(NSMutableAttributedString *output,
+                                                 NSLineBreakStrategy lineBreakStrategy)
+{
+  if (output.length == 0) {
+    return;
+  }
+  if (@available(iOS 14.0, *)) {
+    [output enumerateAttribute:NSParagraphStyleAttributeName
+                       inRange:NSMakeRange(0, output.length)
+                       options:0
+                    usingBlock:^(NSParagraphStyle *value, NSRange range, BOOL *stop) {
+                      if (!value) {
+                        return;
+                      }
+                      NSMutableParagraphStyle *mutable = [value mutableCopy];
+                      mutable.lineBreakStrategy = lineBreakStrategy;
+                      [output addAttribute:NSParagraphStyleAttributeName value:mutable range:range];
+                    }];
+  }
 }
 
 NSTextAlignment textAlignmentFromString(NSString *textAlign)

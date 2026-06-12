@@ -55,7 +55,7 @@ export const EnrichedMarkdownText = ({
   selectionMenuConfig,
   selectionColor,
   selectionHandleColor,
-  textBreakStrategy = 'highQuality',
+  textBreakStrategy,
   lineBreakStrategyIOS,
   ...rest
 }: EnrichedMarkdownTextProps) => {

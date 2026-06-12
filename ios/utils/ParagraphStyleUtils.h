@@ -9,20 +9,17 @@ extern NSAttributedString *kNewlineAttributedString;
 
 NSWritingDirection currentWritingDirection(void);
 NSLineBreakStrategy ENRMResolveLineBreakStrategy(NSString *_Nullable strategy);
+void ENRMApplyLineBreakStrategyToParagraphStyles(NSMutableAttributedString *output,
+                                                 NSLineBreakStrategy lineBreakStrategy);
 
-NSMutableParagraphStyle *getOrCreateParagraphStyle(NSMutableAttributedString *output, NSUInteger index,
-                                                   NSLineBreakStrategy lineBreakStrategy);
-void applyParagraphSpacingAfter(NSMutableAttributedString *output, NSUInteger start, CGFloat marginBottom,
-                                NSLineBreakStrategy lineBreakStrategy);
+NSMutableParagraphStyle *getOrCreateParagraphStyle(NSMutableAttributedString *output, NSUInteger index);
+void applyParagraphSpacingAfter(NSMutableAttributedString *output, NSUInteger start, CGFloat marginBottom);
 NSUInteger applyParagraphSpacingBefore(NSMutableAttributedString *output, NSRange range, CGFloat marginTop);
 NSUInteger applyBlockSpacingBefore(NSMutableAttributedString *output, NSUInteger insertionPoint, CGFloat marginTop);
 void applyBlockSpacingAfter(NSMutableAttributedString *output, CGFloat marginBottom);
-void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat lineHeight,
-                     NSLineBreakStrategy lineBreakStrategy);
-void applyTextAlignment(NSMutableAttributedString *output, NSRange range, NSTextAlignment textAlign,
-                        NSLineBreakStrategy lineBreakStrategy);
+void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat lineHeight);
+void applyTextAlignment(NSMutableAttributedString *output, NSRange range, NSTextAlignment textAlign);
 NSTextAlignment textAlignmentFromString(NSString *textAlign);
-void ENRMSetLineBreakStrategy(NSString *strategy);
 
 __END_DECLS
 
