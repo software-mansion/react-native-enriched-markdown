@@ -201,19 +201,17 @@ void ENRMApplyLineBreakStrategyToParagraphStyles(NSMutableAttributedString *outp
   if (output.length == 0) {
     return;
   }
-  if (@available(iOS 14.0, *)) {
-    [output enumerateAttribute:NSParagraphStyleAttributeName
-                       inRange:NSMakeRange(0, output.length)
-                       options:0
-                    usingBlock:^(NSParagraphStyle *value, NSRange range, BOOL *stop) {
-                      if (!value) {
-                        return;
-                      }
-                      NSMutableParagraphStyle *mutable = [value mutableCopy];
-                      mutable.lineBreakStrategy = lineBreakStrategy;
-                      [output addAttribute:NSParagraphStyleAttributeName value:mutable range:range];
-                    }];
-  }
+  [output enumerateAttribute:NSParagraphStyleAttributeName
+                     inRange:NSMakeRange(0, output.length)
+                     options:0
+                  usingBlock:^(NSParagraphStyle *value, NSRange range, BOOL *stop) {
+                    if (!value) {
+                      return;
+                    }
+                    NSMutableParagraphStyle *mutable = [value mutableCopy];
+                    mutable.lineBreakStrategy = lineBreakStrategy;
+                    [output addAttribute:NSParagraphStyleAttributeName value:mutable range:range];
+                  }];
 }
 
 NSTextAlignment textAlignmentFromString(NSString *textAlign)
