@@ -60,6 +60,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
   ENRMDirtyNone = 0,
   ENRMDirtyRecreateSegments = 1 << 0,
   ENRMDirtyForceHeight = 1 << 1,
+  ENRMDirtyRender = 1 << 2,
 };
 
 static char kENRMSegmentFadeAnimatorKey;
@@ -685,19 +686,19 @@ static char kENRMSegmentFadeAnimatorKey;
   const auto &oldViewProps = *std::static_pointer_cast<EnrichedMarkdownProps const>(_props);
   const auto &newViewProps = *std::static_pointer_cast<EnrichedMarkdownProps const>(props);
 
-  BOOL stylePropChanged = NO;
   BOOL markdownChanged = oldViewProps.markdown != newViewProps.markdown;
+  if (markdownChanged) {
+    _dirtyFlags |= ENRMDirtyRender;
+  }
 
   if (_config == nil) {
     _config = [[StyleConfig alloc] init];
     [_config setFontScaleMultiplier:_fontScaleObserver.effectiveFontScale];
   }
 
-  stylePropChanged = applyMarkdownStyleToConfig(_config, newViewProps.markdownStyle, oldViewProps.markdownStyle);
-
-  if (stylePropChanged) {
+  if (applyMarkdownStyleToConfig(_config, newViewProps.markdownStyle, oldViewProps.markdownStyle)) {
     [ENRMImageAttachment clearAttachmentRegistry];
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
     if (!markdownChanged) {
       _dirtyFlags |= ENRMDirtyRecreateSegments;
     }
@@ -719,8 +720,7 @@ static char kENRMSegmentFadeAnimatorKey;
     if (_config != nil) {
       [_config setFontScaleMultiplier:_fontScaleObserver.effectiveFontScale];
     }
-    stylePropChanged = YES;
-    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight | ENRMDirtyRender;
   }
 
   if (newViewProps.maxFontSizeMultiplier != oldViewProps.maxFontSizeMultiplier) {
@@ -728,49 +728,40 @@ static char kENRMSegmentFadeAnimatorKey;
     if (_config != nil) {
       [_config setMaxFontSizeMultiplier:_maxFontSizeMultiplier];
     }
-    stylePropChanged = YES;
-    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight | ENRMDirtyRender;
   }
 
   if (newViewProps.allowTrailingMargin != oldViewProps.allowTrailingMargin) {
     _allowTrailingMargin = newViewProps.allowTrailingMargin;
-    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight | ENRMDirtyRender;
   }
 
-  BOOL md4cFlagsChanged = NO;
   if (newViewProps.md4cFlags.underline != oldViewProps.md4cFlags.underline) {
     _md4cFlags.underline = newViewProps.md4cFlags.underline;
-    md4cFlagsChanged = YES;
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
   }
   if (newViewProps.md4cFlags.superscript != oldViewProps.md4cFlags.superscript) {
     _md4cFlags.superscript = newViewProps.md4cFlags.superscript;
-    md4cFlagsChanged = YES;
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
   }
   if (newViewProps.md4cFlags.subscript != oldViewProps.md4cFlags.subscript) {
     _md4cFlags.subscript = newViewProps.md4cFlags.subscript;
-    md4cFlagsChanged = YES;
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
   }
   if (newViewProps.md4cFlags.latexMath != oldViewProps.md4cFlags.latexMath) {
     _md4cFlags.latexMath = newViewProps.md4cFlags.latexMath;
-    md4cFlagsChanged = YES;
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
   }
   if (newViewProps.md4cFlags.highlight != oldViewProps.md4cFlags.highlight) {
     _md4cFlags.highlight = newViewProps.md4cFlags.highlight;
-    md4cFlagsChanged = YES;
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
   }
-  BOOL allowTrailingMarginChanged = newViewProps.allowTrailingMargin != oldViewProps.allowTrailingMargin;
 
   _enableLinkPreview = newViewProps.enableLinkPreview;
 
-  BOOL streamingAnimationChanged = newViewProps.streamingAnimation != oldViewProps.streamingAnimation;
-  if (streamingAnimationChanged) {
+  if (newViewProps.streamingAnimation != oldViewProps.streamingAnimation) {
     _streamingAnimation = newViewProps.streamingAnimation;
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
     if (!_streamingAnimation) {
       for (RCTUIView *segment in _segmentViews) {
         if ([segment isKindOfClass:[EnrichedMarkdownInternalText class]]) {
@@ -784,13 +775,11 @@ static char kENRMSegmentFadeAnimatorKey;
     }
   }
 
-  BOOL streamingConfigChanged = NO;
   if (newViewProps.streamingConfig.tableMode != oldViewProps.streamingConfig.tableMode) {
     NSString *tableModeStr = [[NSString alloc] initWithUTF8String:newViewProps.streamingConfig.tableMode.c_str()];
     _tableStreamingMode =
         [tableModeStr isEqualToString:@"hidden"] ? ENRMTableStreamingModeHidden : ENRMTableStreamingModeProgressive;
-    streamingConfigChanged = YES;
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
   }
 
   if (ENRMContextMenuItemsChanged(oldViewProps.contextMenuItems, newViewProps.contextMenuItems)) {
@@ -822,27 +811,25 @@ static char kENRMSegmentFadeAnimatorKey;
     }
   }
 
-  BOOL lineBreakStrategyChanged = newViewProps.lineBreakStrategyIOS != oldViewProps.lineBreakStrategyIOS;
-  if (lineBreakStrategyChanged) {
+  if (newViewProps.lineBreakStrategyIOS != oldViewProps.lineBreakStrategyIOS) {
     NSString *strategy = [[NSString alloc] initWithUTF8String:newViewProps.lineBreakStrategyIOS.c_str()];
     _lineBreakStrategy = ENRMResolveLineBreakStrategy(strategy);
-    _dirtyFlags |= ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
   }
 
-  BOOL writingDirectionChanged = newViewProps.writingDirection != oldViewProps.writingDirection;
-  if (writingDirectionChanged) {
+  if (newViewProps.writingDirection != oldViewProps.writingDirection) {
     NSString *value = [[NSString alloc] initWithUTF8String:newViewProps.writingDirection.c_str()];
     _writingDirectionMode = ENRMResolveWritingDirectionMode(value);
-    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight;
+    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight | ENRMDirtyRender;
     [self pushWritingDirectionToTableSegments];
   }
 
-  if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
-      streamingAnimationChanged || streamingConfigChanged || lineBreakStrategyChanged || writingDirectionChanged) {
+  if (_dirtyFlags & ENRMDirtyRender) {
     _pendingStyleFingerprint =
         computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];
     [self renderMarkdownContent:markdownString];
+    _dirtyFlags &= ~ENRMDirtyRender;
   }
 
   [super updateProps:props oldProps:oldProps];
