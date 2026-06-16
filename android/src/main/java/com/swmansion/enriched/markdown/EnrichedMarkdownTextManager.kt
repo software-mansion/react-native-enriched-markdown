@@ -163,6 +163,14 @@ class EnrichedMarkdownTextManager :
     // No-op on Android — only used on iOS
   }
 
+  @ReactProp(name = "writingDirection")
+  override fun setWritingDirection(
+    view: EnrichedMarkdownText?,
+    value: String?,
+  ) {
+    // No-op on Android — first-strong per-paragraph resolution is the platform default
+  }
+
   @ReactProp(name = "streamingAnimation", defaultBoolean = false)
   override fun setStreamingAnimation(
     view: EnrichedMarkdownText?,
