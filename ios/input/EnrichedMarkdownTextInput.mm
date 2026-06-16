@@ -17,7 +17,9 @@
 #import "ENRMUIKit.h"
 #import "ENRMWordsUtils.h"
 #import "InputStylePropsUtils.h"
+#import "ParagraphStyleUtils.h"
 #import "SelectionColorUtils.h"
+#import <React/RCTI18nUtil.h>
 #if TARGET_OS_OSX
 #import <React/RCTBackedTextInputDelegate.h>
 #endif
@@ -84,6 +86,9 @@ using namespace facebook::react;
 
   ENRMAutoLinkDetector *_autoLinkDetector;
   ENRMDetectorPipeline *_detectorPipeline;
+
+  ENRMWritingDirectionMode _writingDirectionMode;
+  NSWritingDirection _resolvedLayoutDirection;
 }
 
 #pragma mark - Fabric lifecycle
@@ -117,6 +122,10 @@ using namespace facebook::react;
     _mentionIndicators = @[];
     _activeMentionRange = NSMakeRange(NSNotFound, 0);
     _activeMentionText = @"";
+
+    _writingDirectionMode = ENRMWritingDirectionModeFirstStrong;
+    _resolvedLayoutDirection =
+        [[RCTI18nUtil sharedInstance] isRTL] ? NSWritingDirectionRightToLeft : NSWritingDirectionLeftToRight;
 
     [self setupTextView];
 
@@ -210,6 +219,29 @@ using namespace facebook::react;
 - (void)requestHeightUpdate
 {
   ENRMRequestHeightUpdate<EnrichedMarkdownTextInputState>(_state, _heightUpdateCounter, self);
+}
+
+/// Yoga-resolved direction inherited from any ancestor `direction` style.
+/// In FirstStrong mode this feeds the neutral-paragraph fallback, so a change
+/// requires re-resolving per-paragraph directions over the current text.
+- (void)updateLayoutMetrics:(const LayoutMetrics &)layoutMetrics
+           oldLayoutMetrics:(const LayoutMetrics &)oldLayoutMetrics
+{
+  [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
+
+  NSWritingDirection resolved = _resolvedLayoutDirection;
+  if (layoutMetrics.layoutDirection == LayoutDirection::RightToLeft) {
+    resolved = NSWritingDirectionRightToLeft;
+  } else if (layoutMetrics.layoutDirection == LayoutDirection::LeftToRight) {
+    resolved = NSWritingDirectionLeftToRight;
+  }
+
+  if (resolved != _resolvedLayoutDirection) {
+    _resolvedLayoutDirection = resolved;
+    if (_writingDirectionMode == ENRMWritingDirectionModeFirstStrong && _textView.textStorage.length > 0) {
+      [self applyFormatting];
+    }
+  }
 }
 
 #pragma mark - Measurement
@@ -335,6 +367,13 @@ using namespace facebook::react;
 
   BOOL styleChanged = applyInputStyleProps(_formatterStyle, newViewProps, oldViewProps);
 
+  BOOL writingDirectionChanged = NO;
+  if (newViewProps.writingDirection != oldViewProps.writingDirection) {
+    NSString *value = [[NSString alloc] initWithUTF8String:newViewProps.writingDirection.c_str()];
+    _writingDirectionMode = ENRMResolveWritingDirectionMode(value);
+    writingDirectionChanged = YES;
+  }
+
   if (newViewProps.defaultValue != oldViewProps.defaultValue) {
     if (!newViewProps.defaultValue.empty() && oldViewProps.defaultValue.empty()) {
       NSString *markdown = [NSString stringWithUTF8String:newViewProps.defaultValue.c_str()];
@@ -352,6 +391,8 @@ using namespace facebook::react;
     }
 
     [self requestHeightUpdate];
+  } else if (writingDirectionChanged && _textView.textStorage.length > 0) {
+    [self applyFormatting];
   }
 
   [super updateProps:props oldProps:oldProps];
@@ -556,6 +597,7 @@ using namespace facebook::react;
 
   [_formatter applyFormattingRanges:_formattingStore.allRanges toTextView:_textView style:_formatterStyle];
   [_detectorPipeline refreshAllStyling];
+  [self applyWritingDirection];
 
   NSUInteger textLen = ENRMGetPlainText(_textView).length;
   if (savedSelection.location + savedSelection.length <= textLen) {
@@ -563,6 +605,17 @@ using namespace facebook::react;
   }
 
   _isApplyingFormatting = NO;
+}
+
+- (void)applyWritingDirection
+{
+  NSTextStorage *textStorage = _textView.textStorage;
+  if (textStorage.length == 0) {
+    return;
+  }
+  [textStorage beginEditing];
+  ENRMApplyWritingDirectionMode(textStorage, _writingDirectionMode, _resolvedLayoutDirection);
+  [textStorage endEditing];
 }
 
 #pragma mark - Commands

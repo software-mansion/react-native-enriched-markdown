@@ -2,6 +2,8 @@
 
 `react-native-enriched-markdown` resolves writing direction **per paragraph** on both platforms: each paragraph picks its own base direction from its first strong directional character. Arabic, Hebrew, and Persian content right-aligns automatically, even inside an LTR app and even when mixed with English paragraphs in the same document.
 
+This document describes the read-only [`EnrichedMarkdownText`](TEXT.md) renderer. The rich [`EnrichedMarkdownTextInput`](INPUT.md#rtl-support) follows the same per-paragraph rules — see its [RTL section](INPUT.md#rtl-support) for input-specific caveats (placeholder, code blocks, etc.).
+
 ## Platform Setup
 
 No setup is required. Both platforms autodetect direction per paragraph out of the box.
