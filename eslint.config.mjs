@@ -26,9 +26,9 @@ export default defineConfig([
   {
     ignores: [
       'node_modules/',
-      'lib/',
+      'packages/react-native-enriched-markdown/lib/',
       // Emscripten-generated WASM glue — not human-authored
-      'src/web/wasm/md4c.js',
+      'packages/react-native-enriched-markdown/src/web/wasm/md4c.js',
     ],
   },
 ]);
