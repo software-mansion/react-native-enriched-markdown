@@ -11,7 +11,7 @@
 
 ENRMRenderResult *ENRMRenderASTNodes(NSArray<MarkdownASTNode *> *nodes, StyleConfig *config, BOOL allowTrailingMargin,
                                      BOOL allowFontScaling, CGFloat maxFontSizeMultiplier,
-                                     NSWritingDirection writingDirection, NSLineBreakStrategy lineBreakStrategy)
+                                     NSLineBreakStrategy lineBreakStrategy)
 {
   MarkdownASTNode *root = [[MarkdownASTNode alloc] initWithType:MarkdownNodeTypeDocument];
   for (MarkdownASTNode *node in nodes) {
@@ -24,7 +24,6 @@ ENRMRenderResult *ENRMRenderASTNodes(NSArray<MarkdownASTNode *> *nodes, StyleCon
   RenderContext *context = [RenderContext new];
   context.allowFontScaling = allowFontScaling;
   context.maxFontSizeMultiplier = maxFontSizeMultiplier;
-  context.writingDirection = writingDirection;
 
   NSMutableAttributedString *attributedText = [renderer renderRoot:root context:context];
   [context applyLinkAttributesToString:attributedText];

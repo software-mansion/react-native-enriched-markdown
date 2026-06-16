@@ -1,5 +1,6 @@
 #pragma once
 #import "ENRMUIKit.h"
+#import "ParagraphStyleUtils.h"
 #import "StyleConfig.h"
 
 @class MarkdownASTNode;
@@ -25,6 +26,9 @@ typedef void (^TableLinkPressBlock)(NSString *url);
 @property (nonatomic, copy, nullable) TableLinkPressBlock onLinkLongPress;
 
 @property (nonatomic, assign) BOOL enableLinkPreview;
+
+@property (nonatomic, assign) ENRMWritingDirectionMode writingDirectionMode;
+@property (nonatomic, assign) NSWritingDirection resolvedLayoutDirection;
 
 @property (nonatomic, readonly) NSUInteger rowCount;
 

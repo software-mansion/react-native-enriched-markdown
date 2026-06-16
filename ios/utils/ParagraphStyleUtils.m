@@ -1,4 +1,5 @@
 #import "ParagraphStyleUtils.h"
+#import "LastElementUtils.h"
 #import <React/RCTI18nUtil.h>
 
 NSAttributedString *kNewlineAttributedString;
@@ -26,17 +27,140 @@ __attribute__((constructor)) static void initParagraphStyleUtils(void)
   kBlockSpacerTemplate = [template copy];
 }
 
-NSWritingDirection currentWritingDirection(void)
+ENRMWritingDirectionMode ENRMResolveWritingDirectionMode(NSString *value)
 {
-  BOOL isRTL = [[RCTI18nUtil sharedInstance] isRTL];
-  return isRTL ? NSWritingDirectionRightToLeft : NSWritingDirectionLeftToRight;
+  if ([value isEqualToString:@"ltr"]) {
+    return ENRMWritingDirectionModeLTR;
+  }
+  if ([value isEqualToString:@"rtl"]) {
+    return ENRMWritingDirectionModeRTL;
+  }
+  if ([value isEqualToString:@"auto"]) {
+    return ENRMWritingDirectionModeAuto;
+  }
+  return ENRMWritingDirectionModeFirstStrong;
+}
+
+static BOOL ENRMIsStrongRTLChar(unichar c)
+{
+  return (c >= 0x0590 && c <= 0x08FF) || (c >= 0xFB1D && c <= 0xFDFF) || (c >= 0xFE70 && c <= 0xFEFF);
+}
+
+NSWritingDirection ENRMFirstStrongDirection(NSString *text)
+{
+  NSCharacterSet *letters = [NSCharacterSet letterCharacterSet];
+  NSUInteger length = text.length;
+  for (NSUInteger i = 0; i < length; i++) {
+    unichar c = [text characterAtIndex:i];
+    if (ENRMIsStrongRTLChar(c)) {
+      return NSWritingDirectionRightToLeft;
+    }
+    if ([letters characterIsMember:c]) {
+      return NSWritingDirectionLeftToRight;
+    }
+  }
+  return NSWritingDirectionNatural;
+}
+
+BOOL ENRMParagraphIsRTL(NSParagraphStyle *style)
+{
+  if (style && style.baseWritingDirection != NSWritingDirectionNatural) {
+    return style.baseWritingDirection == NSWritingDirectionRightToLeft;
+  }
+  return [[RCTI18nUtil sharedInstance] isRTL];
+}
+
+void ENRMApplyWritingDirectionMode(NSMutableAttributedString *output, ENRMWritingDirectionMode mode,
+                                   NSWritingDirection layoutDirection)
+{
+  switch (mode) {
+    case ENRMWritingDirectionModeAuto:
+      break;
+    case ENRMWritingDirectionModeLTR:
+      ENRMApplyWritingDirectionToParagraphStyles(output, NSWritingDirectionLeftToRight);
+      break;
+    case ENRMWritingDirectionModeRTL:
+      ENRMApplyWritingDirectionToParagraphStyles(output, NSWritingDirectionRightToLeft);
+      break;
+    case ENRMWritingDirectionModeFirstStrong:
+      ENRMApplyFirstStrongParagraphDirections(output, layoutDirection);
+      break;
+  }
+}
+
+void ENRMApplyFirstStrongParagraphDirections(NSMutableAttributedString *output, NSWritingDirection fallback)
+{
+  if (output.length == 0) {
+    return;
+  }
+  NSString *string = output.string;
+  NSUInteger length = string.length;
+  NSUInteger position = 0;
+  while (position < length) {
+    NSRange paragraphRange = [string paragraphRangeForRange:NSMakeRange(position, 0)];
+    if (NSMaxRange(paragraphRange) <= position) {
+      break;
+    }
+    position = NSMaxRange(paragraphRange);
+
+    NSNumber *isCodeBlock = [output attribute:CodeBlockAttributeName
+                                      atIndex:paragraphRange.location
+                               effectiveRange:nil];
+    if (isCodeBlock.boolValue) {
+      continue;
+    }
+
+    NSWritingDirection direction = ENRMFirstStrongDirection([string substringWithRange:paragraphRange]);
+    if (direction == NSWritingDirectionNatural) {
+      direction = fallback;
+    }
+    if (direction == NSWritingDirectionNatural) {
+      continue;
+    }
+
+    [output enumerateAttribute:NSParagraphStyleAttributeName
+                       inRange:paragraphRange
+                       options:0
+                    usingBlock:^(NSParagraphStyle *style, NSRange range, BOOL *stop) {
+                      if (style != nil && style.baseWritingDirection == direction) {
+                        return;
+                      }
+                      NSMutableParagraphStyle *updated =
+                          style ? [style mutableCopy] : [[NSMutableParagraphStyle alloc] init];
+                      updated.baseWritingDirection = direction;
+                      [output addAttribute:NSParagraphStyleAttributeName value:updated range:range];
+                    }];
+  }
+}
+
+void ENRMApplyWritingDirectionToParagraphStyles(NSMutableAttributedString *output, NSWritingDirection writingDirection)
+{
+  if (output.length == 0 || writingDirection == NSWritingDirectionNatural) {
+    return;
+  }
+  [output enumerateAttribute:NSParagraphStyleAttributeName
+                     inRange:NSMakeRange(0, output.length)
+                     options:0
+                  usingBlock:^(NSParagraphStyle *style, NSRange range, BOOL *stop) {
+                    if (!style) {
+                      return;
+                    }
+                    NSNumber *isCodeBlock = [output attribute:CodeBlockAttributeName
+                                                      atIndex:range.location
+                                               effectiveRange:nil];
+                    if (isCodeBlock.boolValue) {
+                      return;
+                    }
+                    NSMutableParagraphStyle *mutable = [style mutableCopy];
+                    mutable.baseWritingDirection = writingDirection;
+                    [output addAttribute:NSParagraphStyleAttributeName value:mutable range:range];
+                  }];
 }
 
 NSMutableParagraphStyle *getOrCreateParagraphStyle(NSMutableAttributedString *output, NSUInteger index)
 {
   NSParagraphStyle *existing = [output attribute:NSParagraphStyleAttributeName atIndex:index effectiveRange:NULL];
   NSMutableParagraphStyle *style = existing ? [existing mutableCopy] : [[NSMutableParagraphStyle alloc] init];
-  style.baseWritingDirection = currentWritingDirection();
   return style;
 }
 
@@ -69,7 +193,6 @@ NSUInteger applyParagraphSpacingBefore(NSMutableAttributedString *output, NSRang
   CGFloat extraGap = marginTop - prevMarginBottom;
 
   NSMutableParagraphStyle *spacerStyle = [kBlockSpacerTemplate mutableCopy];
-  spacerStyle.baseWritingDirection = currentWritingDirection();
   spacerStyle.paragraphSpacing = MAX(0, extraGap - 1.0);
 
   NSDictionary *attrs = @{NSParagraphStyleAttributeName : spacerStyle};
@@ -95,7 +218,6 @@ NSUInteger applyBlockSpacingBefore(NSMutableAttributedString *output, NSUInteger
   }
 
   NSMutableParagraphStyle *spacerStyle = [kBlockSpacerTemplate mutableCopy];
-  spacerStyle.baseWritingDirection = currentWritingDirection();
   spacerStyle.paragraphSpacing = spacing;
 
   NSAttributedString *spacer =
@@ -115,7 +237,6 @@ void applyBlockSpacingAfter(NSMutableAttributedString *output, CGFloat marginBot
   [output appendAttributedString:kNewlineAttributedString];
 
   NSMutableParagraphStyle *spacerStyle = [kBlockSpacerTemplate mutableCopy];
-  spacerStyle.baseWritingDirection = currentWritingDirection();
   spacerStyle.paragraphSpacing = marginBottom;
 
   [output addAttribute:NSParagraphStyleAttributeName value:spacerStyle range:NSMakeRange(spacerLocation, 1)];

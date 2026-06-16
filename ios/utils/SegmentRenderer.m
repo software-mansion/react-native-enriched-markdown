@@ -60,9 +60,8 @@ NSArray<ENRMRenderedSegment *> *ENRMRenderSegmentsFromAST(MarkdownASTNode *ast, 
   for (id segment in segments) {
     if ([segment isKindOfClass:[ENRMTextSegment class]]) {
       ENRMTextSegment *textSegment = (ENRMTextSegment *)segment;
-      ENRMRenderResult *rendered =
-          ENRMRenderASTNodes(textSegment.nodes, config, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier,
-                             currentWritingDirection(), lineBreakStrategy);
+      ENRMRenderResult *rendered = ENRMRenderASTNodes(textSegment.nodes, config, allowTrailingMargin, allowFontScaling,
+                                                      maxFontSizeMultiplier, lineBreakStrategy);
       uint64_t signature = ENRMSignatureForNodes(textSegment.nodes) ^ kTextKindSalt;
       [renderedSegments addObject:[ENRMRenderedSegment textSegmentWithResult:rendered signature:signature]];
     } else if ([segment isKindOfClass:[ENRMTableSegment class]]) {

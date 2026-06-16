@@ -80,7 +80,6 @@
 - (NSMutableParagraphStyle *)spacerStyleWithHeight:(CGFloat)height spacing:(CGFloat)spacing
 {
   NSMutableParagraphStyle *style = [_baseSpacerTemplate mutableCopy];
-  style.baseWritingDirection = _writingDirection;
   style.minimumLineHeight = height;
   style.maximumLineHeight = height;
   style.paragraphSpacing = spacing;
@@ -90,7 +89,6 @@
 - (NSMutableParagraphStyle *)blockSpacerStyleWithMargin:(CGFloat)margin
 {
   NSMutableParagraphStyle *style = [_baseBlockSpacerTemplate mutableCopy];
-  style.baseWritingDirection = _writingDirection;
   style.paragraphSpacing = margin;
   return style;
 }

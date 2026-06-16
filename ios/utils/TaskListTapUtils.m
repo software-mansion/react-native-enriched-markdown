@@ -1,8 +1,8 @@
 #import "TaskListTapUtils.h"
 #import "ENRMUIKit.h"
 #import "ListItemRenderer.h"
+#import "ParagraphStyleUtils.h"
 #import "StyleConfig.h"
-#import <React/RCTI18nUtil.h>
 #include <TargetConditionals.h>
 
 TaskListHitTestResult taskListHitTest(ENRMPlatformTextView *textView, ENRMTapRecognizer *recognizer)
@@ -31,7 +31,7 @@ TaskListHitTestResult taskListHitTest(ENRMPlatformTextView *textView, ENRMTapRec
   NSParagraphStyle *style = attributes[NSParagraphStyleAttributeName];
   CGFloat checkboxWidth = style ? style.firstLineHeadIndent : 0;
 
-  BOOL isRTL = [[RCTI18nUtil sharedInstance] isRTL];
+  BOOL isRTL = ENRMParagraphIsRTL(style);
   if (isRTL) {
     CGFloat viewWidth = textView.bounds.size.width;
     if (tapPoint.x <= viewWidth - checkboxWidth) {

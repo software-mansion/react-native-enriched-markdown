@@ -35,6 +35,7 @@
 #import "RCTFabricComponentsPlugins.h"
 #import <React/RCTConversions.h>
 #import <React/RCTFont.h>
+#import <React/RCTI18nUtil.h>
 
 using namespace facebook::react;
 
@@ -96,6 +97,9 @@ using namespace facebook::react;
   ENRMSpoilerOverlayManager *_spoilerManager;
 
   NSLineBreakStrategy _lineBreakStrategy;
+
+  ENRMWritingDirectionMode _writingDirectionMode;
+  NSWritingDirection _resolvedLayoutDirection;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -135,6 +139,29 @@ using namespace facebook::react;
   }
 }
 
+/// Yoga-resolved direction inherited from any ancestor `direction` style.
+/// In FirstStrong mode this feeds the neutral-paragraph fallback, so a change
+/// requires a re-render of the cached markdown.
+- (void)updateLayoutMetrics:(const LayoutMetrics &)layoutMetrics
+           oldLayoutMetrics:(const LayoutMetrics &)oldLayoutMetrics
+{
+  [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
+
+  NSWritingDirection resolved = _resolvedLayoutDirection;
+  if (layoutMetrics.layoutDirection == LayoutDirection::RightToLeft) {
+    resolved = NSWritingDirectionRightToLeft;
+  } else if (layoutMetrics.layoutDirection == LayoutDirection::LeftToRight) {
+    resolved = NSWritingDirectionLeftToRight;
+  }
+
+  if (resolved != _resolvedLayoutDirection) {
+    _resolvedLayoutDirection = resolved;
+    if (_writingDirectionMode == ENRMWritingDirectionModeFirstStrong && _cachedMarkdown.length > 0) {
+      [self renderMarkdownContent:_cachedMarkdown];
+    }
+  }
+}
+
 - (void)requestHeightUpdate
 {
   ENRMRequestHeightUpdate<EnrichedMarkdownTextState>(_state, _heightUpdateCounter, self);
@@ -159,6 +186,9 @@ using namespace facebook::react;
     _forceHeightUpdateOnNextRender = NO;
     _selectionMenuConfig = (ENRMSelectionMenuConfig){.copyAsMarkdown = YES, .copyImageURL = YES};
     _lineBreakStrategy = NSLineBreakStrategyNone;
+    _writingDirectionMode = ENRMWritingDirectionModeFirstStrong;
+    _resolvedLayoutDirection =
+        [[RCTI18nUtil sharedInstance] isRTL] ? NSWritingDirectionRightToLeft : NSWritingDirectionLeftToRight;
 
     _fontScaleObserver = [[FontScaleObserver alloc] init];
     __weak EnrichedMarkdownText *weakSelf = self;
@@ -260,8 +290,8 @@ using namespace facebook::react;
   CGFloat maxFontSizeMultiplier = _maxFontSizeMultiplier;
   BOOL allowTrailingMargin = _allowTrailingMargin;
   NSLineBreakStrategy lineBreakStrategy = _lineBreakStrategy;
-
-  NSWritingDirection writingDirection = currentWritingDirection();
+  ENRMWritingDirectionMode writingDirectionMode = _writingDirectionMode;
+  NSWritingDirection resolvedLayoutDirection = _resolvedLayoutDirection;
 
   __block ENRMRenderResult *result = nil;
 
@@ -272,7 +302,8 @@ using namespace facebook::react;
           return NO;
 
         result = ENRMRenderASTNodes(ast.children, config, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier,
-                                    writingDirection, lineBreakStrategy);
+                                    lineBreakStrategy);
+        ENRMApplyWritingDirectionMode(result.attributedText, writingDirectionMode, resolvedLayoutDirection);
         return YES;
       }
       apply:^{
@@ -292,7 +323,8 @@ using namespace facebook::react;
 
   ENRMRenderResult *result =
       ENRMRenderASTNodes(ast.children, _config, _allowTrailingMargin, _fontScaleObserver.allowFontScaling,
-                         _maxFontSizeMultiplier, currentWritingDirection(), _lineBreakStrategy);
+                         _maxFontSizeMultiplier, _lineBreakStrategy);
+  ENRMApplyWritingDirectionMode(result.attributedText, _writingDirectionMode, _resolvedLayoutDirection);
 
   _lastElementMarginBottom = result.lastElementMarginBottom;
   _accessibilityInfo = result.accessibilityInfo;
@@ -523,8 +555,15 @@ using namespace facebook::react;
     _forceHeightUpdateOnNextRender = YES;
   }
 
+  BOOL writingDirectionChanged = newViewProps.writingDirection != oldViewProps.writingDirection;
+  if (writingDirectionChanged) {
+    NSString *value = [[NSString alloc] initWithUTF8String:newViewProps.writingDirection.c_str()];
+    _writingDirectionMode = ENRMResolveWritingDirectionMode(value);
+    _forceHeightUpdateOnNextRender = YES;
+  }
+
   if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
-      lineBreakStrategyChanged) {
+      lineBreakStrategyChanged || writingDirectionChanged) {
     _pendingStyleFingerprint =
         computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];

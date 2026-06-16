@@ -794,6 +794,14 @@ static void handleParagraph(NSMutableString *html, NSMutableString *inlineConten
 
 #pragma mark - Main Generator
 
+static NSString *dirAttrFromParagraphStyle(NSParagraphStyle *_Nullable style)
+{
+  if (!style || style.baseWritingDirection == NSWritingDirectionNatural) {
+    return @"auto";
+  }
+  return style.baseWritingDirection == NSWritingDirectionRightToLeft ? @"rtl" : @"ltr";
+}
+
 NSString *_Nullable generateHTML(NSAttributedString *attributedString, StyleConfig *styleConfig)
 {
   if (!attributedString || attributedString.length == 0)
@@ -801,17 +809,16 @@ NSString *_Nullable generateHTML(NSAttributedString *attributedString, StyleConf
 
   CachedStyles *styles = cacheStyles(styleConfig);
 
-  BOOL isRTL = currentWritingDirection() == NSWritingDirectionRightToLeft;
-  NSString *dirAttr = isRTL ? @" dir=\"rtl\"" : @"";
+  NSParagraphStyle *firstParagraphStyle = [attributedString attribute:NSParagraphStyleAttributeName
+                                                              atIndex:0
+                                                       effectiveRange:NULL];
+  NSString *dirAttr = dirAttrFromParagraphStyle(firstParagraphStyle);
 
   NSMutableString *html = [NSMutableString stringWithCapacity:attributedString.length * 2];
   [html appendFormat:
-            @"<!DOCTYPE html><html%@><head><meta charset=\"UTF-8\"></head><body "
+            @"<!DOCTYPE html><html dir=\"%@\"><head><meta charset=\"UTF-8\"></head><body "
             @"style=\"font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\">",
             dirAttr];
-  if (isRTL) {
-    [html appendString:@"<div dir=\"rtl\" style=\"direction: rtl; text-align: right;\">"];
-  }
 
   NSUInteger paragraphCount = 0;
   NSData *paragraphsData = collectParagraphsData(attributedString, &paragraphCount);
@@ -885,9 +892,6 @@ NSString *_Nullable generateHTML(NSAttributedString *attributedString, StyleConf
   closeBlockquotes(html, state);
   closeLists(html, state);
 
-  if (isRTL) {
-    [html appendString:@"</div>"];
-  }
   [html appendString:@"</body></html>"];
 
   return html;
@@ -931,6 +935,21 @@ static NSString *styleForCell(BOOL isHeader, NSUInteger rowIndex, StyleConfig *s
                        colorToCSS(styleConfig.tableBorderColor), isHeader ? @"bold" : @"normal"];
 }
 
+static NSString *tableDirAttrFromRows(NSArray<NSArray<NSDictionary *> *> *rows)
+{
+  for (NSArray<NSDictionary *> *row in rows) {
+    for (NSDictionary *cell in row) {
+      NSAttributedString *cellText = cell[@"attributedText"];
+      if (cellText.length == 0) {
+        continue;
+      }
+      NSParagraphStyle *style = [cellText attribute:NSParagraphStyleAttributeName atIndex:0 effectiveRange:NULL];
+      return dirAttrFromParagraphStyle(style);
+    }
+  }
+  return @"auto";
+}
+
 HTMLString _Nullable generateTableHTML(NSArray<NSArray<NSDictionary *> *> *rows, StyleConfig *styleConfig)
 {
   if (rows.count == 0)
@@ -939,11 +958,13 @@ HTMLString _Nullable generateTableHTML(NSArray<NSArray<NSDictionary *> *> *rows,
   CachedStyles *cachedStyles = cacheStyles(styleConfig);
   NSMutableString *htmlOutput = [NSMutableString stringWithCapacity:rows.count * 250];
 
+  NSString *dirAttr = tableDirAttrFromRows(rows);
+
   [htmlOutput appendFormat:
-                  @"<table style=\"border-collapse: separate; border-spacing: 0; "
+                  @"<table dir=\"%@\" style=\"border-collapse: separate; border-spacing: 0; "
                    "border: %.0fpx solid %@; border-radius: %.0fpx; overflow: hidden; font-size: %.0fpx;\">",
-                  styleConfig.tableBorderWidth, colorToCSS(styleConfig.tableBorderColor), styleConfig.tableBorderRadius,
-                  styleConfig.tableFontSize];
+                  dirAttr, styleConfig.tableBorderWidth, colorToCSS(styleConfig.tableBorderColor),
+                  styleConfig.tableBorderRadius, styleConfig.tableFontSize];
 
   BOOL hasOpenedBody = NO;
   NSUInteger bodyRowIndex = 0;

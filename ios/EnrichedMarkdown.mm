@@ -52,6 +52,7 @@
 #import "RCTFabricComponentsPlugins.h"
 #import <React/RCTConversions.h>
 #import <React/RCTFont.h>
+#import <React/RCTI18nUtil.h>
 
 using namespace facebook::react;
 
@@ -108,6 +109,9 @@ static char kENRMSegmentFadeAnimatorKey;
   ENRMSpoilerOverlay _spoilerOverlay;
 
   NSLineBreakStrategy _lineBreakStrategy;
+
+  ENRMWritingDirectionMode _writingDirectionMode;
+  NSWritingDirection _resolvedLayoutDirection;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -140,6 +144,9 @@ static char kENRMSegmentFadeAnimatorKey;
     _tableStreamingMode = ENRMTableStreamingModeProgressive;
     _selectionMenuConfig = (ENRMSelectionMenuConfig){.copyAsMarkdown = YES, .copyImageURL = YES};
     _lineBreakStrategy = NSLineBreakStrategyNone;
+    _writingDirectionMode = ENRMWritingDirectionModeFirstStrong;
+    _resolvedLayoutDirection =
+        [[RCTI18nUtil sharedInstance] isRTL] ? NSWritingDirectionRightToLeft : NSWritingDirectionLeftToRight;
 
     _fontScaleObserver = [[FontScaleObserver alloc] init];
     __weak EnrichedMarkdown *weakSelf = self;
@@ -344,6 +351,42 @@ static char kENRMSegmentFadeAnimatorKey;
   }
 }
 
+/// Yoga-resolved direction inherited from any ancestor `direction` style.
+/// In FirstStrong mode this feeds the neutral-paragraph fallback, so a change
+/// requires segment recreation.
+- (void)updateLayoutMetrics:(const LayoutMetrics &)layoutMetrics
+           oldLayoutMetrics:(const LayoutMetrics &)oldLayoutMetrics
+{
+  [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
+
+  NSWritingDirection resolved = _resolvedLayoutDirection;
+  if (layoutMetrics.layoutDirection == LayoutDirection::RightToLeft) {
+    resolved = NSWritingDirectionRightToLeft;
+  } else if (layoutMetrics.layoutDirection == LayoutDirection::LeftToRight) {
+    resolved = NSWritingDirectionLeftToRight;
+  }
+
+  if (resolved != _resolvedLayoutDirection) {
+    _resolvedLayoutDirection = resolved;
+    [self pushWritingDirectionToTableSegments];
+    if (_writingDirectionMode == ENRMWritingDirectionModeFirstStrong && _cachedMarkdown.length > 0) {
+      _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight;
+      [self renderMarkdownContent:_cachedMarkdown];
+    }
+  }
+}
+
+- (void)pushWritingDirectionToTableSegments
+{
+  for (RCTUIView *segment in _segmentViews) {
+    if ([segment isKindOfClass:[TableContainerView class]]) {
+      TableContainerView *tableView = (TableContainerView *)segment;
+      tableView.writingDirectionMode = _writingDirectionMode;
+      tableView.resolvedLayoutDirection = _resolvedLayoutDirection;
+    }
+  }
+}
+
 - (void)requestHeightUpdate
 {
   ENRMRequestHeightUpdate<EnrichedMarkdownState>(_state, _heightUpdateCounter, self);
@@ -366,6 +409,8 @@ static char kENRMSegmentFadeAnimatorKey;
   BOOL streamingAnimation = _streamingAnimation;
   ENRMTableStreamingMode tableStreamingMode = _tableStreamingMode;
   NSLineBreakStrategy lineBreakStrategy = _lineBreakStrategy;
+  ENRMWritingDirectionMode writingDirectionMode = _writingDirectionMode;
+  NSWritingDirection resolvedLayoutDirection = _resolvedLayoutDirection;
 
   __block NSArray<ENRMRenderedSegment *> *renderedSegments = nil;
   __block NSString *renderableMarkdown = nil;
@@ -386,6 +431,12 @@ static char kENRMSegmentFadeAnimatorKey;
 
         renderedSegments = ENRMRenderSegmentsFromAST(ast, config, allowTrailingMargin, allowFontScaling,
                                                      maxFontSizeMultiplier, lineBreakStrategy);
+        for (ENRMRenderedSegment *segment in renderedSegments) {
+          if (segment.kind == ENRMSegmentKindText && segment.textResult) {
+            ENRMApplyWritingDirectionMode(segment.textResult.attributedText, writingDirectionMode,
+                                          resolvedLayoutDirection);
+          }
+        }
         return YES;
       }
       apply:^{
@@ -401,8 +452,15 @@ static char kENRMSegmentFadeAnimatorKey;
     return nil;
   }
 
-  return ENRMRenderSegmentsFromAST(ast, _config, _allowTrailingMargin, _fontScaleObserver.allowFontScaling,
-                                   _maxFontSizeMultiplier, _lineBreakStrategy);
+  NSArray<ENRMRenderedSegment *> *segments =
+      ENRMRenderSegmentsFromAST(ast, _config, _allowTrailingMargin, _fontScaleObserver.allowFontScaling,
+                                _maxFontSizeMultiplier, _lineBreakStrategy);
+  for (ENRMRenderedSegment *segment in segments) {
+    if (segment.kind == ENRMSegmentKindText && segment.textResult) {
+      ENRMApplyWritingDirectionMode(segment.textResult.attributedText, _writingDirectionMode, _resolvedLayoutDirection);
+    }
+  }
+  return segments;
 }
 
 /// Synchronous rendering for mock view measurement (no UI updates needed).
@@ -538,6 +596,8 @@ static char kENRMSegmentFadeAnimatorKey;
   tableView.allowFontScaling = _fontScaleObserver.allowFontScaling;
   tableView.maxFontSizeMultiplier = _maxFontSizeMultiplier;
   tableView.enableLinkPreview = _enableLinkPreview;
+  tableView.writingDirectionMode = _writingDirectionMode;
+  tableView.resolvedLayoutDirection = _resolvedLayoutDirection;
 
   __weak EnrichedMarkdown *weakSelf = self;
 
@@ -560,6 +620,8 @@ static char kENRMSegmentFadeAnimatorKey;
 
 - (void)updateTableView:(TableContainerView *)view withSegment:(ENRMTableSegment *)tableSegment
 {
+  view.writingDirectionMode = _writingDirectionMode;
+  view.resolvedLayoutDirection = _resolvedLayoutDirection;
   NSUInteger previousRowCount = view.rowCount;
   [view applyTableNode:tableSegment.tableNode];
 
@@ -767,8 +829,16 @@ static char kENRMSegmentFadeAnimatorKey;
     _dirtyFlags |= ENRMDirtyForceHeight;
   }
 
+  BOOL writingDirectionChanged = newViewProps.writingDirection != oldViewProps.writingDirection;
+  if (writingDirectionChanged) {
+    NSString *value = [[NSString alloc] initWithUTF8String:newViewProps.writingDirection.c_str()];
+    _writingDirectionMode = ENRMResolveWritingDirectionMode(value);
+    _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight;
+    [self pushWritingDirectionToTableSegments];
+  }
+
   if (markdownChanged || stylePropChanged || md4cFlagsChanged || allowTrailingMarginChanged ||
-      streamingAnimationChanged || streamingConfigChanged || lineBreakStrategyChanged) {
+      streamingAnimationChanged || streamingConfigChanged || lineBreakStrategyChanged || writingDirectionChanged) {
     _pendingStyleFingerprint =
         computeStyleFingerprint(newViewProps.markdownStyle) ^ std::hash<bool>{}(newViewProps.allowTrailingMargin);
     NSString *markdownString = [[NSString alloc] initWithUTF8String:newViewProps.markdown.c_str()];

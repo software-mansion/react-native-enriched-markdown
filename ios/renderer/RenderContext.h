@@ -44,7 +44,6 @@ typedef NS_ENUM(NSInteger, ListType) { ListTypeUnordered, ListTypeOrdered };
 @property (nonatomic, assign) BOOL allowFontScaling;
 @property (nonatomic, assign) CGFloat maxFontSizeMultiplier;
 @property (nonatomic, assign) NSInteger taskItemCount;
-@property (nonatomic, assign) NSWritingDirection writingDirection;
 
 - (instancetype)init;
 - (void)reset;

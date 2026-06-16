@@ -1,6 +1,6 @@
 #import "BlockquoteBorder.h"
+#import "ParagraphStyleUtils.h"
 #import "StyleConfig.h"
-#import <React/RCTI18nUtil.h>
 
 // Attribute constants for identifying blockquote segments in text storage
 NSString *const BlockquoteDepthAttributeName = @"BlockquoteDepth";
@@ -41,9 +41,6 @@ NSString *const BlockquoteBackgroundColorAttributeName = @"BlockquoteBackgroundC
   RCTUIColor *defaultBgColor = c.blockquoteBackgroundColor;
   RCTUIColor *borderColor = c.blockquoteBorderColor;
 
-  BOOL isRTL = [[RCTI18nUtil sharedInstance] isRTL];
-
-  // Use a Bezier path to batch all vertical border rectangles into a single GPU draw call
   UIBezierPath *borderPath = [UIBezierPath bezierPath];
 
   [layoutManager
@@ -69,6 +66,7 @@ NSString *const BlockquoteBackgroundColorAttributeName = @"BlockquoteBackgroundC
 
                                  NSInteger depth = [depthNum integerValue];
                                  CGFloat baseY = origin.y + rect.origin.y;
+                                 BOOL isRTL = ENRMParagraphIsRTL(attrs[NSParagraphStyleAttributeName]);
 
                                  // 1. Draw Background (Painter's algorithm: draw backgrounds before borders)
                                  RCTUIColor *bgColor = attrs[BlockquoteBackgroundColorAttributeName] ?: defaultBgColor;

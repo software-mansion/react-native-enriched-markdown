@@ -1,9 +1,9 @@
 #import "ListMarkerDrawer.h"
 #import "ENRMUIKit.h"
 #import "ListItemRenderer.h"
+#import "ParagraphStyleUtils.h"
 #import "RenderContext.h"
 #import "StyleConfig.h"
-#import <React/RCTI18nUtil.h>
 
 extern NSString *const ListDepthAttribute;
 extern NSString *const ListTypeAttribute;
@@ -32,8 +32,6 @@ extern NSString *const TaskCheckedAttribute;
   if (!storage || storage.length == 0)
     return;
 
-  // Cache gap and track paragraphs to prevent double-drawing on wrapped lines
-  BOOL isRTL = [[RCTI18nUtil sharedInstance] isRTL];
   CGFloat gap = [_config effectiveListGapWidth];
   NSMutableSet *drawnParagraphs = [NSMutableSet set];
 
@@ -59,7 +57,8 @@ extern NSString *const TaskCheckedAttribute;
                                    return;
                                  [drawnParagraphs addObject:@(paraRange.location)];
 
-                                 // 3. Calculate Layout Coordinates
+                                 BOOL isRTL = ENRMParagraphIsRTL(attrs[NSParagraphStyleAttributeName]);
+
                                  CGPoint glyphLoc = [layoutManager locationForGlyphAtIndex:glyphRange.location];
                                  CGFloat baselineY = origin.y + rect.origin.y + glyphLoc.y;
                                  CGFloat markerX;

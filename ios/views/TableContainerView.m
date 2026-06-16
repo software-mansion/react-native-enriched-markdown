@@ -57,6 +57,8 @@
     _allowFontScaling = YES;
     _maxFontSizeMultiplier = 0;
     _enableLinkPreview = YES;
+    _writingDirectionMode = ENRMWritingDirectionModeFirstStrong;
+    _resolvedLayoutDirection = NSWritingDirectionLeftToRight;
     [self setupScrollView];
   }
   return self;
@@ -138,6 +140,8 @@
 
   [context applyLinkAttributesToString:attributedText];
 
+  ENRMApplyWritingDirectionMode(attributedText, _writingDirectionMode, _resolvedLayoutDirection);
+
   if (alignment != NSTextAlignmentLeft && attributedText.length > 0) {
     NSRange fullRange = NSMakeRange(0, attributedText.length);
     [attributedText
@@ -147,7 +151,6 @@
                 usingBlock:^(NSParagraphStyle *paragraphStyle, NSRange range, BOOL *stop) {
                   NSMutableParagraphStyle *mutableStyle =
                       paragraphStyle ? [paragraphStyle mutableCopy] : [[NSMutableParagraphStyle alloc] init];
-                  mutableStyle.baseWritingDirection = currentWritingDirection();
                   mutableStyle.alignment = alignment;
                   [attributedText addAttribute:NSParagraphStyleAttributeName value:mutableStyle range:range];
                 }];
