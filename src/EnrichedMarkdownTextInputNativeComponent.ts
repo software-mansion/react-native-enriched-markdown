@@ -210,6 +210,18 @@ export interface NativeProps extends ViewProps {
    */
   mentionIndicators?: ReadonlyArray<string>;
 
+  /**
+   * Paragraph writing direction.
+   * - 'first-strong' (default): resolves each paragraph from its first strong directional character;
+   *   neutral-only paragraphs fall back to the view's resolved layout direction. Library extension —
+   *   matches Android's TEXT_DIRECTION_FIRST_STRONG.
+   * - 'auto': React Native parity; iOS TextKit follows the app's userInterfaceLayoutDirection.
+   * - 'ltr' / 'rtl': force base direction on every paragraph.
+   * @default 'first-strong'
+   * @platform ios
+   */
+  writingDirection?: CodegenTypes.WithDefault<string, 'first-strong'>;
+
   // Events
   onChangeText?: CodegenTypes.DirectEventHandler<OnChangeTextEvent>;
   onChangeMarkdown?: CodegenTypes.DirectEventHandler<OnChangeMarkdownEvent>;

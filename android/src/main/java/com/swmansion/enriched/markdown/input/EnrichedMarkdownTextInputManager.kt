@@ -296,6 +296,15 @@ class EnrichedMarkdownTextInputManager :
     view?.setMentionIndicators(indicators)
   }
 
+  @ReactProp(name = "writingDirection")
+  override fun setWritingDirection(
+    view: EnrichedMarkdownTextInputView?,
+    value: String?,
+  ) {
+    // No-op on Android — EditText resolves direction per paragraph via
+    // TEXT_DIRECTION_FIRST_STRONG (the platform default).
+  }
+
   override fun updateProperties(
     view: EnrichedMarkdownTextInputView,
     props: ReactStylesDiffMap,

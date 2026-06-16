@@ -143,6 +143,23 @@ export interface EnrichedMarkdownTextInputProps extends Omit<
   onBlur?: () => void;
   contextMenuItems?: ContextMenuItem[];
   linkRegex?: RegExp | null;
+  /**
+   * Paragraph writing direction.
+   * - `'first-strong'` (default): resolves each paragraph from its first strong
+   *   directional character. Neutral-only paragraphs fall back to the view's
+   *   resolved layout direction (inherits ancestor `direction` style). Library
+   *   extension — matches Android's `TEXT_DIRECTION_FIRST_STRONG`.
+   * - `'auto'`: React Native parity. iOS TextKit follows the app's
+   *   `userInterfaceLayoutDirection`; mixed-direction paragraphs do not
+   *   auto-resolve.
+   * - `'ltr'` / `'rtl'`: force base direction on every paragraph.
+   *
+   * Android ignores this prop; the platform's `EditText` always uses
+   * `TEXT_DIRECTION_FIRST_STRONG` per paragraph.
+   * @default 'first-strong'
+   * @platform ios
+   */
+  writingDirection?: 'auto' | 'ltr' | 'rtl' | 'first-strong';
 }
 
 type PendingRequest<T> = {
@@ -187,6 +204,7 @@ export const EnrichedMarkdownTextInput = ({
   onBlur,
   contextMenuItems,
   linkRegex: _linkRegex,
+  writingDirection = 'first-strong',
   ...rest
 }: EnrichedMarkdownTextInputProps) => {
   const nativeRef = useRef<NativeRef | null>(null);
@@ -448,6 +466,7 @@ export const EnrichedMarkdownTextInput = ({
         handleContextMenuItemPress as NativeProps['onContextMenuItemPress']
       }
       linkRegex={linkRegex}
+      writingDirection={writingDirection}
       onStartMention={handleStartMention as NativeProps['onStartMention']}
       onChangeMention={handleChangeMention as NativeProps['onChangeMention']}
       onEndMention={handleEndMention as NativeProps['onEndMention']}
