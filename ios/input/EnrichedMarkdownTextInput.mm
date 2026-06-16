@@ -607,12 +607,10 @@ using namespace facebook::react;
   _isApplyingFormatting = NO;
 }
 
-/// Per-paragraph first-strong (or forced ltr/rtl) pass over the input's text storage.
-/// 'auto' is a no-op — TextKit follows the app's UI layout direction in that mode.
 - (void)applyWritingDirection
 {
   NSTextStorage *textStorage = _textView.textStorage;
-  if (textStorage.length == 0 || _writingDirectionMode == ENRMWritingDirectionModeAuto) {
+  if (textStorage.length == 0) {
     return;
   }
   [textStorage beginEditing];

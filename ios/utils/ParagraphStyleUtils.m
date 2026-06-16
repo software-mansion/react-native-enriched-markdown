@@ -73,6 +73,7 @@ void ENRMApplyWritingDirectionMode(NSMutableAttributedString *output, ENRMWritin
 {
   switch (mode) {
     case ENRMWritingDirectionModeAuto:
+      ENRMApplyWritingDirectionToParagraphStyles(output, NSWritingDirectionNatural);
       break;
     case ENRMWritingDirectionModeLTR:
       ENRMApplyWritingDirectionToParagraphStyles(output, NSWritingDirectionLeftToRight);
@@ -133,7 +134,7 @@ void ENRMApplyFirstStrongParagraphDirections(NSMutableAttributedString *output, 
 
 void ENRMApplyWritingDirectionToParagraphStyles(NSMutableAttributedString *output, NSWritingDirection writingDirection)
 {
-  if (output.length == 0 || writingDirection == NSWritingDirectionNatural) {
+  if (output.length == 0) {
     return;
   }
   [output enumerateAttribute:NSParagraphStyleAttributeName

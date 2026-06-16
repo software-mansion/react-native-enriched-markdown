@@ -44,7 +44,7 @@ export const Default: InputStory<WritingDirectionStoryExtra> = {
   render: ({ writingDirection, ...args }) => (
     <EnrichedMarkdownTextInputStory
       title="Writing Direction"
-      description="iOS only. Type Arabic/Hebrew/Persian to see per-paragraph auto-detection; switch modes to compare against 'auto' (RN parity — follows the app's UI direction), and forced 'ltr'/'rtl'. Android always uses first-strong via the platform EditText."
+      description="iOS only. Type Arabic/Hebrew/Persian to see per-paragraph auto-detection; switch modes to compare against 'auto' (RN parity - follows the app's UI direction), and forced 'ltr'/'rtl'. Android always uses first-strong via the platform EditText."
       {...args}
       writingDirection={writingDirection}
     />
