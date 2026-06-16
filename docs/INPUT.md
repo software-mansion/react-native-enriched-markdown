@@ -169,6 +169,38 @@ You can find some examples in the [usage section](#usage) or in the example app.
 - [onChangeMarkdown](API_REFERENCE.md#onchangemarkdown) - returns the Markdown string parsed from current input text and styles anytime it would change. As parsing the Markdown on each input change can be expensive, not assigning the event's callback will skip the serialization for better performance.
 - [onChangeSelection](API_REFERENCE.md#onchangeselection) - returns `{ start, end }` of the current selection, useful for working with [links](#links).
 
+## RTL Support
+
+`EnrichedMarkdownTextInput` resolves writing direction **per paragraph**, matching the read-only [`EnrichedMarkdownText`](RTL.md) renderer. Arabic, Hebrew, and Persian content right-aligns automatically as the user types — even mixed with English paragraphs in the same input.
+
+### Platform setup
+
+No setup is required. Both platforms autodetect direction per paragraph out of the box.
+
+- **Android** — `EditText` resolves direction per paragraph via `View.TEXT_DIRECTION_FIRST_STRONG` (the platform default). The [`writingDirection`](#writingdirection-prop-ios) prop is accepted but has no effect.
+- **iOS** — TextKit's `NSWritingDirectionNatural` follows the app's global UI layout direction and does not do per-paragraph first-strong. The library applies first-strong itself after every formatting pass. The mode is controlled by [`writingDirection`](#writingdirection-prop-ios) and defaults to `'first-strong'`.
+
+### `writingDirection` prop (iOS)
+
+| Value | Behavior |
+|---|---|
+| `'first-strong'` (default) | Per-paragraph autodetection. Neutral-only paragraphs fall back to the view's resolved layout direction. Matches Android. |
+| `'auto'` | React Native parity. TextKit follows the app's `userInterfaceLayoutDirection`; mixed-direction documents do not auto-resolve. |
+| `'ltr'` | Forces LTR on every paragraph. |
+| `'rtl'` | Forces RTL on every paragraph. |
+
+```tsx
+<EnrichedMarkdownTextInput writingDirection="rtl" placeholder="اكتب هنا..." />
+```
+
+### Known limitations
+
+- **Placeholder** follows the host view's layout direction, not the prop. If you need an RTL placeholder, wrap the input in `<View style={{ direction: 'rtl' }}>` or set `I18nManager.forceRTL(true)`.
+- **Mixed paragraphs while typing** — newly inserted characters in an empty paragraph briefly inherit the previous paragraph's direction; the first-strong pass corrects this on the next input event.
+- **Code blocks, tables, blockquotes, lists** are not supported in the input (it's a flat inline-formatting surface). For those, use [`EnrichedMarkdownText`](TEXT.md).
+
+See [RTL Support](RTL.md) for the full per-element behavior on the rendered output side.
+
 ## Customizing \<EnrichedMarkdownTextInput /> Styles
 
 `EnrichedMarkdownTextInput` accepts a `markdownStyle` prop for customizing how formatted text appears in the input:

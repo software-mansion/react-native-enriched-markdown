@@ -617,6 +617,20 @@ Fires when the active mention flow ends.
 | ---- | ------------- | -------- |
 | `(event: { indicator: string }) => void` | - | Both |
 
+### `writingDirection`
+
+Paragraph writing direction in the input. iOS only — Android's `EditText` already resolves direction per paragraph via `TEXT_DIRECTION_FIRST_STRONG` and is unaffected by this prop.
+
+| Type                                            | Default Value    | Platform |
+| ----------------------------------------------- | ---------------- | -------- |
+| `'auto' \| 'ltr' \| 'rtl' \| 'first-strong'`    | `'first-strong'` | iOS      |
+
+- **`'first-strong'`** (default): each paragraph resolves its base direction from its first strong directional character. Neutral-only paragraphs fall back to the view's Yoga-resolved layout direction. Mirrors Android's platform behavior.
+- **`'auto'`**: React Native parity. TextKit follows the app's `userInterfaceLayoutDirection`; mixed-direction paragraphs do not auto-resolve.
+- **`'ltr'` / `'rtl'`**: forces the base direction on every paragraph in the input.
+
+See [INPUT — RTL Support](INPUT.md#rtl-support) for caveats (placeholder direction, mixed-paragraph typing).
+
 ### `contextMenuItems`
 
 Custom items to add to the text selection context menu. Items appear before the system actions (Copy, Cut, etc.). Items with `visible: false` are hidden from the menu.
