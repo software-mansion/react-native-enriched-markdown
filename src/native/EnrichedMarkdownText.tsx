@@ -58,6 +58,7 @@ export const EnrichedMarkdownText = ({
   selectionHandleColor,
   textBreakStrategy,
   lineBreakStrategyIOS,
+  writingDirection = 'first-strong',
   ...rest
 }: EnrichedMarkdownTextProps) => {
   const normalizedStyleRef = useRef<MarkdownStyleInternal | null>(null);
@@ -172,6 +173,7 @@ export const EnrichedMarkdownText = ({
     selectionHandleColor,
     textBreakStrategy,
     lineBreakStrategyIOS,
+    writingDirection,
     ...rest,
   };
 

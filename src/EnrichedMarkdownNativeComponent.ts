@@ -411,6 +411,17 @@ export interface NativeProps extends ViewProps {
    * @platform ios
    */
   lineBreakStrategyIOS?: CodegenTypes.WithDefault<string, 'none'>;
+  /**
+   * Paragraph writing direction.
+   * - 'first-strong' (default): resolves each paragraph from its first strong directional character;
+   *   neutral-only paragraphs fall back to the view's resolved layout direction. Library extension —
+   *   matches Android's TEXT_DIRECTION_FIRST_STRONG.
+   * - 'auto': React Native parity; iOS TextKit follows the app's userInterfaceLayoutDirection.
+   * - 'ltr' / 'rtl': force base direction on every paragraph. Code blocks always stay LTR.
+   * @default 'first-strong'
+   * @platform ios
+   */
+  writingDirection?: CodegenTypes.WithDefault<string, 'first-strong'>;
 }
 
 export default codegenNativeComponent<NativeProps>('EnrichedMarkdown', {

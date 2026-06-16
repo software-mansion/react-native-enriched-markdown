@@ -235,4 +235,19 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    * @platform ios
    */
   lineBreakStrategyIOS?: 'none' | 'standard' | 'hangul-word' | 'push-out';
+  /**
+   * Paragraph writing direction.
+   * - `'first-strong'` (default): resolves each paragraph from its first strong
+   *   directional character. Neutral-only paragraphs fall back to the view's
+   *   resolved layout direction (inherits ancestor `direction` style). Library
+   *   extension beyond React Native — matches Android's `TEXT_DIRECTION_FIRST_STRONG`.
+   * - `'auto'`: React Native parity. iOS TextKit follows the app's
+   *   `userInterfaceLayoutDirection`; mixed-direction paragraphs do not
+   *   auto-resolve.
+   * - `'ltr'` / `'rtl'`: force base direction on every paragraph. Code blocks
+   *   always stay LTR.
+   * @default 'first-strong'
+   * @platform ios
+   */
+  writingDirection?: 'auto' | 'ltr' | 'rtl' | 'first-strong';
 }
