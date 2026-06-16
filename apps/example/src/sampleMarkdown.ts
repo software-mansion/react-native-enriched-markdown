@@ -376,6 +376,24 @@ The image below is loaded at full resolution (4000+ pixels wide) to test downsam
 
 ---
 
+## Right-to-Left Text Samples
+
+Short samples for testing RTL rendering, line measurement, and inline formatting across scripts.
+
+Arabic: الغابات تغطي حوالي **31%** من سطح اليابسة، وتوفر موطناً لعدد لا يحصى من الأنواع.
+
+Hebrew: יערות מכסים כ-**31%** משטח היבשה של כדור הארץ ומספקים בית ל*מיליוני* מינים.
+
+Mixed LTR/RTL in one line: The Hebrew word for "forest" is יַעַר and the Arabic word is غابة — both appear inline with English.
+
+A longer RTL paragraph to exercise line wrapping and measurement:
+
+> هذه فقرة طويلة باللغة العربية تهدف إلى اختبار كيفية تعامل المكوّن مع التفاف الأسطر والقياس عندما يكون النص طويلاً بما يكفي ليمتد عبر عدّة أسطر، مع وجود **تنسيق غامق** و*مائل* و[رابط](https://example.com) داخل النص.
+
+זוהי פסקה ארוכה בעברית שמטרתה לבדוק את אופן הטיפול בשבירת שורות ובמדידה כאשר הטקסט ארוך מספיק כדי להתפרס על פני מספר שורות, עם **טקסט מודגש** ו*נטוי* ו[קישור](https://example.com) בתוך הפסקה.
+
+---
+
 ## Conclusion
 
 Forests are ***irreplaceable ecosystems*** that sustain life on Earth. From the microscopic fungi beneath our feet to the towering giants that touch the sky, every element plays a crucial role.
