@@ -126,9 +126,8 @@
     }
   },
   "workspaces": [
-    "apps/example",
-    "apps/macos-example",
-    "apps/web-example"
+    "packages/*",
+    "apps/*"
   ],
   "packageManager": "yarn@4.11.0",
   "commitlint": {

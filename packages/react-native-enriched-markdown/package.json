@@ -1,0 +1,6 @@
+{
+  "name": "@enriched-markdown/react-native",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React Native package for react-native-enriched-markdown (migration target)"
+}
