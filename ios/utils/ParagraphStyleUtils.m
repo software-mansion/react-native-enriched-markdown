@@ -52,12 +52,10 @@ NSWritingDirection ENRMFirstStrongDirection(NSString *text)
   NSUInteger length = text.length;
   for (NSUInteger i = 0; i < length; i++) {
     unichar c = [text characterAtIndex:i];
-    if (ENRMIsStrongRTLChar(c)) {
-      return NSWritingDirectionRightToLeft;
+    if (![letters characterIsMember:c]) {
+      continue;
     }
-    if ([letters characterIsMember:c]) {
-      return NSWritingDirectionLeftToRight;
-    }
+    return ENRMIsStrongRTLChar(c) ? NSWritingDirectionRightToLeft : NSWritingDirectionLeftToRight;
   }
   return NSWritingDirectionNatural;
 }
