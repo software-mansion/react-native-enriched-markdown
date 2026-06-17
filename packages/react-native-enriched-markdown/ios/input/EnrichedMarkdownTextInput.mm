@@ -1322,10 +1322,27 @@ using namespace facebook::react;
   if (insertedLength > 0) {
     NSRange insertedRange = NSMakeRange(editLocation, insertedLength);
 
-    for (NSNumber *styleNum in _pendingStyles) {
-      ENRMFormattingRange *newRange = [ENRMFormattingRange rangeWithType:(ENRMInputStyleType)styleNum.integerValue
-                                                                   range:insertedRange];
-      [_formattingStore addRange:newRange];
+    // Skip applying pending styles when the insertion is only line breaks —
+    // a phantom range over a bare newline corrupts isStyleActive() at the boundary.
+    NSString *plainText = ENRMGetPlainText(_textView);
+    NSUInteger insertedEnd = NSMaxRange(insertedRange);
+    BOOL insertedHasGlyphContent = NO;
+    if (insertedEnd <= plainText.length) {
+      NSCharacterSet *newlines = [NSCharacterSet newlineCharacterSet];
+      for (NSUInteger i = insertedRange.location; i < insertedEnd; i++) {
+        if (![newlines characterIsMember:[plainText characterAtIndex:i]]) {
+          insertedHasGlyphContent = YES;
+          break;
+        }
+      }
+    }
+
+    if (insertedHasGlyphContent) {
+      for (NSNumber *styleNum in _pendingStyles) {
+        ENRMFormattingRange *newRange = [ENRMFormattingRange rangeWithType:(ENRMInputStyleType)styleNum.integerValue
+                                                                     range:insertedRange];
+        [_formattingStore addRange:newRange];
+      }
     }
 
     // adjustForEditAtLocation may have expanded an existing range to cover
