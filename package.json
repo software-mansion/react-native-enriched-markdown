@@ -1,36 +1,16 @@
 {
-  "name": "react-native-enriched-markdown",
-  "version": "0.6.0",
-  "description": "Markdown Text component for React Native",
-  "main": "./lib/module/index",
-  "module": "./lib/module/index",
-  "source": "./src/index.tsx",
-  "types": "./lib/typescript/src/index.d.ts",
-  "files": [
-    "src",
-    "lib",
-    "android",
-    "ios",
-    "cpp",
-    "*.podspec",
-    "react-native.config.js",
-    "!ios/build",
-    "!android/build",
-    "!android/gradle",
-    "!android/gradlew",
-    "!android/gradlew.bat",
-    "!android/local.properties",
-    "!**/__tests__",
-    "!**/__fixtures__",
-    "!**/__mocks__",
-    "!**/.*",
-    "app.plugin.js"
+  "name": "react-native-enriched-markdown-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
     "example": "yarn workspace react-native-enriched-markdown-example",
     "macos-example": "yarn workspace react-native-enriched-markdown-macos-example",
     "web-example": "yarn workspace react-native-enriched-markdown-web-example",
-    "build:wasm": "bash cpp/wasm/build.sh",
+    "build:wasm": "yarn workspace react-native-enriched-markdown build:wasm",
     "android:build:release": "cd apps/example && npx react-native build-android --mode=release",
     "android:test:release": "cd apps/example && yarn android --mode release",
     "test:e2e:mobile": ".maestro/scripts/run-all-tests.sh",
@@ -45,91 +25,42 @@
     "test:e2e:mobile:update-screenshots": ".maestro/scripts/run-all-tests.sh --update-screenshots",
     "test:e2e:android:update-screenshots": ".maestro/scripts/run-tests.sh --platform android --update-screenshots",
     "test:e2e:ios:update-screenshots": ".maestro/scripts/run-tests.sh --platform ios --update-screenshots",
-    "typecheck": "tsc",
+    "typecheck": "yarn workspace react-native-enriched-markdown typecheck",
     "lint": "eslint \"**/*.{js,ts,tsx}\" --no-warn-ignored",
-    "lint-clang:ios": "find ios/ \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | grep -v -e Pods -e build | xargs npx clang-format -i -n --Werror",
-    "lint-clang:ios:fix": "find ios/ \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | grep -v -e Pods -e build | xargs npx clang-format -i",
-    "lint-clang:android": "find android/ \\( -iname \"*.h\" -o -iname \"*.cpp\" \\) | grep -v -e build | xargs npx clang-format -i -n --Werror",
-    "lint-clang:android:fix": "find android/ \\( -iname \"*.h\" -o -iname \"*.cpp\" \\) | grep -v -e build | xargs npx clang-format -i",
-    "lint-clang": "yarn lint-clang:ios && yarn lint-clang:android",
-    "lint-clang:fix": "yarn lint-clang:ios:fix && yarn lint-clang:android:fix",
+    "lint-clang:ios": "yarn workspace react-native-enriched-markdown lint-clang:ios",
+    "lint-clang:ios:fix": "yarn workspace react-native-enriched-markdown lint-clang:ios:fix",
+    "lint-clang:android": "yarn workspace react-native-enriched-markdown lint-clang:android",
+    "lint-clang:android:fix": "yarn workspace react-native-enriched-markdown lint-clang:android:fix",
+    "lint-clang": "yarn workspace react-native-enriched-markdown lint-clang",
+    "lint-clang:fix": "yarn workspace react-native-enriched-markdown lint-clang:fix",
     "lint-kotlin": "cd apps/example/android && ./gradlew :react-native-enriched-markdown:ktlintCheck",
     "lint-kotlin:fix": "cd apps/example/android && ./gradlew :react-native-enriched-markdown:ktlintFormat",
-    "clean": "del-cli android/build apps/example/android/build apps/example/android/app/build apps/example/ios/build apps/macos-example/macos/build lib",
-    "sync-md4c": "bash scripts/fetch-md4c.sh",
-    "prepare": "bob build",
+    "clean": "yarn workspace react-native-enriched-markdown clean && del-cli apps/example/android/build apps/example/android/app/build apps/example/ios/build apps/macos-example/macos/build",
+    "sync-md4c": "yarn workspace react-native-enriched-markdown sync-md4c",
+    "prepare": "yarn workspace react-native-enriched-markdown prepare",
     "release": "release-it --only-version"
-  },
-  "keywords": [
-    "react-native",
-    "expo",
-    "ios",
-    "android",
-    "macos",
-    "web",
-    "markdown",
-    "rich-editor"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/software-mansion/react-native-enriched-markdown.git"
-  },
-  "author": "Gregory Moskaliuk <mosckalyuck@gmail.com> (https://github.com/hryhoriiK97)",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/software-mansion/react-native-enriched-markdown/issues"
-  },
-  "homepage": "https://github.com/software-mansion/react-native-enriched-markdown#readme",
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^20.5.0",
     "@eslint/compat": "^2.0.3",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
-    "@expo/config-plugins": "^55.0.6",
     "@react-native-community/cli": "20.1.0",
     "@react-native/babel-preset": "0.85.0",
     "@react-native/eslint-config": "0.85.0",
     "@release-it/conventional-changelog": "^10.0.6",
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.2.0",
-    "clang-format": "^1.8.0",
     "commitlint": "^20.5.0",
-    "del-cli": "^7.0.0",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-ft-flow": "^3.0.11",
     "eslint-plugin-prettier": "^5.5.5",
     "lefthook": "^2.1.4",
     "prettier": "^3.8.1",
-    "react": "19.2.3",
-    "react-native": "0.85.0",
     "react-native-builder-bob": "^0.41.0",
     "release-it": "^19.2.4",
     "turbo": "^2.8.21",
     "typescript": "^6.0.2"
   },
-  "peerDependencies": {
-    "@expo/config-plugins": ">=50.0.0",
-    "katex": ">=0.16.0",
-    "react": "*",
-    "react-native": "*"
-  },
-  "peerDependenciesMeta": {
-    "@expo/config-plugins": {
-      "optional": true
-    },
-    "katex": {
-      "optional": true
-    }
-  },
-  "workspaces": [
-    "apps/example",
-    "apps/macos-example",
-    "apps/web-example"
-  ],
   "packageManager": "yarn@4.11.0",
   "commitlint": {
     "extends": [
@@ -142,7 +73,8 @@
       "tagName": "v${version}"
     },
     "npm": {
-      "publish": true
+      "publish": true,
+      "publishPath": "packages/react-native-enriched-markdown"
     },
     "github": {
       "release": true
@@ -161,60 +93,5 @@
     "tabWidth": 2,
     "trailingComma": "es5",
     "useTabs": false
-  },
-  "react-native-builder-bob": {
-    "source": "src",
-    "output": "lib",
-    "targets": [
-      "codegen",
-      [
-        "module",
-        {
-          "esm": true
-        }
-      ],
-      [
-        "typescript",
-        {
-          "project": "tsconfig.build.json"
-        }
-      ]
-    ]
-  },
-  "codegenConfig": {
-    "name": "EnrichedMarkdownTextSpec",
-    "type": "components",
-    "jsSrcsDir": "src",
-    "outputDir": {
-      "ios": "ios/generated",
-      "android": "android/generated"
-    },
-    "android": {
-      "javaPackageName": "com.swmansion.enriched.markdown"
-    },
-    "ios": {
-      "components": {
-        "EnrichedMarkdownText": {
-          "className": "EnrichedMarkdownText"
-        },
-        "EnrichedMarkdown": {
-          "className": "EnrichedMarkdown"
-        },
-        "EnrichedMarkdownTextInput": {
-          "className": "EnrichedMarkdownTextInput"
-        }
-      }
-    },
-    "includesGeneratedCode": true
-  },
-  "create-react-native-library": {
-    "type": "fabric-view",
-    "languages": "kotlin-objc",
-    "tools": [
-      "eslint",
-      "lefthook",
-      "release-it"
-    ],
-    "version": "0.62.0"
   }
 }

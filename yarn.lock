@@ -3359,6 +3359,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@enriched-markdown/android@workspace:packages/android-enriched-markdown":
+  version: 0.0.0-use.local
+  resolution: "@enriched-markdown/android@workspace:packages/android-enriched-markdown"
+  languageName: unknown
+  linkType: soft
+
+"@enriched-markdown/core@workspace:packages/core":
+  version: 0.0.0-use.local
+  resolution: "@enriched-markdown/core@workspace:packages/core"
+  languageName: unknown
+  linkType: soft
+
+"@enriched-markdown/ios@workspace:packages/ios-enriched-markdown":
+  version: 0.0.0-use.local
+  resolution: "@enriched-markdown/ios@workspace:packages/ios-enriched-markdown"
+  languageName: unknown
+  linkType: soft
+
 "@epic-web/invariant@npm:^1.0.0":
   version: 1.0.0
   resolution: "@epic-web/invariant@npm:1.0.0"
@@ -15880,6 +15898,7 @@ __metadata:
     react-dom: "npm:19.2.3"
     react-native: "npm:0.85.3"
     react-native-builder-bob: "npm:^0.41.0"
+    react-native-enriched-markdown: "npm:*"
     react-native-gesture-handler: "npm:^2.31.2"
     react-native-monorepo-config: "npm:^0.3.3"
     react-native-reanimated: "npm:^4.3.1"
@@ -15910,6 +15929,32 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"react-native-enriched-markdown-monorepo@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "react-native-enriched-markdown-monorepo@workspace:."
+  dependencies:
+    "@commitlint/config-conventional": "npm:^20.5.0"
+    "@eslint/compat": "npm:^2.0.3"
+    "@eslint/eslintrc": "npm:^3.3.5"
+    "@eslint/js": "npm:^10.0.1"
+    "@react-native-community/cli": "npm:20.1.0"
+    "@react-native/babel-preset": "npm:0.85.0"
+    "@react-native/eslint-config": "npm:0.85.0"
+    "@release-it/conventional-changelog": "npm:^10.0.6"
+    commitlint: "npm:^20.5.0"
+    eslint: "npm:^9.39.4"
+    eslint-config-prettier: "npm:^10.1.8"
+    eslint-plugin-ft-flow: "npm:^3.0.11"
+    eslint-plugin-prettier: "npm:^5.5.5"
+    lefthook: "npm:^2.1.4"
+    prettier: "npm:^3.8.1"
+    react-native-builder-bob: "npm:^0.41.0"
+    release-it: "npm:^19.2.4"
+    turbo: "npm:^2.8.21"
+    typescript: "npm:^6.0.2"
+  languageName: unknown
+  linkType: soft
+
 "react-native-enriched-markdown-web-example@workspace:apps/web-example":
   version: 0.0.0-use.local
   resolution: "react-native-enriched-markdown-web-example@workspace:apps/web-example"
@@ -15928,35 +15973,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"react-native-enriched-markdown@npm:*, react-native-enriched-markdown@workspace:.":
+"react-native-enriched-markdown@npm:*, react-native-enriched-markdown@workspace:packages/react-native-enriched-markdown":
   version: 0.0.0-use.local
-  resolution: "react-native-enriched-markdown@workspace:."
+  resolution: "react-native-enriched-markdown@workspace:packages/react-native-enriched-markdown"
   dependencies:
-    "@commitlint/config-conventional": "npm:^20.5.0"
-    "@eslint/compat": "npm:^2.0.3"
-    "@eslint/eslintrc": "npm:^3.3.5"
-    "@eslint/js": "npm:^10.0.1"
     "@expo/config-plugins": "npm:^55.0.6"
-    "@react-native-community/cli": "npm:20.1.0"
     "@react-native/babel-preset": "npm:0.85.0"
-    "@react-native/eslint-config": "npm:0.85.0"
-    "@release-it/conventional-changelog": "npm:^10.0.6"
     "@types/node": "npm:^22.0.0"
     "@types/react": "npm:^19.2.0"
     clang-format: "npm:^1.8.0"
-    commitlint: "npm:^20.5.0"
     del-cli: "npm:^7.0.0"
-    eslint: "npm:^9.39.4"
-    eslint-config-prettier: "npm:^10.1.8"
-    eslint-plugin-ft-flow: "npm:^3.0.11"
-    eslint-plugin-prettier: "npm:^5.5.5"
-    lefthook: "npm:^2.1.4"
-    prettier: "npm:^3.8.1"
     react: "npm:19.2.3"
     react-native: "npm:0.85.0"
     react-native-builder-bob: "npm:^0.41.0"
-    release-it: "npm:^19.2.4"
-    turbo: "npm:^2.8.21"
     typescript: "npm:^6.0.2"
   peerDependencies:
     "@expo/config-plugins": ">=50.0.0"

@@ -5,7 +5,7 @@ module.exports = {
   dependency: {
     platforms: {
       android: {
-        cmakeListsPath: '../android/src/main/jni/CMakeLists.txt',
+        cmakeListsPath: 'src/main/jni/CMakeLists.txt',
         componentDescriptors: [
           'EnrichedMarkdownTextComponentDescriptor',
           'EnrichedMarkdownComponentDescriptor',
