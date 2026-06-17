@@ -54,7 +54,7 @@ jobs:
         uses: software-mansion/npm-package-publish@main
         with:
           package-name: 'react-native-enriched-markdown'
-          package-json-path: 'package.json'
+          package-json-path: 'packages/react-native-enriched-markdown/package.json'
           install-dependencies-command: 'YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install'
           release-type: ${{ inputs.release-type }}
           version: ${{ inputs.version }}
@@ -65,7 +65,7 @@ jobs:
         uses: software-mansion/npm-package-publish@main
         with:
           package-name: 'react-native-enriched-markdown'
-          package-json-path: 'package.json'
+          package-json-path: 'packages/react-native-enriched-markdown/package.json'
           install-dependencies-command: 'YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install'
           release-type: 'nightly'
           dry-run: false

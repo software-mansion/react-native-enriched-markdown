@@ -5,7 +5,9 @@
     "lib": ["ESNext", "DOM"],
     "moduleSuffixes": [".web", ""],
     "paths": {
-      "react-native-enriched-markdown": ["../../src/index"]
+      "react-native-enriched-markdown": [
+        "../../packages/react-native-enriched-markdown/src/index"
+      ]
     }
   }
 }

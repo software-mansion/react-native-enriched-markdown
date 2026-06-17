@@ -1,5 +1,4 @@
 {
-  "exclude": ["apps/"],
   "compilerOptions": {
     "rootDir": ".",
     "paths": {

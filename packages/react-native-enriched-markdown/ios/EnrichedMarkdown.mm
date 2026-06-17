@@ -583,7 +583,7 @@ static char kENRMSegmentFadeAnimatorKey;
                                   selectionEnd:selectionEnd];
         });
     return buildEditMenuForSelection(textView.textStorage, textView.selectedRange, segmentMarkdown, strongSelf->_config,
-                                     @[ baseMenu ], customItems, strongSelf -> _selectionMenuConfig);
+                                     @[ baseMenu ], customItems, strongSelf->_selectionMenuConfig);
   }];
 #endif
 
