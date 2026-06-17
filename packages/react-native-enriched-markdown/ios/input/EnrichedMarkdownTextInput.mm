@@ -1322,14 +1322,19 @@ using namespace facebook::react;
   if (insertedLength > 0) {
     NSRange insertedRange = NSMakeRange(editLocation, insertedLength);
 
-    // A styled range over only paragraph breaks renders nothing but leaks into
-    // isStyleActive() at the boundary and corrupts subsequent toggle/typing state.
+    // Skip applying pending styles when the insertion is only line breaks —
+    // a phantom range over a bare newline corrupts isStyleActive() at the boundary.
     NSString *plainText = ENRMGetPlainText(_textView);
+    NSUInteger insertedEnd = NSMaxRange(insertedRange);
     BOOL insertedHasGlyphContent = NO;
-    if (NSMaxRange(insertedRange) <= plainText.length) {
-      NSString *insertedText = [plainText substringWithRange:insertedRange];
-      insertedHasGlyphContent =
-          [insertedText stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]].length > 0;
+    if (insertedEnd <= plainText.length) {
+      NSCharacterSet *newlines = [NSCharacterSet newlineCharacterSet];
+      for (NSUInteger i = insertedRange.location; i < insertedEnd; i++) {
+        if (![newlines characterIsMember:[plainText characterAtIndex:i]]) {
+          insertedHasGlyphContent = YES;
+          break;
+        }
+      }
     }
 
     if (insertedHasGlyphContent) {

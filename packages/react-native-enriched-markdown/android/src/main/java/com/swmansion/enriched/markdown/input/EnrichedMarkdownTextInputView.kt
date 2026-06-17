@@ -40,6 +40,8 @@ import com.swmansion.enriched.markdown.input.toolbar.InputContextMenu
 import com.swmansion.enriched.markdown.utils.input.AutoCapitalizeUtils
 import kotlin.math.ceil
 
+private fun Char.isLineBreak(): Boolean = this == '\n' || this == '\r' || this == '\u0085' || this == '\u2028' || this == '\u2029'
+
 class EnrichedMarkdownTextInputView(
   context: Context,
 ) : AppCompatEditText(context) {
@@ -291,13 +293,13 @@ class EnrichedMarkdownTextInputView(
     val rangeStart = if (preEditSelectionStart != preEditSelectionEnd) preEditSelectionStart else editStart
     val rangeEnd = rangeStart + insertedLength
 
-    // A styled range over only paragraph breaks renders nothing but leaks into
-    // isStyleActive() at the boundary and corrupts subsequent toggle/typing state.
+    // Skip applying pending styles when the insertion is only line breaks —
+    // a phantom range over a bare newline corrupts isStyleActive() at the boundary.
     val currentText = text
     val insertedHasGlyphContent =
       currentText != null &&
         rangeEnd <= currentText.length &&
-        (rangeStart until rangeEnd).any { currentText[it] != '\n' }
+        (rangeStart until rangeEnd).any { !currentText[it].isLineBreak() }
 
     if (insertedHasGlyphContent) {
       for (style in pendingStyles) {
