@@ -1322,10 +1322,22 @@ using namespace facebook::react;
   if (insertedLength > 0) {
     NSRange insertedRange = NSMakeRange(editLocation, insertedLength);
 
-    for (NSNumber *styleNum in _pendingStyles) {
-      ENRMFormattingRange *newRange = [ENRMFormattingRange rangeWithType:(ENRMInputStyleType)styleNum.integerValue
-                                                                   range:insertedRange];
-      [_formattingStore addRange:newRange];
+    // A styled range over only paragraph breaks renders nothing but leaks into
+    // isStyleActive() at the boundary and corrupts subsequent toggle/typing state.
+    NSString *plainText = ENRMGetPlainText(_textView);
+    BOOL insertedHasGlyphContent = NO;
+    if (NSMaxRange(insertedRange) <= plainText.length) {
+      NSString *insertedText = [plainText substringWithRange:insertedRange];
+      insertedHasGlyphContent =
+          [insertedText stringByTrimmingCharactersInSet:[NSCharacterSet newlineCharacterSet]].length > 0;
+    }
+
+    if (insertedHasGlyphContent) {
+      for (NSNumber *styleNum in _pendingStyles) {
+        ENRMFormattingRange *newRange = [ENRMFormattingRange rangeWithType:(ENRMInputStyleType)styleNum.integerValue
+                                                                     range:insertedRange];
+        [_formattingStore addRange:newRange];
+      }
     }
 
     // adjustForEditAtLocation may have expanded an existing range to cover

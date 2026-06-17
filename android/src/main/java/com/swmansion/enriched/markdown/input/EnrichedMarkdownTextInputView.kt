@@ -291,8 +291,18 @@ class EnrichedMarkdownTextInputView(
     val rangeStart = if (preEditSelectionStart != preEditSelectionEnd) preEditSelectionStart else editStart
     val rangeEnd = rangeStart + insertedLength
 
-    for (style in pendingStyles) {
-      formattingStore.addRange(FormattingRange(style, rangeStart, rangeEnd))
+    // A styled range over only paragraph breaks renders nothing but leaks into
+    // isStyleActive() at the boundary and corrupts subsequent toggle/typing state.
+    val currentText = text
+    val insertedHasGlyphContent =
+      currentText != null &&
+        rangeEnd <= currentText.length &&
+        (rangeStart until rangeEnd).any { currentText[it] != '\n' }
+
+    if (insertedHasGlyphContent) {
+      for (style in pendingStyles) {
+        formattingStore.addRange(FormattingRange(style, rangeStart, rangeEnd))
+      }
     }
 
     for (style in pendingStyleRemovals) {

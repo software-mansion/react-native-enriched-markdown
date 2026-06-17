@@ -95,7 +95,7 @@ static NSCharacterSet *whitespaceSet(void)
 {
   static NSCharacterSet *set;
   static dispatch_once_t onceToken;
-  dispatch_once(&onceToken, ^{ set = [NSCharacterSet whitespaceCharacterSet]; });
+  dispatch_once(&onceToken, ^{ set = [NSCharacterSet whitespaceAndNewlineCharacterSet]; });
   return set;
 }
 
