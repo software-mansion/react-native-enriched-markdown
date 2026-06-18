@@ -5,6 +5,8 @@
 #import "ENRMDetectorPipeline.h"
 #import "ENRMFormattingRange.h"
 #import "ENRMFormattingStore.h"
+#import "ENRMImageAttachment.h"
+#import "ENRMImageStore.h"
 #import "ENRMInputFormatter.h"
 #import "ENRMInputLayoutManager.h"
 #import "ENRMInputLinkPrompt.h"
@@ -56,6 +58,9 @@ using namespace facebook::react;
   ENRMInputFormatter *_formatter;
   ENRMInputFormatterStyle *_formatterStyle;
   ENRMFormattingStore *_formattingStore;
+  ENRMImageStore *_imageStore;
+  CGFloat _imageInlineSize;
+  CGFloat _imageBorderRadius;
   NSMutableSet<NSNumber *> *_pendingStyles;
   NSMutableSet<NSNumber *> *_pendingStyleRemovals;
   BOOL _isApplyingFormatting;
@@ -117,6 +122,9 @@ using namespace facebook::react;
     _formatter = [[ENRMInputFormatter alloc] init];
     _formatterStyle = [[ENRMInputFormatterStyle alloc] init];
     _formattingStore = [[ENRMFormattingStore alloc] init];
+    _imageStore = [[ENRMImageStore alloc] init];
+    _imageInlineSize = 20.0;
+    _imageBorderRadius = 4.0;
     _pendingStyles = [NSMutableSet set];
     _pendingStyleRemovals = [NSMutableSet set];
     _lastTextLength = 0;
@@ -369,6 +377,15 @@ using namespace facebook::react;
 
   BOOL styleChanged = applyInputStyleProps(_formatterStyle, newViewProps, oldViewProps);
 
+  if (newViewProps.markdownStyle.image.borderRadius != oldViewProps.markdownStyle.image.borderRadius) {
+    _imageBorderRadius = newViewProps.markdownStyle.image.borderRadius;
+    styleChanged = YES;
+  }
+  if (newViewProps.markdownStyle.inlineImage.size != oldViewProps.markdownStyle.inlineImage.size) {
+    _imageInlineSize = newViewProps.markdownStyle.inlineImage.size;
+    styleChanged = YES;
+  }
+
   BOOL writingDirectionChanged = NO;
   if (newViewProps.writingDirection != oldViewProps.writingDirection) {
     NSString *value = [[NSString alloc] initWithUTF8String:newViewProps.writingDirection.c_str()];
@@ -522,6 +539,10 @@ using namespace facebook::react;
   _isApplyingFormatting = NO;
 
   [_formattingStore setRanges:parsed.formattingRanges];
+  [_imageStore clearAll];
+  for (ENRMImageEntry *entry in parsed.imageEntries) {
+    [_imageStore addEntry:entry];
+  }
   _lastTextLength = parsed.plainText.length;
   _lastSelectedRange = _textView.selectedRange;
   [self applyFormatting];
@@ -530,10 +551,9 @@ using namespace facebook::react;
   _blockEmitting = NO;
 }
 
-- (void)replaceTextInRange:(NSRange)selection
-                  withText:(NSString *)text
-          formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
+- (void)replaceTextInRange:(NSRange)selection withParseResult:(ENRMParseResult *)parseResult
 {
+  NSString *text = parseResult.plainText;
   NSUInteger editLocation = selection.location;
 
   _isApplyingFormatting = YES;
@@ -541,10 +561,20 @@ using namespace facebook::react;
   _isApplyingFormatting = NO;
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
+  [_imageStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
 
-  for (ENRMFormattingRange *range in ranges) {
+  for (ENRMFormattingRange *range in parseResult.formattingRanges) {
     NSRange shifted = NSMakeRange(range.range.location + editLocation, range.range.length);
     [_formattingStore addRange:[ENRMFormattingRange rangeWithType:range.type range:shifted url:range.url]];
+  }
+
+  for (ENRMImageEntry *entry in parseResult.imageEntries) {
+    [_imageStore addEntry:[ENRMImageEntry entryWithPosition:entry.position + editLocation
+                                                        url:entry.url
+                                                        alt:entry.alt
+                                                      width:entry.width
+                                                     height:entry.height
+                                                   isInline:entry.isInline]];
   }
 
   _lastTextLength = ENRMGetPlainText(_textView).length;
@@ -563,16 +593,16 @@ using namespace facebook::react;
   [self scheduleRelayoutIfNeeded];
 }
 
-- (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
+- (void)replaceSelectedTextWithParseResult:(ENRMParseResult *)parseResult
 {
-  [self replaceTextInRange:_textView.selectedRange withText:text formattingRanges:ranges];
+  [self replaceTextInRange:_textView.selectedRange withParseResult:parseResult];
 }
 
 - (void)pasteMarkdown:(NSString *)markdown
 {
   ENRMInputParser *parser = [[ENRMInputParser alloc] init];
   ENRMParseResult *parsed = [parser parseToPlainTextAndRanges:markdown];
-  [self replaceSelectedTextWith:parsed.plainText formattingRanges:parsed.formattingRanges];
+  [self replaceSelectedTextWithParseResult:parsed];
 }
 
 #pragma mark - Formatting
@@ -598,6 +628,7 @@ using namespace facebook::react;
   NSRange savedSelection = _textView.selectedRange;
 
   [_formatter applyFormattingRanges:_formattingStore.allRanges toTextView:_textView style:_formatterStyle];
+  [self applyImageAttachments];
   [_detectorPipeline refreshAllStyling];
   [self applyWritingDirection];
 
@@ -607,6 +638,46 @@ using namespace facebook::react;
   }
 
   _isApplyingFormatting = NO;
+}
+
+static unichar const kORC = 0xFFFC;
+
+- (void)applyImageAttachments
+{
+  NSArray<ENRMImageEntry *> *entries = _imageStore.allEntries;
+  if (entries.count == 0) {
+    return;
+  }
+
+  NSTextStorage *textStorage = _textView.textStorage;
+  NSUInteger textLength = textStorage.length;
+
+  [textStorage beginEditing];
+  for (ENRMImageEntry *entry in entries) {
+    NSUInteger pos = entry.position;
+    if (pos >= textLength) {
+      continue;
+    }
+    unichar ch = [textStorage.string characterAtIndex:pos];
+    if (ch != kORC) {
+      continue;
+    }
+
+    CGFloat inlineSize = _imageInlineSize;
+    CGFloat borderRadius = _imageBorderRadius;
+
+    ENRMImageAttachment *attachment = [ENRMImageAttachment inputAttachmentForURL:entry.url
+                                                                        isInline:entry.isInline
+                                                                      inlineSize:inlineSize
+                                                                      blockWidth:entry.width
+                                                                     blockHeight:entry.height
+                                                                    borderRadius:borderRadius];
+    [attachment setAssociatedTextView:_textView];
+
+    NSRange orcRange = NSMakeRange(pos, 1);
+    [textStorage addAttribute:NSAttachmentAttributeName value:attachment range:orcRange];
+  }
+  [textStorage endEditing];
 }
 
 - (void)applyWritingDirection
@@ -773,7 +844,9 @@ using namespace facebook::react;
   ENRMFormattingRange *range = [ENRMFormattingRange rangeWithType:ENRMInputStyleTypeLink
                                                             range:linkRange
                                                               url:[self sanitizeLinkURL:url]];
-  [self replaceSelectedTextWith:displayText formattingRanges:@[ range ]];
+  [self replaceSelectedTextWithParseResult:[ENRMParseResult resultWithPlainText:displayText
+                                                               formattingRanges:@[ range ]
+                                                                   imageEntries:@[]]];
 }
 
 - (NSString *)sanitizeLinkURL:(NSString *)url
@@ -788,7 +861,9 @@ using namespace facebook::react;
     return;
   }
 
-  [self replaceSelectedTextWith:indicator formattingRanges:@[]];
+  [self replaceSelectedTextWithParseResult:[ENRMParseResult resultWithPlainText:indicator
+                                                               formattingRanges:@[]
+                                                                   imageEntries:@[]]];
   [self updateActiveMention];
 }
 
@@ -814,7 +889,10 @@ using namespace facebook::react;
   NSRange mentionRange = _activeMentionRange;
 
   [self clearActiveMention:indicator];
-  [self replaceTextInRange:mentionRange withText:replacement formattingRanges:@[ linkRange ]];
+  [self replaceTextInRange:mentionRange
+           withParseResult:[ENRMParseResult resultWithPlainText:replacement
+                                               formattingRanges:@[ linkRange ]
+                                                   imageEntries:@[]]];
   _textView.selectedRange = NSMakeRange(mentionRange.location + replacement.length, 0);
   [self emitOnChangeSelection];
 }
@@ -830,6 +908,73 @@ using namespace facebook::react;
   [_formattingStore removeRange:activeLink];
   [self applyFormatting];
   [self emitFormattingChanged];
+}
+
+- (void)insertImage:(NSString *)url alt:(NSString *)alt width:(float)width height:(float)height
+{
+  NSString *plainText = ENRMGetPlainText(_textView);
+  NSRange selection = _lastSelectedRange;
+  NSUInteger cursor = selection.location;
+
+  BOOL isInline = [self isInlinePositionAtCursor:cursor inText:plainText];
+
+  NSString *textToInsert;
+  if (isInline) {
+    textToInsert = [NSString stringWithCharacters:&kORC length:1];
+  } else {
+    NSMutableString *buf = [NSMutableString string];
+    if (cursor > 0 && [plainText characterAtIndex:cursor - 1] != '\n') {
+      [buf appendString:@"\n"];
+    }
+    [buf appendFormat:@"%C", kORC];
+    [buf appendString:@"\n"];
+    textToInsert = buf;
+  }
+
+  _isApplyingFormatting = YES;
+  ENRMReplaceTextInRange(_textView, textToInsert, selection);
+  _isApplyingFormatting = NO;
+
+  [_formattingStore adjustForEditAtLocation:cursor deletedLength:selection.length insertedLength:textToInsert.length];
+  [_imageStore adjustForEditAtLocation:cursor deletedLength:selection.length insertedLength:textToInsert.length];
+
+  NSUInteger orcPosition =
+      isInline ? cursor : (cursor > 0 && [plainText characterAtIndex:cursor - 1] != '\n' ? cursor + 1 : cursor);
+
+  CGFloat defaultBlockSize = 80.0;
+  CGFloat finalWidth = width > 0 ? width : (isInline ? _imageInlineSize : defaultBlockSize);
+  CGFloat finalHeight = height > 0 ? height : (isInline ? _imageInlineSize : defaultBlockSize);
+  ENRMImageEntry *entry = [ENRMImageEntry entryWithPosition:orcPosition
+                                                        url:url
+                                                        alt:alt.length > 0 ? alt : @"image"
+                                                      width:finalWidth
+                                                     height:finalHeight
+                                                   isInline:isInline];
+  [_imageStore addEntry:entry];
+
+  _lastTextLength = ENRMGetPlainText(_textView).length;
+  _lastSelectedRange = _textView.selectedRange;
+
+  [self applyFormatting];
+
+  [_detectorPipeline processTextChange:ENRMGetPlainText(_textView)
+                     modificationRange:NSMakeRange(cursor, textToInsert.length)];
+
+  [self updatePlaceholderVisibility];
+  [self emitOnChangeText];
+  [self emitOnChangeSelection];
+  [self emitFormattingChanged];
+  [self requestHeightUpdate];
+  [self scheduleRelayoutIfNeeded];
+}
+
+- (BOOL)isInlinePositionAtCursor:(NSUInteger)cursor inText:(NSString *)text
+{
+  if (cursor == 0 || text.length == 0) {
+    return NO;
+  }
+  unichar preceding = [text characterAtIndex:cursor - 1];
+  return (preceding != '\n');
 }
 
 - (void)showLinkPrompt
@@ -869,7 +1014,20 @@ using namespace facebook::react;
     [clippedRanges addObject:[ENRMFormattingRange rangeWithType:range.type range:shifted url:range.url]];
   }
 
-  return [ENRMMarkdownSerializer serializePlainText:selectedText ranges:clippedRanges];
+  NSMutableArray<ENRMImageEntry *> *clippedImages = [NSMutableArray array];
+  for (ENRMImageEntry *entry in _imageStore.allEntries) {
+    if (entry.position >= selection.location && entry.position < selEnd) {
+      ENRMImageEntry *shifted = [ENRMImageEntry entryWithPosition:entry.position - selection.location
+                                                              url:entry.url
+                                                              alt:entry.alt
+                                                            width:entry.width
+                                                           height:entry.height
+                                                         isInline:entry.isInline];
+      [clippedImages addObject:shifted];
+    }
+  }
+
+  return [ENRMMarkdownSerializer serializePlainText:selectedText ranges:clippedRanges imageEntries:clippedImages];
 }
 
 - (void)requestMarkdown:(NSInteger)requestId
@@ -879,7 +1037,8 @@ using namespace facebook::react;
     return;
   }
   NSString *markdown = [ENRMMarkdownSerializer serializePlainText:ENRMGetPlainText(_textView)
-                                                           ranges:[self allRangesIncludingTransient]];
+                                                           ranges:[self allRangesIncludingTransient]
+                                                     imageEntries:_imageStore.allEntries];
   emitter->onRequestMarkdownResult({
       .requestId = static_cast<int>(requestId),
       .markdown = std::string([markdown UTF8String] ?: ""),
@@ -1125,7 +1284,8 @@ using namespace facebook::react;
     return NO;
   }
 
-  [self replaceTextInRange:linkRange.range withText:@"" formattingRanges:@[]];
+  [self replaceTextInRange:linkRange.range
+           withParseResult:[ENRMParseResult resultWithPlainText:@"" formattingRanges:@[] imageEntries:@[]]];
   [self clearActiveMention:nil];
   return YES;
 }
@@ -1147,7 +1307,8 @@ using namespace facebook::react;
     return;
   }
   NSString *markdown = [ENRMMarkdownSerializer serializePlainText:ENRMGetPlainText(_textView)
-                                                           ranges:[self allRangesIncludingTransient]];
+                                                           ranges:[self allRangesIncludingTransient]
+                                                     imageEntries:_imageStore.allEntries];
   emitter->onChangeMarkdown({.value = std::string([markdown UTF8String] ?: "")});
 }
 
@@ -1296,6 +1457,33 @@ using namespace facebook::react;
   emitter->onInputBlur({});
 }
 
+- (void)emitOnPasteImagesEvent:(NSArray<NSDictionary *> *)images
+{
+  auto emitter = [self getEventEmitter];
+  if (emitter == nullptr) {
+    return;
+  }
+
+  std::vector<EnrichedMarkdownTextInputEventEmitter::OnPasteImagesImages> imagesVector;
+  imagesVector.reserve(images.count);
+
+  for (NSDictionary *img in images) {
+    NSString *uri = img[@"uri"];
+    NSString *type = img[@"type"];
+    double width = [img[@"width"] doubleValue];
+    double height = [img[@"height"] doubleValue];
+
+    imagesVector.push_back({
+        .uri = std::string([uri UTF8String] ?: ""),
+        .type = std::string([type UTF8String] ?: ""),
+        .width = width,
+        .height = height,
+    });
+  }
+
+  emitter->onPasteImages({.images = imagesVector});
+}
+
 - (void)emitOnLinkDetectedWithText:(NSString *)text url:(NSString *)url range:(NSRange)range
 {
   auto emitter = [self getEventEmitter];
@@ -1375,6 +1563,7 @@ using namespace facebook::react;
   }
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
+  [_imageStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
 
   if (insertedLength > 0) {
     NSRange insertedRange = NSMakeRange(editLocation, insertedLength);

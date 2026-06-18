@@ -1,10 +1,11 @@
 #pragma once
 
+#import "ENRMEditAdjusting.h"
 #import "ENRMFormattingRange.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface ENRMFormattingStore : NSObject
+@interface ENRMFormattingStore : NSObject <ENRMEditAdjusting>
 
 @property (nonatomic, readonly) NSArray<ENRMFormattingRange *> *allRanges;
 

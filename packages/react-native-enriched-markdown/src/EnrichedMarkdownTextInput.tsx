@@ -21,12 +21,14 @@ import EnrichedMarkdownTextInputNativeComponent, {
   type OnStartMentionEvent,
   type OnChangeMentionEvent,
   type OnEndMentionEvent,
+  type OnPasteImagesEvent,
 } from './EnrichedMarkdownTextInputNativeComponent';
 export type {
   OnLinkDetected,
   OnStartMentionEvent,
   OnChangeMentionEvent,
   OnEndMentionEvent,
+  OnPasteImagesEvent,
 } from './EnrichedMarkdownTextInputNativeComponent';
 import type {
   HostInstance,
@@ -61,6 +63,12 @@ export interface MarkdownTextInputStyle {
     color?: string;
     backgroundColor?: string;
   };
+  image?: {
+    borderRadius?: number;
+  };
+  inlineImage?: {
+    size?: number;
+  };
 }
 
 export interface StyleState {
@@ -90,6 +98,19 @@ export interface CaretRect {
   height: number;
 }
 
+export interface InsertImageOptions {
+  alt?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface PastedImage {
+  uri: string;
+  type: string;
+  width: number;
+  height: number;
+}
+
 export interface EnrichedMarkdownTextInputInstance {
   focus: () => void;
   blur: () => void;
@@ -108,6 +129,7 @@ export interface EnrichedMarkdownTextInputInstance {
   insertMention: (displayText: string, url: string) => void;
   startMention: (indicator: string) => void;
   removeLink: () => void;
+  insertImage: (url: string, options?: InsertImageOptions) => void;
   getMarkdown: () => Promise<string>;
   getCaretRect: () => Promise<CaretRect>;
 }
@@ -139,6 +161,7 @@ export interface EnrichedMarkdownTextInputProps extends Omit<
   onStartMention?: (event: OnStartMentionEvent) => void;
   onChangeMention?: (event: OnChangeMentionEvent) => void;
   onEndMention?: (event: OnEndMentionEvent) => void;
+  onPasteImages?: (images: PastedImage[]) => void;
   onFocus?: () => void;
   onBlur?: () => void;
   contextMenuItems?: ContextMenuItem[];
@@ -200,6 +223,7 @@ export const EnrichedMarkdownTextInput = ({
   onStartMention,
   onChangeMention,
   onEndMention,
+  onPasteImages,
   onFocus,
   onBlur,
   contextMenuItems,
@@ -331,6 +355,13 @@ export const EnrichedMarkdownTextInput = ({
     [onEndMention]
   );
 
+  const handlePasteImages = useCallback(
+    (e: NativeSyntheticEvent<OnPasteImagesEvent>) => {
+      onPasteImages?.(e.nativeEvent.images as PastedImage[]);
+    },
+    [onPasteImages]
+  );
+
   const handleFocus = useCallback(() => {
     onFocus?.();
   }, [onFocus]);
@@ -408,6 +439,14 @@ export const EnrichedMarkdownTextInput = ({
         Commands.insertMention(commandRef, displayText, url),
       startMention: (indicator) => Commands.startMention(commandRef, indicator),
       removeLink: () => Commands.removeLink(commandRef),
+      insertImage: (url, options) =>
+        Commands.insertImage(
+          commandRef,
+          url,
+          options?.alt ?? 'image',
+          options?.width ?? 0,
+          options?.height ?? 0
+        ),
       getMarkdown: () =>
         new Promise<string>((resolve, reject) => {
           const requestId = nextRequestId.current++;
@@ -470,6 +509,7 @@ export const EnrichedMarkdownTextInput = ({
       onStartMention={handleStartMention as NativeProps['onStartMention']}
       onChangeMention={handleChangeMention as NativeProps['onChangeMention']}
       onEndMention={handleEndMention as NativeProps['onEndMention']}
+      onPasteImages={handlePasteImages as NativeProps['onPasteImages']}
       {...rest}
     />
   );

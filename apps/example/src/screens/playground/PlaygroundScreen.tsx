@@ -18,6 +18,7 @@ import {
   EnrichedMarkdownText,
   type EnrichedMarkdownTextInputInstance,
   type StyleState,
+  type PastedImage,
 } from 'react-native-enriched-markdown';
 import { FormattingToolbar } from '../../components/FormattingToolbar';
 
@@ -73,6 +74,15 @@ export default function PlaygroundScreen() {
   const handleGetMarkdown = useCallback(async () => {
     const md = await inputRef.current?.getMarkdown();
     Alert.alert('Markdown', md ?? '(empty)', [{ text: 'OK' }]);
+  }, []);
+
+  const handlePasteImages = useCallback((images: PastedImage[]) => {
+    for (const img of images) {
+      inputRef.current?.insertImage(img.uri, {
+        width: Math.min(img.width, 80),
+        height: Math.min(img.height, 80),
+      });
+    }
   }, []);
 
   return (
@@ -139,13 +149,12 @@ export default function PlaygroundScreen() {
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.button}
-            onPress={async () => {
-              const current = (await inputRef.current?.getMarkdown()) ?? '';
-              const md = current
-                ? `${current}\n\n![logo](${BLOCK_IMAGE_URI})`
-                : `![logo](${BLOCK_IMAGE_URI})`;
-              inputRef.current?.setValue(md);
-              setMarkdown(md);
+            onPress={() => {
+              inputRef.current?.insertImage(BLOCK_IMAGE_URI, {
+                alt: 'logo',
+                width: 80,
+                height: 80,
+              });
             }}
             testID="insert-image-button"
           >
@@ -154,9 +163,9 @@ export default function PlaygroundScreen() {
           <TouchableOpacity
             style={styles.button}
             onPress={() => {
-              const md = `Enriched Markdown is a library for ![icon](${INLINE_IMAGE_URI}) React Native.`;
-              inputRef.current?.setValue(md);
-              setMarkdown(md);
+              inputRef.current?.insertImage(INLINE_IMAGE_URI, {
+                alt: 'icon',
+              });
             }}
             testID="insert-inline-image-button"
           >
@@ -178,6 +187,7 @@ export default function PlaygroundScreen() {
             onChangeState={setState}
             onChangeMarkdown={setMarkdown}
             onChangeSelection={(sel) => setHasSelection(sel.start !== sel.end)}
+            onPasteImages={handlePasteImages}
           />
           <FormattingToolbar
             state={state}

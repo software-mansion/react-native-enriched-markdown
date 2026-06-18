@@ -144,6 +144,49 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
 
 @implementation ENRMMarkdownSerializer
 
++ (NSString *)serializePlainText:(NSString *)text
+                          ranges:(NSArray<ENRMFormattingRange *> *)ranges
+                    imageEntries:(NSArray<ENRMImageEntry *> *)imageEntries
+{
+  NSString *result = [self serializePlainText:text ranges:ranges];
+
+  if (imageEntries.count == 0) {
+    return result;
+  }
+
+  NSArray<ENRMImageEntry *> *sorted = [imageEntries sortedArrayUsingComparator:^NSComparisonResult(ENRMImageEntry *a,
+                                                                                                   ENRMImageEntry *b) {
+    return a.position < b.position ? NSOrderedAscending : a.position > b.position ? NSOrderedDescending : NSOrderedSame;
+  }];
+
+  NSMutableArray<ENRMImageEntry *> *validated = [NSMutableArray array];
+  for (ENRMImageEntry *entry in sorted) {
+    if (entry.position < text.length && [text characterAtIndex:entry.position] == 0xFFFC) {
+      [validated addObject:entry];
+    }
+  }
+
+  if (validated.count == 0) {
+    return result;
+  }
+
+  NSMutableString *output = [NSMutableString stringWithCapacity:result.length + validated.count * 30];
+  NSUInteger entryIndex = 0;
+
+  for (NSUInteger i = 0; i < result.length; i++) {
+    unichar ch = [result characterAtIndex:i];
+    if (ch == 0xFFFC && entryIndex < validated.count) {
+      ENRMImageEntry *entry = validated[entryIndex++];
+      NSString *alt = entry.alt.length > 0 ? entry.alt : @"image";
+      [output appendFormat:@"![%@](%@)", alt, entry.url];
+    } else {
+      [output appendFormat:@"%C", ch];
+    }
+  }
+
+  return output;
+}
+
 + (NSString *)serializePlainText:(NSString *)text ranges:(NSArray<ENRMFormattingRange *> *)ranges
 {
   if (ranges.count == 0) {

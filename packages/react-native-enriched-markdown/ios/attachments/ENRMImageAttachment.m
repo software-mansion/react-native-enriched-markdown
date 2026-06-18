@@ -25,6 +25,7 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
 @property (nonatomic, assign) BOOL isInline;
 @property (nonatomic, assign) CGFloat cachedHeight;
 @property (nonatomic, assign) CGFloat cachedBorderRadius;
+@property (nonatomic, assign) CGFloat explicitBlockWidth;
 @property (nonatomic, weak) NSTextContainer *textContainer;
 @property (nonatomic, weak) ENRMPlatformTextView *textView;
 @property (nonatomic, strong) RCTUIImage *originalImage;
@@ -76,6 +77,50 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   return attachment;
 }
 
++ (instancetype)inputAttachmentForURL:(NSString *)imageURL
+                             isInline:(BOOL)isInline
+                           inlineSize:(CGFloat)inlineSize
+                           blockWidth:(CGFloat)blockWidth
+                          blockHeight:(CGFloat)blockHeight
+                         borderRadius:(CGFloat)borderRadius
+{
+  NSString *key = [NSString stringWithFormat:@"input_%@_%d_%.2f_%.2f_%.2f_%.2f", imageURL, isInline, inlineSize,
+                                             blockWidth, blockHeight, borderRadius];
+  ENRMImageAttachment *existing = [[self attachmentRegistry] objectForKey:key];
+  if (existing) {
+    return existing;
+  }
+  ENRMImageAttachment *attachment = [[self alloc] initWithImageURL:imageURL
+                                                          isInline:isInline
+                                                        inlineSize:inlineSize
+                                                        blockWidth:blockWidth
+                                                       blockHeight:blockHeight
+                                                      borderRadius:borderRadius];
+  [[self attachmentRegistry] setObject:attachment forKey:key];
+  return attachment;
+}
+
+- (instancetype)initWithImageURL:(NSString *)imageURL
+                        isInline:(BOOL)isInline
+                      inlineSize:(CGFloat)inlineSize
+                      blockWidth:(CGFloat)blockWidth
+                     blockHeight:(CGFloat)blockHeight
+                    borderRadius:(CGFloat)borderRadius
+{
+  self = [super init];
+  if (self) {
+    _imageURL = imageURL;
+    _isInline = isInline;
+    _cachedHeight = isInline ? inlineSize : blockHeight;
+    _cachedBorderRadius = borderRadius;
+    _explicitBlockWidth = isInline ? 0 : blockWidth;
+
+    [self setupPlaceholder];
+    [self startDownloadingImage];
+  }
+  return self;
+}
+
 + (void)clearAttachmentRegistry
 {
   [[self attachmentRegistry] removeAllObjects];
@@ -103,7 +148,14 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
                             characterIndex:(NSUInteger)characterIndex
 {
   CGFloat height = self.cachedHeight;
-  CGFloat width = self.isInline ? height : (lineFragment.size.width > 0 ? lineFragment.size.width : height);
+  CGFloat width;
+  if (self.isInline) {
+    width = height;
+  } else if (self.explicitBlockWidth > 0) {
+    width = self.explicitBlockWidth;
+  } else {
+    width = lineFragment.size.width > 0 ? lineFragment.size.width : height;
+  }
 
   if (self.isInline) {
     UIFont *appliedFont = nil;
@@ -267,6 +319,11 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
       [textView.layoutManager invalidateLayoutForCharacterRange:range actualCharacterRange:NULL];
     }
   }
+}
+
+- (void)setAssociatedTextView:(ENRMPlatformTextView *)textView
+{
+  self.textView = textView;
 }
 
 - (ENRMPlatformTextView *)fetchAssociatedTextView

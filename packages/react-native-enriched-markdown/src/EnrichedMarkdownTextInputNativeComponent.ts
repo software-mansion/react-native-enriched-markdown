@@ -32,6 +32,12 @@ interface MarkdownTextInputStyleInternal {
     color: ColorValue;
     backgroundColor: ColorValue;
   };
+  image: {
+    borderRadius: CodegenTypes.Float;
+  };
+  inlineImage: {
+    size: CodegenTypes.Float;
+  };
 }
 
 interface TargetedEvent {
@@ -106,6 +112,15 @@ export interface OnChangeMentionEvent {
 
 export interface OnEndMentionEvent {
   indicator: string;
+}
+
+export interface OnPasteImagesEvent {
+  images: {
+    uri: string;
+    type: string;
+    width: CodegenTypes.Double;
+    height: CodegenTypes.Double;
+  }[];
 }
 
 export interface ContextMenuItemConfig {
@@ -237,6 +252,7 @@ export interface NativeProps extends ViewProps {
   onStartMention?: CodegenTypes.DirectEventHandler<OnStartMentionEvent>;
   onChangeMention?: CodegenTypes.DirectEventHandler<OnChangeMentionEvent>;
   onEndMention?: CodegenTypes.DirectEventHandler<OnEndMentionEvent>;
+  onPasteImages?: CodegenTypes.DirectEventHandler<OnPasteImagesEvent>;
 }
 
 type ComponentType = HostComponent<NativeProps>;
@@ -274,6 +290,13 @@ interface NativeCommands {
     indicator: string
   ) => void;
   removeLink: (viewRef: React.ElementRef<ComponentType>) => void;
+  insertImage: (
+    viewRef: React.ElementRef<ComponentType>,
+    url: string,
+    alt: string,
+    width: CodegenTypes.Float,
+    height: CodegenTypes.Float
+  ) => void;
   requestMarkdown: (
     viewRef: React.ElementRef<ComponentType>,
     requestId: CodegenTypes.Int32
@@ -300,6 +323,7 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'insertMention',
     'startMention',
     'removeLink',
+    'insertImage',
     'requestMarkdown',
     'requestCaretRect',
   ],

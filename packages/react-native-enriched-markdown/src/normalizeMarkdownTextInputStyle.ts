@@ -30,6 +30,12 @@ interface MarkdownTextInputStyleInternal {
     color: ColorValue;
     backgroundColor: ColorValue;
   };
+  image: {
+    borderRadius: number;
+  };
+  inlineImage: {
+    size: number;
+  };
 }
 
 const DEFAULT_LINK_COLOR = '#2563EB';
@@ -54,6 +60,8 @@ const defaultInternal: MarkdownTextInputStyleInternal = Object.freeze({
     color: processColor(DEFAULT_SPOILER_COLOR)!,
     backgroundColor: processColor(DEFAULT_SPOILER_BG_COLOR)!,
   },
+  image: { borderRadius: 4 },
+  inlineImage: { size: 20 },
 });
 
 let cachedInput: MarkdownTextInputStyle | undefined;
@@ -107,6 +115,13 @@ export const normalizeMarkdownTextInputStyle = (
       backgroundColor:
         normalizeColor(style.spoiler?.backgroundColor) ??
         defaultInternal.spoiler.backgroundColor,
+    },
+    image: {
+      borderRadius:
+        style.image?.borderRadius ?? defaultInternal.image.borderRadius,
+    },
+    inlineImage: {
+      size: style.inlineImage?.size ?? defaultInternal.inlineImage.size,
     },
   };
 

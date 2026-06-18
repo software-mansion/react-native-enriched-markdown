@@ -17,6 +17,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (instancetype)attachmentForURL:(NSString *)imageURL config:(StyleConfig *)config isInline:(BOOL)isInline;
 
++ (instancetype)inputAttachmentForURL:(NSString *)imageURL
+                             isInline:(BOOL)isInline
+                           inlineSize:(CGFloat)inlineSize
+                           blockWidth:(CGFloat)blockWidth
+                          blockHeight:(CGFloat)blockHeight
+                         borderRadius:(CGFloat)borderRadius;
+
+- (void)setAssociatedTextView:(ENRMPlatformTextView *)textView;
+
 + (void)clearAttachmentRegistry;
 
 + (NSCache<NSString *, RCTUIImage *> *)originalImageCache;

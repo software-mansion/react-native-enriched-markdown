@@ -71,6 +71,22 @@ static inline NSUInteger ENRMImageByteCost(RCTUIImage *image)
     return;
   }
 
+  if (nsURL.isFileURL) {
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+      NSData *fileData = [NSData dataWithContentsOfURL:nsURL];
+#if !TARGET_OS_OSX
+      RCTUIImage *fileImage = fileData ? [RCTUIImage imageWithData:fileData] : nil;
+#else
+      RCTUIImage *fileImage = fileData ? [[RCTUIImage alloc] initWithData:fileData] : nil;
+#endif
+      if (fileImage) {
+        [[ENRMImageAttachment originalImageCache] setObject:fileImage forKey:url cost:ENRMImageByteCost(fileImage)];
+      }
+      [self dispatchCallbacksForURL:url image:fileImage];
+    });
+    return;
+  }
+
   [[_session dataTaskWithURL:nsURL
            completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 #if !TARGET_OS_OSX

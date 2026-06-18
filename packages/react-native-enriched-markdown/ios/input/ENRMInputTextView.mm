@@ -1,4 +1,5 @@
 #import "ENRMInputTextView.h"
+#import "ENRMParseResult.h"
 #import "EnrichedMarkdownTextInput.h"
 #if TARGET_OS_OSX
 #import "EnrichedMarkdownTextInput+Internal.h"
@@ -8,6 +9,7 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 
 #if !TARGET_OS_OSX
 
+#import <UIKit/UIKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 @implementation ENRMInputTextView
@@ -34,12 +36,20 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 - (void)cut:(id)sender
 {
   [self copy:sender];
-  [self.markdownTextInput replaceSelectedTextWith:@"" formattingRanges:@[]];
+  [self.markdownTextInput replaceSelectedTextWithParseResult:[ENRMParseResult resultWithPlainText:@""
+                                                                                 formattingRanges:@[]
+                                                                                     imageEntries:@[]]];
 }
 
 - (void)paste:(id)sender
 {
   UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+
+  NSMutableArray<NSDictionary *> *foundImages = [self extractImagesFromPasteboard:pasteboard];
+  if (foundImages.count > 0 && self.markdownTextInput != nil) {
+    [self.markdownTextInput emitOnPasteImagesEvent:foundImages];
+    return;
+  }
 
   NSString *markdown = nil;
   id markdownValue = [pasteboard valueForPasteboardType:kENRMMarkdownPasteboardType];
@@ -60,11 +70,94 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
   }
 }
 
+static NSDictionary<NSString *, NSString *> *fileInfoForUTType(NSString *type)
+{
+  static NSDictionary<NSString *, NSArray<NSString *> *> *mapping;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    mapping = @{
+      UTTypeJPEG.identifier : @[ @"jpg", @"image/jpeg" ],
+      UTTypePNG.identifier : @[ @"png", @"image/png" ],
+      UTTypeGIF.identifier : @[ @"gif", @"image/gif" ],
+      UTTypeHEIC.identifier : @[ @"heic", @"image/heic" ],
+      UTTypeWebP.identifier : @[ @"webp", @"image/webp" ],
+      UTTypeTIFF.identifier : @[ @"tiff", @"image/tiff" ],
+    };
+  });
+  NSArray<NSString *> *info = mapping[type];
+  if (!info)
+    return nil;
+  return @{@"ext" : info[0], @"mimeType" : info[1]};
+}
+
+static NSData *imageDataFromItem(NSDictionary<NSString *, id> *item, NSString *type, UIPasteboard *pasteboard)
+{
+  if ([type isEqual:UTTypeWebP.identifier] || [type isEqual:UTTypeGIF.identifier]) {
+    return [pasteboard dataForPasteboardType:type];
+  }
+
+  id value = item[type];
+  if ([value isKindOfClass:[NSData class]]) {
+    return (NSData *)value;
+  }
+  if ([value isKindOfClass:[UIImage class]]) {
+    UIImage *img = (UIImage *)value;
+    return [type isEqual:UTTypePNG.identifier] ? UIImagePNGRepresentation(img) : UIImageJPEGRepresentation(img, 1.0);
+  }
+  return nil;
+}
+
+static NSDictionary *saveImageToTempFile(NSData *data, NSString *ext, NSString *mimeType)
+{
+  UIImage *image = [UIImage imageWithData:data];
+  if (!image)
+    return nil;
+
+  NSString *fileName = [NSString stringWithFormat:@"%@.%@", [NSUUID UUID].UUIDString, ext];
+  NSString *filePath = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+
+  if (![data writeToFile:filePath atomically:YES])
+    return nil;
+
+  return @{
+    @"uri" : [NSURL fileURLWithPath:filePath].absoluteString,
+    @"type" : mimeType,
+    @"width" : @(image.size.width),
+    @"height" : @(image.size.height),
+  };
+}
+
+- (NSMutableArray<NSDictionary *> *)extractImagesFromPasteboard:(UIPasteboard *)pasteboard
+{
+  NSMutableArray<NSDictionary *> *foundImages = [NSMutableArray array];
+
+  for (NSDictionary<NSString *, id> *item in pasteboard.items) {
+    for (NSString *type in item.allKeys) {
+      NSDictionary<NSString *, NSString *> *info = fileInfoForUTType(type);
+      if (!info)
+        continue;
+
+      NSData *data = imageDataFromItem(item, type, pasteboard);
+      if (!data)
+        continue;
+
+      NSDictionary *entry = saveImageToTempFile(data, info[@"ext"], info[@"mimeType"]);
+      if (entry) {
+        [foundImages addObject:entry];
+        break;
+      }
+    }
+  }
+
+  return foundImages;
+}
+
 - (BOOL)canPerformAction:(SEL)action withSender:(id)sender
 {
   if (action == @selector(paste:)) {
     UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
-    if (pasteboard.hasStrings || [pasteboard containsPasteboardTypes:@[ kENRMMarkdownPasteboardType ]]) {
+    if (pasteboard.hasStrings || pasteboard.hasImages ||
+        [pasteboard containsPasteboardTypes:@[ kENRMMarkdownPasteboardType ]]) {
       return YES;
     }
   }
@@ -111,7 +204,9 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 - (void)cut:(id)sender
 {
   [self copy:sender];
-  [self.markdownTextInput replaceSelectedTextWith:@"" formattingRanges:@[]];
+  [self.markdownTextInput replaceSelectedTextWithParseResult:[ENRMParseResult resultWithPlainText:@""
+                                                                                 formattingRanges:@[]
+                                                                                     imageEntries:@[]]];
 }
 
 - (void)paste:(id)sender

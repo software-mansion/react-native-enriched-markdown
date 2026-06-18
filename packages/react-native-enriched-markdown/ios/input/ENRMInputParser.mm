@@ -1,5 +1,6 @@
 #import "ENRMInputParser.h"
 #import "ENRMFormattingRange.h"
+#import "ENRMImageStore.h"
 #import "ENRMInputRemend.h"
 #include "md4c.h"
 #include <string>
@@ -8,9 +9,22 @@
 @interface ENRMParseResult ()
 @property (nonatomic, strong, readwrite) NSString *plainText;
 @property (nonatomic, strong, readwrite) NSArray<ENRMFormattingRange *> *formattingRanges;
+@property (nonatomic, strong, readwrite) NSArray<ENRMImageEntry *> *imageEntries;
 @end
 
 @implementation ENRMParseResult
+
++ (instancetype)resultWithPlainText:(NSString *)plainText
+                   formattingRanges:(NSArray<ENRMFormattingRange *> *)formattingRanges
+                       imageEntries:(NSArray<ENRMImageEntry *> *)imageEntries
+{
+  ENRMParseResult *result = [[ENRMParseResult alloc] init];
+  result.plainText = plainText;
+  result.formattingRanges = formattingRanges;
+  result.imageEntries = imageEntries;
+  return result;
+}
+
 @end
 
 namespace {
@@ -306,8 +320,13 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   if (markdown.length == 0) {
     parseResult.plainText = @"";
     parseResult.formattingRanges = @[];
+    parseResult.imageEntries = @[];
     return parseResult;
   }
+
+  NSMutableArray<ENRMImageEntry *> *imageEntries = [NSMutableArray array];
+  NSString *preprocessed = [self extractImagesFromMarkdown:markdown entries:imageEntries];
+  markdown = preprocessed;
 
   NSArray<ENRMInputStyledRange *> *styledRanges = [self parse:markdown];
 
@@ -396,7 +415,73 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
 
   parseResult.plainText = plainText;
   parseResult.formattingRanges = formattingRanges;
+
+  NSMutableArray<ENRMImageEntry *> *finalImageEntries = [NSMutableArray arrayWithCapacity:imageEntries.count];
+  for (ENRMImageEntry *entry in imageEntries) {
+    NSUInteger rawPos = entry.position;
+    if (rawPos <= rawLength) {
+      NSUInteger plainPos = rawToPlainMap[rawPos];
+      BOOL isInline = (plainPos > 0) && ([plainText characterAtIndex:plainPos - 1] != '\n');
+      ENRMImageEntry *adjusted = [ENRMImageEntry entryWithPosition:plainPos
+                                                               url:entry.url
+                                                               alt:entry.alt
+                                                             width:entry.width
+                                                            height:entry.height
+                                                          isInline:isInline];
+      [finalImageEntries addObject:adjusted];
+    }
+  }
+  parseResult.imageEntries = finalImageEntries;
+
   return parseResult;
+}
+
+- (NSString *)extractImagesFromMarkdown:(NSString *)markdown entries:(NSMutableArray<ENRMImageEntry *> *)entries
+{
+  static NSRegularExpression *imageRegex;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    imageRegex = [NSRegularExpression
+        regularExpressionWithPattern:@"!\\[([^\\]]*)\\]\\(([^()\\s]*(?:\\([^()\\s]*\\)[^()\\s]*)*)\\)"
+                             options:0
+                               error:nil];
+  });
+
+  NSArray<NSTextCheckingResult *> *matches = [imageRegex matchesInString:markdown
+                                                                 options:0
+                                                                   range:NSMakeRange(0, markdown.length)];
+  if (matches.count == 0) {
+    return markdown;
+  }
+
+  NSMutableString *result = [NSMutableString stringWithCapacity:markdown.length];
+  NSUInteger lastEnd = 0;
+
+  for (NSTextCheckingResult *match in matches) {
+    NSRange fullMatch = match.range;
+    NSString *alt = [markdown substringWithRange:[match rangeAtIndex:1]];
+    NSString *url = [markdown substringWithRange:[match rangeAtIndex:2]];
+
+    [result appendString:[markdown substringWithRange:NSMakeRange(lastEnd, fullMatch.location - lastEnd)]];
+
+    NSUInteger orcPosition = result.length;
+    unichar orc = 0xFFFC;
+    [result appendString:[NSString stringWithCharacters:&orc length:1]];
+
+    CGFloat defaultSize = 80.0;
+    ENRMImageEntry *entry = [ENRMImageEntry entryWithPosition:orcPosition
+                                                          url:url
+                                                          alt:alt.length > 0 ? alt : @"image"
+                                                        width:defaultSize
+                                                       height:defaultSize
+                                                     isInline:NO];
+    [entries addObject:entry];
+
+    lastEnd = NSMaxRange(fullMatch);
+  }
+
+  [result appendString:[markdown substringFromIndex:lastEnd]];
+  return result;
 }
 
 @end

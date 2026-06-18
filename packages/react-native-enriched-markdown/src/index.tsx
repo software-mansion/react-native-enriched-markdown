@@ -24,5 +24,8 @@ export type {
   OnStartMentionEvent,
   OnChangeMentionEvent,
   OnEndMentionEvent,
+  OnPasteImagesEvent,
   CaretRect,
+  InsertImageOptions,
+  PastedImage,
 } from './EnrichedMarkdownTextInput';

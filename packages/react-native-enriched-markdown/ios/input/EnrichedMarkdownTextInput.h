@@ -4,6 +4,8 @@
 #ifndef EnrichedMarkdownTextInput_h
 #define EnrichedMarkdownTextInput_h
 
+@class ENRMParseResult;
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface EnrichedMarkdownTextInput : RCTViewComponentView
@@ -11,7 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (CGSize)measureSize:(CGFloat)maxWidth;
 - (nullable NSString *)markdownForSelectedRange;
 - (void)pasteMarkdown:(NSString *)markdown;
-- (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray *)ranges;
+- (void)replaceSelectedTextWithParseResult:(ENRMParseResult *)parseResult;
+- (void)emitOnPasteImagesEvent:(NSArray<NSDictionary *> *)images;
 - (void)scheduleRelayoutIfNeeded;
 @end
 
