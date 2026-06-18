@@ -1,4 +1,5 @@
 #import "EnrichedMarkdownTextInput.h"
+#import <QuartzCore/CABase.h>
 #import "ContextMenuUtils.h"
 #import "ENRMAutoLinkDetector.h"
 #import "ENRMDetectorPipeline.h"
@@ -60,6 +61,7 @@ using namespace facebook::react;
   BOOL _isApplyingFormatting;
   BOOL _isTextChanging;
   BOOL _emitMarkdown;
+  CFTimeInterval _lastTextChangeTime;
 
   ENRMPlaceholderLabel *_placeholderLabel;
 
@@ -738,6 +740,7 @@ using namespace facebook::react;
   }
 
   [self applyFormatting];
+  [self syncTypingAttributesWithPendingStyles];
   [self emitFormattingChanged];
 }
 
@@ -939,6 +942,60 @@ using namespace facebook::react;
     return YES;
   }
   return inRange;
+}
+
+- (void)syncTypingAttributesWithPendingStyles
+{
+  UIFontDescriptorSymbolicTraits traits = 0;
+  if ([_pendingStyles containsObject:@(ENRMInputStyleTypeStrong)]) {
+    traits |= UIFontDescriptorTraitBold;
+  }
+  if ([_pendingStyles containsObject:@(ENRMInputStyleTypeEmphasis)]) {
+    traits |= UIFontDescriptorTraitItalic;
+  }
+
+  NSMutableDictionary *attrs = [_textView.typingAttributes mutableCopy];
+  attrs[NSFontAttributeName] = [_formatterStyle fontForTraits:traits];
+  _textView.typingAttributes = attrs;
+}
+
+- (void)resetPendingStylesForSelectionChange
+{
+  // Skip system-driven selection adjustments (e.g., predictive text) that fire
+  // immediately after a text edit.
+  static const CFTimeInterval kPostEditGracePeriod = 0.1;
+  BOOL isPostEditAdjustment = (_lastTextChangeTime > 0 &&
+                               (CACurrentMediaTime() - _lastTextChangeTime) < kPostEditGracePeriod);
+  if (isPostEditAdjustment) {
+    return;
+  }
+  [_pendingStyles removeAllObjects];
+  [_pendingStyleRemovals removeAllObjects];
+  [self rebuildPendingStylesFromContext];
+  [self syncTypingAttributesWithPendingStyles];
+}
+
+- (void)rebuildPendingStylesFromContext
+{
+  NSUInteger cursor = _textView.selectedRange.location;
+  if (_textView.selectedRange.length > 0 || cursor == 0) {
+    return;
+  }
+
+  static const ENRMInputStyleType inlineStyles[] = {
+      ENRMInputStyleTypeStrong,
+      ENRMInputStyleTypeEmphasis,
+      ENRMInputStyleTypeUnderline,
+      ENRMInputStyleTypeStrikethrough,
+      ENRMInputStyleTypeSpoiler,
+  };
+
+  for (NSUInteger i = 0; i < sizeof(inlineStyles) / sizeof(inlineStyles[0]); i++) {
+    ENRMInputStyleType type = inlineStyles[i];
+    if ([_formattingStore isStyleAdjacentBefore:type position:cursor]) {
+      [_pendingStyles addObject:@(type)];
+    }
+  }
 }
 
 #pragma mark - Event emitters
@@ -1446,6 +1503,7 @@ using namespace facebook::react;
   }
   [self handleTextChanged];
   _isTextChanging = NO;
+  _lastTextChangeTime = CACurrentMediaTime();
   _lastSelectedRange = textView.selectedRange;
 }
 
@@ -1470,12 +1528,15 @@ using namespace facebook::react;
     return;
   }
 
+  if (ENRMHasMarkedText(_textView)) {
+    return;
+  }
+
   BOOL selectionMoved =
       newSelection.location != previousSelection.location || newSelection.length != previousSelection.length;
 
   if (selectionMoved) {
-    [_pendingStyles removeAllObjects];
-    [_pendingStyleRemovals removeAllObjects];
+    [self resetPendingStylesForSelectionChange];
   }
 
   [self manageSelectionBasedChanges];
@@ -1543,19 +1604,30 @@ using namespace facebook::react;
   }
   [self handleTextChanged];
   _isTextChanging = NO;
+  _lastTextChangeTime = CACurrentMediaTime();
   _lastSelectedRange = _textView.selectedRange;
 }
 
 - (void)textInputDidChangeSelection
 {
-  _lastSelectedRange = _textView.selectedRange;
+  NSRange newSelection = _textView.selectedRange;
+  NSRange previousSelection = _lastSelectedRange;
+  _lastSelectedRange = newSelection;
 
   if (_isApplyingFormatting || _isTextChanging) {
     return;
   }
 
-  [_pendingStyles removeAllObjects];
-  [_pendingStyleRemovals removeAllObjects];
+  if (ENRMHasMarkedText(_textView)) {
+    return;
+  }
+
+  BOOL selectionMoved =
+      newSelection.location != previousSelection.location || newSelection.length != previousSelection.length;
+
+  if (selectionMoved) {
+    [self resetPendingStylesForSelectionChange];
+  }
 
   [self emitOnChangeSelection];
   [self updateActiveMention];

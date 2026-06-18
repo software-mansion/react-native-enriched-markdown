@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable ENRMFormattingRange *)rangeOfType:(ENRMInputStyleType)type containingPosition:(NSUInteger)position;
 - (BOOL)isStyleActive:(ENRMInputStyleType)type atPosition:(NSUInteger)position;
 - (BOOL)isStyleActive:(ENRMInputStyleType)type inRange:(NSRange)range;
+- (BOOL)isStyleAdjacentBefore:(ENRMInputStyleType)type position:(NSUInteger)position;
 - (NSArray<ENRMFormattingRange *> *)rangesOfType:(ENRMInputStyleType)type;
 
 - (void)addRange:(ENRMFormattingRange *)range;
