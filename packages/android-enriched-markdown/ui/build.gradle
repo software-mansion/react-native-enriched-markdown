@@ -1,0 +1,29 @@
+plugins {
+  id "com.android.library"
+}
+
+android {
+  namespace = "com.swmansion.enriched.markdown.ui"
+
+  compileSdk = rootProject.ext.compileSdkVersion
+
+  defaultConfig {
+    minSdk = rootProject.ext.minSdkVersion
+    consumerProguardFiles("consumer-rules.pro")
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled = false
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+  }
+}
+
+dependencies {
+  implementation(project(":parser"))
+}

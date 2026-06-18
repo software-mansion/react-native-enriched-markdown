@@ -2,5 +2,9 @@
   "name": "@enriched-markdown/android",
   "version": "0.0.0",
   "private": true,
-  "description": "Android native code for react-native-enriched-markdown"
+  "description": "Android native code for android-enriched-markdown",
+  "scripts": {
+    "build": "./gradlew assembleRelease",
+    "clean": "./gradlew clean"
+  }
 }

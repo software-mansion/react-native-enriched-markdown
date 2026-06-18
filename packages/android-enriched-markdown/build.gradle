@@ -1,0 +1,26 @@
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.0"
+  }
+}
+
+plugins {
+  id "com.android.library" apply false
+  id "org.jetbrains.kotlin.plugin.compose" apply false
+}
+
+ext {
+  buildToolsVersion = "36.0.0"
+  minSdkVersion = 24
+  compileSdkVersion = 36
+  targetSdkVersion = 36
+  ndkVersion = "28.2.13676358"
+}
+
+tasks.register("clean", Delete) {
+  delete rootProject.layout.buildDirectory
+}
