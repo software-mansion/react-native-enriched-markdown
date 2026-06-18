@@ -722,6 +722,36 @@ interface InputSelectionMenuConfig {
 />
 ```
 
+### `formatMenuConfig`
+
+Controls which individual items appear inside the Format submenu. Only effective when `selectionMenuConfig.format` is `true` (the default). Omitting the prop or any field shows all items.
+
+| Type               | Default Value                                                                        | Platform            |
+| ------------------ | ------------------------------------------------------------------------------------ | ------------------- |
+| `FormatMenuConfig` | `{ bold: true, italic: true, underline: true, strikethrough: true, spoiler: true, link: true }` | iOS, Android, macOS |
+
+**`FormatMenuConfig` shape:**
+
+```ts
+interface FormatMenuConfig {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  spoiler?: boolean;
+  link?: boolean;
+}
+```
+
+**Example:**
+
+```tsx
+// Hide Spoiler and Link from the Format submenu
+<EnrichedMarkdownTextInput
+  formatMenuConfig={{ spoiler: false, link: false }}
+/>
+```
+
 ### Ref Methods
 
 All methods are called imperatively on the ref (`ref.current?.methodName()`).

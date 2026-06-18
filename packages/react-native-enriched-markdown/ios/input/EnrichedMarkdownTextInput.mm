@@ -94,6 +94,7 @@ using namespace facebook::react;
   NSWritingDirection _resolvedLayoutDirection;
 
   ENRMInputSelectionMenuConfig _inputSelectionMenuConfig;
+  ENRMFormatMenuConfig _formatMenuConfig;
 }
 
 #pragma mark - Fabric lifecycle
@@ -132,6 +133,8 @@ using namespace facebook::react;
     _resolvedLayoutDirection =
         [[RCTI18nUtil sharedInstance] isRTL] ? NSWritingDirectionRightToLeft : NSWritingDirectionLeftToRight;
     _inputSelectionMenuConfig = (ENRMInputSelectionMenuConfig){.format = YES, .copyAsMarkdown = YES};
+    _formatMenuConfig = (ENRMFormatMenuConfig){
+        .bold = YES, .italic = YES, .underline = YES, .strikethrough = YES, .spoiler = YES, .link = YES};
 
     [self setupTextView];
 
@@ -359,6 +362,15 @@ using namespace facebook::react;
   _inputSelectionMenuConfig = (ENRMInputSelectionMenuConfig){
       .format = newViewProps.selectionMenuConfig.format,
       .copyAsMarkdown = newViewProps.selectionMenuConfig.copyAsMarkdown,
+  };
+
+  _formatMenuConfig = (ENRMFormatMenuConfig){
+      .bold = newViewProps.formatMenuConfig.bold,
+      .italic = newViewProps.formatMenuConfig.italic,
+      .underline = newViewProps.formatMenuConfig.underline,
+      .strikethrough = newViewProps.formatMenuConfig.strikethrough,
+      .spoiler = newViewProps.formatMenuConfig.spoiler,
+      .link = newViewProps.formatMenuConfig.link,
   };
 
   if (newViewProps.mentionIndicators != oldViewProps.mentionIndicators) {
@@ -1245,6 +1257,11 @@ using namespace facebook::react;
 - (ENRMInputSelectionMenuConfig)inputSelectionMenuConfig
 {
   return _inputSelectionMenuConfig;
+}
+
+- (ENRMFormatMenuConfig)formatMenuConfig
+{
+  return _formatMenuConfig;
 }
 
 - (void)emitContextMenuItemPress:(NSString *)itemText

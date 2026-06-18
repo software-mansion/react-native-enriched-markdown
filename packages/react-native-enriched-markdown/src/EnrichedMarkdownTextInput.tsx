@@ -127,6 +127,21 @@ export interface InputSelectionMenuConfig {
   copyAsMarkdown?: boolean;
 }
 
+export interface FormatMenuConfig {
+  /** @default true */
+  bold?: boolean;
+  /** @default true */
+  italic?: boolean;
+  /** @default true */
+  underline?: boolean;
+  /** @default true */
+  strikethrough?: boolean;
+  /** @default true */
+  spoiler?: boolean;
+  /** @default true */
+  link?: boolean;
+}
+
 export interface EnrichedMarkdownTextInputProps extends Omit<
   ViewProps,
   'style' | 'children'
@@ -165,6 +180,14 @@ export interface EnrichedMarkdownTextInputProps extends Omit<
    * @platform ios, android, macos
    */
   selectionMenuConfig?: InputSelectionMenuConfig;
+  /**
+   * Controls which items appear inside the Format submenu.
+   * Only effective when `selectionMenuConfig.format` is `true` (the default).
+   * Omitting the prop or any field shows all items.
+   * @default { bold: true, italic: true, underline: true, strikethrough: true, spoiler: true, link: true }
+   * @platform ios, android, macos
+   */
+  formatMenuConfig?: FormatMenuConfig;
   linkRegex?: RegExp | null;
   /**
    * Paragraph writing direction.
@@ -227,6 +250,7 @@ export const EnrichedMarkdownTextInput = ({
   onBlur,
   contextMenuItems,
   selectionMenuConfig,
+  formatMenuConfig,
   linkRegex: _linkRegex,
   writingDirection = 'first-strong',
   ...rest
@@ -281,6 +305,18 @@ export const EnrichedMarkdownTextInput = ({
       copyAsMarkdown: selectionMenuConfig?.copyAsMarkdown ?? true,
     }),
     [selectionMenuConfig]
+  );
+
+  const normalizedFormatMenuConfig = useMemo(
+    () => ({
+      bold: formatMenuConfig?.bold ?? true,
+      italic: formatMenuConfig?.italic ?? true,
+      underline: formatMenuConfig?.underline ?? true,
+      strikethrough: formatMenuConfig?.strikethrough ?? true,
+      spoiler: formatMenuConfig?.spoiler ?? true,
+      link: formatMenuConfig?.link ?? true,
+    }),
+    [formatMenuConfig]
   );
 
   const linkRegex = useMemo(
@@ -494,6 +530,7 @@ export const EnrichedMarkdownTextInput = ({
       }
       contextMenuItems={nativeContextMenuItems}
       selectionMenuConfig={normalizedSelectionMenuConfig}
+      formatMenuConfig={normalizedFormatMenuConfig}
       mentionIndicators={mentionIndicators}
       onContextMenuItemPress={
         handleContextMenuItemPress as NativeProps['onContextMenuItemPress']

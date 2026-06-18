@@ -26,6 +26,7 @@
   }
 
   ENRMInputSelectionMenuConfig menuConfig = [self inputSelectionMenuConfig];
+  ENRMFormatMenuConfig fmtConfig = [self formatMenuConfig];
   __weak EnrichedMarkdownTextInput *weakSelf = self;
 
   // TODO: Localize titles with NSLocalizedString.
@@ -42,9 +43,14 @@
       {@"Link", @"link", ENRMInputStyleTypeLink},
   };
   static const NSUInteger kFormatItemCount = sizeof(kFormatItems) / sizeof(kFormatItems[0]);
+  const BOOL kFormatItemVisible[] = {fmtConfig.bold,          fmtConfig.italic,  fmtConfig.underline,
+                                     fmtConfig.strikethrough, fmtConfig.spoiler, fmtConfig.link};
 
   NSMutableArray<UIAction *> *formatActions = [NSMutableArray arrayWithCapacity:kFormatItemCount];
   for (NSUInteger i = 0; i < kFormatItemCount; i++) {
+    if (!kFormatItemVisible[i]) {
+      continue;
+    }
     ENRMInputStyleType styleType = kFormatItems[i].styleType;
     UIAction *action = [UIAction actionWithTitle:kFormatItems[i].title
                                            image:[UIImage systemImageNamed:kFormatItems[i].icon]
@@ -111,6 +117,7 @@
   }
 
   ENRMInputSelectionMenuConfig menuConfig = [self inputSelectionMenuConfig];
+  ENRMFormatMenuConfig fmtConfig = [self formatMenuConfig];
   __weak EnrichedMarkdownTextInput *weakSelf = self;
   NSArray<NSMenuItem *> *customItems =
       ENRMBuildContextMenuItems([self contextMenuItemTexts], [self contextMenuItemIcons], textView,
@@ -144,8 +151,13 @@
         {@"Spoiler", @selector(toggleSpoiler), @"", 0},
         {@"Link", @selector(showLinkPrompt), @"", 0},
     };
+    const BOOL visible[] = {fmtConfig.bold,          fmtConfig.italic,  fmtConfig.underline,
+                            fmtConfig.strikethrough, fmtConfig.spoiler, fmtConfig.link};
 
     for (NSUInteger i = 0; i < sizeof(items) / sizeof(items[0]); i++) {
+      if (!visible[i]) {
+        continue;
+      }
       NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:items[i].title
                                                     action:items[i].action
                                              keyEquivalent:items[i].key];

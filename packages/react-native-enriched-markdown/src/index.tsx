@@ -21,6 +21,7 @@ export type {
   StyleState,
   ContextMenuItem,
   InputSelectionMenuConfig,
+  FormatMenuConfig,
   OnLinkDetected,
   OnStartMentionEvent,
   OnChangeMentionEvent,

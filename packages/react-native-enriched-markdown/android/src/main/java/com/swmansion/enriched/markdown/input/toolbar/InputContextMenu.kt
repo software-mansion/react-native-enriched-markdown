@@ -21,11 +21,21 @@ data class InputSelectionMenuConfig(
   val copyAsMarkdown: Boolean = true,
 )
 
+data class FormatMenuConfig(
+  val bold: Boolean = true,
+  val italic: Boolean = true,
+  val underline: Boolean = true,
+  val strikethrough: Boolean = true,
+  val spoiler: Boolean = true,
+  val link: Boolean = true,
+)
+
 class InputContextMenu(
   private val view: EnrichedMarkdownTextInputView,
 ) {
   private var customItemTexts: List<String> = emptyList()
   var selectionMenuConfig: InputSelectionMenuConfig = InputSelectionMenuConfig()
+  var formatMenuConfig: FormatMenuConfig = FormatMenuConfig()
 
   fun setContextMenuItems(items: List<String>) {
     customItemTexts = items
@@ -50,8 +60,10 @@ class InputContextMenu(
 
           if (selectionMenuConfig.format) {
             val formatSubMenu = menu.addSubMenu(FORMAT_MENU_GROUP_ID, MENU_FORMAT_ID, 100, "Format")
-            FORMAT_ITEMS.forEachIndexed { index, (title, _) ->
-              formatSubMenu.add(Menu.NONE, MENU_FORMAT_ITEM_BASE + index, index, title)
+            FORMAT_ITEMS.forEachIndexed { index, (title, styleType) ->
+              if (isFormatItemVisible(styleType)) {
+                formatSubMenu.add(Menu.NONE, MENU_FORMAT_ITEM_BASE + index, index, title)
+              }
             }
           }
 
@@ -105,6 +117,16 @@ class InputContextMenu(
         override fun onDestroyActionMode(mode: ActionMode) {}
       }
   }
+
+  private fun isFormatItemVisible(styleType: StyleType): Boolean =
+    when (styleType) {
+      StyleType.BOLD -> formatMenuConfig.bold
+      StyleType.ITALIC -> formatMenuConfig.italic
+      StyleType.UNDERLINE -> formatMenuConfig.underline
+      StyleType.STRIKETHROUGH -> formatMenuConfig.strikethrough
+      StyleType.SPOILER -> formatMenuConfig.spoiler
+      StyleType.LINK -> formatMenuConfig.link
+    }
 
   private fun applyFormat(styleType: StyleType) {
     val start = view.selectionStart

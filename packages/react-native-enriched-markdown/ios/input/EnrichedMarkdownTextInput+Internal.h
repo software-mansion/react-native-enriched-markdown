@@ -10,6 +10,15 @@ typedef struct {
   BOOL copyAsMarkdown;
 } ENRMInputSelectionMenuConfig;
 
+typedef struct {
+  BOOL bold;
+  BOOL italic;
+  BOOL underline;
+  BOOL strikethrough;
+  BOOL spoiler;
+  BOOL link;
+} ENRMFormatMenuConfig;
+
 @interface EnrichedMarkdownTextInput (Internal)
 
 - (void)toggleBold;
@@ -26,6 +35,7 @@ typedef struct {
 - (NSArray<NSString *> *)contextMenuItemTexts;
 - (NSArray<NSString *> *)contextMenuItemIcons;
 - (ENRMInputSelectionMenuConfig)inputSelectionMenuConfig;
+- (ENRMFormatMenuConfig)formatMenuConfig;
 
 #if TARGET_OS_OSX
 - (NSMenu *)enrichedMenuForEvent:(NSEvent *)event defaultMenu:(NSMenu *)menu textView:(NSTextView *)textView;

@@ -118,6 +118,15 @@ export interface InputSelectionMenuConfigInternal {
   copyAsMarkdown: boolean;
 }
 
+export interface FormatMenuConfigInternal {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strikethrough: boolean;
+  spoiler: boolean;
+  link: boolean;
+}
+
 export interface OnContextMenuItemPressEvent {
   itemText: string;
   selectedText: string;
@@ -208,6 +217,11 @@ export interface NativeProps extends ViewProps {
    * `format` toggles the Format submenu; `copyAsMarkdown` toggles the Copy as Markdown action.
    */
   selectionMenuConfig: Readonly<InputSelectionMenuConfigInternal>;
+
+  /**
+   * Controls which items appear inside the Format submenu.
+   */
+  formatMenuConfig: Readonly<FormatMenuConfigInternal>;
 
   /**
    * Regex configuration for automatic link detection.
