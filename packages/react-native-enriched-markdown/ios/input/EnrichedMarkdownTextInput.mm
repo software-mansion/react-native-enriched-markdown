@@ -1,5 +1,4 @@
 #import "EnrichedMarkdownTextInput.h"
-#import <QuartzCore/CABase.h>
 #import "ContextMenuUtils.h"
 #import "ENRMAutoLinkDetector.h"
 #import "ENRMDetectorPipeline.h"
@@ -17,9 +16,11 @@
 #import "ENRMStyleMergingConfig.h"
 #import "ENRMUIKit.h"
 #import "ENRMWordsUtils.h"
+#import "EnrichedMarkdownTextInput+Internal.h"
 #import "InputStylePropsUtils.h"
 #import "ParagraphStyleUtils.h"
 #import "SelectionColorUtils.h"
+#import <QuartzCore/CABase.h>
 #import <React/RCTI18nUtil.h>
 #if TARGET_OS_OSX
 #import <React/RCTBackedTextInputDelegate.h>
@@ -91,6 +92,8 @@ using namespace facebook::react;
 
   ENRMWritingDirectionMode _writingDirectionMode;
   NSWritingDirection _resolvedLayoutDirection;
+
+  ENRMInputSelectionMenuConfig _inputSelectionMenuConfig;
 }
 
 #pragma mark - Fabric lifecycle
@@ -128,6 +131,7 @@ using namespace facebook::react;
     _writingDirectionMode = ENRMWritingDirectionModeFirstStrong;
     _resolvedLayoutDirection =
         [[RCTI18nUtil sharedInstance] isRTL] ? NSWritingDirectionRightToLeft : NSWritingDirectionLeftToRight;
+    _inputSelectionMenuConfig = (ENRMInputSelectionMenuConfig){.format = YES, .copyAsMarkdown = YES};
 
     [self setupTextView];
 
@@ -351,6 +355,11 @@ using namespace facebook::react;
     _contextMenuItemTexts = ENRMContextMenuTextsFromItems(newViewProps.contextMenuItems);
     _contextMenuItemIcons = ENRMContextMenuIconsFromItems(newViewProps.contextMenuItems);
   }
+
+  _inputSelectionMenuConfig = (ENRMInputSelectionMenuConfig){
+      .format = newViewProps.selectionMenuConfig.format,
+      .copyAsMarkdown = newViewProps.selectionMenuConfig.copyAsMarkdown,
+  };
 
   if (newViewProps.mentionIndicators != oldViewProps.mentionIndicators) {
     NSMutableArray<NSString *> *indicators = [NSMutableArray array];
@@ -964,8 +973,8 @@ using namespace facebook::react;
   // Skip system-driven selection adjustments (e.g., predictive text) that fire
   // immediately after a text edit.
   static const CFTimeInterval kPostEditGracePeriod = 0.1;
-  BOOL isPostEditAdjustment = (_lastTextChangeTime > 0 &&
-                               (CACurrentMediaTime() - _lastTextChangeTime) < kPostEditGracePeriod);
+  BOOL isPostEditAdjustment =
+      (_lastTextChangeTime > 0 && (CACurrentMediaTime() - _lastTextChangeTime) < kPostEditGracePeriod);
   if (isPostEditAdjustment) {
     return;
   }
@@ -983,11 +992,8 @@ using namespace facebook::react;
   }
 
   static const ENRMInputStyleType inlineStyles[] = {
-      ENRMInputStyleTypeStrong,
-      ENRMInputStyleTypeEmphasis,
-      ENRMInputStyleTypeUnderline,
-      ENRMInputStyleTypeStrikethrough,
-      ENRMInputStyleTypeSpoiler,
+      ENRMInputStyleTypeStrong,        ENRMInputStyleTypeEmphasis, ENRMInputStyleTypeUnderline,
+      ENRMInputStyleTypeStrikethrough, ENRMInputStyleTypeSpoiler,
   };
 
   for (NSUInteger i = 0; i < sizeof(inlineStyles) / sizeof(inlineStyles[0]); i++) {
@@ -1234,6 +1240,11 @@ using namespace facebook::react;
 - (NSArray<NSString *> *)contextMenuItemIcons
 {
   return _contextMenuItemIcons ?: @[];
+}
+
+- (ENRMInputSelectionMenuConfig)inputSelectionMenuConfig
+{
+  return _inputSelectionMenuConfig;
 }
 
 - (void)emitContextMenuItemPress:(NSString *)itemText

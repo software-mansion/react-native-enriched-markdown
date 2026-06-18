@@ -689,6 +689,39 @@ interface ContextMenuItem {
 />
 ```
 
+### `selectionMenuConfig`
+
+Controls built-in items in the text selection context menu. The Format submenu and the Copy as Markdown action can each be hidden independently. Custom app-provided actions are controlled separately with `contextMenuItems`.
+
+| Type                       | Default Value                          | Platform            |
+| -------------------------- | -------------------------------------- | ------------------- |
+| `InputSelectionMenuConfig` | `{ format: true, copyAsMarkdown: true }` | iOS, Android, macOS |
+
+**`InputSelectionMenuConfig` shape:**
+
+```ts
+interface InputSelectionMenuConfig {
+  /** Shows the built-in "Format" submenu (Bold, Italic, Underline, etc.). */
+  format?: boolean;
+  /** Shows the built-in "Copy as Markdown" action. */
+  copyAsMarkdown?: boolean;
+}
+```
+
+**Example:**
+
+```tsx
+// Hide both the Format submenu and the Copy as Markdown action
+<EnrichedMarkdownTextInput
+  selectionMenuConfig={{ format: false, copyAsMarkdown: false }}
+/>
+
+// Keep Format but hide Copy as Markdown
+<EnrichedMarkdownTextInput
+  selectionMenuConfig={{ copyAsMarkdown: false }}
+/>
+```
+
 ### Ref Methods
 
 All methods are called imperatively on the ref (`ref.current?.methodName()`).

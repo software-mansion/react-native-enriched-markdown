@@ -25,14 +25,15 @@
     return nil;
   }
 
+  ENRMInputSelectionMenuConfig menuConfig = [self inputSelectionMenuConfig];
   __weak EnrichedMarkdownTextInput *weakSelf = self;
 
+  // TODO: Localize titles with NSLocalizedString.
   static const struct {
     NSString *title;
     NSString *icon;
     ENRMInputStyleType styleType;
   } kFormatItems[] = {
-      // TODO: Localize titles with NSLocalizedString.
       {@"Bold", @"bold", ENRMInputStyleTypeStrong},
       {@"Italic", @"italic", ENRMInputStyleTypeEmphasis},
       {@"Underline", @"underline", ENRMInputStyleTypeUnderline},
@@ -91,8 +92,13 @@
       break;
     }
   }
-  [systemActions insertObject:formatMenu atIndex:insertIndex];
-  [systemActions insertObject:copyMarkdownAction atIndex:insertIndex + 1];
+  if (menuConfig.format) {
+    [systemActions insertObject:formatMenu atIndex:insertIndex];
+    insertIndex++;
+  }
+  if (menuConfig.copyAsMarkdown) {
+    [systemActions insertObject:copyMarkdownAction atIndex:insertIndex];
+  }
   [allActions addObjectsFromArray:systemActions];
 
   return [UIMenu menuWithChildren:allActions];
@@ -104,6 +110,7 @@
     return menu;
   }
 
+  ENRMInputSelectionMenuConfig menuConfig = [self inputSelectionMenuConfig];
   __weak EnrichedMarkdownTextInput *weakSelf = self;
   NSArray<NSMenuItem *> *customItems =
       ENRMBuildContextMenuItems([self contextMenuItemTexts], [self contextMenuItemIcons], textView,
@@ -114,41 +121,45 @@
 
   [menu addItem:[NSMenuItem separatorItem]];
 
-  NSMenuItem *copyMarkdownItem = [[NSMenuItem alloc] initWithTitle:@"Copy as Markdown"
-                                                            action:@selector(copySelectedRangeAsMarkdown)
-                                                     keyEquivalent:@""];
-  copyMarkdownItem.target = self;
-  [menu addItem:copyMarkdownItem];
-
-  NSMenu *formatSubmenu = [[NSMenu alloc] initWithTitle:@"Format"];
-  struct {
-    NSString *title;
-    SEL action;
-    NSString *key;
-    NSEventModifierFlags modifiers;
-  } const items[] = {
-      {@"Bold", @selector(toggleBold), @"b", NSEventModifierFlagCommand},
-      {@"Italic", @selector(toggleItalic), @"i", NSEventModifierFlagCommand},
-      {@"Underline", @selector(toggleUnderline), @"u", NSEventModifierFlagCommand},
-      {@"Strikethrough", @selector(toggleStrikethrough), @"", 0},
-      {@"Spoiler", @selector(toggleSpoiler), @"", 0},
-      {@"Link", @selector(showLinkPrompt), @"", 0},
-  };
-
-  for (NSUInteger i = 0; i < sizeof(items) / sizeof(items[0]); i++) {
-    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:items[i].title
-                                                  action:items[i].action
-                                           keyEquivalent:items[i].key];
-    if (items[i].modifiers) {
-      item.keyEquivalentModifierMask = items[i].modifiers;
-    }
-    item.target = self;
-    [formatSubmenu addItem:item];
+  if (menuConfig.copyAsMarkdown) {
+    NSMenuItem *copyMarkdownItem = [[NSMenuItem alloc] initWithTitle:@"Copy as Markdown"
+                                                              action:@selector(copySelectedRangeAsMarkdown)
+                                                       keyEquivalent:@""];
+    copyMarkdownItem.target = self;
+    [menu addItem:copyMarkdownItem];
   }
 
-  NSMenuItem *formatItem = [[NSMenuItem alloc] initWithTitle:@"Format" action:nil keyEquivalent:@""];
-  formatItem.submenu = formatSubmenu;
-  [menu addItem:formatItem];
+  if (menuConfig.format) {
+    NSMenu *formatSubmenu = [[NSMenu alloc] initWithTitle:@"Format"];
+    struct {
+      NSString *title;
+      SEL action;
+      NSString *key;
+      NSEventModifierFlags modifiers;
+    } const items[] = {
+        {@"Bold", @selector(toggleBold), @"b", NSEventModifierFlagCommand},
+        {@"Italic", @selector(toggleItalic), @"i", NSEventModifierFlagCommand},
+        {@"Underline", @selector(toggleUnderline), @"u", NSEventModifierFlagCommand},
+        {@"Strikethrough", @selector(toggleStrikethrough), @"", 0},
+        {@"Spoiler", @selector(toggleSpoiler), @"", 0},
+        {@"Link", @selector(showLinkPrompt), @"", 0},
+    };
+
+    for (NSUInteger i = 0; i < sizeof(items) / sizeof(items[0]); i++) {
+      NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:items[i].title
+                                                    action:items[i].action
+                                             keyEquivalent:items[i].key];
+      if (items[i].modifiers) {
+        item.keyEquivalentModifierMask = items[i].modifiers;
+      }
+      item.target = self;
+      [formatSubmenu addItem:item];
+    }
+
+    NSMenuItem *formatItem = [[NSMenuItem alloc] initWithTitle:@"Format" action:nil keyEquivalent:@""];
+    formatItem.submenu = formatSubmenu;
+    [menu addItem:formatItem];
+  }
 
   return menu;
 }

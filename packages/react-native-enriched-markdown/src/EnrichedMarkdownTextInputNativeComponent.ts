@@ -113,6 +113,11 @@ export interface ContextMenuItemConfig {
   icon?: string;
 }
 
+export interface InputSelectionMenuConfigInternal {
+  format: boolean;
+  copyAsMarkdown: boolean;
+}
+
 export interface OnContextMenuItemPressEvent {
   itemText: string;
   selectedText: string;
@@ -197,6 +202,12 @@ export interface NativeProps extends ViewProps {
    * Each item is shown by its `text` label; invisible items should be filtered out before passing here.
    */
   contextMenuItems?: ReadonlyArray<Readonly<ContextMenuItemConfig>>;
+
+  /**
+   * Controls built-in items in the text selection context menu.
+   * `format` toggles the Format submenu; `copyAsMarkdown` toggles the Copy as Markdown action.
+   */
+  selectionMenuConfig: Readonly<InputSelectionMenuConfigInternal>;
 
   /**
    * Regex configuration for automatic link detection.

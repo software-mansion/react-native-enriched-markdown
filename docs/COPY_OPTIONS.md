@@ -43,3 +43,14 @@ Use `selectionMenuConfig` to hide built-in selection menu actions while keeping 
   }}
 />
 ```
+
+`EnrichedMarkdownTextInput` supports the same prop. In addition to `copyAsMarkdown`, the input's `selectionMenuConfig` can hide the built-in **Format** submenu:
+
+```tsx
+<EnrichedMarkdownTextInput
+  selectionMenuConfig={{
+    format: false,
+    copyAsMarkdown: false,
+  }}
+/>
+```

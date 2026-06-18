@@ -20,6 +20,7 @@ export type {
   MarkdownTextInputStyle,
   StyleState,
   ContextMenuItem,
+  InputSelectionMenuConfig,
   OnLinkDetected,
   OnStartMentionEvent,
   OnChangeMentionEvent,

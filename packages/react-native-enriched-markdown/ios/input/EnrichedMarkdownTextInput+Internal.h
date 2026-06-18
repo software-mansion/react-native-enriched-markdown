@@ -5,6 +5,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef struct {
+  BOOL format;
+  BOOL copyAsMarkdown;
+} ENRMInputSelectionMenuConfig;
+
 @interface EnrichedMarkdownTextInput (Internal)
 
 - (void)toggleBold;
@@ -20,6 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)emitContextMenuItemPress:(NSString *)itemText;
 - (NSArray<NSString *> *)contextMenuItemTexts;
 - (NSArray<NSString *> *)contextMenuItemIcons;
+- (ENRMInputSelectionMenuConfig)inputSelectionMenuConfig;
 
 #if TARGET_OS_OSX
 - (NSMenu *)enrichedMenuForEvent:(NSEvent *)event defaultMenu:(NSMenu *)menu textView:(NSTextView *)textView;

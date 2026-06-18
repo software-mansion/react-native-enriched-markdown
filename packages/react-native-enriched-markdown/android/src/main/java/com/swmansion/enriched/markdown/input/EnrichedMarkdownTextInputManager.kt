@@ -31,6 +31,7 @@ import com.swmansion.enriched.markdown.input.events.OnRequestMarkdownResultEvent
 import com.swmansion.enriched.markdown.input.events.OnStartMentionEvent
 import com.swmansion.enriched.markdown.input.layout.InputMeasurementStore
 import com.swmansion.enriched.markdown.input.model.StyleType
+import com.swmansion.enriched.markdown.input.toolbar.InputSelectionMenuConfig
 import com.swmansion.enriched.markdown.utils.input.BorderPropsApplicator
 import com.swmansion.enriched.markdown.utils.input.MarkdownStyleParser
 
@@ -261,6 +262,19 @@ class EnrichedMarkdownTextInputManager :
     if (view == null) return
     val items = (0 until (value?.size() ?: 0)).mapNotNull { value?.getMap(it)?.getString("text") }
     view.setContextMenuItems(items)
+  }
+
+  @ReactProp(name = "selectionMenuConfig")
+  override fun setSelectionMenuConfig(
+    view: EnrichedMarkdownTextInputView?,
+    value: ReadableMap?,
+  ) {
+    if (view == null || value == null) return
+    view.contextMenu.selectionMenuConfig =
+      InputSelectionMenuConfig(
+        format = value.getBoolean("format"),
+        copyAsMarkdown = value.getBoolean("copyAsMarkdown"),
+      )
   }
 
   @ReactProp(name = "linkRegex")

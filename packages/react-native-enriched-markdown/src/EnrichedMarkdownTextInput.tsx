@@ -112,6 +112,21 @@ export interface EnrichedMarkdownTextInputInstance {
   getCaretRect: () => Promise<CaretRect>;
 }
 
+export interface InputSelectionMenuConfig {
+  /**
+   * Shows the built-in "Format" submenu (Bold, Italic, Underline, etc.)
+   * in the text selection context menu.
+   * @default true
+   */
+  format?: boolean;
+  /**
+   * Shows the built-in "Copy as Markdown" action in the text selection
+   * context menu.
+   * @default true
+   */
+  copyAsMarkdown?: boolean;
+}
+
 export interface EnrichedMarkdownTextInputProps extends Omit<
   ViewProps,
   'style' | 'children'
@@ -142,6 +157,14 @@ export interface EnrichedMarkdownTextInputProps extends Omit<
   onFocus?: () => void;
   onBlur?: () => void;
   contextMenuItems?: ContextMenuItem[];
+  /**
+   * Controls built-in items in the text selection context menu.
+   * Omitting the prop or any field reproduces today's exact menu.
+   * Custom app-provided actions are controlled separately via `contextMenuItems`.
+   * @default { format: true, copyAsMarkdown: true }
+   * @platform ios, android, macos
+   */
+  selectionMenuConfig?: InputSelectionMenuConfig;
   linkRegex?: RegExp | null;
   /**
    * Paragraph writing direction.
@@ -203,6 +226,7 @@ export const EnrichedMarkdownTextInput = ({
   onFocus,
   onBlur,
   contextMenuItems,
+  selectionMenuConfig,
   linkRegex: _linkRegex,
   writingDirection = 'first-strong',
   ...rest
@@ -250,6 +274,14 @@ export const EnrichedMarkdownTextInput = ({
   }, []);
 
   const normalizedStyle = normalizeMarkdownTextInputStyle(markdownStyle);
+
+  const normalizedSelectionMenuConfig = useMemo(
+    () => ({
+      format: selectionMenuConfig?.format ?? true,
+      copyAsMarkdown: selectionMenuConfig?.copyAsMarkdown ?? true,
+    }),
+    [selectionMenuConfig]
+  );
 
   const linkRegex = useMemo(
     () => toNativeRegexConfig(_linkRegex),
@@ -461,6 +493,7 @@ export const EnrichedMarkdownTextInput = ({
         handleCaretRectChange as NativeProps['onCaretRectChange']
       }
       contextMenuItems={nativeContextMenuItems}
+      selectionMenuConfig={normalizedSelectionMenuConfig}
       mentionIndicators={mentionIndicators}
       onContextMenuItemPress={
         handleContextMenuItemPress as NativeProps['onContextMenuItemPress']
