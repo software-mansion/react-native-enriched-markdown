@@ -27,7 +27,7 @@
     "app.plugin.js"
   ],
   "scripts": {
-    "build:wasm": "bash ../../packages/core/cpp/wasm/build.sh",
+    "build:wasm": "bash ../core/cpp/wasm/build.sh",
     "typecheck": "tsc",
     "lint-clang:ios": "find ios/ \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | grep -v -e Pods -e build | xargs npx clang-format -i -n --Werror",
     "lint-clang:ios:fix": "find ios/ \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | grep -v -e Pods -e build | xargs npx clang-format -i",

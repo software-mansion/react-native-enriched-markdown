@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.authors      = "Software Mansion"
   s.source       = { :git => "https://github.com/software-mansion/react-native-enriched-markdown.git" }
 
-  s.platforms    = { :ios => "15.1", :osx => "14.0" }
+  s.platforms    = { :ios => min_ios_version_supported, :osx => "14.0" }
 
   s.source_files = "cpp/md4c/*.{c,h}", "cpp/parser/*.{hpp,cpp}"
   s.private_header_files = "cpp/**/*.{h,hpp}"

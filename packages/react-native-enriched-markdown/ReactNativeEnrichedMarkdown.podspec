@@ -16,14 +16,13 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => min_ios_version_supported, :osx => '14.0' }
   s.source       = { :git => "https://github.com/software-mansion/react-native-enriched-markdown.git", :tag => "#{s.version}" }
 
-  s.private_header_files = "ios/**/*.h"
-  s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
-
-  unless monorepo
+  if monorepo
+    s.private_header_files = "ios/**/*.h"
+    s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
+    s.dependency "EnrichedMarkdownCore"
+  else
     s.private_header_files = "ios/**/*.h", "cpp/**/*.{h,hpp}"
     s.source_files = "ios/**/*.{h,m,mm,cpp,swift}", "cpp/md4c/*.{c,h}", "cpp/parser/*.{hpp,cpp}"
-  else
-    s.dependency "EnrichedMarkdownCore"
   end
 
   # To disable LaTeX math rendering (RaTeX, iOS only), add ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0' to your Podfile.
