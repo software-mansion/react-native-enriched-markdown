@@ -14,7 +14,7 @@ pre-commit:
     ktlint:
       glob: '*.kt'
       exclude: '(build|generated|node_modules)'
-      run: cd apps/example/android && ./gradlew :react-native-enriched-markdown:ktlintFormat --quiet && cd ../../.. && git add {staged_files}
+      run: cd apps/react-native-example/android && ./gradlew :react-native-enriched-markdown:ktlintFormat --quiet && cd ../../.. && git add {staged_files}
 commit-msg:
   parallel: true
   commands:
