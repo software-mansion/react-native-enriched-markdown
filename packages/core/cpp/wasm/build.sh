@@ -6,17 +6,17 @@
 #   # or follow https://emscripten.org/docs/getting_started/downloads.html
 #
 # Usage:
-#   bash cpp/wasm/build.sh
+#   bash packages/core/cpp/wasm/build.sh
 #
 # Output:
-#   src/web/wasm/md4c.js   — Emscripten glue with WASM binary inlined as base64
-#                            (SINGLE_FILE=1 means no separate .wasm file is needed)
+#   packages/react-native-enriched-markdown/src/web/wasm/md4c.js
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PACKAGE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-OUT_DIR="$PACKAGE_ROOT/src/web/wasm"
+CPP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+OUT_DIR="${OUT_DIR:-$REPO_ROOT/packages/react-native-enriched-markdown/src/web/wasm}"
 
 mkdir -p "$OUT_DIR"
 
@@ -24,18 +24,18 @@ echo "Building md4c WASM…"
 
 # Compile the C file separately (no -std=c++17)
 emcc \
-  -I "$PACKAGE_ROOT/cpp" \
+  -I "$CPP_ROOT" \
   -O2 \
-  -c "$PACKAGE_ROOT/cpp/md4c/md4c.c" \
+  -c "$CPP_ROOT/md4c/md4c.c" \
   -o "$OUT_DIR/md4c.o"
 
 # Compile C++ sources and link everything together
 emcc \
   "$SCRIPT_DIR/md4c_wasm.cpp" \
   "$SCRIPT_DIR/ASTSerializer.cpp" \
-  "$PACKAGE_ROOT/cpp/parser/MD4CParser.cpp" \
+  "$CPP_ROOT/parser/MD4CParser.cpp" \
   "$OUT_DIR/md4c.o" \
-  -I "$PACKAGE_ROOT/cpp" \
+  -I "$CPP_ROOT" \
   -I "$SCRIPT_DIR" \
   -O2 \
   -std=c++17 \

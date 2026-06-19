@@ -3365,7 +3365,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@enriched-markdown/core@workspace:packages/core":
+"@enriched-markdown/core@workspace:*, @enriched-markdown/core@workspace:packages/core":
   version: 0.0.0-use.local
   resolution: "@enriched-markdown/core@workspace:packages/core"
   languageName: unknown
@@ -15875,6 +15875,7 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
     "@babel/runtime": "npm:^7.25.0"
+    "@enriched-markdown/core": "workspace:*"
     "@gorhom/bottom-sheet": "npm:^5.2.14"
     "@react-native-async-storage/async-storage": "npm:1.23.1"
     "@react-native-community/cli": "npm:20.1.0"

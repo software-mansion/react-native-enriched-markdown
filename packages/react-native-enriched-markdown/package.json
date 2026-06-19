@@ -27,7 +27,7 @@
     "app.plugin.js"
   ],
   "scripts": {
-    "build:wasm": "bash cpp/wasm/build.sh",
+    "build:wasm": "bash ../core/cpp/wasm/build.sh",
     "typecheck": "tsc",
     "lint-clang:ios": "find ios/ \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | grep -v -e Pods -e build | xargs npx clang-format -i -n --Werror",
     "lint-clang:ios:fix": "find ios/ \\( -iname \"*.h\" -o -iname \"*.m\" -o -iname \"*.mm\" \\) | grep -v -e Pods -e build | xargs npx clang-format -i",
@@ -37,6 +37,8 @@
     "lint-clang:fix": "yarn lint-clang:ios:fix && yarn lint-clang:android:fix",
     "clean": "del-cli android/build lib",
     "sync-md4c": "bash ../../scripts/fetch-md4c.sh",
+    "prepack": "bash ../../scripts/prepare-npm-publish.sh prepack",
+    "postpack": "bash ../../scripts/prepare-npm-publish.sh postpack",
     "prepare": "bob build"
   },
   "keywords": [

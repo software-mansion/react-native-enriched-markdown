@@ -15,7 +15,7 @@
         "!$TURBO_ROOT$/packages/react-native-enriched-markdown/android/build/**",
         "!$TURBO_ROOT$/packages/react-native-enriched-markdown/android/generated/**",
         "$TURBO_ROOT$/packages/react-native-enriched-markdown/src/**",
-        "$TURBO_ROOT$/packages/react-native-enriched-markdown/cpp/**",
+        "$TURBO_ROOT$/packages/core/cpp/**",
         "$TURBO_ROOT$/packages/react-native-enriched-markdown/package.json"
       ],
       "outputs": []
@@ -36,7 +36,7 @@
         "$TURBO_ROOT$/packages/react-native-enriched-markdown/ios/**",
         "!$TURBO_ROOT$/packages/react-native-enriched-markdown/ios/build/**",
         "$TURBO_ROOT$/packages/react-native-enriched-markdown/src/**",
-        "$TURBO_ROOT$/packages/react-native-enriched-markdown/cpp/**",
+        "$TURBO_ROOT$/packages/core/cpp/**",
         "$TURBO_ROOT$/packages/react-native-enriched-markdown/*.podspec",
         "$TURBO_ROOT$/packages/react-native-enriched-markdown/package.json"
       ],
