@@ -4,7 +4,7 @@ set -euo pipefail
 REPO="mity/md4c"
 BRANCH="master"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/src"
-DEST_DIR="$(cd "$(dirname "$0")/.." && pwd)/packages/react-native-enriched-markdown/cpp/md4c"
+DEST_DIR="$(cd "$(dirname "$0")/.." && pwd)/packages/core/cpp/md4c"
 
 FILES=(
   "md4c.c"

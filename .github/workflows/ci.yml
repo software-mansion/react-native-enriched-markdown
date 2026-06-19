@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock', 'packages/react-native-enriched-markdown/android/**', 'packages/react-native-enriched-markdown/src/**', 'packages/react-native-enriched-markdown/cpp/**', 'apps/example/android/**') }}
+          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock', 'packages/react-native-enriched-markdown/android/**', 'packages/react-native-enriched-markdown/src/**', 'packages/core/cpp/**', 'apps/example/android/**') }}
           restore-keys: |
             ${{ runner.os }}-turborepo-android-
 
@@ -132,7 +132,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock', 'packages/react-native-enriched-markdown/ios/**', 'packages/react-native-enriched-markdown/src/**', 'packages/react-native-enriched-markdown/cpp/**', 'apps/example/ios/**') }}
+          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock', 'packages/react-native-enriched-markdown/ios/**', 'packages/react-native-enriched-markdown/src/**', 'packages/core/cpp/**', 'apps/example/ios/**') }}
           restore-keys: |
             ${{ runner.os }}-turborepo-ios-
 

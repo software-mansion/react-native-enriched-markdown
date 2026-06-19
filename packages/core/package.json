@@ -2,5 +2,10 @@
   "name": "@enriched-markdown/core",
   "version": "0.0.0",
   "private": true,
-  "description": "Shared core for react-native-enriched-markdown"
+  "description": "Shared C++ core (md4c parser, AST) for react-native-enriched-markdown and future native ports",
+  "files": [
+    "cpp",
+    "EnrichedMarkdownCore.podspec",
+    "package.json"
+  ]
 }
