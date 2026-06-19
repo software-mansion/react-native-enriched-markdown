@@ -428,7 +428,7 @@ export function githubFlavorArgTypes(description: string) {
   };
 }
 
-/** Bundled fonts in apps/example/assets/fonts (see src/markdownStyles.ts). */
+/** Bundled fonts in apps/react-native-example/assets/fonts (see src/markdownStyles.ts). */
 export const EXAMPLE_FONT_FAMILIES = [
   '',
   'Montserrat-Regular',

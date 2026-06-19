@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock', 'packages/react-native-enriched-markdown/android/**', 'packages/react-native-enriched-markdown/src/**', 'packages/core/cpp/**', 'apps/example/android/**') }}
+          key: ${{ runner.os }}-turborepo-android-${{ hashFiles('yarn.lock', 'packages/react-native-enriched-markdown/android/**', 'packages/react-native-enriched-markdown/src/**', 'packages/core/cpp/**', 'apps/react-native-example/android/**') }}
           restore-keys: |
             ${{ runner.os }}-turborepo-android-
 
@@ -96,7 +96,7 @@ jobs:
           path: |
             ~/.gradle/wrapper
             ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/example/android/gradle/wrapper/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/react-native-example/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -126,20 +126,20 @@ jobs:
           xcode-version: '16.4'
 
       - name: Reset build folder and pods
-        run: rm -rf apps/example/build apps/example/ios/Pods apps/example/ios/Podfile.lock
+        run: rm -rf apps/react-native-example/build apps/react-native-example/ios/Pods apps/react-native-example/ios/Podfile.lock
 
       - name: Cache turborepo for iOS
         uses: actions/cache@v4
         with:
           path: ${{ env.TURBO_CACHE_DIR }}
-          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock', 'packages/react-native-enriched-markdown/ios/**', 'packages/react-native-enriched-markdown/src/**', 'packages/core/cpp/**', 'apps/example/ios/**') }}
+          key: ${{ runner.os }}-turborepo-ios-${{ hashFiles('yarn.lock', 'packages/react-native-enriched-markdown/ios/**', 'packages/react-native-enriched-markdown/src/**', 'packages/core/cpp/**', 'apps/react-native-example/ios/**') }}
           restore-keys: |
             ${{ runner.os }}-turborepo-ios-
 
       - name: Check turborepo cache for iOS
         run: |
           TURBO_CACHE_STATUS=$(yarn turbo run build:ios \
-            --filter=react-native-enriched-markdown-example \
+            --filter=react-native-example \
             --cache-dir="${{ env.TURBO_CACHE_DIR }}" \
             --dry=json | jq -r '.tasks[0].cache.status')
 
@@ -154,14 +154,14 @@ jobs:
         with:
           path: |
             **/ios/Pods
-          key: ${{ runner.os }}-cocoapods-${{ hashFiles('apps/example/ios/Podfile.lock') }}
+          key: ${{ runner.os }}-cocoapods-${{ hashFiles('apps/react-native-example/ios/Podfile.lock') }}
           restore-keys: |
             ${{ runner.os }}-cocoapods-
 
       - name: Install cocoapods
         if: env.turbo_cache_hit != 1
         run: |
-          cd apps/example/ios
+          cd apps/react-native-example/ios
           pod install
         env:
           NO_FLIPPER: 1

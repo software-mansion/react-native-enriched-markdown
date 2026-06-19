@@ -117,9 +117,9 @@ if [ -n "$REBUILD" ] || ! app_installed; then
   [ -n "$REBUILD" ] && echo "=== rebuild forced, building and installing ==="
   [ -z "$REBUILD" ] && echo "=== App ($BUNDLE_ID) not found, building and installing ==="
   if [ "$PLATFORM" = ios ]; then
-    yarn example ios --udid "$DEVICE_ID"
+    yarn react-native-example ios --udid "$DEVICE_ID"
   else
-    yarn example android --device "$DEVICE_ID"
+    yarn react-native-example android --device "$DEVICE_ID"
   fi
 else
   echo "=== APP ($BUNDLE_ID) aleady installed, skipping build ==="

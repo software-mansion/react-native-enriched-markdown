@@ -15874,9 +15874,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-enriched-markdown-example@workspace:apps/example":
+"react-native-enriched-markdown-example@workspace:apps/react-native-example":
   version: 0.0.0-use.local
-  resolution: "react-native-enriched-markdown-example@workspace:apps/example"
+  resolution: "react-native-enriched-markdown-example@workspace:apps/react-native-example"
   dependencies:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
