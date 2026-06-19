@@ -6,6 +6,24 @@ NS_ASSUME_NONNULL_BEGIN
 static NSString *const CodeBlockAttributeName = @"CodeBlock";
 
 /**
+ * Returns YES when the last non-newline character of the attributed string lies inside a code block.
+ * Used to decide whether trailing-spacing cleanup should preserve the code block's bottom padding.
+ */
+static inline BOOL isLastBlockACodeBlock(NSAttributedString *text)
+{
+  if (text.length == 0)
+    return NO;
+
+  NSRange lastContent = [text.string rangeOfCharacterFromSet:[[NSCharacterSet newlineCharacterSet] invertedSet]
+                                                     options:NSBackwardsSearch];
+  if (lastContent.location == NSNotFound)
+    return NO;
+
+  NSNumber *isCodeBlock = [text attribute:CodeBlockAttributeName atIndex:lastContent.location effectiveRange:nil];
+  return isCodeBlock.boolValue;
+}
+
+/**
  * Checks if the last element in the attributed string is a code block.
  * Used to compensate for iOS text APIs not measuring/drawing trailing newlines with custom line heights.
  */

@@ -3,6 +3,7 @@
 #import "LastElementUtils.h"
 #import "MarkdownASTNode.h"
 #import "NodeRenderer.h"
+#import "ParagraphStyleUtils.h"
 #import "RenderContext.h"
 #import "RendererFactory.h"
 #import "StyleConfig.h"
@@ -83,15 +84,42 @@
 
   // 2. Trim trailing characters
   NSUInteger logicalEnd = NSMaxRange(lastContent);
-  BOOL isCodeBlock = isLastElementCodeBlock(output);
+  BOOL isCodeBlock = isLastBlockACodeBlock(output);
+  NSRange codeRange = NSMakeRange(0, 0);
   if (isCodeBlock) {
-    NSRange codeRange;
     [output attribute:CodeBlockAttributeName atIndex:lastContent.location effectiveRange:&codeRange];
-    logicalEnd = NSMaxRange(codeRange);
+    // Preserve the code block's bottom padding spacer AND keep a single trailing newline
+    // after it (typically the codeBlockMarginBottom spacer that CodeBlockRenderer
+    // appended). That extra newline keeps the bottom padding spacer from being the
+    // storage's trailing paragraph terminator — iOS reports such terminators as
+    // extraLineFragmentRect and excludes their line fragments from the rendered tile
+    // area, which would clip the background's bottom rounded corner.
+    NSUInteger codeEnd = NSMaxRange(codeRange);
+    if (codeEnd >= output.length) {
+      // No trailing newline exists (e.g. codeBlockMarginBottom = 0). Append one so the
+      // bottom padding spacer stops being the trailing paragraph terminator.
+      [output appendAttributedString:kNewlineAttributedString];
+    }
+    logicalEnd = codeEnd + 1;
   }
 
   if (logicalEnd < output.length) {
     [output deleteCharactersInRange:NSMakeRange(logicalEnd, output.length - logicalEnd)];
+  }
+
+  if (isCodeBlock && NSMaxRange(codeRange) < output.length) {
+    // Strip CodeBlockAttribute and zero paragraphSpacing on the preserved tail newline.
+    // appendAttributedString in applyBlockSpacingAfter sometimes carries the receiver's
+    // last-char CodeBlockAttribute forward; explicitly clearing it keeps the background
+    // range tight on the bottom padding. The zeroed paragraphSpacing prevents the
+    // codeBlockMarginBottom from rendering visible margin below the last code block.
+    NSUInteger tailIdx = NSMaxRange(codeRange);
+    [output removeAttribute:CodeBlockAttributeName range:NSMakeRange(tailIdx, 1)];
+    NSParagraphStyle *style = [output attribute:NSParagraphStyleAttributeName atIndex:tailIdx effectiveRange:NULL];
+    NSMutableParagraphStyle *mutableStyle = style ? [style mutableCopy] : [[NSMutableParagraphStyle alloc] init];
+    mutableStyle.paragraphSpacing = 0;
+    mutableStyle.paragraphSpacingBefore = 0;
+    [output addAttribute:NSParagraphStyleAttributeName value:mutableStyle range:NSMakeRange(tailIdx, 1)];
   }
 
   // 3. Zero out internal spacing for the last element (if not a code block)
