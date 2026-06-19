@@ -139,7 +139,7 @@ jobs:
       - name: Check turborepo cache for iOS
         run: |
           TURBO_CACHE_STATUS=$(yarn turbo run build:ios \
-            --filter=react-native-example \
+            --filter=react-native-enriched-markdown-example \
             --cache-dir="${{ env.TURBO_CACHE_DIR }}" \
             --dry=json | jq -r '.tasks[0].cache.status')
 
