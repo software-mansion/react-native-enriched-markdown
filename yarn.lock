@@ -9988,6 +9988,12 @@ __metadata:
   languageName: node
   linkType: hard
 
+"enriched-markdown-android-example@workspace:apps/android-example":
+  version: 0.0.0-use.local
+  resolution: "enriched-markdown-android-example@workspace:apps/android-example"
+  languageName: unknown
+  linkType: soft
+
 "entities@npm:^4.2.0, entities@npm:^4.4.0":
   version: 4.5.0
   resolution: "entities@npm:4.5.0"

@@ -1,0 +1,32 @@
+pluginManagement {
+  repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+  }
+  plugins {
+    id "com.android.application" version "9.2.1"
+    id "com.android.library" version "9.2.1"
+    id "org.jetbrains.kotlin.plugin.compose" version "2.4.0"
+  }
+}
+
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    google()
+    mavenCentral()
+  }
+}
+
+rootProject.name = "android-example"
+
+include ":app"
+include ":compose"
+include ":ui"
+include ":parser"
+
+def libraryRoot = new File(settingsDir, "../../packages/android-enriched-markdown")
+project(":compose").projectDir = new File(libraryRoot, "compose")
+project(":ui").projectDir = new File(libraryRoot, "ui")
+project(":parser").projectDir = new File(libraryRoot, "parser")

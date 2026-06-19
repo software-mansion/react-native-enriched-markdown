@@ -1,0 +1,11 @@
+{
+  "name": "enriched-markdown-android-example",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "./gradlew installDebug && adb shell am start -n swmansion.enriched.markdown.android.example/swmansion.enriched.markdown.android.example.AndroidExampleMainActivity",
+    "build": "./gradlew assembleDebug",
+    "build:release": "./gradlew assembleRelease",
+    "clean": "./gradlew clean"
+  }
+}

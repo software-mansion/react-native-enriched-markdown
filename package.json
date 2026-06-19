@@ -10,6 +10,7 @@
     "example": "yarn workspace react-native-enriched-markdown-example",
     "macos-example": "yarn workspace react-native-enriched-markdown-macos-example",
     "web-example": "yarn workspace react-native-enriched-markdown-web-example",
+    "android-example": "yarn workspace enriched-markdown-android-example start",
     "build:wasm": "yarn workspace react-native-enriched-markdown build:wasm",
     "android:build:release": "cd apps/example && npx react-native build-android --mode=release",
     "android:test:release": "cd apps/example && yarn android --mode release",
