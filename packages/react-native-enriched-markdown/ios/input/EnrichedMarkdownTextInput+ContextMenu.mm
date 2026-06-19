@@ -45,6 +45,9 @@
   static const NSUInteger kFormatItemCount = sizeof(kFormatItems) / sizeof(kFormatItems[0]);
   const BOOL kFormatItemVisible[] = {fmtConfig.bold,          fmtConfig.italic,  fmtConfig.underline,
                                      fmtConfig.strikethrough, fmtConfig.spoiler, fmtConfig.link};
+  _Static_assert(sizeof(kFormatItemVisible) / sizeof(kFormatItemVisible[0]) ==
+                     sizeof(kFormatItems) / sizeof(kFormatItems[0]),
+                 "kFormatItemVisible must match kFormatItems length");
 
   NSMutableArray<UIAction *> *formatActions = [NSMutableArray arrayWithCapacity:kFormatItemCount];
   for (NSUInteger i = 0; i < kFormatItemCount; i++) {
@@ -153,6 +156,8 @@
     };
     const BOOL visible[] = {fmtConfig.bold,          fmtConfig.italic,  fmtConfig.underline,
                             fmtConfig.strikethrough, fmtConfig.spoiler, fmtConfig.link};
+    _Static_assert(sizeof(visible) / sizeof(visible[0]) == sizeof(items) / sizeof(items[0]),
+                   "visible must match items length");
 
     for (NSUInteger i = 0; i < sizeof(items) / sizeof(items[0]); i++) {
       if (!visible[i]) {

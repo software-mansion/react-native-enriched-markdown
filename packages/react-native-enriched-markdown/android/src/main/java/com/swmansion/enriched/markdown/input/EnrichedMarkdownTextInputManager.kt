@@ -287,16 +287,20 @@ class EnrichedMarkdownTextInputManager :
     view: EnrichedMarkdownTextInputView?,
     value: ReadableMap?,
   ) {
-    if (view == null || value == null) return
+    if (view == null) return
     view.contextMenu.formatMenuConfig =
-      FormatMenuConfig(
-        bold = value.getBoolean("bold"),
-        italic = value.getBoolean("italic"),
-        underline = value.getBoolean("underline"),
-        strikethrough = value.getBoolean("strikethrough"),
-        spoiler = value.getBoolean("spoiler"),
-        link = value.getBoolean("link"),
-      )
+      if (value == null) {
+        FormatMenuConfig()
+      } else {
+        FormatMenuConfig(
+          bold = value.getBoolean("bold"),
+          italic = value.getBoolean("italic"),
+          underline = value.getBoolean("underline"),
+          strikethrough = value.getBoolean("strikethrough"),
+          spoiler = value.getBoolean("spoiler"),
+          link = value.getBoolean("link"),
+        )
+      }
   }
 
   @ReactProp(name = "linkRegex")
