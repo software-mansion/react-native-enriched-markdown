@@ -270,12 +270,16 @@ class EnrichedMarkdownTextInputManager :
     view: EnrichedMarkdownTextInputView?,
     value: ReadableMap?,
   ) {
-    if (view == null || value == null) return
+    if (view == null) return
     view.contextMenu.selectionMenuConfig =
-      InputSelectionMenuConfig(
-        format = value.getBoolean("format"),
-        copyAsMarkdown = value.getBoolean("copyAsMarkdown"),
-      )
+      if (value == null) {
+        InputSelectionMenuConfig()
+      } else {
+        InputSelectionMenuConfig(
+          format = value.getBoolean("format"),
+          copyAsMarkdown = value.getBoolean("copyAsMarkdown"),
+        )
+      }
   }
 
   @ReactProp(name = "formatMenuConfig")
