@@ -377,6 +377,45 @@ interface SelectionMenuConfig {
 
 > **Note:** When using `flavor="github"`, `selection.start` and `selection.end` are relative to the text segment the selection is in, not the full markdown string. With `flavor="commonmark"` (default) they are always absolute within the full rendered text.
 
+### `selectionMenuLabels`
+
+Localized labels for the built-in selection/copy menu actions. Use this to translate **Copy**, **Copy as Markdown** and **Copy Image URL** so they match the rest of your app's UI. Any label left `undefined` keeps its English default. Controls which items are shown with `selectionMenuConfig`.
+
+| Type                  | Default Value | Platform            |
+| --------------------- | ------------- | ------------------- |
+| `SelectionMenuLabels` | `undefined`   | iOS, Android, macOS |
+
+**`SelectionMenuLabels` shape:**
+
+```ts
+interface SelectionMenuLabels {
+  /** Label for the "Copy" action (also used by table/math copy menus). @default "Copy" */
+  copy?: string;
+  /** Label for the "Copy as Markdown" action. @default "Copy as Markdown" */
+  copyAsMarkdown?: string;
+  /** Label for the single-image "Copy Image URL" action. @default "Copy Image URL" */
+  copyImageUrl?: string;
+  /** Multi-image label; `{count}` is replaced by the number of selected images. @default "Copy {count} Image URLs" */
+  copyImageUrls?: string;
+}
+```
+
+**Example:**
+
+```tsx
+<EnrichedMarkdownText
+  markdown={content}
+  selectionMenuLabels={{
+    copy: t('copy'),
+    copyAsMarkdown: t('copyAsMarkdown'),
+    copyImageUrl: t('copyImageUrl'),
+    copyImageUrls: t('copyImageUrls'),
+  }}
+/>
+```
+
+See [COPY_OPTIONS.md](./COPY_OPTIONS.md#localizing-menu-labels) for details.
+
 ---
 
 ## EnrichedMarkdownTextInput

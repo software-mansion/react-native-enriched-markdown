@@ -10,9 +10,15 @@ static NSString *const kActionIdentifierCopy = @"com.swmansion.enriched.markdown
 static NSString *const kActionIdentifierCopyMarkdown = @"com.swmansion.enriched.markdown.copyMarkdown";
 static NSString *const kActionIdentifierCopyImageURL = @"com.swmansion.enriched.markdown.copyImageURL";
 
-static UIAction *createCopyAction(NSAttributedString *selectedText, NSString *markdown, StyleConfig *styleConfig)
+static NSString *resolveLabel(NSString *_Nullable label, NSString *fallback)
 {
-  return [UIAction actionWithTitle:@"Copy"
+  return label.length > 0 ? label : fallback;
+}
+
+static UIAction *createCopyAction(NSAttributedString *selectedText, NSString *markdown, StyleConfig *styleConfig,
+                                  NSString *_Nullable copyLabel)
+{
+  return [UIAction actionWithTitle:resolveLabel(copyLabel, @"Copy")
                              image:[RCTUIImage systemImageNamed:@"doc.on.doc"]
                         identifier:kActionIdentifierCopy
                            handler:^(__kindof UIAction *action) {
@@ -20,26 +26,33 @@ static UIAction *createCopyAction(NSAttributedString *selectedText, NSString *ma
                            }];
 }
 
-static UIAction *_Nullable createCopyMarkdownAction(NSString *markdown)
+static UIAction *_Nullable createCopyMarkdownAction(NSString *markdown, NSString *_Nullable copyAsMarkdownLabel)
 {
   if (markdown.length == 0)
     return nil;
 
-  return [UIAction actionWithTitle:@"Copy as Markdown"
+  return [UIAction actionWithTitle:resolveLabel(copyAsMarkdownLabel, @"Copy as Markdown")
                              image:[RCTUIImage systemImageNamed:@"doc.text"]
                         identifier:kActionIdentifierCopyMarkdown
                            handler:^(__kindof UIAction *action) { copyStringToPasteboard(markdown); }];
 }
 
-static UIAction *_Nullable createCopyImageURLAction(NSArray<NSString *> *imageURLs)
+static UIAction *_Nullable createCopyImageURLAction(NSArray<NSString *> *imageURLs, NSString *_Nullable singularLabel,
+                                                    NSString *_Nullable pluralLabelTemplate)
 {
   if (imageURLs.count == 0)
     return nil;
 
   NSString *urlsToCopy = [imageURLs componentsJoinedByString:@"\n"];
-  NSString *title = (imageURLs.count == 1)
-                        ? @"Copy Image URL"
-                        : [NSString stringWithFormat:@"Copy %lu Image URLs", (unsigned long)imageURLs.count];
+  NSString *title;
+  if (imageURLs.count == 1) {
+    title = resolveLabel(singularLabel, @"Copy Image URL");
+  } else if (pluralLabelTemplate.length > 0) {
+    title = [pluralLabelTemplate stringByReplacingOccurrencesOfString:@"{count}"
+                                                           withString:[@(imageURLs.count) stringValue]];
+  } else {
+    title = [NSString stringWithFormat:@"Copy %lu Image URLs", (unsigned long)imageURLs.count];
+  }
 
   return [UIAction actionWithTitle:title
                              image:[RCTUIImage systemImageNamed:@"link"]
@@ -80,9 +93,15 @@ UIMenu *buildEditMenuForSelection(NSAttributedString *attributedText, NSRange ra
   NSString *markdown = markdownForRange(attributedText, range, cachedMarkdown);
   NSArray<NSString *> *imageURLs = imageURLsInRange(attributedText, range);
 
-  UIAction *copyAction = createCopyAction(selectedText, markdown, styleConfig);
-  UIAction *copyMarkdownAction = selectionMenuConfig.copyAsMarkdown ? createCopyMarkdownAction(markdown) : nil;
-  UIAction *copyImageURLAction = selectionMenuConfig.copyImageURL ? createCopyImageURLAction(imageURLs) : nil;
+  UIAction *copyAction = createCopyAction(selectedText, markdown, styleConfig, selectionMenuConfig.copyLabel);
+  UIAction *copyMarkdownAction =
+      selectionMenuConfig.copyAsMarkdown ? createCopyMarkdownAction(markdown, selectionMenuConfig.copyAsMarkdownLabel)
+                                         : nil;
+  UIAction *copyImageURLAction =
+      selectionMenuConfig.copyImageURL
+          ? createCopyImageURLAction(imageURLs, selectionMenuConfig.copyImageUrlLabel,
+                                     selectionMenuConfig.copyImageUrlsLabel)
+          : nil;
 
   NSMutableArray<UIMenuElement *> *result = [NSMutableArray array];
   BOOL foundStandardEditMenu = NO;

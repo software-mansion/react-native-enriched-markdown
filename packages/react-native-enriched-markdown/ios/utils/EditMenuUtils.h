@@ -9,6 +9,14 @@ NS_ASSUME_NONNULL_BEGIN
 typedef struct {
   BOOL copyAsMarkdown;
   BOOL copyImageURL;
+  // Localized labels. A nil/empty string means "use the built-in English
+  // default". `copyImageUrlsLabel` is a template where the `{count}` token is
+  // replaced by the image count. The owner must keep these strings alive for
+  // the duration of the call (the view holds them in strong ivars).
+  __unsafe_unretained NSString *_Nullable copyLabel;
+  __unsafe_unretained NSString *_Nullable copyAsMarkdownLabel;
+  __unsafe_unretained NSString *_Nullable copyImageUrlLabel;
+  __unsafe_unretained NSString *_Nullable copyImageUrlsLabel;
 } ENRMSelectionMenuConfig;
 
 #ifdef __cplusplus

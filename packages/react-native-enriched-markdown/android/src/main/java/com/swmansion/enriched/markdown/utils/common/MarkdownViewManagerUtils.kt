@@ -96,5 +96,9 @@ fun parseSelectionMenuConfig(value: ReadableMap?): SelectionMenuConfig {
   return SelectionMenuConfig(
     copyAsMarkdown = value.getBoolean("copyAsMarkdown"),
     copyImageUrl = value.getBoolean("copyImageUrl"),
+    copyLabel = value.getString("copyLabel") ?: "",
+    copyAsMarkdownLabel = value.getString("copyAsMarkdownLabel") ?: "",
+    copyImageUrlLabel = value.getString("copyImageUrlLabel") ?: "",
+    copyImageUrlsLabel = value.getString("copyImageUrlsLabel") ?: "",
   )
 }

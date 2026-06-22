@@ -119,13 +119,14 @@
                   previewProvider:nil
                    actionProvider:^UIMenu *(NSArray<UIMenuElement *> *suggestedActions) {
                      UIAction *copyPlainText =
-                         [UIAction actionWithTitle:@"Copy"
+                         [UIAction actionWithTitle:self.copyLabel.length > 0 ? self.copyLabel : @"Copy"
                                              image:[RCTUIImage systemImageNamed:@"doc.on.doc"]
                                         identifier:nil
                                            handler:^(__kindof UIAction *action) { [self copyLatexToPasteboard]; }];
 
                      UIAction *copyMarkdown =
-                         [UIAction actionWithTitle:@"Copy as Markdown"
+                         [UIAction actionWithTitle:self.copyAsMarkdownLabel.length > 0 ? self.copyAsMarkdownLabel
+                                                                                       : @"Copy as Markdown"
                                              image:[RCTUIImage systemImageNamed:@"doc.text"]
                                         identifier:nil
                                            handler:^(__kindof UIAction *action) { [self copyMarkdownToPasteboard]; }];
@@ -139,8 +140,11 @@
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
   NSMenu *menu = [[NSMenu alloc] initWithTitle:@""];
-  [menu addItem:ENRMCreateMenuItem(NSLocalizedString(@"Copy", nil), ^{ [self copyLatexToPasteboard]; })];
-  [menu addItem:ENRMCreateMenuItem(NSLocalizedString(@"Copy as Markdown", nil), ^{ [self copyMarkdownToPasteboard]; })];
+  NSString *copyTitle = self.copyLabel.length > 0 ? self.copyLabel : NSLocalizedString(@"Copy", nil);
+  NSString *copyMarkdownTitle =
+      self.copyAsMarkdownLabel.length > 0 ? self.copyAsMarkdownLabel : NSLocalizedString(@"Copy as Markdown", nil);
+  [menu addItem:ENRMCreateMenuItem(copyTitle, ^{ [self copyLatexToPasteboard]; })];
+  [menu addItem:ENRMCreateMenuItem(copyMarkdownTitle, ^{ [self copyMarkdownToPasteboard]; })];
   return menu;
 }
 #endif

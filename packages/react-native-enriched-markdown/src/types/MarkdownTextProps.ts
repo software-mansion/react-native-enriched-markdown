@@ -33,6 +33,44 @@ export interface SelectionMenuConfig {
   copyImageUrl?: boolean;
 }
 
+/**
+ * Localized labels for the built-in selection/copy menu actions.
+ *
+ * By default these actions are shown in English ("Copy", "Copy as Markdown",
+ * "Copy Image URL"). Pass translated strings to match the rest of your app's
+ * UI — typically wired to your i18n library, e.g.
+ * `selectionMenuLabels={{ copy: t('copy'), copyAsMarkdown: t('copyAsMarkdown') }}`.
+ *
+ * Any label left `undefined` falls back to its built-in English default, so you
+ * can override only the strings you need. Applies to the main text selection
+ * menu as well as the table and math block copy menus.
+ *
+ * @platform ios, android, macos
+ */
+export interface SelectionMenuLabels {
+  /**
+   * Label for the "Copy" action (also used by the table and math copy menus).
+   * @default "Copy"
+   */
+  copy?: string;
+  /**
+   * Label for the "Copy as Markdown" action.
+   * @default "Copy as Markdown"
+   */
+  copyAsMarkdown?: string;
+  /**
+   * Label for the "Copy Image URL" action (single image selected).
+   * @default "Copy Image URL"
+   */
+  copyImageUrl?: string;
+  /**
+   * Label for the "Copy N Image URLs" action (multiple images selected).
+   * The `{count}` token is replaced with the number of selected images.
+   * @default "Copy {count} Image URLs"
+   */
+  copyImageUrls?: string;
+}
+
 export interface StreamingConfig {
   /**
    * Controls how incomplete tables are handled during streaming.
@@ -206,6 +244,15 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    * @platform ios, android, macos
    */
   selectionMenuConfig?: SelectionMenuConfig;
+  /**
+   * Localized labels for the built-in selection/copy menu actions.
+   * Use this to translate "Copy", "Copy as Markdown" and "Copy Image URL"
+   * so they match the rest of your app's UI. Any label left undefined keeps
+   * its English default. Controls which items are shown with
+   * `selectionMenuConfig`.
+   * @platform ios, android, macos
+   */
+  selectionMenuLabels?: SelectionMenuLabels;
   /**
    * Sets the text direction on the root container.
    * Useful for RTL languages — CSS logical properties in the renderers

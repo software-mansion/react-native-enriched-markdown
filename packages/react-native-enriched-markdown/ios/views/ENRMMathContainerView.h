@@ -15,6 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) StyleConfig *config;
 @property (nonatomic, copy, readonly) NSString *cachedLatex;
 
+// Localized labels for the copy menu. Empty/nil means "use the English default".
+@property (nonatomic, copy, nullable) NSString *copyLabel;
+@property (nonatomic, copy, nullable) NSString *copyAsMarkdownLabel;
+
 @end
 
 NS_ASSUME_NONNULL_END

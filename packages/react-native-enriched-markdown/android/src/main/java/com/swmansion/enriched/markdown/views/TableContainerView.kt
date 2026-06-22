@@ -50,6 +50,10 @@ class TableContainerView(
   var onLinkPress: ((String) -> Unit)? = null
   var onLinkLongPress: ((String) -> Unit)? = null
 
+  // Localized labels for the copy menu. Empty means "use the English default".
+  var copyLabel: String = ""
+  var copyAsMarkdownLabel: String = ""
+
   private val scrollView =
     HorizontalScrollView(context).apply {
       isHorizontalScrollBarEnabled = true
@@ -279,7 +283,7 @@ class TableContainerView(
   private fun showContextMenu(anchor: View) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     ContextMenuPopup.show(anchor, this) {
-      item(ContextMenuPopup.Icon.COPY, "Copy") {
+      item(ContextMenuPopup.Icon.COPY, copyLabel.ifEmpty { "Copy" }) {
         val plainText = rows.joinToString("\n") { row -> row.joinToString("\t") { it.plainText } }
         if (plainText.isNotEmpty()) {
           val displayMetrics = context.resources.displayMetrics
@@ -291,7 +295,7 @@ class TableContainerView(
           clipboard.setPrimaryClip(ClipData.newHtmlText("Table", plainText, html))
         }
       }
-      item(ContextMenuPopup.Icon.DOCUMENT, "Copy as Markdown") {
+      item(ContextMenuPopup.Icon.DOCUMENT, copyAsMarkdownLabel.ifEmpty { "Copy as Markdown" }) {
         if (tableMarkdown.isNotEmpty()) clipboard.setPrimaryClip(ClipData.newPlainText("Table", tableMarkdown))
       }
     }

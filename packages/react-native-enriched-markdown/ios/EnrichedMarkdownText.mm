@@ -98,6 +98,12 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
   NSArray<NSString *> *_contextMenuItemTexts;
   NSArray<NSString *> *_contextMenuItemIcons;
   ENRMSelectionMenuConfig _selectionMenuConfig;
+  // Strong owners for the selection menu labels referenced (unretained) by
+  // _selectionMenuConfig. Kept alive for the view's lifetime.
+  NSString *_copyLabel;
+  NSString *_copyAsMarkdownLabel;
+  NSString *_copyImageUrlLabel;
+  NSString *_copyImageUrlsLabel;
 
   ENRMSpoilerOverlayManager *_spoilerManager;
 
@@ -533,9 +539,19 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
     _contextMenuItemIcons = ENRMContextMenuIconsFromItems(newViewProps.contextMenuItems);
   }
 
+  _copyLabel = [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyLabel.c_str()];
+  _copyAsMarkdownLabel =
+      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyAsMarkdownLabel.c_str()];
+  _copyImageUrlLabel = [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyImageUrlLabel.c_str()];
+  _copyImageUrlsLabel =
+      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyImageUrlsLabel.c_str()];
   _selectionMenuConfig = (ENRMSelectionMenuConfig){
       .copyAsMarkdown = newViewProps.selectionMenuConfig.copyAsMarkdown,
       .copyImageURL = newViewProps.selectionMenuConfig.copyImageUrl,
+      .copyLabel = _copyLabel,
+      .copyAsMarkdownLabel = _copyAsMarkdownLabel,
+      .copyImageUrlLabel = _copyImageUrlLabel,
+      .copyImageUrlsLabel = _copyImageUrlsLabel,
   };
 
   if (newViewProps.streamingAnimation != oldViewProps.streamingAnimation) {

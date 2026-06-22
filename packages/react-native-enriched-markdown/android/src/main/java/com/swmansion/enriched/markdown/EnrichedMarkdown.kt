@@ -463,6 +463,8 @@ class EnrichedMarkdown
       maxFontSizeMultiplier = this@EnrichedMarkdown.maxFontSizeMultiplier
       onLinkPress = onLinkPressCallback
       onLinkLongPress = onLinkLongPressCallback
+      copyLabel = this@EnrichedMarkdown.selectionMenuConfig.copyLabel
+      copyAsMarkdownLabel = this@EnrichedMarkdown.selectionMenuConfig.copyAsMarkdownLabel
       applyTableNode(segment.node)
     }
 
@@ -477,6 +479,10 @@ class EnrichedMarkdown
           resolvedClass
             .getConstructor(Context::class.java, StyleConfig::class.java)
             .newInstance(context, style) as View
+        resolvedClass.getMethod("setCopyLabel", String::class.java)
+          .invoke(view, selectionMenuConfig.copyLabel)
+        resolvedClass.getMethod("setCopyAsMarkdownLabel", String::class.java)
+          .invoke(view, selectionMenuConfig.copyAsMarkdownLabel)
         resolvedClass.getMethod("applyLatex", String::class.java).invoke(view, segment.latex)
         view
       } catch (e: Exception) {

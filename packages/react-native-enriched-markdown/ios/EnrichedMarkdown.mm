@@ -106,6 +106,12 @@ static char kENRMSegmentFadeAnimatorKey;
   NSArray<NSString *> *_contextMenuItemTexts;
   NSArray<NSString *> *_contextMenuItemIcons;
   ENRMSelectionMenuConfig _selectionMenuConfig;
+  // Strong owners for the selection menu labels referenced (unretained) by
+  // _selectionMenuConfig. Kept alive for the view's lifetime.
+  NSString *_copyLabel;
+  NSString *_copyAsMarkdownLabel;
+  NSString *_copyImageUrlLabel;
+  NSString *_copyImageUrlsLabel;
 
   ENRMSpoilerOverlay _spoilerOverlay;
 
@@ -599,6 +605,8 @@ static char kENRMSegmentFadeAnimatorKey;
   tableView.enableLinkPreview = _enableLinkPreview;
   tableView.writingDirectionMode = _writingDirectionMode;
   tableView.resolvedLayoutDirection = _resolvedLayoutDirection;
+  tableView.copyLabel = _copyLabel;
+  tableView.copyAsMarkdownLabel = _copyAsMarkdownLabel;
 
   __weak EnrichedMarkdown *weakSelf = self;
 
@@ -635,6 +643,8 @@ static char kENRMSegmentFadeAnimatorKey;
 - (ENRMMathContainerView *)createMathViewForSegment:(ENRMMathSegment *)mathSegment
 {
   ENRMMathContainerView *mathView = [[ENRMMathContainerView alloc] initWithConfig:_config];
+  mathView.copyLabel = _copyLabel;
+  mathView.copyAsMarkdownLabel = _copyAsMarkdownLabel;
   [mathView applyLatex:mathSegment.latex];
   return mathView;
 }
@@ -787,9 +797,19 @@ static char kENRMSegmentFadeAnimatorKey;
     _contextMenuItemIcons = ENRMContextMenuIconsFromItems(newViewProps.contextMenuItems);
   }
 
+  _copyLabel = [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyLabel.c_str()];
+  _copyAsMarkdownLabel =
+      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyAsMarkdownLabel.c_str()];
+  _copyImageUrlLabel = [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyImageUrlLabel.c_str()];
+  _copyImageUrlsLabel =
+      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyImageUrlsLabel.c_str()];
   _selectionMenuConfig = (ENRMSelectionMenuConfig){
       .copyAsMarkdown = newViewProps.selectionMenuConfig.copyAsMarkdown,
       .copyImageURL = newViewProps.selectionMenuConfig.copyImageUrl,
+      .copyLabel = _copyLabel,
+      .copyAsMarkdownLabel = _copyAsMarkdownLabel,
+      .copyImageUrlLabel = _copyImageUrlLabel,
+      .copyImageUrlsLabel = _copyImageUrlsLabel,
   };
 
   if (newViewProps.spoilerOverlay != oldViewProps.spoilerOverlay) {

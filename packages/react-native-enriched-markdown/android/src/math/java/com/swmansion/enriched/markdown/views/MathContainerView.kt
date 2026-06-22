@@ -30,6 +30,11 @@ class MathContainerView(
   private val scrollView = HorizontalScrollView(context)
   private var cachedLatex: String = ""
 
+  // Localized labels for the copy menu. Empty means "use the English default".
+  // Set reflectively by EnrichedMarkdown (math is an optional module).
+  var copyLabel: String = ""
+  var copyAsMarkdownLabel: String = ""
+
   override val segmentMarginTop: Int get() = mathStyle.marginTop.toInt()
   override val segmentMarginBottom: Int get() = mathStyle.marginBottom.toInt()
 
@@ -95,10 +100,10 @@ class MathContainerView(
   private fun showContextMenu(anchor: View) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     ContextMenuPopup.show(anchor, this) {
-      item(ContextMenuPopup.Icon.COPY, "Copy") {
+      item(ContextMenuPopup.Icon.COPY, copyLabel.ifEmpty { "Copy" }) {
         clipboard.setPrimaryClip(ClipData.newPlainText("Math", cachedLatex))
       }
-      item(ContextMenuPopup.Icon.DOCUMENT, "Copy as Markdown") {
+      item(ContextMenuPopup.Icon.DOCUMENT, copyAsMarkdownLabel.ifEmpty { "Copy as Markdown" }) {
         clipboard.setPrimaryClip(ClipData.newPlainText("Math", "$$\n$cachedLatex\n$$"))
       }
     }

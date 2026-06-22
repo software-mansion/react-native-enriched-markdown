@@ -86,9 +86,12 @@
     if (!strongSelf)
       return nil;
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@""];
-    [menu addItem:ENRMCreateMenuItem(NSLocalizedString(@"Copy", nil), ^{ [strongSelf copyTableToPasteboard]; })];
-    [menu addItem:ENRMCreateMenuItem(NSLocalizedString(@"Copy as Markdown", nil),
-                                     ^{ [strongSelf copyMarkdownToPasteboard]; })];
+    NSString *copyTitle = strongSelf.copyLabel.length > 0 ? strongSelf.copyLabel : NSLocalizedString(@"Copy", nil);
+    NSString *copyMarkdownTitle =
+        strongSelf.copyAsMarkdownLabel.length > 0 ? strongSelf.copyAsMarkdownLabel
+                                                  : NSLocalizedString(@"Copy as Markdown", nil);
+    [menu addItem:ENRMCreateMenuItem(copyTitle, ^{ [strongSelf copyTableToPasteboard]; })];
+    [menu addItem:ENRMCreateMenuItem(copyMarkdownTitle, ^{ [strongSelf copyMarkdownToPasteboard]; })];
     return menu;
   };
   _gridContainer = gridView;
@@ -478,13 +481,14 @@
                   previewProvider:nil
                    actionProvider:^UIMenu *(NSArray<UIMenuElement *> *suggestedActions) {
                      UIAction *copyMarkdown =
-                         [UIAction actionWithTitle:@"Copy as Markdown"
+                         [UIAction actionWithTitle:self.copyAsMarkdownLabel.length > 0 ? self.copyAsMarkdownLabel
+                                                                                       : @"Copy as Markdown"
                                              image:[RCTUIImage systemImageNamed:@"doc.text"]
                                         identifier:nil
                                            handler:^(__kindof UIAction *action) { [self copyMarkdownToPasteboard]; }];
 
                      UIAction *copyPlainText =
-                         [UIAction actionWithTitle:@"Copy"
+                         [UIAction actionWithTitle:self.copyLabel.length > 0 ? self.copyLabel : @"Copy"
                                              image:[RCTUIImage systemImageNamed:@"doc.on.doc"]
                                         identifier:nil
                                            handler:^(__kindof UIAction *action) { [self copyTableToPasteboard]; }];

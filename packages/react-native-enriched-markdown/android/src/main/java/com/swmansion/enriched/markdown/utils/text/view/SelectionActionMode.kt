@@ -25,6 +25,12 @@ private const val MENU_ITEM_CUSTOM_GROUP = 2001
 data class SelectionMenuConfig(
   val copyAsMarkdown: Boolean = true,
   val copyImageUrl: Boolean = true,
+  // Localized labels. An empty string means "use the built-in English default".
+  // `copyImageUrlsLabel` is a template where `{count}` is replaced by the count.
+  val copyLabel: String = "",
+  val copyAsMarkdownLabel: String = "",
+  val copyImageUrlLabel: String = "",
+  val copyImageUrlsLabel: String = "",
 )
 
 /**
@@ -61,7 +67,12 @@ fun createSelectionActionModeCallback(
         textView.selectionStart >= 0 &&
         textView.selectionEnd > textView.selectionStart
       ) {
-        menu.add(Menu.NONE, MENU_ITEM_COPY_MARKDOWN, Menu.NONE, "Copy as Markdown")
+        menu.add(
+          Menu.NONE,
+          MENU_ITEM_COPY_MARKDOWN,
+          Menu.NONE,
+          selectionMenuConfig.copyAsMarkdownLabel.ifEmpty { "Copy as Markdown" },
+        )
       }
 
       if (textView.selectionStart >= 0 && textView.selectionEnd > textView.selectionStart) {
@@ -82,9 +93,11 @@ fun createSelectionActionModeCallback(
       if (imageUrls.isNotEmpty()) {
         val title =
           if (imageUrls.size == 1) {
-            "Copy Image URL"
+            selectionMenuConfig.copyImageUrlLabel.ifEmpty { "Copy Image URL" }
           } else {
-            "Copy ${imageUrls.size} Image URLs"
+            selectionMenuConfig.copyImageUrlsLabel
+              .ifEmpty { "Copy {count} Image URLs" }
+              .replace("{count}", imageUrls.size.toString())
           }
         menu.add(Menu.NONE, MENU_ITEM_COPY_IMAGE_URL, Menu.NONE, title)
       }

@@ -10,6 +10,7 @@ import type {
   StreamingConfig,
   ContextMenuItem,
   SelectionMenuConfig,
+  SelectionMenuLabels,
 } from '../types/MarkdownTextProps';
 import type {
   LinkPressEvent,
@@ -24,6 +25,7 @@ export type {
   StreamingConfig,
   ContextMenuItem,
   SelectionMenuConfig,
+  SelectionMenuLabels,
 };
 export type { LinkPressEvent, LinkLongPressEvent, TaskListItemPressEvent };
 
@@ -54,6 +56,7 @@ export const EnrichedMarkdownText = ({
   spoilerOverlay = 'particles',
   contextMenuItems,
   selectionMenuConfig,
+  selectionMenuLabels,
   selectionColor,
   selectionHandleColor,
   textBreakStrategy,
@@ -146,8 +149,13 @@ export const EnrichedMarkdownText = ({
     () => ({
       copyAsMarkdown: selectionMenuConfig?.copyAsMarkdown ?? true,
       copyImageUrl: selectionMenuConfig?.copyImageUrl ?? true,
+      // Empty string is the sentinel for "use the native English default".
+      copyLabel: selectionMenuLabels?.copy ?? '',
+      copyAsMarkdownLabel: selectionMenuLabels?.copyAsMarkdown ?? '',
+      copyImageUrlLabel: selectionMenuLabels?.copyImageUrl ?? '',
+      copyImageUrlsLabel: selectionMenuLabels?.copyImageUrls ?? '',
     }),
-    [selectionMenuConfig]
+    [selectionMenuConfig, selectionMenuLabels]
   );
 
   const sharedProps = {
