@@ -1,48 +1,59 @@
-import { EnrichedMarkdownText } from 'react-native-enriched-markdown';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-
-const md = `
-\`\`\`
-// server.mjs
-import { createServer } from 'node:http';
-
-const server = createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Hello World!\\n');
-});
-
-// starts a simple http server locally on port 3000
-server.listen(3000, '127.0.0.1', () => {
-  console.log('Listening on 127.0.0.1:3000');
-});
-
-// run with "node server.mjs"
-
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-// one more line
-\`\`\`
-`;
+import { NavigationContainer } from '@react-navigation/native';
+import { Stack } from './navigation/Stack';
+import HomeScreen from './screens/home/HomeScreen';
+import PlaygroundScreen from './screens/playground/PlaygroundScreen';
+import TextScreen from './screens/text/TextScreen';
+import InputScreen from './screens/input/InputScreen';
+import StreamingMarkdownSimulator from './screens/streaming/StreamingMarkdownSimulator';
+import StorybookScreen from './screens/storybook/StorybookScreen';
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <SafeAreaView>
-        <EnrichedMarkdownText
-          markdown={md}
-          markdownStyle={{ codeBlock: { borderRadius: 12, padding: 19 } }}
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Home"
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#BEEBD0',
+          },
+          headerTintColor: '#001A72',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          headerBackButtonDisplayMode: 'minimal',
+        }}
+      >
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{ title: 'Enriched Markdown Examples' }}
         />
-      </SafeAreaView>
-    </SafeAreaProvider>
+        <Stack.Screen
+          name="Playground"
+          component={PlaygroundScreen}
+          options={{ title: 'Playground' }}
+        />
+        <Stack.Screen
+          name="Text"
+          component={TextScreen}
+          options={{ title: 'Text' }}
+        />
+        <Stack.Screen
+          name="Input"
+          component={InputScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Stream"
+          component={StreamingMarkdownSimulator}
+          options={{ title: 'Stream' }}
+        />
+        <Stack.Screen
+          name="Storybook"
+          component={StorybookScreen}
+          options={{ title: 'Storybook' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
