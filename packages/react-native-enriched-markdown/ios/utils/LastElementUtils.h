@@ -7,13 +7,13 @@ static NSString *const CodeBlockAttributeName = @"CodeBlock";
 
 /**
  * Returns YES when the last semantic block in the storage is a code block, ignoring any
- * trailing whitespace/newline spacers (e.g. codeBlockMarginBottom) that may follow it.
+ * trailing newline spacers (e.g. codeBlockMarginBottom) that may follow it.
  *
  * Detection is based on the last non-newline character: if it sits inside a CodeBlock
- * attribute run, the answer is YES regardless of what comes after.
+ * attribute run, the answer is YES regardless of what newlines come after.
  *
  * Use this in render-time cleanup paths (e.g. removeTrailingSpacing) that need to know
- * "is the document ending with a code block?" before any trailing chars have been trimmed.
+ * "is the document ending with a code block?" before any trailing newlines have been trimmed.
  * The stricter `isLastElementCodeBlock` would answer NO in that pre-trim state because
  * the CodeBlock range hasn't yet been pushed to text.length.
  */

@@ -60,10 +60,11 @@
 }
 
 /**
- * Trims trailing whitespace after the last rendered block, with special handling for code blocks.
+ * Trims trailing newlines after the last rendered block, with special handling for code blocks.
  *
- * For non-code-block tail elements: deletes all trailing newlines after the last visible char
- * and zeroes the last element's paragraph spacing so it doesn't render a margin past the content.
+ * For non-code-block tail elements: deletes all trailing newlines after the last non-newline
+ * character and zeroes the last element's paragraph spacing so it doesn't render a margin past
+ * the content.
  *
  * For code blocks (`isLastBlockACodeBlock` == YES): keeps the bottom padding spacer in place
  * AND preserves a single trailing newline immediately after it (typically the
@@ -133,6 +134,8 @@
     NSMutableParagraphStyle *mutableStyle = style ? [style mutableCopy] : [[NSMutableParagraphStyle alloc] init];
     mutableStyle.paragraphSpacing = 0;
     mutableStyle.paragraphSpacingBefore = 0;
+    mutableStyle.minimumLineHeight = 1;
+    mutableStyle.maximumLineHeight = 1;
     [output addAttribute:NSParagraphStyleAttributeName value:mutableStyle range:NSMakeRange(tailIdx, 1)];
   }
 
