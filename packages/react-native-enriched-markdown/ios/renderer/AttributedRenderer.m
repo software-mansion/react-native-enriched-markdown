@@ -59,7 +59,31 @@
   return output;
 }
 
-/// Removes trailing margin spacing while preserving code block padding
+/**
+ * Trims trailing whitespace after the last rendered block, with special handling for code blocks.
+ *
+ * For non-code-block tail elements: deletes all trailing newlines after the last visible char
+ * and zeroes the last element's paragraph spacing so it doesn't render a margin past the content.
+ *
+ * For code blocks (`isLastBlockACodeBlock` == YES): keeps the bottom padding spacer in place
+ * AND preserves a single trailing newline immediately after it (typically the
+ * codeBlockMarginBottom spacer that CodeBlockRenderer already appended; if none exists, one is
+ * synthesized here). That extra newline matters because of an iOS layout quirk:
+ *
+ *   - iOS treats the trailing `\n` of the storage as a paragraph terminator and reports the
+ *     line fragment for the paragraph after it via `extraLineFragmentRect`.
+ *   - `boundingRectForGlyphRange:` excludes that extra line, and the graphics-context clip
+ *     passed to `drawBackgroundForGlyphRange:` is tiled to the laid-out content area (rounded
+ *     up to 128pt boundaries) which also excludes it.
+ *   - If the bottom padding spacer were the trailing `\n`, its 16/19pt line fragment would
+ *     fall into that excluded zone — the background rect would have to be manually extended
+ *     past the clip and the bottom rounded corner would get sliced off at the tile boundary
+ *     (the original visual bug in #354).
+ *
+ * By keeping a 1pt-tall tail newline beyond the bottom padding spacer, iOS lays the spacer
+ * out as a normal interior line fragment included in usedRect/boundingRect and inside the
+ * drawing tiles, so the corner renders intact and no rect extension is needed.
+ */
 - (void)removeTrailingSpacing:(NSMutableAttributedString *)output
 {
   if (output.length == 0)
@@ -87,17 +111,12 @@
   BOOL isCodeBlock = isLastBlockACodeBlock(output);
   NSRange codeRange = NSMakeRange(0, 0);
   if (isCodeBlock) {
-    [output attribute:CodeBlockAttributeName atIndex:lastContent.location effectiveRange:&codeRange];
-    // Preserve the code block's bottom padding spacer AND keep a single trailing newline
-    // after it (typically the codeBlockMarginBottom spacer that CodeBlockRenderer
-    // appended). That extra newline keeps the bottom padding spacer from being the
-    // storage's trailing paragraph terminator — iOS reports such terminators as
-    // extraLineFragmentRect and excludes their line fragments from the rendered tile
-    // area, which would clip the background's bottom rounded corner.
+    [output attribute:CodeBlockAttributeName
+                      atIndex:lastContent.location
+        longestEffectiveRange:&codeRange
+                      inRange:NSMakeRange(0, output.length)];
     NSUInteger codeEnd = NSMaxRange(codeRange);
     if (codeEnd >= output.length) {
-      // No trailing newline exists (e.g. codeBlockMarginBottom = 0). Append one so the
-      // bottom padding spacer stops being the trailing paragraph terminator.
       [output appendAttributedString:kNewlineAttributedString];
     }
     logicalEnd = codeEnd + 1;
@@ -108,11 +127,6 @@
   }
 
   if (isCodeBlock && NSMaxRange(codeRange) < output.length) {
-    // Strip CodeBlockAttribute and zero paragraphSpacing on the preserved tail newline.
-    // appendAttributedString in applyBlockSpacingAfter sometimes carries the receiver's
-    // last-char CodeBlockAttribute forward; explicitly clearing it keeps the background
-    // range tight on the bottom padding. The zeroed paragraphSpacing prevents the
-    // codeBlockMarginBottom from rendering visible margin below the last code block.
     NSUInteger tailIdx = NSMaxRange(codeRange);
     [output removeAttribute:CodeBlockAttributeName range:NSMakeRange(tailIdx, 1)];
     NSParagraphStyle *style = [output attribute:NSParagraphStyleAttributeName atIndex:tailIdx effectiveRange:NULL];

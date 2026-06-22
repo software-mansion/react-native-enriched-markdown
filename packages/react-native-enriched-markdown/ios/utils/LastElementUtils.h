@@ -6,8 +6,16 @@ NS_ASSUME_NONNULL_BEGIN
 static NSString *const CodeBlockAttributeName = @"CodeBlock";
 
 /**
- * Returns YES when the last non-newline character of the attributed string lies inside a code block.
- * Used to decide whether trailing-spacing cleanup should preserve the code block's bottom padding.
+ * Returns YES when the last semantic block in the storage is a code block, ignoring any
+ * trailing whitespace/newline spacers (e.g. codeBlockMarginBottom) that may follow it.
+ *
+ * Detection is based on the last non-newline character: if it sits inside a CodeBlock
+ * attribute run, the answer is YES regardless of what comes after.
+ *
+ * Use this in render-time cleanup paths (e.g. removeTrailingSpacing) that need to know
+ * "is the document ending with a code block?" before any trailing chars have been trimmed.
+ * The stricter `isLastElementCodeBlock` would answer NO in that pre-trim state because
+ * the CodeBlock range hasn't yet been pushed to text.length.
  */
 static inline BOOL isLastBlockACodeBlock(NSAttributedString *text)
 {
@@ -24,8 +32,19 @@ static inline BOOL isLastBlockACodeBlock(NSAttributedString *text)
 }
 
 /**
- * Checks if the last element in the attributed string is a code block.
- * Used to compensate for iOS text APIs not measuring/drawing trailing newlines with custom line heights.
+ * Stricter sibling of `isLastBlockACodeBlock`: requires both that the last non-newline
+ * character is inside a CodeBlock run AND that the CodeBlock range extends literally to
+ * text.length (i.e. no characters at all live after the code block).
+ *
+ * Used in the iOS measurement path (and the analogous drawing-compensation check) to
+ * decide whether to add `codeBlockPadding` to make up for iOS not measuring/drawing
+ * trailing newlines that carry custom minimum/maximum line heights.
+ *
+ * After `removeTrailingSpacing` runs, the bottom padding spacer is preserved together
+ * with a single trailing newline outside the code block range, so this returns NO and
+ * the compensation is skipped — the bottom padding spacer is no longer the trailing
+ * paragraph terminator, so iOS lays its line fragment out as part of usedRect normally.
+ * The check still exists as a safety net for unexpected storage shapes.
  */
 static inline BOOL isLastElementCodeBlock(NSAttributedString *text)
 {
