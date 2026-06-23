@@ -9,6 +9,7 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.uimanager.PixelUtil
 import com.facebook.yoga.YogaMeasureMode
 import com.facebook.yoga.YogaMeasureOutput
+import com.swmansion.enriched.markdown.input.formatting.InputParser
 import java.util.concurrent.ConcurrentHashMap
 
 object InputMeasurementStore {
@@ -93,7 +94,12 @@ object InputMeasurementStore {
     width: Float,
     props: ReadableMap?,
   ): Long {
-    val text = props?.getString("defaultValue") ?: props?.getString("placeholder") ?: "I"
+    // Measure the rendered plain text, not the raw markdown. A mention link such as
+    // [Label](placeholder://x) hides its URL in the source, so measuring the markdown counts those
+    // invisible characters and over-estimates the height into extra lines, until the next text
+    // change forces a re-measure. Parsing first matches what the editor actually renders.
+    val markdown = props?.getString("defaultValue") ?: props?.getString("placeholder") ?: "I"
+    val text = InputParser.parseToPlainTextAndRanges(markdown).plainText
     val fontSize = props?.getDouble("fontSize")?.toFloat() ?: 16f
     val spSize = kotlin.math.ceil(PixelUtil.toPixelFromSP(fontSize).toDouble()).toFloat()
 
