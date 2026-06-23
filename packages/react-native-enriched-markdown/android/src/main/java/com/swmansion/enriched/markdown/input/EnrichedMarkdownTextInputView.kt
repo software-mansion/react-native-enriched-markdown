@@ -67,6 +67,7 @@ class EnrichedMarkdownTextInputView(
 
   var emitMarkdown = false
   var autoFocusRequested = false
+  private var pendingAutoFocusKeyboard = false
   var stateWrapper: StateWrapper? = null
   val layoutManager = InputLayoutManager(this)
 
@@ -138,6 +139,13 @@ class EnrichedMarkdownTextInputView(
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     runAsATransaction { super.setTextIsSelectable(true) }
+  }
+
+  override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+    super.onWindowFocusChanged(hasWindowFocus)
+    // The autofocus keyboard request may run before the window has IME focus (e.g. while a modal is
+    // still presenting), where showSoftInput() is dropped. Retry once the window actually gains focus.
+    if (hasWindowFocus) showAutoFocusKeyboardIfPending()
   }
 
   override fun clearFocus() {
@@ -641,11 +649,27 @@ class EnrichedMarkdownTextInputView(
     setSelection(selectionStart.coerceAtLeast(0))
   }
 
+  private fun showAutoFocusKeyboardIfPending() {
+    if (!pendingAutoFocusKeyboard || !hasWindowFocus()) return
+    pendingAutoFocusKeyboard = false
+    inputMethodManager?.showSoftInput(this, 0)
+  }
+
   fun afterUpdateTransaction() {
     updateTypeface()
     if (autoFocusRequested) {
       autoFocusRequested = false
-      requestFocusProgrammatically()
+      pendingAutoFocusKeyboard = true
+      // afterUpdateTransaction runs during the mount, before onAttachedToWindow, when the view is not
+      // attached yet: requestFocus()/showSoftInput() are dropped so the keyboard never opens, and
+      // onAttachedToWindow's setTextIsSelectable(true) resets the caret to 0. Defer to the next loop,
+      // once attached, to grant focus and place the caret at the end like iOS. The keyboard is shown only
+      // when the window has IME focus (now, or later via onWindowFocusChanged).
+      post {
+        requestFocus()
+        setSelection(text?.length ?: 0)
+        showAutoFocusKeyboardIfPending()
+      }
     }
   }
 
