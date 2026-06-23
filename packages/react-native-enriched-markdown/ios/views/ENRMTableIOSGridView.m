@@ -45,9 +45,9 @@
       verticalCellPadding:(CGFloat)verticalCellPadding
              cornerRadius:(CGFloat)cornerRadius
 {
-  _tableRows = rows;
-  _columnWidths = columnWidths;
-  _rowHeights = rowHeights;
+  _tableRows = [rows copy];
+  _columnWidths = [columnWidths copy];
+  _rowHeights = [rowHeights copy];
   _borderColor = borderColor;
   _borderWidth = borderWidth;
   _horizontalCellPadding = horizontalCellPadding;
@@ -80,7 +80,8 @@
     CGFloat rowHeight = [_rowHeights[r] doubleValue];
     CGFloat xOffset = 0;
 
-    for (NSUInteger c = 0; c < rowData.cellTexts.count; c++) {
+    NSUInteger colCount = MIN(rowData.cellTexts.count, _columnWidths.count);
+    for (NSUInteger c = 0; c < colCount; c++) {
       CGFloat columnWidth = [_columnWidths[c] doubleValue];
       CGRect cellRect = CGRectMake(xOffset, yOffset, columnWidth + _borderWidth, rowHeight + _borderWidth);
 
@@ -161,16 +162,13 @@ static NSString *linkInAttributedString(NSAttributedString *text, CGRect textRec
   NSUInteger glyphIndex = [layoutManager glyphIndexForPoint:local
                                             inTextContainer:textContainer
                              fractionOfDistanceThroughGlyph:&fraction];
+  if (glyphIndex >= layoutManager.numberOfGlyphs)
+    return nil;
   NSUInteger charIndex = [layoutManager characterIndexForGlyphAtIndex:glyphIndex];
   if (charIndex >= text.length)
     return nil;
 
-  id linkValue = [text attribute:NSLinkAttributeName atIndex:charIndex effectiveRange:NULL];
-  if ([linkValue isKindOfClass:[NSURL class]])
-    return [(NSURL *)linkValue absoluteString];
-  if ([linkValue isKindOfClass:[NSString class]])
-    return linkValue;
-  return nil;
+  return [text attribute:@"linkURL" atIndex:charIndex effectiveRange:NULL];
 }
 
 - (NSString *)linkURLAtPoint:(CGPoint)point
