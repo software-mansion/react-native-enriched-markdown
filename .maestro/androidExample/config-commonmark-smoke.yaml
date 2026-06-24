@@ -1,0 +1,4 @@
+flows:
+  - "androidExample/enrichedMarkdownText/flows/**"
+includeTags:
+  - smoke
