@@ -7,14 +7,6 @@
 
 #if TARGET_OS_OSX
 
-static NSString *resolveMenuLabel(NSString *_Nullable label, NSString *fallback)
-{
-  // Labels are resolved JS-side, so this fallback is defensive. Use
-  // NSLocalizedString so it matches the table and math context menus, which fall
-  // back to NSLocalizedString(@"Copy"/@"Copy as Markdown") on macOS.
-  return label.length > 0 ? label : NSLocalizedString(fallback, nil);
-}
-
 NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, NSRange range,
                                             NSString *_Nullable cachedMarkdown, StyleConfig *styleConfig,
                                             NSArray *suggestedActions, NSArray<NSMenuItem *> *_Nullable customItems,
@@ -33,7 +25,7 @@ NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, 
 
   // Replace the system Copy item with our enhanced version (copies RTF/HTML/Markdown).
   // This mirrors the iOS behaviour where we replace the standard-edit Copy action.
-  NSString *copyTitle = resolveMenuLabel(selectionMenuConfig.copyLabel, @"Copy");
+  NSString *copyTitle = selectionMenuConfig.copyLabel;
   NSMenuItem *enhancedCopy =
       ENRMCreateMenuItem(copyTitle, ^{ copyAttributedStringToPasteboard(selectedText, markdown, styleConfig); });
   NSInteger systemCopyIndex = [menu indexOfItemWithTarget:nil andAction:@selector(copy:)];
@@ -48,8 +40,8 @@ NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, 
   }
 
   if (selectionMenuConfig.copyAsMarkdown && markdown.length > 0) {
-    NSString *copyMarkdownTitle = resolveMenuLabel(selectionMenuConfig.copyAsMarkdownLabel, @"Copy as Markdown");
-    [menu addItem:ENRMCreateMenuItem(copyMarkdownTitle, ^{ copyStringToPasteboard(markdown); })];
+    [menu addItem:ENRMCreateMenuItem(selectionMenuConfig.copyAsMarkdownLabel,
+                                     ^{ copyStringToPasteboard(markdown); })];
   }
 
   if (selectionMenuConfig.copyImageURL && imageURLs.count > 0) {

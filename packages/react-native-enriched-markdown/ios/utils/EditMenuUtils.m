@@ -10,15 +10,10 @@ static NSString *const kActionIdentifierCopy = @"com.swmansion.enriched.markdown
 static NSString *const kActionIdentifierCopyMarkdown = @"com.swmansion.enriched.markdown.copyMarkdown";
 static NSString *const kActionIdentifierCopyImageURL = @"com.swmansion.enriched.markdown.copyImageURL";
 
-static NSString *resolveLabel(NSString *_Nullable label, NSString *fallback)
-{
-  return label.length > 0 ? label : fallback;
-}
-
 static UIAction *createCopyAction(NSAttributedString *selectedText, NSString *markdown, StyleConfig *styleConfig,
-                                  NSString *_Nullable copyLabel)
+                                  NSString *copyLabel)
 {
-  return [UIAction actionWithTitle:resolveLabel(copyLabel, @"Copy")
+  return [UIAction actionWithTitle:copyLabel
                              image:[RCTUIImage systemImageNamed:@"doc.on.doc"]
                         identifier:kActionIdentifierCopy
                            handler:^(__kindof UIAction *action) {
@@ -26,12 +21,12 @@ static UIAction *createCopyAction(NSAttributedString *selectedText, NSString *ma
                            }];
 }
 
-static UIAction *_Nullable createCopyMarkdownAction(NSString *markdown, NSString *_Nullable copyAsMarkdownLabel)
+static UIAction *_Nullable createCopyMarkdownAction(NSString *markdown, NSString *copyAsMarkdownLabel)
 {
   if (markdown.length == 0)
     return nil;
 
-  return [UIAction actionWithTitle:resolveLabel(copyAsMarkdownLabel, @"Copy as Markdown")
+  return [UIAction actionWithTitle:copyAsMarkdownLabel
                              image:[RCTUIImage systemImageNamed:@"doc.text"]
                         identifier:kActionIdentifierCopyMarkdown
                            handler:^(__kindof UIAction *action) { copyStringToPasteboard(markdown); }];

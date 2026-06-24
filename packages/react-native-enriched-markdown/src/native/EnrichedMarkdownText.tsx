@@ -36,55 +36,54 @@ const DEFAULT_COPY_AS_MARKDOWN_LABEL = 'Copy as Markdown';
 const DEFAULT_COPY_IMAGE_URL_LABEL = 'Copy Image URL';
 const DEFAULT_COPY_IMAGE_URLS_LABEL = 'Copy {count} Image URLs';
 
-// Unit separator used to pack the precomputed plural templates into a single
-// codegen string. Picked because it never appears in human-readable labels.
-const PLURAL_SEPARATOR = '\u001F';
-
 /**
- * Resolves `pluralLabels` into a per-count template table the native side can
- * index without any locale logic. `Intl.PluralRules` selects the CLDR category
- * for each count 0..100; native wraps counts > 100 with period 100 (the CLDR
- * integer rules only depend on n, n%10 and n%100). Returns an empty string when
- * no plural labels are given or `Intl.PluralRules` is unavailable, in which case
- * native falls back to the singular/`{count}` templates.
+ * Resolves `pluralLabels` into a per-count template table (index = image count,
+ * 0..100) the native side can index without any locale logic. `Intl.PluralRules`
+ * selects the CLDR category for each count; missing categories fall back to the
+ * required `other`. Index 1 uses the singular `label` (the single-image case).
+ * Native uses `other` (copyImageUrlsLabel) for counts > 100, and falls back to
+ * the singular/`{count}` templates entirely when this returns an empty array
+ * (no plural labels set, or `Intl.PluralRules` unavailable).
  */
 const buildPluralTemplates = (
   pluralLabels: SelectionMenuPluralLabels | undefined,
   singularLabel: string
-): string => {
-  if (!pluralLabels) return '';
+): string[] => {
+  if (!pluralLabels) return [];
 
   const IntlRef = Intl as unknown as {
     PluralRules?: new (locales?: string | string[]) => {
       select(n: number): string;
     };
   };
-  if (typeof IntlRef.PluralRules !== 'function') return '';
+  if (typeof IntlRef.PluralRules !== 'function') return [];
 
   let pluralRules: { select(n: number): string };
   try {
     pluralRules = new IntlRef.PluralRules();
   } catch {
-    return '';
+    return [];
   }
 
-  const byCategory: Record<string, string | undefined> = {
-    zero: pluralLabels.zero,
-    one: pluralLabels.one ?? singularLabel,
-    two: pluralLabels.two,
-    few: pluralLabels.few,
-    many: pluralLabels.many,
-    other: pluralLabels.other ?? DEFAULT_COPY_IMAGE_URLS_LABEL,
+  const { other } = pluralLabels;
+  const byCategory: Record<string, string> = {
+    zero: pluralLabels.zero ?? other,
+    one: pluralLabels.one ?? other,
+    two: pluralLabels.two ?? other,
+    few: pluralLabels.few ?? other,
+    many: pluralLabels.many ?? other,
+    other,
   };
 
   const templates: string[] = [];
   for (let n = 0; n <= 100; n++) {
-    const category = pluralRules.select(n);
+    // The literal single-image case uses the (non-plural) singular label; every
+    // other count uses its CLDR category form.
     templates.push(
-      byCategory[category] ?? byCategory.other ?? DEFAULT_COPY_IMAGE_URLS_LABEL
+      n === 1 ? singularLabel : (byCategory[pluralRules.select(n)] ?? other)
     );
   }
-  return templates.join(PLURAL_SEPARATOR);
+  return templates;
 };
 
 // One-time deprecation warnings for the legacy boolean shape of

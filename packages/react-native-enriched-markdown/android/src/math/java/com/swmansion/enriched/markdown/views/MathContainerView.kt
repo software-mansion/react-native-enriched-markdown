@@ -99,10 +99,10 @@ class MathContainerView(
   private fun showContextMenu(anchor: View) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     ContextMenuPopup.show(anchor, this) {
-      item(ContextMenuPopup.Icon.COPY, copyLabel.ifEmpty { "Copy" }) {
+      item(ContextMenuPopup.Icon.COPY, copyLabel) {
         clipboard.setPrimaryClip(ClipData.newPlainText("Math", cachedLatex))
       }
-      item(ContextMenuPopup.Icon.DOCUMENT, copyAsMarkdownLabel.ifEmpty { "Copy as Markdown" }) {
+      item(ContextMenuPopup.Icon.DOCUMENT, copyAsMarkdownLabel) {
         clipboard.setPrimaryClip(ClipData.newPlainText("Math", "$$\n$cachedLatex\n$$"))
       }
     }

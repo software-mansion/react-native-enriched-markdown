@@ -22,9 +22,6 @@ private const val MENU_ITEM_COPY_IMAGE_URL = 1001
 private const val MENU_ITEM_CUSTOM_BASE = 2000
 private const val MENU_ITEM_CUSTOM_GROUP = 2001
 
-// Unit separator used to pack the precomputed plural templates (see the JS side).
-private const val PLURAL_SEPARATOR = "\u001F"
-
 data class SelectionMenuConfig(
   val copyAsMarkdown: Boolean = true,
   val copyImageUrl: Boolean = true,
@@ -32,31 +29,23 @@ data class SelectionMenuConfig(
   val copyAsMarkdownLabel: String = "",
   val copyImageUrlLabel: String = "",
   val copyImageUrlsLabel: String = "",
-  // Precomputed plural templates (count 0..100) joined by [PLURAL_SEPARATOR].
-  // Empty when no pluralLabels are set.
-  val copyImageUrlPluralTemplates: String = "",
+  // Plural templates indexed by image count (0..100). Empty when no pluralLabels
+  // are set; counts > 100 use copyImageUrlsLabel (the "other" form).
+  val copyImageUrlPluralTemplates: List<String> = emptyList(),
 )
 
 /**
  * Resolves the "Copy Image URL(s)" menu title for the given image count. Uses the
- * precomputed plural templates (wrapping counts > 100 with period 100) when
- * present, otherwise the singular/`{count}` templates. Labels are resolved
- * JS-side, so the `ifEmpty` fallbacks only guard the no-Intl path.
+ * precomputed plural templates when present (counts > 100 use the "other" form),
+ * otherwise the singular/`{count}` templates. All labels are resolved JS-side.
  */
 private fun SelectionMenuConfig.imageUrlsTitle(count: Int): String {
   val template =
-    copyImageUrlPluralTemplates
-      .takeIf { it.isNotEmpty() }
-      ?.split(PLURAL_SEPARATOR)
-      ?.let { templates ->
-        val index = if (count <= 0) 0 else if (count <= 100) count else ((count - 1) % 100) + 1
-        templates.getOrNull(index)
-      }
-      ?: if (count == 1) {
-        copyImageUrlLabel.ifEmpty { "Copy Image URL" }
-      } else {
-        copyImageUrlsLabel.ifEmpty { "Copy {count} Image URLs" }
-      }
+    when {
+      copyImageUrlPluralTemplates.isNotEmpty() && count in 0..100 -> copyImageUrlPluralTemplates[count]
+      count == 1 -> copyImageUrlLabel
+      else -> copyImageUrlsLabel
+    }
   return template.replace("{count}", count.toString())
 }
 
@@ -98,7 +87,7 @@ fun createSelectionActionModeCallback(
           Menu.NONE,
           MENU_ITEM_COPY_MARKDOWN,
           Menu.NONE,
-          selectionMenuConfig.copyAsMarkdownLabel.ifEmpty { "Copy as Markdown" },
+          selectionMenuConfig.copyAsMarkdownLabel,
         )
       }
 

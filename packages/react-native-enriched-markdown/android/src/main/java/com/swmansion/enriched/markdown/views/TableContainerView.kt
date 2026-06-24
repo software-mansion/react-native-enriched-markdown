@@ -282,7 +282,7 @@ class TableContainerView(
   private fun showContextMenu(anchor: View) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     ContextMenuPopup.show(anchor, this) {
-      item(ContextMenuPopup.Icon.COPY, copyLabel.ifEmpty { "Copy" }) {
+      item(ContextMenuPopup.Icon.COPY, copyLabel) {
         val plainText = rows.joinToString("\n") { row -> row.joinToString("\t") { it.plainText } }
         if (plainText.isNotEmpty()) {
           val displayMetrics = context.resources.displayMetrics
@@ -294,7 +294,7 @@ class TableContainerView(
           clipboard.setPrimaryClip(ClipData.newHtmlText("Table", plainText, html))
         }
       }
-      item(ContextMenuPopup.Icon.DOCUMENT, copyAsMarkdownLabel.ifEmpty { "Copy as Markdown" }) {
+      item(ContextMenuPopup.Icon.DOCUMENT, copyAsMarkdownLabel) {
         if (tableMarkdown.isNotEmpty()) clipboard.setPrimaryClip(ClipData.newPlainText("Table", tableMarkdown))
       }
     }

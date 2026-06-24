@@ -39,12 +39,16 @@ export interface ContextMenuItem {
  * }
  */
 export interface SelectionMenuPluralLabels {
+  /**
+   * Required base form. Any category left `undefined` falls back to `other`,
+   * so the menu never shows the English default once `pluralLabels` is set.
+   */
+  other: string;
   zero?: string;
   one?: string;
   two?: string;
   few?: string;
   many?: string;
-  other?: string;
 }
 
 /**

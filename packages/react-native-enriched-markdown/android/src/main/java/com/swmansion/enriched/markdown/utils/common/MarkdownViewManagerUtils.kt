@@ -100,6 +100,9 @@ fun parseSelectionMenuConfig(value: ReadableMap?): SelectionMenuConfig {
     copyAsMarkdownLabel = value.getString("copyAsMarkdownLabel") ?: "",
     copyImageUrlLabel = value.getString("copyImageUrlLabel") ?: "",
     copyImageUrlsLabel = value.getString("copyImageUrlsLabel") ?: "",
-    copyImageUrlPluralTemplates = value.getString("copyImageUrlPluralTemplates") ?: "",
+    copyImageUrlPluralTemplates = parseStringList(value.getArray("copyImageUrlPluralTemplates")),
   )
 }
+
+private fun parseStringList(value: ReadableArray?): List<String> =
+  (0 until (value?.size() ?: 0)).mapNotNull { value?.getString(it) }

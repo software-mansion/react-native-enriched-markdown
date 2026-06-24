@@ -350,7 +350,7 @@ Controls built-in actions added to the native text selection menu. Custom app-pr
 
 | Type                 | Default Value                                  | Platform |
 | -------------------- | ---------------------------------------------- | -------- |
-| `SelectionMenuConfig` | `{ copyAsMarkdown: { enabled: true }, copyImageUrl: { enabled: true } }` | iOS, Android, macOS |
+| `SelectionMenuConfig` | `{}` (see shape below for per-field defaults) | iOS, Android, macOS |
 
 Each item takes an object: `{ enabled }` toggles visibility (the system `copy` item can't be hidden — only relabeled) and `label` overrides the English default. The labels apply to the main text selection menu as well as the table and math block copy menus.
 
@@ -375,13 +375,14 @@ interface SelectionMenuConfig {
 }
 
 interface SelectionMenuPluralLabels {
-  /** CLDR plural categories. `{count}` is replaced by the image count. Only `other` is required. */
+  /** CLDR plural categories. `{count}` is replaced by the image count. Missing
+   *  categories fall back to `other`, so only `other` is required. */
+  other: string;
   zero?: string;
   one?: string;
   two?: string;
   few?: string;
   many?: string;
-  other?: string;
 }
 ```
 
