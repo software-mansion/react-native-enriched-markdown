@@ -50,7 +50,6 @@ class TableContainerView(
   var onLinkPress: ((String) -> Unit)? = null
   var onLinkLongPress: ((String) -> Unit)? = null
 
-  // Localized labels for the copy menu. Empty means "use the English default".
   var copyLabel: String = ""
   var copyAsMarkdownLabel: String = ""
 

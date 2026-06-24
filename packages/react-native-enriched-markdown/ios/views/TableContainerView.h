@@ -30,7 +30,6 @@ typedef void (^TableLinkPressBlock)(NSString *url);
 @property (nonatomic, assign) ENRMWritingDirectionMode writingDirectionMode;
 @property (nonatomic, assign) NSWritingDirection resolvedLayoutDirection;
 
-// Localized labels for the copy menu. Empty/nil means "use the English default".
 @property (nonatomic, copy, nullable) NSString *copyLabel;
 @property (nonatomic, copy, nullable) NSString *copyAsMarkdownLabel;
 

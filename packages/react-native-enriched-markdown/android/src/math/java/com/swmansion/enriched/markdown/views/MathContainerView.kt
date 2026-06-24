@@ -30,7 +30,6 @@ class MathContainerView(
   private val scrollView = HorizontalScrollView(context)
   private var cachedLatex: String = ""
 
-  // Localized labels for the copy menu. Empty means "use the English default".
   // Set reflectively by EnrichedMarkdown (math is an optional module).
   var copyLabel: String = ""
   var copyAsMarkdownLabel: String = ""
