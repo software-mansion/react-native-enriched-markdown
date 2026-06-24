@@ -145,7 +145,7 @@ class EnrichedMarkdownTextInputView(
     super.onWindowFocusChanged(hasWindowFocus)
     // The autofocus keyboard request may run before the window has IME focus (e.g. while a modal is
     // still presenting), where showSoftInput() is dropped.
-    if (hasWindowFocus) showAutoFocusKeyboardIfPending()
+    showAutoFocusKeyboardIfPending()
   }
 
   override fun clearFocus() {
