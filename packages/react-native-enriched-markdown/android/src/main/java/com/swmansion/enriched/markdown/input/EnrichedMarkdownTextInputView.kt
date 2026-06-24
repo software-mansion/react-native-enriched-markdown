@@ -67,9 +67,9 @@ class EnrichedMarkdownTextInputView(
 
   var emitMarkdown = false
   var autoFocusRequested = false
-  private var pendingAutoFocusKeyboard = false
   var stateWrapper: StateWrapper? = null
   val layoutManager = InputLayoutManager(this)
+  private var pendingAutoFocusKeyboard = false
 
   private var typefaceDirty = false
   private var fontFamilyValue: String? = null
