@@ -660,12 +660,10 @@ class EnrichedMarkdownTextInputView(
     if (autoFocusRequested) {
       autoFocusRequested = false
       pendingAutoFocusKeyboard = true
-      // afterUpdateTransaction runs during the mount, before onAttachedToWindow, when the view is not
-      // attached yet: requestFocus()/showSoftInput() are dropped so the keyboard never opens, and
-      // onAttachedToWindow's setTextIsSelectable(true) resets the caret to 0. Defer to the next loop,
-      // once attached, to grant focus and place the caret at the end like iOS. The keyboard is shown only
-      // when the window has IME focus (now, or later via onWindowFocusChanged).
       post {
+        // afterUpdateTransaction runs before onAttachedToWindow, where requestFocus()/showSoftInput()
+        // are dropped and setTextIsSelectable(true) would reset the caret to 0. Defer to the next loop
+        // so focus sticks and the caret lands at end (matching iOS).
         requestFocus()
         setSelection(text?.length ?: 0)
         showAutoFocusKeyboardIfPending()
