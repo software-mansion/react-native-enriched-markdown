@@ -350,16 +350,38 @@ Controls built-in actions added to the native text selection menu. Custom app-pr
 
 | Type                 | Default Value                                  | Platform |
 | -------------------- | ---------------------------------------------- | -------- |
-| `SelectionMenuConfig` | `{ copyAsMarkdown: true, copyImageUrl: true }` | iOS, Android, macOS |
+| `SelectionMenuConfig` | `{ copyAsMarkdown: { enabled: true }, copyImageUrl: { enabled: true } }` | iOS, Android, macOS |
+
+Each item takes an object: `{ enabled }` toggles visibility (the system `copy` item can't be hidden — only relabeled) and `label` overrides the English default. The labels apply to the main text selection menu as well as the table and math block copy menus.
+
+> **Deprecation:** the previous boolean shape (`copyAsMarkdown: false`) is still accepted at runtime for backward compatibility but logs a one-time warning. It will be removed in 0.8 — migrate to `{ enabled: false }`.
 
 **`SelectionMenuConfig` shape:**
 
 ```ts
 interface SelectionMenuConfig {
-  /** Shows the built-in "Copy as Markdown" action for text selections. */
-  copyAsMarkdown?: boolean;
-  /** Shows the built-in "Copy Image URL" action when selected content contains images. */
-  copyImageUrl?: boolean;
+  /** System "Copy" item — can't be hidden, only relabeled. @default { label: "Copy" } */
+  copy?: { label?: string };
+  /** "Copy as Markdown" action. @default { enabled: true, label: "Copy as Markdown" } */
+  copyAsMarkdown?: { enabled?: boolean; label?: string };
+  /** "Copy Image URL" action, shown when the selection contains images. */
+  copyImageUrl?: {
+    enabled?: boolean;
+    /** Label for a single image. @default "Copy Image URL" */
+    label?: string;
+    /** Forms for multiple images, chosen with Intl.PluralRules. @default { other: "Copy {count} Image URLs" } */
+    pluralLabels?: SelectionMenuPluralLabels;
+  };
+}
+
+interface SelectionMenuPluralLabels {
+  /** CLDR plural categories. `{count}` is replaced by the image count. Only `other` is required. */
+  zero?: string;
+  one?: string;
+  two?: string;
+  few?: string;
+  many?: string;
+  other?: string;
 }
 ```
 
@@ -369,52 +391,21 @@ interface SelectionMenuConfig {
 <EnrichedMarkdownText
   markdown={content}
   selectionMenuConfig={{
-    copyAsMarkdown: false,
-    copyImageUrl: false,
-  }}
-/>
-```
-
-> **Note:** When using `flavor="github"`, `selection.start` and `selection.end` are relative to the text segment the selection is in, not the full markdown string. With `flavor="commonmark"` (default) they are always absolute within the full rendered text.
-
-### `selectionMenuLabels`
-
-Localized labels for the built-in selection/copy menu actions. Use this to translate **Copy**, **Copy as Markdown** and **Copy Image URL** so they match the rest of your app's UI. Any label left `undefined` keeps its English default. Controls which items are shown with `selectionMenuConfig`.
-
-| Type                  | Default Value | Platform            |
-| --------------------- | ------------- | ------------------- |
-| `SelectionMenuLabels` | `undefined`   | iOS, Android, macOS |
-
-**`SelectionMenuLabels` shape:**
-
-```ts
-interface SelectionMenuLabels {
-  /** Label for the "Copy" action (also used by table/math copy menus). @default "Copy" */
-  copy?: string;
-  /** Label for the "Copy as Markdown" action. @default "Copy as Markdown" */
-  copyAsMarkdown?: string;
-  /** Label for the single-image "Copy Image URL" action. @default "Copy Image URL" */
-  copyImageUrl?: string;
-  /** Multi-image label; `{count}` is replaced by the number of selected images. @default "Copy {count} Image URLs" */
-  copyImageUrls?: string;
-}
-```
-
-**Example:**
-
-```tsx
-<EnrichedMarkdownText
-  markdown={content}
-  selectionMenuLabels={{
-    copy: t('copy'),
-    copyAsMarkdown: t('copyAsMarkdown'),
-    copyImageUrl: t('copyImageUrl'),
-    copyImageUrls: t('copyImageUrls'),
+    // Hide an action:
+    copyAsMarkdown: { enabled: false },
+    // Localize the labels:
+    copy: { label: t('copy') },
+    copyImageUrl: {
+      label: t('copyImageUrl'),
+      pluralLabels: { other: t('copyImageUrls') }, // "{count}" → image count
+    },
   }}
 />
 ```
 
 See [COPY_OPTIONS.md](./COPY_OPTIONS.md#localizing-menu-labels) for details.
+
+> **Note:** When using `flavor="github"`, `selection.start` and `selection.end` are relative to the text segment the selection is in, not the full markdown string. With `flavor="commonmark"` (default) they are always absolute within the full rendered text.
 
 ---
 

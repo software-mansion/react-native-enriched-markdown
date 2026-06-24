@@ -10,7 +10,7 @@ import type {
   StreamingConfig,
   ContextMenuItem,
   SelectionMenuConfig,
-  SelectionMenuLabels,
+  SelectionMenuPluralLabels,
 } from '../types/MarkdownTextProps';
 import type {
   LinkPressEvent,
@@ -25,9 +25,55 @@ export type {
   StreamingConfig,
   ContextMenuItem,
   SelectionMenuConfig,
-  SelectionMenuLabels,
+  SelectionMenuPluralLabels,
 };
 export type { LinkPressEvent, LinkLongPressEvent, TaskListItemPressEvent };
+
+// Default English labels for the built-in selection menu actions. Defaults are
+// resolved here (JS-side) so the native code always receives a concrete string.
+const DEFAULT_COPY_LABEL = 'Copy';
+const DEFAULT_COPY_AS_MARKDOWN_LABEL = 'Copy as Markdown';
+const DEFAULT_COPY_IMAGE_URL_LABEL = 'Copy Image URL';
+const DEFAULT_COPY_IMAGE_URLS_LABEL = 'Copy {count} Image URLs';
+
+// One-time deprecation warnings for the legacy boolean shape of
+// selectionMenuConfig items. Not __DEV__-gated on purpose: deprecation warnings
+// need to surface in staging/TestFlight/CI prod builds too.
+const warned = new Set<string>();
+const warnOnce = (key: string, msg: string) => {
+  if (warned.has(key)) return;
+  warned.add(key);
+  console.warn(msg);
+};
+
+type NormalizedMenuItem = { enabled: boolean; label: string };
+
+/**
+ * Normalizes a `selectionMenuConfig` item to `{ enabled, label }`, resolving the
+ * English default label JS-side. Accepts the legacy boolean form at runtime
+ * (deprecated, removed in 0.8) so JS-only consumers don't silently break.
+ */
+const normalizeItem = (
+  raw: unknown,
+  field: string,
+  defaultEnabled: boolean,
+  defaultLabel: string
+): NormalizedMenuItem => {
+  if (raw === undefined) return { enabled: defaultEnabled, label: defaultLabel };
+  if (typeof raw === 'boolean') {
+    warnOnce(
+      `selectionMenuConfig.${field}`,
+      `[react-native-enriched-markdown] selectionMenuConfig.${field} as a boolean is ` +
+        `deprecated; use { enabled: ${raw} }. The boolean form will be removed in 0.8.`
+    );
+    return { enabled: raw, label: defaultLabel };
+  }
+  const obj = raw as { enabled?: boolean; label?: string };
+  return {
+    enabled: obj.enabled ?? defaultEnabled,
+    label: obj.label ?? defaultLabel,
+  };
+};
 
 const defaultMd4cFlags: Md4cFlags = {
   underline: false,
@@ -56,7 +102,6 @@ export const EnrichedMarkdownText = ({
   spoilerOverlay = 'particles',
   contextMenuItems,
   selectionMenuConfig,
-  selectionMenuLabels,
   selectionColor,
   selectionHandleColor,
   textBreakStrategy,
@@ -145,18 +190,47 @@ export const EnrichedMarkdownText = ({
 
   const tableMode = streamingConfig?.tableMode ?? 'progressive';
   const normalizedStreamingConfig = useMemo(() => ({ tableMode }), [tableMode]);
-  const normalizedSelectionMenuConfig = useMemo(
-    () => ({
-      copyAsMarkdown: selectionMenuConfig?.copyAsMarkdown ?? true,
-      copyImageUrl: selectionMenuConfig?.copyImageUrl ?? true,
-      // Empty string is the sentinel for "use the native English default".
-      copyLabel: selectionMenuLabels?.copy ?? '',
-      copyAsMarkdownLabel: selectionMenuLabels?.copyAsMarkdown ?? '',
-      copyImageUrlLabel: selectionMenuLabels?.copyImageUrl ?? '',
-      copyImageUrlsLabel: selectionMenuLabels?.copyImageUrls ?? '',
-    }),
-    [selectionMenuConfig, selectionMenuLabels]
-  );
+  const normalizedSelectionMenuConfig = useMemo(() => {
+    // The boolean acceptance is confined to this wrapper boundary via a single
+    // `as unknown` cast; the public type only exposes the object shape.
+    const config = selectionMenuConfig as
+      | {
+          copy?: unknown;
+          copyAsMarkdown?: unknown;
+          copyImageUrl?: unknown;
+        }
+      | undefined;
+
+    const copy = normalizeItem(config?.copy, 'copy', true, DEFAULT_COPY_LABEL);
+    const copyAsMarkdown = normalizeItem(
+      config?.copyAsMarkdown,
+      'copyAsMarkdown',
+      true,
+      DEFAULT_COPY_AS_MARKDOWN_LABEL
+    );
+    const copyImageUrl = normalizeItem(
+      config?.copyImageUrl,
+      'copyImageUrl',
+      true,
+      DEFAULT_COPY_IMAGE_URL_LABEL
+    );
+
+    const pluralLabels = (
+      config?.copyImageUrl as
+        | { pluralLabels?: SelectionMenuPluralLabels }
+        | undefined
+    )?.pluralLabels;
+
+    return {
+      copyAsMarkdown: copyAsMarkdown.enabled,
+      copyImageUrl: copyImageUrl.enabled,
+      copyLabel: copy.label,
+      copyAsMarkdownLabel: copyAsMarkdown.label,
+      copyImageUrlLabel: copyImageUrl.label,
+      copyImageUrlsLabel:
+        pluralLabels?.other ?? DEFAULT_COPY_IMAGE_URLS_LABEL,
+    };
+  }, [selectionMenuConfig]);
 
   const sharedProps = {
     markdown,

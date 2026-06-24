@@ -39,7 +39,10 @@ export const Default: TextStory<SelectionMenuStoryExtra> = {
       title="Selection Menu"
       description='Built-in copy actions in the native selection menu. Select text for "Copy as Markdown"; select across the image for "Copy Image URL".'
       {...args}
-      selectionMenuConfig={{ copyAsMarkdown, copyImageUrl }}
+      selectionMenuConfig={{
+        copyAsMarkdown: { enabled: copyAsMarkdown },
+        copyImageUrl: { enabled: copyImageUrl },
+      }}
     />
   ),
 };

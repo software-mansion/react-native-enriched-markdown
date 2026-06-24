@@ -20,55 +20,67 @@ export interface ContextMenuItem {
   visible?: boolean;
 }
 
-export interface SelectionMenuConfig {
-  /**
-   * Shows the built-in "Copy as Markdown" action for text selections.
-   * @default true
-   */
-  copyAsMarkdown?: boolean;
-  /**
-   * Shows the built-in "Copy Image URL" action when selected content contains images.
-   * @default true
-   */
-  copyImageUrl?: boolean;
+/**
+ * Plural forms for the "Copy Image URL(s)" action, keyed by CLDR plural
+ * category. The right form is chosen at runtime from the number of selected
+ * images using `Intl.PluralRules` (resolved against the app's default locale).
+ *
+ * Each value is a template where the `{count}` token is replaced with the
+ * number of selected images. Only `other` is required by CLDR; any category
+ * left `undefined` falls back to `other`.
+ *
+ * @example
+ * // Polish: one / few / many / other
+ * pluralLabels: {
+ *   one: 'Kopiuj adres URL obrazu',
+ *   few: 'Kopiuj adresy URL {count} obrazów',
+ *   many: 'Kopiuj adresy URL {count} obrazów',
+ *   other: 'Kopiuj adresy URL {count} obrazu',
+ * }
+ */
+export interface SelectionMenuPluralLabels {
+  zero?: string;
+  one?: string;
+  two?: string;
+  few?: string;
+  many?: string;
+  other?: string;
 }
 
 /**
- * Localized labels for the built-in selection/copy menu actions.
+ * Controls the built-in items added to the native text selection menu and
+ * lets you localize their labels.
  *
- * By default these actions are shown in English ("Copy", "Copy as Markdown",
- * "Copy Image URL"). Pass translated strings to match the rest of your app's
- * UI — typically wired to your i18n library, e.g.
- * `selectionMenuLabels={{ copy: t('copy'), copyAsMarkdown: t('copyAsMarkdown') }}`.
- *
- * Any label left `undefined` falls back to its built-in English default, so you
- * can override only the strings you need. Applies to the main text selection
- * menu as well as the table and math block copy menus.
+ * Each item accepts an object: `{ enabled }` toggles visibility (the system
+ * `copy` item can't be hidden — only relabeled) and `label` overrides the
+ * English default. Wire `label` to your i18n library to match the rest of your
+ * app's UI. Labels apply to the main text selection menu as well as the table
+ * and math block copy menus.
  *
  * @platform ios, android, macos
  */
-export interface SelectionMenuLabels {
+export interface SelectionMenuConfig {
   /**
-   * Label for the "Copy" action (also used by the table and math copy menus).
-   * @default "Copy"
+   * The system "Copy" item. It can't be hidden — only its label is configurable.
+   * @default { label: "Copy" }
    */
-  copy?: string;
+  copy?: { label?: string };
   /**
-   * Label for the "Copy as Markdown" action.
-   * @default "Copy as Markdown"
+   * The built-in "Copy as Markdown" action for text selections.
+   * @default { enabled: true, label: "Copy as Markdown" }
    */
-  copyAsMarkdown?: string;
+  copyAsMarkdown?: { enabled?: boolean; label?: string };
   /**
-   * Label for the "Copy Image URL" action (single image selected).
-   * @default "Copy Image URL"
+   * The built-in "Copy Image URL" action, shown when the selection contains
+   * images. `label` is used for a single image; `pluralLabels` provides the
+   * forms for multiple images.
+   * @default { enabled: true, label: "Copy Image URL" }
    */
-  copyImageUrl?: string;
-  /**
-   * Label for the "Copy N Image URLs" action (multiple images selected).
-   * The `{count}` token is replaced with the number of selected images.
-   * @default "Copy {count} Image URLs"
-   */
-  copyImageUrls?: string;
+  copyImageUrl?: {
+    enabled?: boolean;
+    label?: string;
+    pluralLabels?: SelectionMenuPluralLabels;
+  };
 }
 
 export interface StreamingConfig {
@@ -238,21 +250,13 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    */
   contextMenuItems?: ContextMenuItem[];
   /**
-   * Controls built-in items added to the native text selection menu.
-   * Custom app-provided actions are controlled separately with `contextMenuItems`.
-   * @default { copyAsMarkdown: true, copyImageUrl: true }
+   * Controls the built-in items added to the native text selection menu and
+   * lets you localize their labels. Custom app-provided actions are controlled
+   * separately with `contextMenuItems`.
+   * @default { copyAsMarkdown: { enabled: true }, copyImageUrl: { enabled: true } }
    * @platform ios, android, macos
    */
   selectionMenuConfig?: SelectionMenuConfig;
-  /**
-   * Localized labels for the built-in selection/copy menu actions.
-   * Use this to translate "Copy", "Copy as Markdown" and "Copy Image URL"
-   * so they match the rest of your app's UI. Any label left undefined keeps
-   * its English default. Controls which items are shown with
-   * `selectionMenuConfig`.
-   * @platform ios, android, macos
-   */
-  selectionMenuLabels?: SelectionMenuLabels;
   /**
    * Sets the text direction on the root container.
    * Useful for RTL languages — CSS logical properties in the renderers

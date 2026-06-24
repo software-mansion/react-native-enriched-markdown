@@ -86,8 +86,8 @@ export default function App() {
               contextMenuItems={contextMenuItems}
               selectionColor="#DCDDFE"
               selectionMenuConfig={{
-                copyAsMarkdown: true,
-                copyImageUrl: true,
+                copyAsMarkdown: { enabled: true },
+                copyImageUrl: { enabled: true },
               }}
               md4cFlags={{
                 superscript: true,
