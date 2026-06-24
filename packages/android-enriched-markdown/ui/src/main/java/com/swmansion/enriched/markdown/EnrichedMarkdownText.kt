@@ -9,7 +9,7 @@ import android.os.Looper
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
-import androidx.appcompat.widget.AppCompatTextView
+import com.swmansion.enriched.markdown.accessibility.AccessibleMarkdownTextView
 import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
 import com.swmansion.enriched.markdown.renderer.Renderer
@@ -26,7 +26,7 @@ class EnrichedMarkdownText
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0,
-  ) : AppCompatTextView(context, attrs, defStyleAttr) {
+  ) : AccessibleMarkdownTextView(context, attrs, defStyleAttr) {
     private val parser = Parser.shared
     private val renderer = Renderer()
     private var onLinkPressCallback: ((String) -> Unit)? = null
@@ -210,6 +210,7 @@ class EnrichedMarkdownText
         span.registerTextView(this)
       }
 
+      accessibilityHelper.invalidateAccessibilityItems()
       applySelectionColors(selectionColor, selectionHandleColor)
     }
 
