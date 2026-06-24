@@ -36,6 +36,57 @@ const DEFAULT_COPY_AS_MARKDOWN_LABEL = 'Copy as Markdown';
 const DEFAULT_COPY_IMAGE_URL_LABEL = 'Copy Image URL';
 const DEFAULT_COPY_IMAGE_URLS_LABEL = 'Copy {count} Image URLs';
 
+// Unit separator used to pack the precomputed plural templates into a single
+// codegen string. Picked because it never appears in human-readable labels.
+const PLURAL_SEPARATOR = '\u001F';
+
+/**
+ * Resolves `pluralLabels` into a per-count template table the native side can
+ * index without any locale logic. `Intl.PluralRules` selects the CLDR category
+ * for each count 0..100; native wraps counts > 100 with period 100 (the CLDR
+ * integer rules only depend on n, n%10 and n%100). Returns an empty string when
+ * no plural labels are given or `Intl.PluralRules` is unavailable, in which case
+ * native falls back to the singular/`{count}` templates.
+ */
+const buildPluralTemplates = (
+  pluralLabels: SelectionMenuPluralLabels | undefined,
+  singularLabel: string
+): string => {
+  if (!pluralLabels) return '';
+
+  const IntlRef = Intl as unknown as {
+    PluralRules?: new (locales?: string | string[]) => {
+      select(n: number): string;
+    };
+  };
+  if (typeof IntlRef.PluralRules !== 'function') return '';
+
+  let pluralRules: { select(n: number): string };
+  try {
+    pluralRules = new IntlRef.PluralRules();
+  } catch {
+    return '';
+  }
+
+  const byCategory: Record<string, string | undefined> = {
+    zero: pluralLabels.zero,
+    one: pluralLabels.one ?? singularLabel,
+    two: pluralLabels.two,
+    few: pluralLabels.few,
+    many: pluralLabels.many,
+    other: pluralLabels.other ?? DEFAULT_COPY_IMAGE_URLS_LABEL,
+  };
+
+  const templates: string[] = [];
+  for (let n = 0; n <= 100; n++) {
+    const category = pluralRules.select(n);
+    templates.push(
+      byCategory[category] ?? byCategory.other ?? DEFAULT_COPY_IMAGE_URLS_LABEL
+    );
+  }
+  return templates.join(PLURAL_SEPARATOR);
+};
+
 // One-time deprecation warnings for the legacy boolean shape of
 // selectionMenuConfig items. Not __DEV__-gated on purpose: deprecation warnings
 // need to surface in staging/TestFlight/CI prod builds too.
@@ -227,8 +278,11 @@ export const EnrichedMarkdownText = ({
       copyLabel: copy.label,
       copyAsMarkdownLabel: copyAsMarkdown.label,
       copyImageUrlLabel: copyImageUrl.label,
-      copyImageUrlsLabel:
-        pluralLabels?.other ?? DEFAULT_COPY_IMAGE_URLS_LABEL,
+      copyImageUrlsLabel: pluralLabels?.other ?? DEFAULT_COPY_IMAGE_URLS_LABEL,
+      copyImageUrlPluralTemplates: buildPluralTemplates(
+        pluralLabels,
+        copyImageUrl.label
+      ),
     };
   }, [selectionMenuConfig]);
 

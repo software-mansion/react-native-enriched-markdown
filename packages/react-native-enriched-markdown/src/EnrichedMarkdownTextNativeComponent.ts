@@ -230,13 +230,13 @@ export interface ContextMenuItemConfig {
 export interface SelectionMenuConfig {
   copyAsMarkdown: boolean;
   copyImageUrl: boolean;
-  // Localizable labels for the built-in selection menu actions. An empty
-  // string means "use the built-in English default". `copyImageUrlsLabel`
-  // is a template where the `{count}` token is replaced by the image count.
   copyLabel: string;
   copyAsMarkdownLabel: string;
   copyImageUrlLabel: string;
   copyImageUrlsLabel: string;
+  // Precomputed plural templates (count 0..100) joined by U+001F. Empty when no
+  // pluralLabels are set; native then uses copyImageUrlLabel/copyImageUrlsLabel.
+  copyImageUrlPluralTemplates: string;
 }
 
 export interface OnContextMenuItemPressEvent {

@@ -37,22 +37,14 @@ static UIAction *_Nullable createCopyMarkdownAction(NSString *markdown, NSString
                            handler:^(__kindof UIAction *action) { copyStringToPasteboard(markdown); }];
 }
 
-static UIAction *_Nullable createCopyImageURLAction(NSArray<NSString *> *imageURLs, NSString *_Nullable singularLabel,
-                                                    NSString *_Nullable pluralLabelTemplate)
+static UIAction *_Nullable createCopyImageURLAction(NSArray<NSString *> *imageURLs,
+                                                    ENRMSelectionMenuConfig selectionMenuConfig)
 {
   if (imageURLs.count == 0)
     return nil;
 
   NSString *urlsToCopy = [imageURLs componentsJoinedByString:@"\n"];
-  NSString *title;
-  if (imageURLs.count == 1) {
-    title = resolveLabel(singularLabel, @"Copy Image URL");
-  } else if (pluralLabelTemplate.length > 0) {
-    title = [pluralLabelTemplate stringByReplacingOccurrencesOfString:@"{count}"
-                                                           withString:[@(imageURLs.count) stringValue]];
-  } else {
-    title = [NSString stringWithFormat:@"Copy %lu Image URLs", (unsigned long)imageURLs.count];
-  }
+  NSString *title = ENRMResolveImageURLsTitle(selectionMenuConfig, imageURLs.count);
 
   return [UIAction actionWithTitle:title
                              image:[RCTUIImage systemImageNamed:@"link"]
@@ -98,10 +90,7 @@ UIMenu *buildEditMenuForSelection(NSAttributedString *attributedText, NSRange ra
       selectionMenuConfig.copyAsMarkdown ? createCopyMarkdownAction(markdown, selectionMenuConfig.copyAsMarkdownLabel)
                                          : nil;
   UIAction *copyImageURLAction =
-      selectionMenuConfig.copyImageURL
-          ? createCopyImageURLAction(imageURLs, selectionMenuConfig.copyImageUrlLabel,
-                                     selectionMenuConfig.copyImageUrlsLabel)
-          : nil;
+      selectionMenuConfig.copyImageURL ? createCopyImageURLAction(imageURLs, selectionMenuConfig) : nil;
 
   NSMutableArray<UIMenuElement *> *result = [NSMutableArray array];
   BOOL foundStandardEditMenu = NO;

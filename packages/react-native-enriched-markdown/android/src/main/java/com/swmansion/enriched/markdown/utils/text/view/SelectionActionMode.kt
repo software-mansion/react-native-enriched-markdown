@@ -22,16 +22,43 @@ private const val MENU_ITEM_COPY_IMAGE_URL = 1001
 private const val MENU_ITEM_CUSTOM_BASE = 2000
 private const val MENU_ITEM_CUSTOM_GROUP = 2001
 
+// Unit separator used to pack the precomputed plural templates (see the JS side).
+private const val PLURAL_SEPARATOR = "\u001F"
+
 data class SelectionMenuConfig(
   val copyAsMarkdown: Boolean = true,
   val copyImageUrl: Boolean = true,
-  // Localized labels. An empty string means "use the built-in English default".
-  // `copyImageUrlsLabel` is a template where `{count}` is replaced by the count.
   val copyLabel: String = "",
   val copyAsMarkdownLabel: String = "",
   val copyImageUrlLabel: String = "",
   val copyImageUrlsLabel: String = "",
+  // Precomputed plural templates (count 0..100) joined by [PLURAL_SEPARATOR].
+  // Empty when no pluralLabels are set.
+  val copyImageUrlPluralTemplates: String = "",
 )
+
+/**
+ * Resolves the "Copy Image URL(s)" menu title for the given image count. Uses the
+ * precomputed plural templates (wrapping counts > 100 with period 100) when
+ * present, otherwise the singular/`{count}` templates. Labels are resolved
+ * JS-side, so the `ifEmpty` fallbacks only guard the no-Intl path.
+ */
+private fun SelectionMenuConfig.imageUrlsTitle(count: Int): String {
+  val template =
+    copyImageUrlPluralTemplates
+      .takeIf { it.isNotEmpty() }
+      ?.split(PLURAL_SEPARATOR)
+      ?.let { templates ->
+        val index = if (count <= 0) 0 else if (count <= 100) count else ((count - 1) % 100) + 1
+        templates.getOrNull(index)
+      }
+      ?: if (count == 1) {
+        copyImageUrlLabel.ifEmpty { "Copy Image URL" }
+      } else {
+        copyImageUrlsLabel.ifEmpty { "Copy {count} Image URLs" }
+      }
+  return template.replace("{count}", count.toString())
+}
 
 /**
  * Creates an ActionMode.Callback that adds custom copy options and
@@ -91,14 +118,7 @@ fun createSelectionActionModeCallback(
           emptyList()
         }
       if (imageUrls.isNotEmpty()) {
-        val title =
-          if (imageUrls.size == 1) {
-            selectionMenuConfig.copyImageUrlLabel.ifEmpty { "Copy Image URL" }
-          } else {
-            selectionMenuConfig.copyImageUrlsLabel
-              .ifEmpty { "Copy {count} Image URLs" }
-              .replace("{count}", imageUrls.size.toString())
-          }
+        val title = selectionMenuConfig.imageUrlsTitle(imageUrls.size)
         menu.add(Menu.NONE, MENU_ITEM_COPY_IMAGE_URL, Menu.NONE, title)
       }
 

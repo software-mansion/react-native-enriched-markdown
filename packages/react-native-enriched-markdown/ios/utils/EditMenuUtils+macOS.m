@@ -50,16 +50,7 @@ NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, 
   }
 
   if (selectionMenuConfig.copyImageURL && imageURLs.count > 0) {
-    NSString *title;
-    if (imageURLs.count == 1) {
-      title = resolveMenuLabel(selectionMenuConfig.copyImageUrlLabel, @"Copy Image URL");
-    } else if (selectionMenuConfig.copyImageUrlsLabel.length > 0) {
-      NSString *countString = [@(imageURLs.count) stringValue];
-      title = [selectionMenuConfig.copyImageUrlsLabel stringByReplacingOccurrencesOfString:@"{count}"
-                                                                                 withString:countString];
-    } else {
-      title = [NSString stringWithFormat:@"Copy %lu Image URLs", (unsigned long)imageURLs.count];
-    }
+    NSString *title = ENRMResolveImageURLsTitle(selectionMenuConfig, imageURLs.count);
     [menu addItem:ENRMCreateMenuItem(title, ^{
             NSString *urlsToCopy = [imageURLs componentsJoinedByString:@"\n"];
             copyStringToPasteboard(urlsToCopy);

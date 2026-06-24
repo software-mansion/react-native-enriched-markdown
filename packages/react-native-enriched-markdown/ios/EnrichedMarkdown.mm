@@ -112,6 +112,7 @@ static char kENRMSegmentFadeAnimatorKey;
   NSString *_copyAsMarkdownLabel;
   NSString *_copyImageUrlLabel;
   NSString *_copyImageUrlsLabel;
+  NSString *_copyImageUrlPluralTemplates;
 
   ENRMSpoilerOverlay _spoilerOverlay;
 
@@ -803,6 +804,8 @@ static char kENRMSegmentFadeAnimatorKey;
   _copyImageUrlLabel = [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyImageUrlLabel.c_str()];
   _copyImageUrlsLabel =
       [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyImageUrlsLabel.c_str()];
+  _copyImageUrlPluralTemplates =
+      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyImageUrlPluralTemplates.c_str()];
   _selectionMenuConfig = (ENRMSelectionMenuConfig){
       .copyAsMarkdown = newViewProps.selectionMenuConfig.copyAsMarkdown,
       .copyImageURL = newViewProps.selectionMenuConfig.copyImageUrl,
@@ -810,6 +813,7 @@ static char kENRMSegmentFadeAnimatorKey;
       .copyAsMarkdownLabel = _copyAsMarkdownLabel,
       .copyImageUrlLabel = _copyImageUrlLabel,
       .copyImageUrlsLabel = _copyImageUrlsLabel,
+      .copyImageUrlPluralTemplates = _copyImageUrlPluralTemplates,
   };
 
   if (newViewProps.spoilerOverlay != oldViewProps.spoilerOverlay) {

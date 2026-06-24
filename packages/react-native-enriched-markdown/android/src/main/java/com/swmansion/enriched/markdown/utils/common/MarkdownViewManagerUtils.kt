@@ -100,5 +100,6 @@ fun parseSelectionMenuConfig(value: ReadableMap?): SelectionMenuConfig {
     copyAsMarkdownLabel = value.getString("copyAsMarkdownLabel") ?: "",
     copyImageUrlLabel = value.getString("copyImageUrlLabel") ?: "",
     copyImageUrlsLabel = value.getString("copyImageUrlsLabel") ?: "",
+    copyImageUrlPluralTemplates = value.getString("copyImageUrlPluralTemplates") ?: "",
   )
 }
