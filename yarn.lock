@@ -15918,9 +15918,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"react-native-enriched-markdown-macos-example@workspace:apps/macos-example":
+"react-native-enriched-markdown-macos-example@workspace:apps/react-native-macos-example":
   version: 0.0.0-use.local
-  resolution: "react-native-enriched-markdown-macos-example@workspace:apps/macos-example"
+  resolution: "react-native-enriched-markdown-macos-example@workspace:apps/react-native-macos-example"
   dependencies:
     "@babel/core": "npm:^7.25.2"
     "@react-native-community/cli": "npm:20.0.0"
