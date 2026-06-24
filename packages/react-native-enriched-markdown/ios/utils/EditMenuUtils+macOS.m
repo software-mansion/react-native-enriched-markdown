@@ -9,7 +9,10 @@
 
 static NSString *resolveMenuLabel(NSString *_Nullable label, NSString *fallback)
 {
-  return label.length > 0 ? label : fallback;
+  // Labels are resolved JS-side, so this fallback is defensive. Use
+  // NSLocalizedString so it matches the table and math context menus, which fall
+  // back to NSLocalizedString(@"Copy"/@"Copy as Markdown") on macOS.
+  return label.length > 0 ? label : NSLocalizedString(fallback, nil);
 }
 
 NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, NSRange range,
