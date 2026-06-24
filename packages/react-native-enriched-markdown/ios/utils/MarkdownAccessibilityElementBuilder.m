@@ -148,7 +148,8 @@ static const CGFloat kFocusRectPadding = 2.0;
                                         container:(id)container
 {
   UIAccessibilityElement *element = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:container];
-  element.accessibilityLabel = (type == ElementTypeImage && text.length == 0) ? NSLocalizedString(@"Image", @"") : text;
+  if (text.length > 0)
+    element.accessibilityLabel = text;
 
   UIBezierPath *path = [self accessibilityPathForRange:range inTextView:textView];
   if (path) {
@@ -157,28 +158,18 @@ static const CGFloat kFocusRectPadding = 2.0;
     element.accessibilityFrameInContainerSpace = [self frameForRange:range inTextView:textView container:container];
   }
 
-  NSMutableArray *values = [NSMutableArray array];
-
   if (type == ElementTypeImage) {
     element.accessibilityTraits =
         linked ? (UIAccessibilityTraitImage | UIAccessibilityTraitLink) : UIAccessibilityTraitImage;
+
   } else if (type == ElementTypeLink) {
     element.accessibilityTraits = UIAccessibilityTraitLink;
   } else if (level > 0) {
     element.accessibilityTraits = UIAccessibilityTraitHeader;
-    [values addObject:[NSString stringWithFormat:NSLocalizedString(@"heading level %ld", @""), (long)level]];
-  }
-
-  if (element.accessibilityTraits & UIAccessibilityTraitLink) {
-    element.accessibilityHint = NSLocalizedString(@"Tap to open link", @"");
   }
 
   if (listInfo && type != ElementTypeImage) {
-    [values addObject:[self formatListAnnouncement:listInfo]];
-  }
-
-  if (values.count > 0) {
-    element.accessibilityValue = [values componentsJoinedByString:@", "];
+    element.accessibilityValue = [self formatListAnnouncement:listInfo];
   }
 
   return element;
@@ -186,6 +177,7 @@ static const CGFloat kFocusRectPadding = 2.0;
 
 #pragma mark - Helpers
 
+// TODO: add prop for translations
 + (NSString *)formatListAnnouncement:(NSDictionary *)info
 {
   NSString *prefix = [info[@"depth"] integerValue] > 1 ? @"nested " : @"";
@@ -370,6 +362,7 @@ static const CGFloat kFocusRectPadding = 2.0;
 {
   return [self filterElements:elements withTrait:UIAccessibilityTraitImage];
 }
+// TODO: add prop for translations (rotor names)
 + (UIAccessibilityCustomRotor *)createHeadingRotorWithElements:(NSArray *)elements
 {
   return [self createRotorWithName:NSLocalizedString(@"Headings", @"") elements:elements];

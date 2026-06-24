@@ -210,9 +210,11 @@
 }
 #endif
 
+// TODO: add prop for translations
+// RaTeX does not have any TTS capabilities, if there is a need consider adding some other library to "render" TTS
 - (NSString *)accessibilityLabel
 {
-  return [NSString stringWithFormat:@"Math equation: %@", _cachedLatex];
+  return [NSString stringWithFormat:@"Math: %@", _cachedLatex];
 }
 
 #if !TARGET_OS_OSX

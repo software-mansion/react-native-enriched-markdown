@@ -588,6 +588,7 @@
 #if !TARGET_OS_OSX
       UIAccessibilityElement *element = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:self];
       element.accessibilityLabel = [NSString
+          // TODO: Implement prop for table row
           stringWithFormat:@"Row %lu: %@", (unsigned long)(rowIndex + 1), [cellTexts componentsJoinedByString:@", "]];
       element.accessibilityFrameInContainerSpace = CGRectMake(0, yOffset, _totalTableWidth, rowHeight);
       element.accessibilityTraits =
