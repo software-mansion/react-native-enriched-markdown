@@ -13,6 +13,9 @@ data class ParseResult(
 )
 
 object InputParser {
+  // A source paragraph break: a newline followed by one or more blank lines.
+  private val PARAGRAPH_BREAK_RE = Regex("\\n[ \\t]*(?:\\n[ \\t]*)+")
+
   fun parseToPlainTextAndRanges(markdown: String): ParseResult {
     if (markdown.isEmpty()) {
       return ParseResult("", emptyList())
@@ -25,7 +28,17 @@ object InputParser {
     val plainText = StringBuilder()
     val ranges = mutableListOf<FormattingRange>()
 
-    walkNode(ast, plainText, ranges, ArrayDeque())
+    // md4c collapses any blank-line run into a single break, unlike iOS which keeps them.
+    // Re-read the real runs so each break replays its original number of newlines.
+    val blankRuns =
+      ArrayDeque(
+        PARAGRAPH_BREAK_RE
+          .findAll(completed.trim())
+          .map { match -> match.value.count { it == '\n' } }
+          .toList(),
+      )
+
+    walkNode(ast, plainText, ranges, ArrayDeque(), blankRuns)
 
     return ParseResult(plainText.toString(), ranges)
   }
@@ -35,6 +48,7 @@ object InputParser {
     plainText: StringBuilder,
     ranges: MutableList<FormattingRange>,
     activeStyles: ArrayDeque<ActiveStyle>,
+    blankRuns: ArrayDeque<Int>,
   ) {
     val styleType = nodeTypeToStyleType(node.type)
 
@@ -49,8 +63,12 @@ object InputParser {
       plainText.append("\n")
     }
 
-    for (child in node.children) {
-      walkNode(child, plainText, ranges, activeStyles)
+    for ((index, child) in node.children.withIndex()) {
+      // Keep the source's blank lines between paragraphs (md4c drops them, iOS keeps them).
+      if (index > 0 && child.type == NodeType.Paragraph && plainText.isNotEmpty()) {
+        plainText.append("\n".repeat(blankRuns.removeFirstOrNull() ?: 2))
+      }
+      walkNode(child, plainText, ranges, activeStyles, blankRuns)
     }
 
     if (styleType != null) {
