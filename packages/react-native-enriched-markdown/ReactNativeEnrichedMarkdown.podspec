@@ -39,7 +39,7 @@ Pod::Spec.new do |s|
     if defined?(:spm_dependency)
       spm_dependency(s,
         url: 'https://github.com/erweixin/RaTeX.git',
-        requirement: {kind: 'upToNextMajorVersion', minimumVersion: '0.1.9'},
+        requirement: {kind: 'upToNextMajorVersion', minimumVersion: '0.1.12'},
         products: ['RaTeX']
       )
     end

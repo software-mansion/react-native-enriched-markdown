@@ -1,6 +1,9 @@
 ENV['RCT_NEW_ARCH_ENABLED'] = '1'
-# Set to '0' to disable math (iosMath supports macOS >= 10.8 so math is enabled by default)
+
+# LaTeX math rendering (RaTeX >= 0.1.12 supports macOS). Set to '0' to disable.
+# When enabled, dynamic frameworks are required for SPM interop.
 # ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0'
+ENV['USE_FRAMEWORKS'] = 'dynamic' if ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] != '0'
 
 require 'pathname'
 
@@ -11,6 +14,12 @@ ws_dir = ws_dir.parent until
 require "#{ws_dir}/node_modules/react-native-macos/scripts/react_native_pods.rb"
 
 prepare_react_native_project!
+
+linkage = ENV['USE_FRAMEWORKS']
+if linkage != nil
+  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
+  use_frameworks! :linkage => linkage.to_sym
+end
 
 target 'MacosExample-macOS' do
   platform :macos, '14.0'
