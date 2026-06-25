@@ -74,9 +74,22 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 - (void)layoutSubviews
 {
   [super layoutSubviews];
+  // Re-arming the relayout on every layout pass feeds back into the scroll; a scrolling text view
+  // lays out natively, so only the auto-grow path needs it.
+  if (self.scrollEnabled) {
+    return;
+  }
   if (self.markdownTextInput != nil) {
     [self.markdownTextInput scheduleRelayoutIfNeeded];
   }
+}
+
+// Caret auto-scroll goes through here; grow the target rect by the bottom inset so the caret keeps
+// that cushion above the keyboard instead of gluing flush to it.
+- (void)scrollRectToVisible:(CGRect)rect animated:(BOOL)animated
+{
+  rect.size.height += self.textContainerInset.bottom;
+  [super scrollRectToVisible:rect animated:animated];
 }
 
 @end

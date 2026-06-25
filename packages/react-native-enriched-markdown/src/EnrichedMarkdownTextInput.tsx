@@ -8,6 +8,7 @@ import {
 import type React from 'react';
 import EnrichedMarkdownTextInputNativeComponent, {
   Commands,
+  type ContentInset,
   type NativeProps,
   type OnChangeTextEvent,
   type OnChangeMarkdownEvent,
@@ -153,6 +154,7 @@ export interface EnrichedMarkdownTextInputProps extends Omit<
   editable?: boolean;
   autoFocus?: boolean;
   scrollEnabled?: boolean;
+  contentInset?: ContentInset;
   autoCapitalize?: string;
   multiline?: boolean;
   cursorColor?: ColorValue;

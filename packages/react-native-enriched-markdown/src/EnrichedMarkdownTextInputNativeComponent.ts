@@ -142,6 +142,13 @@ export interface OnContextMenuItemPressEvent {
   };
 }
 
+export interface ContentInset {
+  top: CodegenTypes.Float;
+  bottom: CodegenTypes.Float;
+  left: CodegenTypes.Float;
+  right: CodegenTypes.Float;
+}
+
 export interface NativeProps extends ViewProps {
   /**
    * Initial markdown content.
@@ -170,6 +177,13 @@ export interface NativeProps extends ViewProps {
    * @default true
    */
   scrollEnabled?: boolean;
+  /**
+   * Vertical content padding for the editor (iOS and Android). `top` pushes the first line down (e.g.
+   * below a translucent header); `bottom` keeps room past the last line that survives while typing. It
+   * is part of the scrollable content and scrolls away with the text: on iOS via
+   * UITextView.textContainerInset, on Android via the editor's padding inside the scroll container.
+   */
+  contentInset?: Readonly<ContentInset>;
   /**
    * Auto-capitalization behavior.
    */
