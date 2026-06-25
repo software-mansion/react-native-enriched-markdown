@@ -6,6 +6,7 @@ import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode.NodeType
 import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
+import com.swmansion.enriched.markdown.parser.isTopLevelBlock
 
 data class ParseResult(
   val plainText: String,
@@ -64,8 +65,8 @@ object InputParser {
     }
 
     for ((index, child) in node.children.withIndex()) {
-      // Keep the source's blank lines between paragraphs (md4c drops them, iOS keeps them).
-      if (index > 0 && child.type == NodeType.Paragraph && plainText.isNotEmpty()) {
+      // Keep the source's blank lines between top-level blocks (md4c drops them, iOS keeps them).
+      if (index > 0 && child.type.isTopLevelBlock() && plainText.isNotEmpty()) {
         plainText.append("\n".repeat(blankRuns.removeFirstOrNull() ?: 2))
       }
       walkNode(child, plainText, ranges, activeStyles, blankRuns)
