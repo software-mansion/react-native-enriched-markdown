@@ -12,6 +12,8 @@
 #if TARGET_OS_OSX
 #import "ENRMMenuAction.h"
 #import "ENRMTableGridView.h"
+#else
+#import "ENRMTableIOSGridView.h"
 #endif
 
 @interface TableCellData : NSObject
@@ -26,7 +28,7 @@
 @end
 
 #if !TARGET_OS_OSX
-@interface TableContainerView () <UITextViewDelegate, UIContextMenuInteractionDelegate>
+@interface TableContainerView () <UIContextMenuInteractionDelegate>
 @end
 #else
 @interface TableContainerView ()
@@ -93,7 +95,19 @@
   _gridContainer = gridView;
   [(NSScrollView *)_scrollView setDocumentView:_gridContainer];
 #else
-  _gridContainer = [[RCTUIView alloc] init];
+  ENRMTableIOSGridView *iosGridView = [[ENRMTableIOSGridView alloc] initWithFrame:CGRectZero];
+  __weak TableContainerView *weakSelf = self;
+  iosGridView.onLinkTap = ^(NSString *url) {
+    TableContainerView *strongSelf = weakSelf;
+    if (strongSelf && strongSelf.onLinkPress)
+      strongSelf.onLinkPress(url);
+  };
+  iosGridView.onLinkLongTap = ^(NSString *url) {
+    TableContainerView *strongSelf = weakSelf;
+    if (strongSelf && strongSelf.onLinkLongPress)
+      strongSelf.onLinkLongPress(url);
+  };
+  _gridContainer = iosGridView;
   [_scrollView addSubview:_gridContainer];
   UIContextMenuInteraction *contextMenu = [[UIContextMenuInteraction alloc] initWithDelegate:self];
   [_gridContainer addInteraction:contextMenu];
@@ -179,24 +193,7 @@
   if (self.rowCount <= previousRowCount) {
     return;
   }
-
-  NSArray<RCTUIView *> *subviews = _gridContainer.subviews;
-  NSUInteger childCount = subviews.count;
-  if (childCount == 0 || self.rowCount == 0) {
-    return;
-  }
-
-  NSUInteger colCount = childCount / self.rowCount;
-  if (colCount == 0) {
-    return;
-  }
-
-  NSUInteger firstNewCellIndex = previousRowCount * colCount;
-  for (NSUInteger i = firstNewCellIndex; i < childCount; i++) {
-    RCTUIView *cellView = subviews[i];
-    cellView.alpha = 0.0;
-    [UIView animateWithDuration:duration animations:^{ cellView.alpha = 1.0; }];
-  }
+  [(ENRMTableIOSGridView *)_gridContainer fadeInRowsFrom:previousRowCount duration:duration];
 }
 #else
 - (void)animateNewRowsFromPreviousCount:(NSUInteger)previousRowCount duration:(NSTimeInterval)duration
@@ -317,6 +314,16 @@
   return (bodyRowIndex % 2 == 0) ? self.config.tableRowEvenBackgroundColor : self.config.tableRowOddBackgroundColor;
 }
 
+- (NSArray<NSAttributedString *> *)attributedTextsForRow:(NSArray<TableCellData *> *)rowCells
+{
+  NSMutableArray<NSAttributedString *> *cellTexts = [NSMutableArray arrayWithCapacity:_colCount];
+  for (NSUInteger columnIndex = 0; columnIndex < _colCount; columnIndex++) {
+    NSAttributedString *text = (columnIndex < rowCells.count) ? rowCells[columnIndex].attributedText : nil;
+    [cellTexts addObject:text ?: [[NSAttributedString alloc] init]];
+  }
+  return [cellTexts copy];
+}
+
 #if TARGET_OS_OSX
 - (void)renderGridMacOS
 {
@@ -349,16 +356,6 @@
                cornerRadius:self.config.tableBorderRadius];
 }
 
-- (NSArray<NSAttributedString *> *)attributedTextsForRow:(NSArray<TableCellData *> *)rowCells
-{
-  NSMutableArray<NSAttributedString *> *cellTexts = [NSMutableArray arrayWithCapacity:_colCount];
-  for (NSUInteger columnIndex = 0; columnIndex < _colCount; columnIndex++) {
-    NSAttributedString *text = (columnIndex < rowCells.count) ? rowCells[columnIndex].attributedText : nil;
-    [cellTexts addObject:text ?: [[NSAttributedString alloc] init]];
-  }
-  return [cellTexts copy];
-}
-
 #else
 
 - (void)renderGridIOS
@@ -367,108 +364,35 @@
   _gridContainer.layer.cornerRadius = self.config.tableBorderRadius;
   _gridContainer.layer.masksToBounds = YES;
 
-  CGFloat yOffset = 0;
   NSUInteger bodyRowIndex = 0;
+  NSMutableArray<ENRMTableIOSRowData *> *rowDataArray = [NSMutableArray arrayWithCapacity:_rows.count];
 
-  for (NSUInteger r = 0; r < _rows.count; r++) {
-    NSArray<TableCellData *> *row = _rows[r];
-    CGFloat rowHeight = [_rowHeights[r] doubleValue];
-    BOOL isHeaderRow = (row.count > 0 && row.firstObject.isHeader);
+  for (NSArray<TableCellData *> *rowCells in _rows) {
+    BOOL isHeaderRow = (rowCells.count > 0 && rowCells.firstObject.isHeader);
 
-    [self renderRow:row atY:yOffset height:rowHeight isHeader:isHeaderRow bodyIndex:bodyRowIndex];
+    ENRMTableIOSRowData *rowData = [[ENRMTableIOSRowData alloc] init];
+    rowData.backgroundColor = [self backgroundColorForRowIsHeader:isHeaderRow bodyRowIndex:bodyRowIndex];
+    rowData.cellTexts = [self attributedTextsForRow:rowCells];
+    [rowDataArray addObject:rowData];
 
-    if (!isHeaderRow)
+    if (!isHeaderRow) {
       bodyRowIndex++;
-    yOffset += rowHeight;
-  }
-}
-#endif
-
-#if !TARGET_OS_OSX
-- (void)renderRow:(NSArray<TableCellData *> *)row
-              atY:(CGFloat)yOffset
-           height:(CGFloat)height
-         isHeader:(BOOL)isHeader
-        bodyIndex:(NSUInteger)bodyIndex
-{
-  CGFloat xOffset = 0;
-  RCTUIColor *rowBackground = [self backgroundColorForRowIsHeader:isHeader bodyRowIndex:bodyIndex];
-
-  for (NSUInteger column = 0; column < _colCount; column++) {
-    CGFloat columnWidth = [_colWidths[column] doubleValue];
-    CGRect cellFrame = CGRectMake(xOffset, yOffset, columnWidth + _borderWidth, height + _borderWidth);
-
-    RCTUIView *cellBackground = [[RCTUIView alloc] initWithFrame:cellFrame];
-    cellBackground.backgroundColor = rowBackground;
-    cellBackground.layer.borderColor = self.config.tableBorderColor.CGColor;
-    cellBackground.layer.borderWidth = _borderWidth;
-    [_gridContainer addSubview:cellBackground];
-
-    if (column < row.count) {
-      [self addTextToCell:cellBackground data:row[column] width:columnWidth height:height];
     }
-    xOffset += columnWidth;
   }
-}
 
-- (void)addTextToCell:(RCTUIView *)container data:(TableCellData *)data width:(CGFloat)width height:(CGFloat)height
-{
-  const CGFloat horizontalPadding = self.config.tableCellPaddingHorizontal;
-  const CGFloat verticalPadding = self.config.tableCellPaddingVertical;
-  CGRect contentFrame =
-      CGRectMake(horizontalPadding, verticalPadding, width - (horizontalPadding * 2), height - (verticalPadding * 2));
-  UITextView *cellTextView = [self createCellTextView];
-  cellTextView.frame = contentFrame;
-  cellTextView.attributedText = data.attributedText;
-  [container addSubview:cellTextView];
-}
-
-- (UITextView *)createCellTextView
-{
-  UITextView *textView = [[UITextView alloc] init];
-  textView.editable = NO;
-  textView.scrollEnabled = NO;
-  textView.selectable = NO;
-  textView.backgroundColor = [RCTUIColor clearColor];
-  textView.textContainerInset = UIEdgeInsetsZero;
-  textView.accessibilityElementsHidden = YES;
-  textView.linkTextAttributes = @{};
-  textView.delegate = self;
-
-  UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self
-                                                                                  action:@selector(cellTextTapped:)];
-  [textView addGestureRecognizer:tapRecognizer];
-  textView.textContainer.lineFragmentPadding = 0;
-  return textView;
+  ENRMTableIOSGridView *gridView = (ENRMTableIOSGridView *)_gridContainer;
+  [gridView updateWithRows:[rowDataArray copy]
+               columnWidths:_colWidths
+                 rowHeights:_rowHeights
+                borderColor:self.config.tableBorderColor
+                borderWidth:_borderWidth
+      horizontalCellPadding:self.config.tableCellPaddingHorizontal
+        verticalCellPadding:self.config.tableCellPaddingVertical
+               cornerRadius:self.config.tableBorderRadius];
 }
 #endif
 
 #if !TARGET_OS_OSX
-- (void)cellTextTapped:(UITapGestureRecognizer *)recognizer
-{
-  UITextView *textView = (UITextView *)recognizer.view;
-  NSString *url = linkURLAtTapLocation(textView, recognizer);
-  if (url && self.onLinkPress)
-    self.onLinkPress(url);
-}
-
-- (BOOL)textView:(UITextView *)textView
-    shouldInteractWithURL:(NSURL *)URL
-                  inRange:(NSRange)range
-              interaction:(UITextItemInteraction)interaction
-{
-  if (interaction != UITextItemInteractionPresentActions)
-    return YES;
-
-  NSString *urlString = linkURLAtRange(textView, range);
-  if (!urlString || self.enableLinkPreview)
-    return YES;
-
-  if (self.onLinkLongPress)
-    self.onLinkLongPress(urlString);
-  return NO;
-}
-
 - (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction
                         configurationForMenuAtLocation:(CGPoint)location
 {

@@ -44,11 +44,11 @@ android.iml
 # Cocoapods
 #
 apps/react-native-example/ios/Pods
-apps/macos-example/macos/Pods
+apps/react-native-macos-example/macos/Pods
 
 # Ruby
 apps/react-native-example/vendor/
-apps/macos-example/vendor/
+apps/react-native-macos-example/vendor/
 
 # node.js
 #
@@ -91,3 +91,6 @@ nitrogen/
 
 *storybook.log
 storybook-static
+
+# Maestro assertScreenshot diff artifacts
+.maestro/**/*_diff.png

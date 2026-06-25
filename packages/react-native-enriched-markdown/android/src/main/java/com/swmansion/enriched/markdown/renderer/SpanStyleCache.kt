@@ -52,10 +52,10 @@ class SpanStyleCache(
     val paragraphColor = style.paragraphStyle.color
     return buildList {
       style.strongStyle.color
-        ?.takeIf { it != 0 }
+        ?.takeIf { it != 0 && it != paragraphColor }
         ?.let { add(it) }
       style.emphasisStyle.color
-        ?.takeIf { it != 0 }
+        ?.takeIf { it != 0 && it != paragraphColor }
         ?.let { add(it) }
       style.linkStyle.color
         .takeIf { it != 0 && it != paragraphColor }
@@ -68,10 +68,10 @@ class SpanStyleCache(
       style
         .codeStyle
         .color
-        .takeIf { it != 0 }
+        .takeIf { it != 0 && it != paragraphColor }
         ?.let { add(it) }
       style.taskListStyle.checkedTextColor
-        .takeIf { it != 0 }
+        .takeIf { it != 0 && it != paragraphColor }
         ?.let { add(it) }
     }.toIntArray()
   }

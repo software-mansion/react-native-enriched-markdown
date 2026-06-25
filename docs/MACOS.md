@@ -16,4 +16,4 @@ These will be addressed in upcoming releases:
 
 ## Example app
 
-See the [macos-example/](../macos-example/) directory for a working example app.
+See the [react-native-macos-example/](../apps/react-native-macos-example/) directory for a working example app.
