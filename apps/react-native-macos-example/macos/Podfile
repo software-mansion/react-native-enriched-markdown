@@ -14,12 +14,6 @@ require "#{ws_dir}/node_modules/react-native-macos/scripts/react_native_pods.rb"
 
 prepare_react_native_project!
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
-
 target 'MacosExample-macOS' do
   platform :macos, '14.0'
   use_native_modules!
