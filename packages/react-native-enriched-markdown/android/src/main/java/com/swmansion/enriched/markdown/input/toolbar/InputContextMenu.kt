@@ -65,8 +65,8 @@ class InputContextMenu(
           menu.removeGroup(CUSTOM_MENU_GROUP_ID)
 
           if (selectionMenuConfig.format) {
-            val formatTitle = selectionMenuConfig.formatLabel.ifEmpty { "Format" }
-            val formatSubMenu = menu.addSubMenu(FORMAT_MENU_GROUP_ID, MENU_FORMAT_ID, 100, formatTitle)
+            val formatSubMenu =
+              menu.addSubMenu(FORMAT_MENU_GROUP_ID, MENU_FORMAT_ID, 100, selectionMenuConfig.formatLabel)
             FORMAT_ITEMS.forEachIndexed { index, (styleType, labelOf) ->
               if (isFormatItemVisible(styleType)) {
                 formatSubMenu.add(Menu.NONE, MENU_FORMAT_ITEM_BASE + index, index, labelOf(formatMenuConfig))
@@ -76,8 +76,7 @@ class InputContextMenu(
 
           if (view.selectionStart < view.selectionEnd) {
             if (selectionMenuConfig.copyAsMarkdown) {
-              val copyAsMarkdownTitle = selectionMenuConfig.copyAsMarkdownLabel.ifEmpty { "Copy as Markdown" }
-              menu.add(FORMAT_MENU_GROUP_ID, MENU_COPY_MARKDOWN_ID, 101, copyAsMarkdownTitle)
+              menu.add(FORMAT_MENU_GROUP_ID, MENU_COPY_MARKDOWN_ID, 101, selectionMenuConfig.copyAsMarkdownLabel)
             }
 
             customItemTexts.forEachIndexed { index, text ->
@@ -208,17 +207,16 @@ class InputContextMenu(
     private const val CUSTOM_MENU_GROUP_ID = 2000
     private const val MENU_CUSTOM_BASE = 2001
 
-    // Each entry maps a style type to a getter that pulls the localized label
-    // from FormatMenuConfig. The order here defines submenu order and the
-    // index used by MENU_FORMAT_ITEM_BASE + index when handling clicks.
+    // Order here defines submenu order and the index used by
+    // `MENU_FORMAT_ITEM_BASE + index` when handling clicks.
     private val FORMAT_ITEMS: List<Pair<StyleType, (FormatMenuConfig) -> String>> =
       listOf(
-        StyleType.BOLD to { it.boldLabel.ifEmpty { "Bold" } },
-        StyleType.ITALIC to { it.italicLabel.ifEmpty { "Italic" } },
-        StyleType.UNDERLINE to { it.underlineLabel.ifEmpty { "Underline" } },
-        StyleType.STRIKETHROUGH to { it.strikethroughLabel.ifEmpty { "Strikethrough" } },
-        StyleType.SPOILER to { it.spoilerLabel.ifEmpty { "Spoiler" } },
-        StyleType.LINK to { it.linkLabel.ifEmpty { "Link" } },
+        StyleType.BOLD to { it.boldLabel },
+        StyleType.ITALIC to { it.italicLabel },
+        StyleType.UNDERLINE to { it.underlineLabel },
+        StyleType.STRIKETHROUGH to { it.strikethroughLabel },
+        StyleType.SPOILER to { it.spoilerLabel },
+        StyleType.LINK to { it.linkLabel },
       )
   }
 }

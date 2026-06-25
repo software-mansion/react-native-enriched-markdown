@@ -99,8 +99,6 @@ export const Default: InputStory<FormatMenuStoryExtra> = {
     strikethroughEnabled: true,
     spoilerEnabled: true,
     linkEnabled: true,
-    // Italian defaults to demonstrate localization across both submenu title
-    // and individual items.
     formatLabel: 'Formato',
     copyAsMarkdownLabel: 'Copia come Markdown',
     boldLabel: 'Grassetto',

@@ -1,16 +1,9 @@
-/**
- * Shared normalizer for menu-item config props that accept either a boolean
- * (legacy) or an object of the form `{ enabled?, label? }`. Resolves the
- * English default label JS-side so native always receives concrete strings.
- *
- * Used by both `selectionMenuConfig` (text) and `formatMenuConfig` /
- * `inputSelectionMenuConfig` (input) so the deprecation warnings and fallback
- * rules stay consistent across components.
- */
+// English defaults are resolved here so native always receives concrete
+// strings — call sites in iOS / Android can read the label without any
+// fallback logic of their own.
 
-// One-time deprecation warnings for the legacy boolean shape. Not __DEV__-gated
-// on purpose: deprecation warnings need to surface in staging/TestFlight/CI
-// prod builds too.
+// Not __DEV__-gated on purpose: deprecation warnings need to surface in
+// staging/TestFlight/CI prod builds too.
 const warned = new Set<string>();
 
 export const warnOnce = (key: string, msg: string) => {

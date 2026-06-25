@@ -137,11 +137,7 @@ export interface InputSelectionMenuConfig {
   copyAsMarkdown?: MenuItem;
 }
 
-/**
- * Controls the individual items inside the Format submenu. Each item accepts
- * an object: `{ enabled }` toggles visibility and `label` overrides the
- * English default. Wire `label` to your i18n library to localize the menu.
- */
+/** Controls the individual items inside the Format submenu. */
 export interface FormatMenuConfig {
   /** @default { enabled: true, label: "Bold" } */
   bold?: MenuItem;

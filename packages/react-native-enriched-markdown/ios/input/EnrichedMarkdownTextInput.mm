@@ -96,9 +96,8 @@ using namespace facebook::react;
   ENRMInputSelectionMenuConfig _inputSelectionMenuConfig;
   ENRMFormatMenuConfig _formatMenuConfig;
 
-  // Backing storage for the labels referenced by `__unsafe_unretained` pointers
-  // inside the two config structs above. Strong ivars here own the strings;
-  // the structs hold non-owning references for cheap pass-by-value.
+  // Strong owners for the strings the two config structs above reference via
+  // `__unsafe_unretained` pointers.
   NSString *_inputSelectionMenuFormatLabel;
   NSString *_inputSelectionMenuCopyAsMarkdownLabel;
   NSString *_formatMenuBoldLabel;
