@@ -246,13 +246,15 @@ class EnrichedMarkdown
             view.copyLabel = copyLabel
             view.copyAsMarkdownLabel = copyAsMarkdownLabel
           }
-          isMathContainerView(view) ->
+
+          isMathContainerView(view) -> {
             runCatching {
               view.javaClass.getMethod("setCopyLabel", String::class.java).invoke(view, copyLabel)
               view.javaClass
                 .getMethod("setCopyAsMarkdownLabel", String::class.java)
                 .invoke(view, copyAsMarkdownLabel)
             }
+          }
         }
       }
     }
@@ -502,9 +504,11 @@ class EnrichedMarkdown
           resolvedClass
             .getConstructor(Context::class.java, StyleConfig::class.java)
             .newInstance(context, style) as View
-        resolvedClass.getMethod("setCopyLabel", String::class.java)
+        resolvedClass
+          .getMethod("setCopyLabel", String::class.java)
           .invoke(view, selectionMenuConfig.copyLabel)
-        resolvedClass.getMethod("setCopyAsMarkdownLabel", String::class.java)
+        resolvedClass
+          .getMethod("setCopyAsMarkdownLabel", String::class.java)
           .invoke(view, selectionMenuConfig.copyAsMarkdownLabel)
         resolvedClass.getMethod("applyLatex", String::class.java).invoke(view, segment.latex)
         view

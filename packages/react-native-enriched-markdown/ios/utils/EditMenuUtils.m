@@ -81,9 +81,9 @@ UIMenu *buildEditMenuForSelection(NSAttributedString *attributedText, NSRange ra
   NSArray<NSString *> *imageURLs = imageURLsInRange(attributedText, range);
 
   UIAction *copyAction = createCopyAction(selectedText, markdown, styleConfig, selectionMenuConfig.copyLabel);
-  UIAction *copyMarkdownAction =
-      selectionMenuConfig.copyAsMarkdown ? createCopyMarkdownAction(markdown, selectionMenuConfig.copyAsMarkdownLabel)
-                                         : nil;
+  UIAction *copyMarkdownAction = selectionMenuConfig.copyAsMarkdown
+                                     ? createCopyMarkdownAction(markdown, selectionMenuConfig.copyAsMarkdownLabel)
+                                     : nil;
   UIAction *copyImageURLAction =
       selectionMenuConfig.copyImageURL ? createCopyImageURLAction(imageURLs, selectionMenuConfig) : nil;
 

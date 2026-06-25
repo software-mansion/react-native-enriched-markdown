@@ -42,6 +42,10 @@ extern "C" {
 
 #if !TARGET_OS_OSX
 // TODO: Remove API_AVAILABLE(ios(16.0)) guard when the minimum iOS deployment target in RN is bumped to 16.
+// TODO: selectionMenuConfig labels do NOT reach the system "Save to Camera Roll /
+// Copy" sheet shown when long-pressing an NSTextAttachment image — UIKit owns
+// that sheet end-to-end. Hooking UIContextMenuInteraction on image regions and
+// returning a custom UIContextMenuConfiguration would let us relabel those items.
 UIMenu *buildEditMenuForSelection(NSAttributedString *attributedText, NSRange range, NSString *_Nullable cachedMarkdown,
                                   StyleConfig *styleConfig, NSArray<UIMenuElement *> *suggestedActions,
                                   NSArray<UIAction *> *_Nullable customActions,

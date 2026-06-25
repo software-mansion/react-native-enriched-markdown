@@ -104,5 +104,4 @@ fun parseSelectionMenuConfig(value: ReadableMap?): SelectionMenuConfig {
   )
 }
 
-private fun parseStringList(value: ReadableArray?): List<String> =
-  (0 until (value?.size() ?: 0)).mapNotNull { value?.getString(it) }
+private fun parseStringList(value: ReadableArray?): List<String> = (0 until (value?.size() ?: 0)).mapNotNull { value?.getString(it) }

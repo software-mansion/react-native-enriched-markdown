@@ -40,8 +40,7 @@ NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, 
   }
 
   if (selectionMenuConfig.copyAsMarkdown && markdown.length > 0) {
-    [menu addItem:ENRMCreateMenuItem(selectionMenuConfig.copyAsMarkdownLabel,
-                                     ^{ copyStringToPasteboard(markdown); })];
+    [menu addItem:ENRMCreateMenuItem(selectionMenuConfig.copyAsMarkdownLabel, ^{ copyStringToPasteboard(markdown); })];
   }
 
   if (selectionMenuConfig.copyImageURL && imageURLs.count > 0) {

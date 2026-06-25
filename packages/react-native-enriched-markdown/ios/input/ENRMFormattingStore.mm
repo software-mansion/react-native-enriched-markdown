@@ -119,8 +119,8 @@ static EditOverlap classifyOverlap(NSUInteger rangeStart, NSUInteger rangeEnd, N
   if (position == 0) {
     return NO;
   }
-  return [self rangeOfType:type containingPosition:position] != nil ||
-         [self rangeOfType:type containingPosition:position - 1] != nil;
+  return [self rangeOfType:type containingPosition:position] != nil || [self rangeOfType:type
+                                                                           containingPosition:position - 1] != nil;
 }
 
 - (void)addRange:(ENRMFormattingRange *)newRange

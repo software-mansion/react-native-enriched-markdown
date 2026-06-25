@@ -78,6 +78,13 @@ fun createSelectionActionModeCallback(
 
       val selectionMenuConfig = getSelectionMenuConfig()
 
+      // The system Copy item is added by the platform; relabel it so it
+      // matches the rest of the localized menu (iOS rebuilds the menu so
+      // gets this for free; Android only intercepts the click).
+      if (selectionMenuConfig.copyLabel.isNotEmpty()) {
+        menu.findItem(android.R.id.copy)?.title = selectionMenuConfig.copyLabel
+      }
+
       if (
         selectionMenuConfig.copyAsMarkdown &&
         textView.selectionStart >= 0 &&

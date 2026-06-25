@@ -60,6 +60,10 @@ const buildPluralTemplates = (
 
   let pluralRules: { select(n: number): string };
   try {
+    // TODO: expose `copyImageUrl.pluralLocale?: string` so i18n apps can force
+    // a locale independent of the device. Today this resolves to the JS
+    // runtime's default locale, so on an English device only `one` and `other`
+    // ever fire even when richer plural labels are configured.
     pluralRules = new IntlRef.PluralRules();
   } catch {
     return [];
@@ -109,7 +113,8 @@ const normalizeItem = (
   defaultEnabled: boolean,
   defaultLabel: string
 ): NormalizedMenuItem => {
-  if (raw === undefined) return { enabled: defaultEnabled, label: defaultLabel };
+  if (raw === undefined)
+    return { enabled: defaultEnabled, label: defaultLabel };
   if (typeof raw === 'boolean') {
     warnOnce(
       `selectionMenuConfig.${field}`,
