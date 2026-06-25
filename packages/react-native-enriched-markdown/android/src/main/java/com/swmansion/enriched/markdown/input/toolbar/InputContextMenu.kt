@@ -14,20 +14,26 @@ import com.swmansion.enriched.markdown.input.formatting.MarkdownSerializer
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.StyleType
 
-// TODO: Wrap all user-facing strings for localization support.
-
 data class InputSelectionMenuConfig(
   val format: Boolean = true,
+  val formatLabel: String = "",
   val copyAsMarkdown: Boolean = true,
+  val copyAsMarkdownLabel: String = "",
 )
 
 data class FormatMenuConfig(
   val bold: Boolean = true,
+  val boldLabel: String = "",
   val italic: Boolean = true,
+  val italicLabel: String = "",
   val underline: Boolean = true,
+  val underlineLabel: String = "",
   val strikethrough: Boolean = true,
+  val strikethroughLabel: String = "",
   val spoiler: Boolean = true,
+  val spoilerLabel: String = "",
   val link: Boolean = true,
+  val linkLabel: String = "",
 )
 
 class InputContextMenu(
@@ -59,17 +65,19 @@ class InputContextMenu(
           menu.removeGroup(CUSTOM_MENU_GROUP_ID)
 
           if (selectionMenuConfig.format) {
-            val formatSubMenu = menu.addSubMenu(FORMAT_MENU_GROUP_ID, MENU_FORMAT_ID, 100, "Format")
-            FORMAT_ITEMS.forEachIndexed { index, (title, styleType) ->
+            val formatTitle = selectionMenuConfig.formatLabel.ifEmpty { "Format" }
+            val formatSubMenu = menu.addSubMenu(FORMAT_MENU_GROUP_ID, MENU_FORMAT_ID, 100, formatTitle)
+            FORMAT_ITEMS.forEachIndexed { index, (styleType, labelOf) ->
               if (isFormatItemVisible(styleType)) {
-                formatSubMenu.add(Menu.NONE, MENU_FORMAT_ITEM_BASE + index, index, title)
+                formatSubMenu.add(Menu.NONE, MENU_FORMAT_ITEM_BASE + index, index, labelOf(formatMenuConfig))
               }
             }
           }
 
           if (view.selectionStart < view.selectionEnd) {
             if (selectionMenuConfig.copyAsMarkdown) {
-              menu.add(FORMAT_MENU_GROUP_ID, MENU_COPY_MARKDOWN_ID, 101, "Copy as Markdown")
+              val copyAsMarkdownTitle = selectionMenuConfig.copyAsMarkdownLabel.ifEmpty { "Copy as Markdown" }
+              menu.add(FORMAT_MENU_GROUP_ID, MENU_COPY_MARKDOWN_ID, 101, copyAsMarkdownTitle)
             }
 
             customItemTexts.forEachIndexed { index, text ->
@@ -96,7 +104,7 @@ class InputContextMenu(
 
           val formatIndex = itemId - MENU_FORMAT_ITEM_BASE
           if (formatIndex in FORMAT_ITEMS.indices) {
-            applyFormat(FORMAT_ITEMS[formatIndex].second)
+            applyFormat(FORMAT_ITEMS[formatIndex].first)
             mode.finish()
             return true
           }
@@ -200,14 +208,17 @@ class InputContextMenu(
     private const val CUSTOM_MENU_GROUP_ID = 2000
     private const val MENU_CUSTOM_BASE = 2001
 
-    private val FORMAT_ITEMS =
+    // Each entry maps a style type to a getter that pulls the localized label
+    // from FormatMenuConfig. The order here defines submenu order and the
+    // index used by MENU_FORMAT_ITEM_BASE + index when handling clicks.
+    private val FORMAT_ITEMS: List<Pair<StyleType, (FormatMenuConfig) -> String>> =
       listOf(
-        "Bold" to StyleType.BOLD,
-        "Italic" to StyleType.ITALIC,
-        "Underline" to StyleType.UNDERLINE,
-        "Strikethrough" to StyleType.STRIKETHROUGH,
-        "Spoiler" to StyleType.SPOILER,
-        "Link" to StyleType.LINK,
+        StyleType.BOLD to { it.boldLabel.ifEmpty { "Bold" } },
+        StyleType.ITALIC to { it.italicLabel.ifEmpty { "Italic" } },
+        StyleType.UNDERLINE to { it.underlineLabel.ifEmpty { "Underline" } },
+        StyleType.STRIKETHROUGH to { it.strikethroughLabel.ifEmpty { "Strikethrough" } },
+        StyleType.SPOILER to { it.spoilerLabel.ifEmpty { "Spoiler" } },
+        StyleType.LINK to { it.linkLabel.ifEmpty { "Link" } },
       )
   }
 }

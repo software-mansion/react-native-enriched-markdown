@@ -115,16 +115,24 @@ export interface ContextMenuItemConfig {
 
 export interface InputSelectionMenuConfigInternal {
   format: boolean;
+  formatLabel: string;
   copyAsMarkdown: boolean;
+  copyAsMarkdownLabel: string;
 }
 
 export interface FormatMenuConfigInternal {
   bold: boolean;
+  boldLabel: string;
   italic: boolean;
+  italicLabel: string;
   underline: boolean;
+  underlineLabel: string;
   strikethrough: boolean;
+  strikethroughLabel: string;
   spoiler: boolean;
+  spoilerLabel: string;
   link: boolean;
+  linkLabel: string;
 }
 
 export interface OnContextMenuItemPressEvent {

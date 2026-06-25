@@ -3,8 +3,6 @@
 #import "EnrichedMarkdownTextInput+Internal.h"
 #import "PasteboardUtils.h"
 
-// TODO: Wrap all user-facing strings with NSLocalizedString for localization support.
-
 @implementation EnrichedMarkdownTextInput (ContextMenu)
 
 - (void)copySelectedRangeAsMarkdown
@@ -29,34 +27,33 @@
   ENRMFormatMenuConfig fmtConfig = [self formatMenuConfig];
   __weak EnrichedMarkdownTextInput *weakSelf = self;
 
-  // TODO: Localize titles with NSLocalizedString.
-  static const struct {
+  // Titles resolved JS-side via formatMenuConfig / selectionMenuConfig.
+  // Empty fallback strings only matter before the first props update, since
+  // normal flow always supplies non-empty labels.
+  const struct {
     NSString *title;
     NSString *icon;
     ENRMInputStyleType styleType;
-  } kFormatItems[] = {
-      {@"Bold", @"bold", ENRMInputStyleTypeStrong},
-      {@"Italic", @"italic", ENRMInputStyleTypeEmphasis},
-      {@"Underline", @"underline", ENRMInputStyleTypeUnderline},
-      {@"Strikethrough", @"strikethrough", ENRMInputStyleTypeStrikethrough},
-      {@"Spoiler", @"eye.slash", ENRMInputStyleTypeSpoiler},
-      {@"Link", @"link", ENRMInputStyleTypeLink},
+    BOOL visible;
+  } formatItems[] = {
+      {fmtConfig.boldLabel ?: @"Bold", @"bold", ENRMInputStyleTypeStrong, fmtConfig.bold},
+      {fmtConfig.italicLabel ?: @"Italic", @"italic", ENRMInputStyleTypeEmphasis, fmtConfig.italic},
+      {fmtConfig.underlineLabel ?: @"Underline", @"underline", ENRMInputStyleTypeUnderline, fmtConfig.underline},
+      {fmtConfig.strikethroughLabel ?: @"Strikethrough", @"strikethrough", ENRMInputStyleTypeStrikethrough,
+       fmtConfig.strikethrough},
+      {fmtConfig.spoilerLabel ?: @"Spoiler", @"eye.slash", ENRMInputStyleTypeSpoiler, fmtConfig.spoiler},
+      {fmtConfig.linkLabel ?: @"Link", @"link", ENRMInputStyleTypeLink, fmtConfig.link},
   };
-  static const NSUInteger kFormatItemCount = sizeof(kFormatItems) / sizeof(kFormatItems[0]);
-  const BOOL kFormatItemVisible[] = {fmtConfig.bold,          fmtConfig.italic,  fmtConfig.underline,
-                                     fmtConfig.strikethrough, fmtConfig.spoiler, fmtConfig.link};
-  _Static_assert(sizeof(kFormatItemVisible) / sizeof(kFormatItemVisible[0]) ==
-                     sizeof(kFormatItems) / sizeof(kFormatItems[0]),
-                 "kFormatItemVisible must match kFormatItems length");
+  const NSUInteger formatItemCount = sizeof(formatItems) / sizeof(formatItems[0]);
 
-  NSMutableArray<UIAction *> *formatActions = [NSMutableArray arrayWithCapacity:kFormatItemCount];
-  for (NSUInteger i = 0; i < kFormatItemCount; i++) {
-    if (!kFormatItemVisible[i]) {
+  NSMutableArray<UIAction *> *formatActions = [NSMutableArray arrayWithCapacity:formatItemCount];
+  for (NSUInteger i = 0; i < formatItemCount; i++) {
+    if (!formatItems[i].visible) {
       continue;
     }
-    ENRMInputStyleType styleType = kFormatItems[i].styleType;
-    UIAction *action = [UIAction actionWithTitle:kFormatItems[i].title
-                                           image:[UIImage systemImageNamed:kFormatItems[i].icon]
+    ENRMInputStyleType styleType = formatItems[i].styleType;
+    UIAction *action = [UIAction actionWithTitle:formatItems[i].title
+                                           image:[UIImage systemImageNamed:formatItems[i].icon]
                                       identifier:nil
                                          handler:^(__kindof UIAction *_) {
                                            if (styleType == ENRMInputStyleTypeLink) {
@@ -67,14 +64,14 @@
                                          }];
     [formatActions addObject:action];
   }
-  UIMenu *formatMenu = [UIMenu menuWithTitle:@"Format"
+  UIMenu *formatMenu = [UIMenu menuWithTitle:menuConfig.formatLabel ?: @"Format"
                                        image:[UIImage systemImageNamed:@"textformat"]
                                   identifier:@"com.enrichedmarkdown.format"
                                      options:0
                                     children:formatActions];
 
   UIAction *copyMarkdownAction =
-      [UIAction actionWithTitle:@"Copy as Markdown"
+      [UIAction actionWithTitle:menuConfig.copyAsMarkdownLabel ?: @"Copy as Markdown"
                           image:[UIImage systemImageNamed:@"doc.text"]
                      identifier:@"com.enrichedmarkdown.copyMarkdown"
                         handler:^(__kindof UIAction *action) { [self copySelectedRangeAsMarkdown]; }];
@@ -132,35 +129,37 @@
   [menu addItem:[NSMenuItem separatorItem]];
 
   if (menuConfig.copyAsMarkdown) {
-    NSMenuItem *copyMarkdownItem = [[NSMenuItem alloc] initWithTitle:@"Copy as Markdown"
-                                                              action:@selector(copySelectedRangeAsMarkdown)
-                                                       keyEquivalent:@""];
+    NSMenuItem *copyMarkdownItem =
+        [[NSMenuItem alloc] initWithTitle:menuConfig.copyAsMarkdownLabel ?: @"Copy as Markdown"
+                                   action:@selector(copySelectedRangeAsMarkdown)
+                            keyEquivalent:@""];
     copyMarkdownItem.target = self;
     [menu addItem:copyMarkdownItem];
   }
 
   if (menuConfig.format) {
-    NSMenu *formatSubmenu = [[NSMenu alloc] initWithTitle:@"Format"];
-    struct {
+    NSString *formatTitle = menuConfig.formatLabel ?: @"Format";
+    NSMenu *formatSubmenu = [[NSMenu alloc] initWithTitle:formatTitle];
+    const struct {
       NSString *title;
       SEL action;
       NSString *key;
       NSEventModifierFlags modifiers;
-    } const items[] = {
-        {@"Bold", @selector(toggleBold), @"b", NSEventModifierFlagCommand},
-        {@"Italic", @selector(toggleItalic), @"i", NSEventModifierFlagCommand},
-        {@"Underline", @selector(toggleUnderline), @"u", NSEventModifierFlagCommand},
-        {@"Strikethrough", @selector(toggleStrikethrough), @"", 0},
-        {@"Spoiler", @selector(toggleSpoiler), @"", 0},
-        {@"Link", @selector(showLinkPrompt), @"", 0},
+      BOOL visible;
+    } items[] = {
+        {fmtConfig.boldLabel ?: @"Bold", @selector(toggleBold), @"b", NSEventModifierFlagCommand, fmtConfig.bold},
+        {fmtConfig.italicLabel ?: @"Italic", @selector(toggleItalic), @"i", NSEventModifierFlagCommand,
+         fmtConfig.italic},
+        {fmtConfig.underlineLabel ?: @"Underline", @selector(toggleUnderline), @"u", NSEventModifierFlagCommand,
+         fmtConfig.underline},
+        {fmtConfig.strikethroughLabel ?: @"Strikethrough", @selector(toggleStrikethrough), @"", 0,
+         fmtConfig.strikethrough},
+        {fmtConfig.spoilerLabel ?: @"Spoiler", @selector(toggleSpoiler), @"", 0, fmtConfig.spoiler},
+        {fmtConfig.linkLabel ?: @"Link", @selector(showLinkPrompt), @"", 0, fmtConfig.link},
     };
-    const BOOL visible[] = {fmtConfig.bold,          fmtConfig.italic,  fmtConfig.underline,
-                            fmtConfig.strikethrough, fmtConfig.spoiler, fmtConfig.link};
-    _Static_assert(sizeof(visible) / sizeof(visible[0]) == sizeof(items) / sizeof(items[0]),
-                   "visible must match items length");
 
     for (NSUInteger i = 0; i < sizeof(items) / sizeof(items[0]); i++) {
-      if (!visible[i]) {
+      if (!items[i].visible) {
         continue;
       }
       NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:items[i].title
@@ -173,7 +172,7 @@
       [formatSubmenu addItem:item];
     }
 
-    NSMenuItem *formatItem = [[NSMenuItem alloc] initWithTitle:@"Format" action:nil keyEquivalent:@""];
+    NSMenuItem *formatItem = [[NSMenuItem alloc] initWithTitle:formatTitle action:nil keyEquivalent:@""];
     formatItem.submenu = formatSubmenu;
     [menu addItem:formatItem];
   }

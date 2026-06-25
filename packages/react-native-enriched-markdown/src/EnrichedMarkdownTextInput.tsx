@@ -37,6 +37,7 @@ import type {
   ColorValue,
 } from 'react-native';
 import { normalizeMarkdownTextInputStyle } from './normalizeMarkdownTextInputStyle';
+import { normalizeMenuItem } from './shared/normalizeMenuItem';
 import { toNativeRegexConfig } from './utils/regexParser';
 import type { RefObject } from 'react';
 
@@ -112,34 +113,48 @@ export interface EnrichedMarkdownTextInputInstance {
   getCaretRect: () => Promise<CaretRect>;
 }
 
+/**
+ * Per-item shape: `{ enabled }` toggles visibility, `label` overrides the
+ * English default. Wire `label` to your i18n library to localize the menu.
+ *
+ * The legacy boolean form is still accepted at runtime (it logs a one-time
+ * deprecation warning) and will be removed in 0.8.
+ */
+type MenuItem = { enabled?: boolean; label?: string };
+
 export interface InputSelectionMenuConfig {
   /**
-   * Shows the built-in "Format" submenu (Bold, Italic, Underline, etc.)
-   * in the text selection context menu.
-   * @default true
+   * The built-in "Format" submenu (Bold, Italic, Underline, etc.) in the
+   * text selection context menu. `label` overrides the submenu title.
+   * @default { enabled: true, label: "Format" }
    */
-  format?: boolean;
+  format?: MenuItem;
   /**
-   * Shows the built-in "Copy as Markdown" action in the text selection
-   * context menu.
-   * @default true
+   * The built-in "Copy as Markdown" action in the text selection context
+   * menu. `label` overrides the action title.
+   * @default { enabled: true, label: "Copy as Markdown" }
    */
-  copyAsMarkdown?: boolean;
+  copyAsMarkdown?: MenuItem;
 }
 
+/**
+ * Controls the individual items inside the Format submenu. Each item accepts
+ * an object: `{ enabled }` toggles visibility and `label` overrides the
+ * English default. Wire `label` to your i18n library to localize the menu.
+ */
 export interface FormatMenuConfig {
-  /** @default true */
-  bold?: boolean;
-  /** @default true */
-  italic?: boolean;
-  /** @default true */
-  underline?: boolean;
-  /** @default true */
-  strikethrough?: boolean;
-  /** @default true */
-  spoiler?: boolean;
-  /** @default true */
-  link?: boolean;
+  /** @default { enabled: true, label: "Bold" } */
+  bold?: MenuItem;
+  /** @default { enabled: true, label: "Italic" } */
+  italic?: MenuItem;
+  /** @default { enabled: true, label: "Underline" } */
+  underline?: MenuItem;
+  /** @default { enabled: true, label: "Strikethrough" } */
+  strikethrough?: MenuItem;
+  /** @default { enabled: true, label: "Spoiler" } */
+  spoiler?: MenuItem;
+  /** @default { enabled: true, label: "Link" } */
+  link?: MenuItem;
 }
 
 export interface EnrichedMarkdownTextInputProps extends Omit<
@@ -299,25 +314,102 @@ export const EnrichedMarkdownTextInput = ({
 
   const normalizedStyle = normalizeMarkdownTextInputStyle(markdownStyle);
 
-  const normalizedSelectionMenuConfig = useMemo(
-    () => ({
-      format: selectionMenuConfig?.format ?? true,
-      copyAsMarkdown: selectionMenuConfig?.copyAsMarkdown ?? true,
-    }),
-    [selectionMenuConfig]
-  );
+  const normalizedSelectionMenuConfig = useMemo(() => {
+    // Runtime accepts the legacy boolean form, so widen via `unknown` before
+    // handing to normalizeMenuItem — the public type only exposes the object.
+    const config = selectionMenuConfig as
+      | { format?: unknown; copyAsMarkdown?: unknown }
+      | undefined;
+    const format = normalizeMenuItem(
+      config?.format,
+      'selectionMenuConfig',
+      'format',
+      true,
+      'Format'
+    );
+    const copyAsMarkdown = normalizeMenuItem(
+      config?.copyAsMarkdown,
+      'selectionMenuConfig',
+      'copyAsMarkdown',
+      true,
+      'Copy as Markdown'
+    );
+    return {
+      format: format.enabled,
+      formatLabel: format.label,
+      copyAsMarkdown: copyAsMarkdown.enabled,
+      copyAsMarkdownLabel: copyAsMarkdown.label,
+    };
+  }, [selectionMenuConfig]);
 
-  const normalizedFormatMenuConfig = useMemo(
-    () => ({
-      bold: formatMenuConfig?.bold ?? true,
-      italic: formatMenuConfig?.italic ?? true,
-      underline: formatMenuConfig?.underline ?? true,
-      strikethrough: formatMenuConfig?.strikethrough ?? true,
-      spoiler: formatMenuConfig?.spoiler ?? true,
-      link: formatMenuConfig?.link ?? true,
-    }),
-    [formatMenuConfig]
-  );
+  const normalizedFormatMenuConfig = useMemo(() => {
+    const config = formatMenuConfig as
+      | {
+          bold?: unknown;
+          italic?: unknown;
+          underline?: unknown;
+          strikethrough?: unknown;
+          spoiler?: unknown;
+          link?: unknown;
+        }
+      | undefined;
+    const bold = normalizeMenuItem(
+      config?.bold,
+      'formatMenuConfig',
+      'bold',
+      true,
+      'Bold'
+    );
+    const italic = normalizeMenuItem(
+      config?.italic,
+      'formatMenuConfig',
+      'italic',
+      true,
+      'Italic'
+    );
+    const underline = normalizeMenuItem(
+      config?.underline,
+      'formatMenuConfig',
+      'underline',
+      true,
+      'Underline'
+    );
+    const strikethrough = normalizeMenuItem(
+      config?.strikethrough,
+      'formatMenuConfig',
+      'strikethrough',
+      true,
+      'Strikethrough'
+    );
+    const spoiler = normalizeMenuItem(
+      config?.spoiler,
+      'formatMenuConfig',
+      'spoiler',
+      true,
+      'Spoiler'
+    );
+    const link = normalizeMenuItem(
+      config?.link,
+      'formatMenuConfig',
+      'link',
+      true,
+      'Link'
+    );
+    return {
+      bold: bold.enabled,
+      boldLabel: bold.label,
+      italic: italic.enabled,
+      italicLabel: italic.label,
+      underline: underline.enabled,
+      underlineLabel: underline.label,
+      strikethrough: strikethrough.enabled,
+      strikethroughLabel: strikethrough.label,
+      spoiler: spoiler.enabled,
+      spoilerLabel: spoiler.label,
+      link: link.enabled,
+      linkLabel: link.label,
+    };
+  }, [formatMenuConfig]);
 
   const linkRegex = useMemo(
     () => toNativeRegexConfig(_linkRegex),
