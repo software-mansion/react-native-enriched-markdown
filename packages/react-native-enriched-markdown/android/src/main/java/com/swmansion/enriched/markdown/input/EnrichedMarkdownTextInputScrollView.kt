@@ -76,6 +76,8 @@ class EnrichedMarkdownTextInputScrollView(
   ) {
     super.onSizeChanged(w, h, oldw, oldh)
     invalidateOutline()
+    // After autoFocus the keyboard resize finalizes the viewport; re-reveal the caret until the user touches.
+    if (input.pendingCaretScroll) post { input.scrollContainerToCaret() }
   }
 
   override fun requestLayout() {
