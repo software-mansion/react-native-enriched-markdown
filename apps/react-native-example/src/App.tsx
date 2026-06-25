@@ -1,59 +1,81 @@
-import { NavigationContainer } from '@react-navigation/native';
-import { Stack } from './navigation/Stack';
-import HomeScreen from './screens/home/HomeScreen';
-import PlaygroundScreen from './screens/playground/PlaygroundScreen';
-import TextScreen from './screens/text/TextScreen';
-import InputScreen from './screens/input/InputScreen';
-import StreamingMarkdownSimulator from './screens/streaming/StreamingMarkdownSimulator';
-import StorybookScreen from './screens/storybook/StorybookScreen';
+import React from 'react';
+import { Linking, StyleSheet, View } from 'react-native';
+import { EnrichedMarkdownText } from 'react-native-enriched-markdown';
+import type { MarkdownStyle } from 'react-native-enriched-markdown';
+
+const markdown = `# Markdown accessibility test
+
+This is a plain paragraph. VoiceOver should focus and read this paragraph as text.
+
+This is another plain paragraph without any inline link or special formatting.
+
+This paragraph contains a [test.de link](https://test.de) and text before and after the link.
+
+- First plain list item
+- Second list item with a [mail link](mailto:kontakt@test.de)
+
+**Bold text** and _emphasized text_ should also be reachable.`;
+
+const markdownStyle: MarkdownStyle = {
+  paragraph: {
+    color: '#1F1F21',
+    fontSize: 18,
+    lineHeight: 26,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  h1: {
+    color: '#1F1F21',
+    fontSize: 22,
+    lineHeight: 28,
+    marginTop: 0,
+    marginBottom: 16,
+  },
+  list: {
+    color: '#1F1F21',
+    bulletColor: '#1F1F21',
+    markerColor: '#1F1F21',
+    fontSize: 18,
+    lineHeight: 26,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  link: {
+    color: '#1F1F21',
+    underline: true,
+  },
+  strong: {
+    fontWeight: 'bold',
+  },
+  em: {
+    fontStyle: 'italic',
+  },
+};
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#BEEBD0',
-          },
-          headerTintColor: '#001A72',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-          headerBackButtonDisplayMode: 'minimal',
+    <View style={styles.container}>
+      <EnrichedMarkdownText
+        markdown={markdown}
+        markdownStyle={markdownStyle}
+        selectable
+        flavor="github"
+        containerStyle={styles.markdown}
+        onLinkPress={({ url }) => {
+          Linking.openURL(url);
         }}
-      >
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ title: 'Enriched Markdown Examples' }}
-        />
-        <Stack.Screen
-          name="Playground"
-          component={PlaygroundScreen}
-          options={{ title: 'Playground' }}
-        />
-        <Stack.Screen
-          name="Text"
-          component={TextScreen}
-          options={{ title: 'Text' }}
-        />
-        <Stack.Screen
-          name="Input"
-          component={InputScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Stream"
-          component={StreamingMarkdownSimulator}
-          options={{ title: 'Stream' }}
-        />
-        <Stack.Screen
-          name="Storybook"
-          component={StorybookScreen}
-          options={{ title: 'Storybook' }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+      />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+    padding: 24,
+  },
+  markdown: {
+    width: '100%',
+  },
+});
