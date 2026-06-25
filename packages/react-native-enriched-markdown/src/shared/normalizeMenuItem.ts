@@ -31,9 +31,16 @@ export const normalizeMenuItem = (
     );
     return { enabled: raw, label: defaultLabel };
   }
-  const obj = raw as { enabled?: boolean; label?: string };
+  // Validate per leaf so an empty string stays an empty string (an emoji-only
+  // item is a legitimate use case), while null / non-object / wrong-typed
+  // fields fall back to defaults — `getBoolean` on the Android side throws on
+  // non-booleans, and a null root would crash JS on property access.
+  const obj =
+    typeof raw === 'object' && raw !== null
+      ? (raw as { enabled?: unknown; label?: unknown })
+      : {};
   return {
-    enabled: obj.enabled ?? defaultEnabled,
-    label: obj.label ?? defaultLabel,
+    enabled: typeof obj.enabled === 'boolean' ? obj.enabled : defaultEnabled,
+    label: typeof obj.label === 'string' ? obj.label : defaultLabel,
   };
 };

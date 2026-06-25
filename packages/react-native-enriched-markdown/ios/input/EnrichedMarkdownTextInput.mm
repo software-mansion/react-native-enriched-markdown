@@ -370,10 +370,12 @@ using namespace facebook::react;
     _contextMenuItemIcons = ENRMContextMenuIconsFromItems(newViewProps.contextMenuItems);
   }
 
+  // Coalesce against `initWithUTF8String:` returning nil on malformed UTF-8 —
+  // UIMenu / UIAction / NSMenuItem titles are _Nonnull and would crash.
   _inputSelectionMenuFormatLabel =
-      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.formatLabel.c_str()];
+      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.formatLabel.c_str()] ?: @"";
   _inputSelectionMenuCopyAsMarkdownLabel =
-      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyAsMarkdownLabel.c_str()];
+      [[NSString alloc] initWithUTF8String:newViewProps.selectionMenuConfig.copyAsMarkdownLabel.c_str()] ?: @"";
   _inputSelectionMenuConfig = (ENRMInputSelectionMenuConfig){
       .format = newViewProps.selectionMenuConfig.format,
       .formatLabel = _inputSelectionMenuFormatLabel,
@@ -381,14 +383,16 @@ using namespace facebook::react;
       .copyAsMarkdownLabel = _inputSelectionMenuCopyAsMarkdownLabel,
   };
 
-  _formatMenuBoldLabel = [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.boldLabel.c_str()];
-  _formatMenuItalicLabel = [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.italicLabel.c_str()];
+  _formatMenuBoldLabel = [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.boldLabel.c_str()] ?: @"";
+  _formatMenuItalicLabel =
+      [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.italicLabel.c_str()] ?: @"";
   _formatMenuUnderlineLabel =
-      [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.underlineLabel.c_str()];
+      [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.underlineLabel.c_str()] ?: @"";
   _formatMenuStrikethroughLabel =
-      [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.strikethroughLabel.c_str()];
-  _formatMenuSpoilerLabel = [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.spoilerLabel.c_str()];
-  _formatMenuLinkLabel = [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.linkLabel.c_str()];
+      [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.strikethroughLabel.c_str()] ?: @"";
+  _formatMenuSpoilerLabel =
+      [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.spoilerLabel.c_str()] ?: @"";
+  _formatMenuLinkLabel = [[NSString alloc] initWithUTF8String:newViewProps.formatMenuConfig.linkLabel.c_str()] ?: @"";
   _formatMenuConfig = (ENRMFormatMenuConfig){
       .bold = newViewProps.formatMenuConfig.bold,
       .boldLabel = _formatMenuBoldLabel,
