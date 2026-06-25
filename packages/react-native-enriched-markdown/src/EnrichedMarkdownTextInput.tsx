@@ -234,6 +234,7 @@ export const EnrichedMarkdownTextInput = ({
   editable = true,
   autoFocus = false,
   scrollEnabled = true,
+  contentInset,
   autoCapitalize = 'sentences',
   multiline = true,
   cursorColor,
@@ -507,6 +508,7 @@ export const EnrichedMarkdownTextInput = ({
       editable={editable}
       autoFocus={autoFocus}
       scrollEnabled={scrollEnabled}
+      contentInset={contentInset}
       autoCapitalize={autoCapitalize}
       multiline={multiline}
       cursorColor={cursorColor}
