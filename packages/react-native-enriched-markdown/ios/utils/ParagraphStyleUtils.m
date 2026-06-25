@@ -288,7 +288,7 @@ void applyBaselineOffset(NSMutableAttributedString *output, NSRange range)
                     if (!font) {
                       return;
                     }
-                    maximumFontLineHeight = MAX(font.lineHeight, maximumFontLineHeight);
+                    maximumFontLineHeight = MAX(UIFontLineHeight(font), maximumFontLineHeight);
                   }];
 
   if (maximumFontLineHeight <= 0 || maximumLineHeight < maximumFontLineHeight) {

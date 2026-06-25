@@ -1,6 +1,8 @@
 ENV['RCT_NEW_ARCH_ENABLED'] = '1'
-# Set to '0' to disable math (iosMath supports macOS >= 10.8 so math is enabled by default)
-# ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0'
+
+# LaTeX math rendering is disabled on macOS because react-native-macos does not
+# support use_frameworks! (needed for SPM/RaTeX). See microsoft/react-native-macos#1969.
+ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0'
 
 require 'pathname'
 

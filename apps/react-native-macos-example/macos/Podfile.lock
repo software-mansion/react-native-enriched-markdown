@@ -1,6 +1,7 @@
 PODS:
   - boost (1.84.0)
   - DoubleConversion (1.1.6)
+  - EnrichedMarkdownCore (0.0.0)
   - fast_float (8.0.0)
   - FBLazyVector (0.81.4)
   - fmt (11.0.2)
@@ -8,7 +9,6 @@ PODS:
   - hermes-engine (0.81.6):
     - hermes-engine/Pre-built (= 0.81.6)
   - hermes-engine/Pre-built (0.81.6)
-  - iosMath (0.9.4)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -2258,11 +2258,11 @@ PODS:
   - ReactNativeEnrichedMarkdown (0.6.0):
     - boost
     - DoubleConversion
+    - EnrichedMarkdownCore
     - fast_float
     - fmt
     - glog
     - hermes-engine
-    - iosMath (~> 0.9)
     - RCT-Folly
     - RCT-Folly/Fabric
     - RCTRequired
@@ -2290,6 +2290,7 @@ PODS:
 DEPENDENCIES:
   - boost (from `../node_modules/react-native-macos/third-party-podspecs/boost.podspec`)
   - DoubleConversion (from `../node_modules/react-native-macos/third-party-podspecs/DoubleConversion.podspec`)
+  - "EnrichedMarkdownCore (from `../node_modules/@enriched-markdown/core`)"
   - fast_float (from `../node_modules/react-native-macos/third-party-podspecs/fast_float.podspec`)
   - FBLazyVector (from `../node_modules/react-native-macos/Libraries/FBLazyVector`)
   - fmt (from `../node_modules/react-native-macos/third-party-podspecs/fmt.podspec`)
@@ -2359,13 +2360,12 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios`)
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native-macos/ReactCommon`)
-  - ReactNativeEnrichedMarkdown (from `../../..`)
+  - ReactNativeEnrichedMarkdown (from `../../../packages/react-native-enriched-markdown`)
   - SocketRocket (~> 0.7.1)
   - Yoga (from `../node_modules/react-native-macos/ReactCommon/yoga`)
 
 SPEC REPOS:
   trunk:
-    - iosMath
     - SocketRocket
 
 EXTERNAL SOURCES:
@@ -2373,6 +2373,8 @@ EXTERNAL SOURCES:
     :podspec: "../node_modules/react-native-macos/third-party-podspecs/boost.podspec"
   DoubleConversion:
     :podspec: "../node_modules/react-native-macos/third-party-podspecs/DoubleConversion.podspec"
+  EnrichedMarkdownCore:
+    :path: "../node_modules/@enriched-markdown/core"
   fast_float:
     :podspec: "../node_modules/react-native-macos/third-party-podspecs/fast_float.podspec"
   FBLazyVector:
@@ -2511,19 +2513,19 @@ EXTERNAL SOURCES:
   ReactCommon:
     :path: "../node_modules/react-native-macos/ReactCommon"
   ReactNativeEnrichedMarkdown:
-    :path: "../../.."
+    :path: "../../../packages/react-native-enriched-markdown"
   Yoga:
     :path: "../node_modules/react-native-macos/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
   boost: cea1d4f90a3a59537f3deb03ff5656489d7133dd
   DoubleConversion: d31b1eb37f6d6f456530c4fd9124b857d6889cab
+  EnrichedMarkdownCore: 33ec2bafbc265cfe76df3095fb21522440dd0a30
   fast_float: 20817c22759af6ac8d4d67e6e059b8b499953656
   FBLazyVector: bee2ce91926aed5131538dbe216219bb688b064c
   fmt: 24e7591456deb60b4a77518f83d9a916ac84223f
   glog: 0b31c25149b9d350b2666c7d459229861a00ec07
   hermes-engine: 7219f6e751ad6ec7f3d7ec121830ee34dae40749
-  iosMath: f7a6cbadf9d836d2149c2a84c435b1effc244cba
   RCT-Folly: c803cf33238782d5fd21a5e02d44f64068e0e130
   RCTDeprecation: c0ed3249a97243002615517dff789bf4666cf585
   RCTRequired: 70e6d0673b7a72876faae3e753678d72c7bac629
@@ -2587,10 +2589,10 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: 81faffd1e23962bc11e006b2a8c975cc0cfce2f5
   ReactCodegen: 7ab7a68e6cfbf489e5da68f272c9a8b4ee99c0b7
   ReactCommon: 4702457a560d38a9b96a98a728100cae76820edc
-  ReactNativeEnrichedMarkdown: a4badedc3da2cd81edfdd8589e1a610ea75f9c02
+  ReactNativeEnrichedMarkdown: 98513abf8e0a677c59502a42d237441142eeece8
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 4e7825418aa0a50bdaa8dff6d3e5fa8a2994d308
 
-PODFILE CHECKSUM: a5a5e32ae3e6a00e17a87fec2a00b5316e557861
+PODFILE CHECKSUM: c4c39ecfede2a30c4140e25ba2128584339a2950
 
 COCOAPODS: 1.16.2

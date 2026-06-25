@@ -7,6 +7,7 @@
     "start": "react-native start"
   },
   "dependencies": {
+    "@enriched-markdown/core": "workspace:*",
     "react": "19.1.4",
     "react-native": "0.81.6",
     "react-native-enriched-markdown": "*",

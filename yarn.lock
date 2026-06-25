@@ -15939,6 +15939,7 @@ __metadata:
   resolution: "react-native-enriched-markdown-macos-example@workspace:apps/react-native-macos-example"
   dependencies:
     "@babel/core": "npm:^7.25.2"
+    "@enriched-markdown/core": "workspace:*"
     "@react-native-community/cli": "npm:20.0.0"
     "@react-native-community/cli-platform-apple": "npm:20.0.0"
     "@react-native/babel-preset": "npm:0.81.2"
