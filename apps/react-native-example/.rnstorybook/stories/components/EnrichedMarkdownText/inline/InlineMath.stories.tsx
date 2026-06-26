@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { EnrichedMarkdownText } from 'react-native-enriched-markdown';
 import {
@@ -16,7 +16,7 @@ import {
   splitStyleControls,
   toInlineMathStyle,
 } from '../shared/storybookStyleBuilders';
-import type { TextStory } from '../shared/storyTypes';
+import type { StoryArgs, TextStory } from '../shared/storyTypes';
 
 const MARKDOWN = 'The formula $E = mc^2$ and $a^2 + b^2 = c^2$ are famous.';
 
@@ -100,6 +100,42 @@ const fractionArgTypes = {
   },
 };
 
+function FractionsStory(args: StoryArgs<FractionControls>) {
+  const { fontSize, lineHeight, color, ...rest } = args;
+  const [markdown, setMarkdown] = useState(
+    FRACTION_CASES.map((c) => `${c.label}:\n${c.markdown}`).join('\n\n')
+  );
+
+  return (
+    <MarkdownStoryLayout
+      title="Inline Math — Fractions"
+      description="Regression cases for fraction clipping when paragraph lineHeight is set."
+      markdown={markdown}
+      onMarkdownChange={setMarkdown}
+      output={
+        <View style={fractionStyles.cases}>
+          {FRACTION_CASES.map((c) => (
+            <View key={c.label} style={fractionStyles.caseRow}>
+              <EnrichedMarkdownText
+                {...rest}
+                markdown={c.markdown}
+                markdownStyle={{
+                  paragraph: {
+                    fontSize,
+                    ...(lineHeight > 0 ? { lineHeight } : {}),
+                  },
+                  inlineMath: { color },
+                }}
+                containerStyle={fractionStyles.markdownContainer}
+              />
+            </View>
+          ))}
+        </View>
+      }
+    />
+  );
+}
+
 export const Fractions: TextStory<FractionControls> = {
   args: {
     markdown: FRACTION_CASES.map((c) => c.markdown).join('\n\n'),
@@ -107,40 +143,7 @@ export const Fractions: TextStory<FractionControls> = {
     ...fractionDefaults,
   },
   argTypes: fractionArgTypes,
-  render: (args) => {
-    const { fontSize, lineHeight, color, ...rest } = args;
-
-    return (
-      <MarkdownStoryLayout
-        title="Inline Math — Fractions"
-        description="Regression cases for fraction clipping when paragraph lineHeight is set."
-        markdown={FRACTION_CASES.map((c) => `${c.label}:\n${c.markdown}`).join(
-          '\n\n'
-        )}
-        onMarkdownChange={() => {}}
-        output={
-          <View style={fractionStyles.cases}>
-            {FRACTION_CASES.map((c) => (
-              <View key={c.label} style={fractionStyles.caseRow}>
-                <EnrichedMarkdownText
-                  {...rest}
-                  markdown={c.markdown}
-                  markdownStyle={{
-                    paragraph: {
-                      fontSize,
-                      ...(lineHeight > 0 ? { lineHeight } : {}),
-                    },
-                    inlineMath: { color },
-                  }}
-                  containerStyle={fractionStyles.markdownContainer}
-                />
-              </View>
-            ))}
-          </View>
-        }
-      />
-    );
-  },
+  render: (args) => <FractionsStory {...args} />,
 };
 
 const fractionStyles = StyleSheet.create({

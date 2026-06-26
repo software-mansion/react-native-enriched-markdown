@@ -258,8 +258,8 @@ void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat l
   [output enumerateAttribute:NSAttachmentAttributeName
                      inRange:range
                      options:0
-                  usingBlock:^(NSTextAttachment *attachment, NSRange attrRange, BOOL *stop) {
-                    if ([attachment isKindOfClass:[ENRMMathInlineAttachment class]]) {
+                  usingBlock:^(id value, __unused NSRange attrRange, BOOL *stop) {
+                    if ([value isKindOfClass:[ENRMMathInlineAttachment class]]) {
                       hasMath = YES;
                       *stop = YES;
                     }
