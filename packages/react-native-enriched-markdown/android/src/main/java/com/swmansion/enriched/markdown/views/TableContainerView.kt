@@ -18,6 +18,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
+import androidx.core.view.ViewCompat
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode.NodeType
 import com.swmansion.enriched.markdown.renderer.Renderer
@@ -191,6 +192,7 @@ class TableContainerView(
               showContextMenu(view)
               true
             }
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
           }
 
         gridContainer.addView(
@@ -204,10 +206,51 @@ class TableContainerView(
         if (col < row.size) addTextToCell(cellBg, row[col], columnWidth, rowHeight)
         if (!isRtl) xOffset += columnWidth
       }
+
+      addRowAccessibilityOverlay(row, rowIndex, isHeaderRow, yOffset, rowHeight)
+
       if (!isHeaderRow) bodyRowIndex++
       yOffset += rowHeight
     }
     gridContainer.layoutParams = LayoutParams(ceil(totalTableWidth).toInt(), ceil(totalTableHeight).toInt())
+  }
+
+  // TODO: consume `accessibilityLabels.table.row` once the prop is wired through codegen.
+  private fun addRowAccessibilityOverlay(
+    row: List<TableCellData>,
+    rowIndex: Int,
+    isHeaderRow: Boolean,
+    yOffset: Float,
+    rowHeight: Float,
+  ) {
+    val joinedContent = row.joinToString(", ") { it.plainText }
+    val template = "Row {n}: {content}"
+    val description =
+      template
+        .replace("{n}", (rowIndex + 1).toString())
+        .replace("{content}", joinedContent)
+
+    val overlay =
+      View(context).apply {
+        isClickable = false
+        isLongClickable = false
+        isFocusable = true
+        isScreenReaderFocusable = true
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+        contentDescription = description
+        if (isHeaderRow) ViewCompat.setAccessibilityHeading(this, true)
+      }
+    gridContainer.addView(
+      overlay,
+      0,
+      LayoutParams(
+        ceil(totalTableWidth).toInt(),
+        ceil(rowHeight + tableStyle.borderWidth).toInt(),
+      ).apply {
+        leftMargin = 0
+        topMargin = ceil(yOffset).toInt()
+      },
+    )
   }
 
   private fun addTextToCell(
@@ -488,6 +531,7 @@ class TableContainerView(
       movementMethod = LinkLongPressMovementMethod.createInstance()
       layoutDirection = View.LAYOUT_DIRECTION_LOCALE
       textDirection = View.TEXT_DIRECTION_LOCALE
+      importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
     }
   }
 

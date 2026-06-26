@@ -12,6 +12,14 @@ export type {
   LinkLongPressEvent,
   TaskListItemPressEvent,
 } from './types/events';
+export type {
+  AccessibilityLabels,
+  ResolvedAccessibilityLabels,
+} from './types/AccessibilityLabels';
+export {
+  DEFAULT_ACCESSIBILITY_LABELS,
+  resolveAccessibilityLabels,
+} from './accessibilityLabelDefaults';
 
 export { EnrichedMarkdownTextInput } from './EnrichedMarkdownTextInput';
 export type {

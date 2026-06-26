@@ -1,5 +1,6 @@
 import type { ColorValue, ViewProps, ViewStyle, TextStyle } from 'react-native';
 import type { MarkdownStyle, Md4cFlags } from './MarkdownStyle';
+import type { AccessibilityLabels } from './AccessibilityLabels';
 import type {
   LinkPressEvent,
   LinkLongPressEvent,
@@ -206,6 +207,15 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    * @platform ios, android, macos
    */
   selectionMenuConfig?: SelectionMenuConfig;
+  /**
+   * Translations for VoiceOver / TalkBack announcements (list items, table
+   * rows, math, and the iOS rotor). All keys are optional and fall back to
+   * the English defaults from `accessibilityLabelDefaults.ts` — see
+   * `AccessibilityLabels` for the placeholder syntax and the no-plural
+   * rationale.
+   * @platform ios, android
+   */
+  accessibilityLabels?: AccessibilityLabels;
   /**
    * Sets the text direction on the root container.
    * Useful for RTL languages — CSS logical properties in the renderers

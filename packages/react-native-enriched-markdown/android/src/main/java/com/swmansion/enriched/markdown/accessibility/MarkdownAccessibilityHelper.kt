@@ -183,8 +183,10 @@ class MarkdownAccessibilityHelper(
         }
       }
 
-      // The semantic span itself
-      val content = span.imageAltText?.ifEmpty { "Image" } ?: spanned.substring(span.start, span.end).trim()
+      // The semantic span itself.
+      // Mirrors iOS commit 675f37f: empty-alt images are intentionally silent now (no "Image"
+      // fallback). If users want a label they can supply one through the markdown alt text.
+      val content = span.imageAltText ?: spanned.substring(span.start, span.end).trim()
       if (content.isNotEmpty()) {
         items.add(createSpanItem(nextId++, content, span, spanned))
       }
@@ -323,9 +325,12 @@ class MarkdownAccessibilityHelper(
     }
 
     when {
+      // Mirrors iOS commit 675f37f: the explicit "heading level N" suffix is intentionally gone.
+      // `isHeading = true` is enough — TalkBack auto-announces "heading" as the role, matching
+      // VoiceOver's behavior with `UIAccessibilityTraitHeader` so both platforms speak
+      // "{text}, heading" instead of doubling the announcement.
       item.isHeading -> {
         isHeading = true
-        contentDescription = "${item.text}, heading level ${item.headingLevel}"
       }
 
       item.isImage -> {
@@ -344,10 +349,20 @@ class MarkdownAccessibilityHelper(
     }
   }
 
+  // TODO: consume `accessibilityLabels.list.{bulletPoint,nestedBulletPoint,orderedItem,nestedOrderedItem}`
+  // once the prop is wired through codegen. Defaults defined in
+  // packages/react-native-enriched-markdown/src/accessibilityLabelDefaults.ts must stay in sync with
+  // the literals below — both use the same `{n}` placeholder convention and the same no-plural form
+  // (cardinal "List item 2", not ordinal "second list item").
   private val ListItemInfo.listAnnouncement: String
     get() {
-      val prefix = if (depth > 0) "nested " else ""
-      return if (isOrdered) "${prefix}list item $itemNumber" else "${prefix}bullet point"
+      val nested = depth > 0
+      return if (isOrdered) {
+        val template = if (nested) "Nested list item {n}" else "List item {n}"
+        template.replace("{n}", itemNumber.toString())
+      } else {
+        if (nested) "Nested bullet point" else "Bullet point"
+      }
     }
 
   private fun boundsForItem(item: AccessibilityItem): Rect {

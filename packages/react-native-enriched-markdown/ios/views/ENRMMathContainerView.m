@@ -210,11 +210,14 @@
 }
 #endif
 
-// TODO: add prop for translations
-// RaTeX does not have any TTS capabilities, if there is a need consider adding some other library to "render" TTS
+// TODO: consume `accessibilityLabels.math.equation` once the prop is wired through codegen.
+// Default in src/accessibilityLabelDefaults.ts: "Math: {latex}". RaTeX has no TTS capability, so
+// the latex is read verbatim — if there's ever a need for a proper math-to-speech library, it
+// should plug in here.
 - (NSString *)accessibilityLabel
 {
-  return [NSString stringWithFormat:@"Math: %@", _cachedLatex];
+  NSString *template = @"Math: {latex}";
+  return [template stringByReplacingOccurrencesOfString:@"{latex}" withString:_cachedLatex ?: @""];
 }
 
 #if !TARGET_OS_OSX

@@ -177,13 +177,21 @@ static const CGFloat kFocusRectPadding = 2.0;
 
 #pragma mark - Helpers
 
-// TODO: add prop for translations
+// TODO: consume `accessibilityLabels.list.{bulletPoint,nestedBulletPoint,orderedItem,nestedOrderedItem}`
+// once the prop is wired through codegen. Defaults defined in
+// packages/react-native-enriched-markdown/src/accessibilityLabelDefaults.ts must stay in sync with
+// the literals below — both use the same `{n}` placeholder convention and the same no-plural form
+// (cardinal "List item 2", not ordinal "second list item").
 + (NSString *)formatListAnnouncement:(NSDictionary *)info
 {
-  NSString *prefix = [info[@"depth"] integerValue] > 1 ? @"nested " : @"";
-  return [info[@"isOrdered"] boolValue]
-             ? [NSString stringWithFormat:@"%@list item %ld", prefix, (long)[info[@"position"] integerValue]]
-             : [NSString stringWithFormat:@"%@bullet point", prefix];
+  BOOL nested = [info[@"depth"] integerValue] > 1;
+  if ([info[@"isOrdered"] boolValue]) {
+    long position = (long)[info[@"position"] integerValue];
+    NSString *template = nested ? @"Nested list item {n}" : @"List item {n}";
+    return [template stringByReplacingOccurrencesOfString:@"{n}"
+                                               withString:[NSString stringWithFormat:@"%ld", position]];
+  }
+  return nested ? @"Nested bullet point" : @"Bullet point";
 }
 
 + (NSRange)clampedRange:(NSRange)range forText:(NSString *)text
@@ -362,7 +370,10 @@ static const CGFloat kFocusRectPadding = 2.0;
 {
   return [self filterElements:elements withTrait:UIAccessibilityTraitImage];
 }
-// TODO: add prop for translations (rotor names)
+// TODO: consume `accessibilityLabels.rotor.{headings,links,images}` once the prop is wired through
+// codegen. Defaults live in src/accessibilityLabelDefaults.ts. NSLocalizedString is left in place
+// only as a transitional fallback — once the prop arrives it should replace the wrapped literal,
+// not the call (the prop comes pre-resolved from JS so no lookup is needed).
 + (UIAccessibilityCustomRotor *)createHeadingRotorWithElements:(NSArray *)elements
 {
   return [self createRotorWithName:NSLocalizedString(@"Headings", @"") elements:elements];

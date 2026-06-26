@@ -587,9 +587,17 @@
     if (cellTexts.count > 0) {
 #if !TARGET_OS_OSX
       UIAccessibilityElement *element = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:self];
-      element.accessibilityLabel = [NSString
-          // TODO: Implement prop for table row
-          stringWithFormat:@"Row %lu: %@", (unsigned long)(rowIndex + 1), [cellTexts componentsJoinedByString:@", "]];
+      // TODO: consume `accessibilityLabels.table.row` once the prop is wired through codegen.
+      // Default in src/accessibilityLabelDefaults.ts: "Row {n}: {content}". The no-plural cardinal
+      // form ("Row 2", not "second row") is intentional so the same template works in every
+      // language without count-aware variants — see the AccessibilityLabels docs.
+      NSString *template = @"Row {n}: {content}";
+      NSString *withN = [template
+          stringByReplacingOccurrencesOfString:@"{n}"
+                                    withString:[NSString stringWithFormat:@"%lu", (unsigned long)(rowIndex + 1)]];
+      element.accessibilityLabel =
+          [withN stringByReplacingOccurrencesOfString:@"{content}"
+                                           withString:[cellTexts componentsJoinedByString:@", "]];
       element.accessibilityFrameInContainerSpace = CGRectMake(0, yOffset, _totalTableWidth, rowHeight);
       element.accessibilityTraits =
           row.firstObject.isHeader ? UIAccessibilityTraitHeader : UIAccessibilityTraitStaticText;
