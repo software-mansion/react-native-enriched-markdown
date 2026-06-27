@@ -414,6 +414,18 @@ class EnrichedMarkdownTextInputManager :
     view?.toggleInlineStyle(StyleType.SPOILER)
   }
 
+  override fun toggleUnorderedList(view: EnrichedMarkdownTextInputView?) {
+    view?.toggleUnorderedList()
+  }
+
+  override fun indentList(view: EnrichedMarkdownTextInputView?) {
+    view?.indentList()
+  }
+
+  override fun outdentList(view: EnrichedMarkdownTextInputView?) {
+    view?.outdentList()
+  }
+
   override fun setLink(
     view: EnrichedMarkdownTextInputView?,
     url: String?,

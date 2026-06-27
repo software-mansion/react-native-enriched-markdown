@@ -1,5 +1,6 @@
 #import "ENRMInputFormatter.h"
 #import "ENRMBoldStyleHandler.h"
+#import "ENRMInputBlockType.h"
 #import "ENRMItalicStyleHandler.h"
 #import "ENRMLinkStyleHandler.h"
 #import "ENRMSpoilerStyleHandler.h"
@@ -128,6 +129,7 @@
   [textStorage removeAttribute:NSUnderlineStyleAttributeName range:fullTextRange];
   [textStorage removeAttribute:NSStrikethroughStyleAttributeName range:fullTextRange];
   [textStorage removeAttribute:NSBackgroundColorAttributeName range:fullTextRange];
+  [textStorage removeAttribute:NSParagraphStyleAttributeName range:fullTextRange];
 
   UIFontDescriptorSymbolicTraits *traitMap =
       (UIFontDescriptorSymbolicTraits *)calloc(textLength, sizeof(UIFontDescriptorSymbolicTraits));
@@ -177,6 +179,30 @@
   }
 
   free(traitMap);
+
+  // Indent list lines so wrapped text aligns past the marker column; the bullet
+  // glyph itself is drawn by the layout manager into the reserved space.
+  NSString *plainString = textStorage.string;
+  [textStorage enumerateAttribute:ENRMBlockTypeAttributeName
+                          inRange:fullTextRange
+                          options:0
+                       usingBlock:^(id value, NSRange attrRange, BOOL *stop) {
+                         if (!value || [value integerValue] != ENRMInputBlockTypeUnorderedListItem) {
+                           return;
+                         }
+                         NSNumber *depthValue = [textStorage attribute:ENRMListDepthAttributeName
+                                                               atIndex:attrRange.location
+                                                        effectiveRange:NULL];
+                         NSInteger depth = depthValue ? depthValue.integerValue : 0;
+                         CGFloat indent = depth * ENRMListIndentPerDepth + ENRMListMarkerWidth;
+
+                         NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
+                         paragraph.firstLineHeadIndent = indent;
+                         paragraph.headIndent = indent;
+
+                         NSRange paragraphRange = [plainString paragraphRangeForRange:attrRange];
+                         [textStorage addAttribute:NSParagraphStyleAttributeName value:paragraph range:paragraphRange];
+                       }];
 
   [textStorage endEditing];
 

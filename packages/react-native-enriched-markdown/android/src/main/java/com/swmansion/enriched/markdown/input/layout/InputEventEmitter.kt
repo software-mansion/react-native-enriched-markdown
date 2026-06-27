@@ -19,6 +19,7 @@ import com.swmansion.enriched.markdown.input.events.OnRequestCaretRectResultEven
 import com.swmansion.enriched.markdown.input.events.OnRequestMarkdownResultEvent
 import com.swmansion.enriched.markdown.input.events.OnStartMentionEvent
 import com.swmansion.enriched.markdown.input.formatting.MarkdownSerializer
+import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.CaretRect
 import com.swmansion.enriched.markdown.input.model.StyleType
 
@@ -26,6 +27,7 @@ class InputEventEmitter(
   private val view: EnrichedMarkdownTextInputView,
 ) {
   private var prevState: Map<StyleType, Boolean> = emptyMap()
+  private var prevBlockType: BlockType? = null
   private var prevCaretRect: CaretRect? = null
 
   fun emitChangeText() {
@@ -51,8 +53,11 @@ class InputEventEmitter(
         isStyleEffectivelyActive(style, pos)
       }
 
-    if (current == prevState) return
+    val blockType = view.blockTypeAtCursor()
+
+    if (current == prevState && blockType == prevBlockType) return
     prevState = current
+    prevBlockType = blockType
 
     dispatch(
       OnChangeStateEvent(
@@ -64,6 +69,7 @@ class InputEventEmitter(
         current[StyleType.STRIKETHROUGH] ?: false,
         current[StyleType.SPOILER] ?: false,
         current[StyleType.LINK] ?: false,
+        blockType == BlockType.UNORDERED_LIST_ITEM,
       ),
     )
   }
@@ -169,6 +175,7 @@ class InputEventEmitter(
         isStrikethrough = isActive(StyleType.STRIKETHROUGH),
         isSpoiler = isActive(StyleType.SPOILER),
         isLink = isActive(StyleType.LINK),
+        isUnorderedList = view.blockTypeAtCursor() == BlockType.UNORDERED_LIST_ITEM,
       ),
     )
   }
@@ -185,7 +192,11 @@ class InputEventEmitter(
 
   private fun serializeToMarkdown(): String {
     val plainText = view.text?.toString() ?: ""
-    return MarkdownSerializer.serialize(plainText, view.allFormattingRangesForSerialization())
+    return MarkdownSerializer.serialize(
+      plainText,
+      view.allFormattingRangesForSerialization(),
+      view.currentBlockRanges(),
+    )
   }
 
   private fun surfaceId(): Int {

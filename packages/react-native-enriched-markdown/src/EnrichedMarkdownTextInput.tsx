@@ -70,6 +70,7 @@ export interface StyleState {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
+  unorderedList: { isActive: boolean };
 }
 
 export interface ContextMenuItem {
@@ -103,6 +104,9 @@ export interface EnrichedMarkdownTextInputInstance {
   toggleUnderline: () => void;
   toggleStrikethrough: () => void;
   toggleSpoiler: () => void;
+  toggleUnorderedList: () => void;
+  indentList: () => void;
+  outdentList: () => void;
   setLink: (url: string) => void;
   insertLink: (text: string, url: string) => void;
   insertMention: (displayText: string, url: string) => void;
@@ -356,8 +360,15 @@ export const EnrichedMarkdownTextInput = ({
 
   const handleChangeState = useCallback(
     (e: NativeSyntheticEvent<OnChangeStateEvent>) => {
-      const { bold, italic, underline, strikethrough, spoiler, link } =
-        e.nativeEvent;
+      const {
+        bold,
+        italic,
+        underline,
+        strikethrough,
+        spoiler,
+        link,
+        unorderedList,
+      } = e.nativeEvent;
       onChangeState?.({
         bold,
         italic,
@@ -365,6 +376,7 @@ export const EnrichedMarkdownTextInput = ({
         strikethrough,
         spoiler,
         link,
+        unorderedList,
       });
     },
     [onChangeState]
@@ -470,6 +482,9 @@ export const EnrichedMarkdownTextInput = ({
       toggleUnderline: () => Commands.toggleUnderline(commandRef),
       toggleStrikethrough: () => Commands.toggleStrikethrough(commandRef),
       toggleSpoiler: () => Commands.toggleSpoiler(commandRef),
+      toggleUnorderedList: () => Commands.toggleUnorderedList(commandRef),
+      indentList: () => Commands.indentList(commandRef),
+      outdentList: () => Commands.outdentList(commandRef),
       setLink: (url) => Commands.setLink(commandRef, url),
       insertLink: (text, url) => Commands.insertLink(commandRef, text, url),
       insertMention: (displayText, url) =>

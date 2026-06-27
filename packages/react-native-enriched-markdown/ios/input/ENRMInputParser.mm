@@ -1,5 +1,6 @@
 #import "ENRMInputParser.h"
 #import "ENRMFormattingRange.h"
+#import "ENRMInputBlockType.h"
 #import "ENRMInputRemend.h"
 #include "md4c.h"
 #include <string>
@@ -8,6 +9,7 @@
 @interface ENRMParseResult ()
 @property (nonatomic, strong, readwrite) NSString *plainText;
 @property (nonatomic, strong, readwrite) NSArray<ENRMFormattingRange *> *formattingRanges;
+@property (nonatomic, strong, readwrite) NSArray<ENRMBlockRange *> *blockRanges;
 @end
 
 @implementation ENRMParseResult
@@ -235,6 +237,94 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   return md_parse(completedUTF8, (MD_SIZE)completedLength, &parser, &context) == 0;
 }
 
+/// Strips unordered list markers (`- `/`* `/`+ `, optionally indented) from the
+/// start of each line and returns the list block ranges with their nesting
+/// depth (two leading spaces per level). md4c leaves block markers as literal
+/// text, so list items are extracted here as a line-based post-pass. Inline
+/// formatting ranges are remapped through an old->new index map so they stay
+/// anchored to the same characters after the markers are removed.
+static void extractListBlocks(NSString *plainText, NSArray<ENRMFormattingRange *> *inlineRanges, NSString **outText,
+                              NSArray<ENRMFormattingRange *> **outInlineRanges,
+                              NSArray<ENRMBlockRange *> **outBlockRanges)
+{
+  NSUInteger length = plainText.length;
+  NSMutableString *result = [NSMutableString stringWithCapacity:length];
+  std::vector<NSUInteger> map(length + 1, 0);
+  NSMutableArray<ENRMBlockRange *> *blocks = [NSMutableArray array];
+
+  NSUInteger newPos = 0;
+  NSUInteger lineStart = 0;
+  while (lineStart <= length) {
+    NSUInteger lineEnd = lineStart;
+    while (lineEnd < length && [plainText characterAtIndex:lineEnd] != '\n') {
+      lineEnd++;
+    }
+
+    // Count leading spaces (two per nesting level), then a single marker char
+    // (-, *, +) followed by a space.
+    NSUInteger cursor = lineStart;
+    NSUInteger spaces = 0;
+    while (cursor < lineEnd && [plainText characterAtIndex:cursor] == ' ') {
+      spaces++;
+      cursor++;
+    }
+    BOOL isListItem = NO;
+    if (cursor + 1 < lineEnd + 1 && cursor < lineEnd) {
+      unichar marker = [plainText characterAtIndex:cursor];
+      if ((marker == '-' || marker == '*' || marker == '+') && cursor + 1 < lineEnd &&
+          [plainText characterAtIndex:cursor + 1] == ' ') {
+        isListItem = YES;
+      }
+    }
+    NSInteger depth = isListItem ? MIN((NSInteger)(spaces / 2), ENRMMaxListDepth) : 0;
+    NSUInteger contentStart = isListItem ? cursor + 2 : lineStart; // marker + single space
+
+    for (NSUInteger i = lineStart; i < contentStart; i++) {
+      map[i] = newPos;
+    }
+
+    NSUInteger blockStartNew = newPos;
+    if (lineEnd > contentStart) {
+      [result appendString:[plainText substringWithRange:NSMakeRange(contentStart, lineEnd - contentStart)]];
+      for (NSUInteger i = contentStart; i < lineEnd; i++) {
+        map[i] = newPos++;
+      }
+    }
+
+    if (isListItem) {
+      [blocks addObject:[ENRMBlockRange rangeWithType:ENRMInputBlockTypeUnorderedListItem
+                                                depth:depth
+                                                range:NSMakeRange(blockStartNew, newPos - blockStartNew)]];
+    }
+
+    if (lineEnd < length) {
+      map[lineEnd] = newPos++;
+      [result appendString:@"\n"];
+      lineStart = lineEnd + 1;
+    } else {
+      break;
+    }
+  }
+  map[length] = newPos;
+
+  NSMutableArray<ENRMFormattingRange *> *remapped = [NSMutableArray arrayWithCapacity:inlineRanges.count];
+  for (ENRMFormattingRange *range in inlineRanges) {
+    NSUInteger start = MIN(range.range.location, length);
+    NSUInteger end = MIN(NSMaxRange(range.range), length);
+    NSUInteger newStart = map[start];
+    NSUInteger newEnd = map[end];
+    if (newEnd > newStart) {
+      [remapped addObject:[ENRMFormattingRange rangeWithType:range.type
+                                                       range:NSMakeRange(newStart, newEnd - newStart)
+                                                         url:range.url]];
+    }
+  }
+
+  *outText = result;
+  *outInlineRanges = remapped;
+  *outBlockRanges = blocks;
+}
+
 } // namespace
 
 @implementation ENRMInputParser
@@ -306,6 +396,7 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   if (markdown.length == 0) {
     parseResult.plainText = @"";
     parseResult.formattingRanges = @[];
+    parseResult.blockRanges = @[];
     return parseResult;
   }
 
@@ -394,8 +485,14 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
     [formattingRanges addObject:formattingRange];
   }
 
-  parseResult.plainText = plainText;
-  parseResult.formattingRanges = formattingRanges;
+  NSString *blockText = nil;
+  NSArray<ENRMFormattingRange *> *blockAdjustedRanges = nil;
+  NSArray<ENRMBlockRange *> *blockRanges = nil;
+  extractListBlocks(plainText, formattingRanges, &blockText, &blockAdjustedRanges, &blockRanges);
+
+  parseResult.plainText = blockText;
+  parseResult.formattingRanges = blockAdjustedRanges;
+  parseResult.blockRanges = blockRanges;
   return parseResult;
 }
 

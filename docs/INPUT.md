@@ -66,6 +66,21 @@ Each call toggles the style within the current text selection. They are being to
 
 Styles are also available through the built-in native format bar that appears on text selection, and through the system context menu.
 
+## Block Styles
+
+### Unordered (bullet) lists
+
+Toggle a bullet list on the line(s) the selection touches with `toggleUnorderedList()`. Unlike inline styles, block styles apply to whole lines and are mutually exclusive per line.
+
+Lists support nesting:
+
+- `indentList()` increases the current item's depth; `outdentList()` decreases it.
+- On a hardware keyboard, **Tab** indents and **Shift+Tab** outdents.
+- **Enter** continues the list with a new item at the same depth; pressing Enter on an empty item exits the list.
+- **Backspace** at the start of an item outdents it, then removes the list marker once at the top level.
+
+Bullets render in-editor (filled dot, ring, then square as depth increases) and serialize to Markdown as `- ` markers, indented two spaces per nesting level. The markers only exist in the serialized output, never in the editor text. The active list state for the cursor's line is reported through `onChangeState` as `unorderedList` (with an `isActive` property), the same shape as inline styles.
+
 ## Links
 
 Links are a piece of text with a URL attributed to it. They can be managed by calling methods on the input ref:

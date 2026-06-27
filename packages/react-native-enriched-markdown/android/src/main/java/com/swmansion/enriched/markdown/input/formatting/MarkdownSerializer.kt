@@ -1,9 +1,50 @@
 package com.swmansion.enriched.markdown.input.formatting
 
+import com.swmansion.enriched.markdown.input.model.BlockRange
+import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.StyleType
 
 object MarkdownSerializer {
+  /**
+   * Serializes inline marks and then prefixes each line with its block marker
+   * (`- ` for unordered list items, indented two spaces per nesting depth). Block
+   * markers are line-based, so this runs after inline serialization, which
+   * preserves the text's line structure.
+   */
+  fun serialize(
+    text: String,
+    ranges: List<FormattingRange>,
+    blockRanges: List<BlockRange>,
+  ): String {
+    val inline = serialize(text, ranges)
+    if (blockRanges.isEmpty()) return inline
+
+    val plainLines = text.split("\n")
+    val markdownLines = inline.split("\n").toMutableList()
+    if (plainLines.size != markdownLines.size) return inline
+
+    var lineStart = 0
+    for (i in plainLines.indices) {
+      val lineLength = plainLines[i].length
+      val lineEnd = lineStart + lineLength
+      val block =
+        blockRanges.firstOrNull { br ->
+          br.type == BlockType.UNORDERED_LIST_ITEM &&
+            (
+              maxOf(lineStart, br.start) < minOf(lineEnd, br.end) ||
+                (lineLength == 0 && lineStart >= br.start && lineStart < br.end)
+            )
+        }
+      if (block != null) {
+        markdownLines[i] = "  ".repeat(block.depth) + "- " + markdownLines[i]
+      }
+      lineStart = lineEnd + 1
+    }
+
+    return markdownLines.joinToString("\n")
+  }
+
   fun serialize(
     text: String,
     ranges: List<FormattingRange>,

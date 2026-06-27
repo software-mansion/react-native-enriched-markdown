@@ -219,4 +219,58 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
   return markdown;
 }
 
+/// Two spaces of indentation per nesting depth, then the unordered list marker.
+static NSString *listPrefixForDepth(NSInteger depth)
+{
+  NSMutableString *prefix = [NSMutableString string];
+  for (NSInteger i = 0; i < depth; i++) {
+    [prefix appendString:@"  "];
+  }
+  [prefix appendString:@"- "];
+  return prefix;
+}
+
++ (NSString *)serializePlainText:(NSString *)text
+                          ranges:(NSArray<ENRMFormattingRange *> *)ranges
+                     blockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+{
+  NSString *inlineMarkdown = [self serializePlainText:text ranges:ranges];
+
+  if (blockRanges.count == 0) {
+    return inlineMarkdown;
+  }
+
+  // Inline serialization never adds or removes newlines, so line N of the inline
+  // markdown maps to paragraph N of the plain text. Walk plain-text lines, look
+  // up each one's block range, and prefix the matching markdown line.
+  NSArray<NSString *> *plainLines = [text componentsSeparatedByString:@"\n"];
+  NSMutableArray<NSString *> *markdownLines = [[inlineMarkdown componentsSeparatedByString:@"\n"] mutableCopy];
+
+  if (plainLines.count != markdownLines.count) {
+    return inlineMarkdown;
+  }
+
+  NSUInteger lineStart = 0;
+  for (NSUInteger lineIndex = 0; lineIndex < plainLines.count; lineIndex++) {
+    NSUInteger lineLength = plainLines[lineIndex].length;
+    NSRange lineRange = NSMakeRange(lineStart, lineLength);
+
+    for (ENRMBlockRange *blockRange in blockRanges) {
+      if (blockRange.type != ENRMInputBlockTypeUnorderedListItem) {
+        continue;
+      }
+      if (NSIntersectionRange(lineRange, blockRange.range).length > 0 ||
+          (lineLength == 0 && NSLocationInRange(lineStart, blockRange.range))) {
+        markdownLines[lineIndex] =
+            [listPrefixForDepth(blockRange.depth) stringByAppendingString:markdownLines[lineIndex]];
+        break;
+      }
+    }
+
+    lineStart += lineLength + 1; // +1 for the '\n' separator
+  }
+
+  return [markdownLines componentsJoinedByString:@"\n"];
+}
+
 @end

@@ -4,6 +4,7 @@
 #import "ENRMDetectorPipeline.h"
 #import "ENRMFormattingRange.h"
 #import "ENRMFormattingStore.h"
+#import "ENRMInputBlockType.h"
 #import "ENRMInputFormatter.h"
 #import "ENRMInputLayoutManager.h"
 #import "ENRMInputLinkPrompt.h"
@@ -71,8 +72,13 @@ using namespace facebook::react;
   NSRange _preEditSelectedRange;
 
   struct {
-    BOOL bold, italic, underline, strikethrough, spoiler, link, initialized;
+    BOOL bold, italic, underline, strikethrough, spoiler, link, unorderedList, initialized;
   } _prevState;
+
+  // List kind/depth the next typed character should adopt when the cursor sits on
+  // an empty line (no character holds the block attribute yet).
+  ENRMInputBlockType _pendingBlockType;
+  NSInteger _pendingListDepth;
 
   std::optional<CGRect> _prevCaretRect;
 
@@ -540,6 +546,7 @@ using namespace facebook::react;
 
   _isApplyingFormatting = YES;
   ENRMSetPlainText(_textView, parsed.plainText);
+  [self applyBlockRanges:parsed.blockRanges];
   _isApplyingFormatting = NO;
 
   [_formattingStore setRanges:parsed.formattingRanges];
@@ -696,6 +703,190 @@ using namespace facebook::react;
 - (void)toggleSpoiler
 {
   [self toggleInlineStyle:ENRMInputStyleTypeSpoiler];
+}
+
+#pragma mark - Block styles
+
+/// Block type stored on the cursor's line. Falls back to the pending kind for an
+/// empty line (no character holds the attribute yet).
+- (ENRMInputBlockType)blockTypeForCursorParagraph
+{
+  NSTextStorage *storage = _textView.textStorage;
+  NSString *text = storage.string;
+  if (text.length == 0) {
+    return _pendingBlockType;
+  }
+  NSRange paragraphRange = [text paragraphRangeForRange:_textView.selectedRange];
+  NSUInteger probe = paragraphRange.location;
+  if (probe >= text.length || [text characterAtIndex:probe] == '\n') {
+    return _pendingBlockType;
+  }
+  id value = [storage attribute:ENRMBlockTypeAttributeName atIndex:probe effectiveRange:NULL];
+  return value ? (ENRMInputBlockType)[value integerValue] : ENRMInputBlockTypeParagraph;
+}
+
+/// List depth of the cursor's line, or the pending depth for an empty line.
+- (NSInteger)listDepthForCursorParagraph
+{
+  NSTextStorage *storage = _textView.textStorage;
+  NSString *text = storage.string;
+  if (text.length == 0) {
+    return _pendingListDepth;
+  }
+  NSRange paragraphRange = [text paragraphRangeForRange:_textView.selectedRange];
+  NSUInteger probe = paragraphRange.location;
+  if (probe >= text.length || [text characterAtIndex:probe] == '\n') {
+    return _pendingListDepth;
+  }
+  id value = [storage attribute:ENRMListDepthAttributeName atIndex:probe effectiveRange:NULL];
+  return value ? [value integerValue] : 0;
+}
+
+- (void)toggleUnorderedList
+{
+  BOOL turningOff = ([self blockTypeForCursorParagraph] == ENRMInputBlockTypeUnorderedListItem);
+  ENRMInputBlockType newType = turningOff ? ENRMInputBlockTypeParagraph : ENRMInputBlockTypeUnorderedListItem;
+
+  NSTextStorage *storage = _textView.textStorage;
+  NSString *text = storage.string;
+
+  if (text.length > 0) {
+    NSRange paragraphRange = [text paragraphRangeForRange:_textView.selectedRange];
+    [storage beginEditing];
+    [text enumerateSubstringsInRange:paragraphRange
+                             options:NSStringEnumerationByLines
+                          usingBlock:^(NSString *line, NSRange lineRange, NSRange enclosingRange, BOOL *stop) {
+                            if (lineRange.length == 0) {
+                              return;
+                            }
+                            if (newType == ENRMInputBlockTypeParagraph) {
+                              [storage removeAttribute:ENRMBlockTypeAttributeName range:lineRange];
+                              [storage removeAttribute:ENRMListDepthAttributeName range:lineRange];
+                            } else {
+                              [storage addAttribute:ENRMBlockTypeAttributeName
+                                              value:@(ENRMInputBlockTypeUnorderedListItem)
+                                              range:lineRange];
+                              [storage addAttribute:ENRMListDepthAttributeName value:@(0) range:lineRange];
+                            }
+                          }];
+    [storage endEditing];
+  }
+
+  _pendingBlockType = newType;
+  _pendingListDepth = 0;
+
+  [self applyFormatting];
+  [self syncTypingAttributesWithPendingStyles];
+  [self emitFormattingChanged];
+}
+
+- (void)indentList
+{
+  [self changeListDepthBy:1];
+}
+
+- (void)outdentList
+{
+  [self changeListDepthBy:-1];
+}
+
+/// Adjusts the nesting depth of every list line the selection touches, clamped
+/// to [0, ENRMMaxListDepth]. No-op on non-list lines.
+- (void)changeListDepthBy:(NSInteger)delta
+{
+  if ([self blockTypeForCursorParagraph] != ENRMInputBlockTypeUnorderedListItem) {
+    return;
+  }
+  NSTextStorage *storage = _textView.textStorage;
+  NSString *text = storage.string;
+  if (text.length == 0) {
+    _pendingListDepth = MIN(MAX(_pendingListDepth + delta, (NSInteger)0), ENRMMaxListDepth);
+    [self emitFormattingChanged];
+    return;
+  }
+
+  NSRange paragraphRange = [text paragraphRangeForRange:_textView.selectedRange];
+  [storage beginEditing];
+  [text enumerateSubstringsInRange:paragraphRange
+                           options:NSStringEnumerationByLines
+                        usingBlock:^(NSString *line, NSRange lineRange, NSRange enclosingRange, BOOL *stop) {
+                          if (lineRange.length == 0) {
+                            return;
+                          }
+                          id type = [storage attribute:ENRMBlockTypeAttributeName
+                                               atIndex:lineRange.location
+                                        effectiveRange:NULL];
+                          if (!type || [type integerValue] != ENRMInputBlockTypeUnorderedListItem) {
+                            return;
+                          }
+                          id depthValue = [storage attribute:ENRMListDepthAttributeName
+                                                     atIndex:lineRange.location
+                                              effectiveRange:NULL];
+                          NSInteger depth = depthValue ? [depthValue integerValue] : 0;
+                          NSInteger newDepth = MIN(MAX(depth + delta, (NSInteger)0), ENRMMaxListDepth);
+                          [storage addAttribute:ENRMListDepthAttributeName value:@(newDepth) range:lineRange];
+                        }];
+  [storage endEditing];
+
+  _pendingListDepth = MIN(MAX([self listDepthForCursorParagraph] + delta, (NSInteger)0), ENRMMaxListDepth);
+
+  [self applyFormatting];
+  [self syncTypingAttributesWithPendingStyles];
+  [self emitFormattingChanged];
+}
+
+/// Writes parsed list ranges into the text storage as block attributes. Caller
+/// owns the surrounding `_isApplyingFormatting` guard.
+- (void)applyBlockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+{
+  NSTextStorage *storage = _textView.textStorage;
+  NSUInteger length = storage.length;
+  if (length == 0) {
+    return;
+  }
+  NSRange fullRange = NSMakeRange(0, length);
+  [storage beginEditing];
+  [storage removeAttribute:ENRMBlockTypeAttributeName range:fullRange];
+  [storage removeAttribute:ENRMListDepthAttributeName range:fullRange];
+  for (ENRMBlockRange *blockRange in blockRanges) {
+    if (blockRange.type != ENRMInputBlockTypeUnorderedListItem) {
+      continue;
+    }
+    NSRange range = NSIntersectionRange(blockRange.range, fullRange);
+    if (range.length == 0) {
+      continue;
+    }
+    [storage addAttribute:ENRMBlockTypeAttributeName value:@(blockRange.type) range:range];
+    [storage addAttribute:ENRMListDepthAttributeName value:@(blockRange.depth) range:range];
+  }
+  [storage endEditing];
+}
+
+/// Block (list) ranges currently stored as text attributes, in text-storage
+/// coordinates. Source of truth for serialization and state queries.
+- (NSArray<ENRMBlockRange *> *)currentBlockRanges
+{
+  NSTextStorage *storage = _textView.textStorage;
+  NSUInteger length = storage.length;
+  if (length == 0) {
+    return @[];
+  }
+  NSMutableArray<ENRMBlockRange *> *result = [NSMutableArray array];
+  [storage enumerateAttribute:ENRMBlockTypeAttributeName
+                      inRange:NSMakeRange(0, length)
+                      options:0
+                   usingBlock:^(id value, NSRange range, BOOL *stop) {
+                     if (!value || [value integerValue] != ENRMInputBlockTypeUnorderedListItem) {
+                       return;
+                     }
+                     NSNumber *depthValue = [storage attribute:ENRMListDepthAttributeName
+                                                       atIndex:range.location
+                                                effectiveRange:NULL];
+                     [result addObject:[ENRMBlockRange rangeWithType:ENRMInputBlockTypeUnorderedListItem
+                                                               depth:depthValue ? depthValue.integerValue : 0
+                                                               range:range]];
+                   }];
+  return result;
 }
 
 - (void)toggleInlineStyle:(ENRMInputStyleType)styleType
@@ -900,7 +1091,8 @@ using namespace facebook::react;
     return;
   }
   NSString *markdown = [ENRMMarkdownSerializer serializePlainText:ENRMGetPlainText(_textView)
-                                                           ranges:[self allRangesIncludingTransient]];
+                                                           ranges:[self allRangesIncludingTransient]
+                                                      blockRanges:[self currentBlockRanges]];
   emitter->onRequestMarkdownResult({
       .requestId = static_cast<int>(requestId),
       .markdown = std::string([markdown UTF8String] ?: ""),
@@ -977,6 +1169,15 @@ using namespace facebook::react;
 
   NSMutableDictionary *attrs = [_textView.typingAttributes mutableCopy];
   attrs[NSFontAttributeName] = [_formatterStyle fontForTraits:traits];
+
+  // Carry the list block attribute so the next character continues the list line.
+  if ([self blockTypeForCursorParagraph] == ENRMInputBlockTypeUnorderedListItem) {
+    attrs[ENRMBlockTypeAttributeName] = @(ENRMInputBlockTypeUnorderedListItem);
+    attrs[ENRMListDepthAttributeName] = @([self listDepthForCursorParagraph]);
+  } else {
+    [attrs removeObjectForKey:ENRMBlockTypeAttributeName];
+    [attrs removeObjectForKey:ENRMListDepthAttributeName];
+  }
   _textView.typingAttributes = attrs;
 }
 
@@ -992,6 +1193,10 @@ using namespace facebook::react;
   }
   [_pendingStyles removeAllObjects];
   [_pendingStyleRemovals removeAllObjects];
+  // List kind carries via the stored attribute on non-empty lines; clear the
+  // pending kind so it never leaks onto a different (empty) line.
+  _pendingBlockType = ENRMInputBlockTypeParagraph;
+  _pendingListDepth = 0;
   [self rebuildPendingStylesFromContext];
   [self syncTypingAttributesWithPendingStyles];
 }
@@ -1165,7 +1370,8 @@ using namespace facebook::react;
     return;
   }
   NSString *markdown = [ENRMMarkdownSerializer serializePlainText:ENRMGetPlainText(_textView)
-                                                           ranges:[self allRangesIncludingTransient]];
+                                                           ranges:[self allRangesIncludingTransient]
+                                                      blockRanges:[self currentBlockRanges]];
   emitter->onChangeMarkdown({.value = std::string([markdown UTF8String] ?: "")});
 }
 
@@ -1196,10 +1402,12 @@ using namespace facebook::react;
   BOOL strikethroughActive = [self isEffectiveStyleActive:ENRMInputStyleTypeStrikethrough atPosition:cursor];
   BOOL spoilerActive = [self isEffectiveStyleActive:ENRMInputStyleTypeSpoiler atPosition:cursor];
   BOOL linkActive = [self isEffectiveStyleActive:ENRMInputStyleTypeLink atPosition:cursor];
+  BOOL unorderedListActive = [self blockTypeForCursorParagraph] == ENRMInputBlockTypeUnorderedListItem;
 
   if (_prevState.initialized && _prevState.bold == boldActive && _prevState.italic == italicActive &&
       _prevState.underline == underlineActive && _prevState.strikethrough == strikethroughActive &&
-      _prevState.spoiler == spoilerActive && _prevState.link == linkActive) {
+      _prevState.spoiler == spoilerActive && _prevState.link == linkActive &&
+      _prevState.unorderedList == unorderedListActive) {
     return;
   }
 
@@ -1209,6 +1417,7 @@ using namespace facebook::react;
   _prevState.strikethrough = strikethroughActive;
   _prevState.spoiler = spoilerActive;
   _prevState.link = linkActive;
+  _prevState.unorderedList = unorderedListActive;
   _prevState.initialized = YES;
 
   emitter->onChangeState({
@@ -1218,6 +1427,7 @@ using namespace facebook::react;
       .strikethrough = {.isActive = strikethroughActive},
       .spoiler = {.isActive = spoilerActive},
       .link = {.isActive = linkActive},
+      .unorderedList = {.isActive = unorderedListActive},
   });
 }
 
@@ -1288,6 +1498,7 @@ using namespace facebook::react;
   BOOL strikethroughActive = isActive(ENRMInputStyleTypeStrikethrough);
   BOOL spoilerActive = isActive(ENRMInputStyleTypeSpoiler);
   BOOL linkActive = isActive(ENRMInputStyleTypeLink);
+  BOOL unorderedListActive = [self blockTypeForCursorParagraph] == ENRMInputBlockTypeUnorderedListItem;
 
   eventEmitter->onContextMenuItemPress({
       .itemText = std::string(itemText.UTF8String),
@@ -1302,6 +1513,7 @@ using namespace facebook::react;
               .strikethrough = {.isActive = strikethroughActive},
               .spoiler = {.isActive = spoilerActive},
               .link = {.isActive = linkActive},
+              .unorderedList = {.isActive = unorderedListActive},
           },
   });
 }
@@ -1435,6 +1647,63 @@ using namespace facebook::react;
     for (NSNumber *styleNum in _pendingStyleRemovals) {
       [_formattingStore removeType:(ENRMInputStyleType)styleNum.integerValue inRange:insertedRange];
     }
+
+    NSTextStorage *storage = _textView.textStorage;
+    NSString *fullText = storage.string;
+
+    if (insertedHasGlyphContent) {
+      // Continue list styling onto typed glyphs in a list line. UIKit drops
+      // custom attributes from typingAttributes after the first insertion, so
+      // stamp directly to storage (matching how inline pending styles work).
+      if ([self blockTypeForCursorParagraph] == ENRMInputBlockTypeUnorderedListItem) {
+        NSInteger depth = [self listDepthForCursorParagraph];
+        NSRange clamped = NSIntersectionRange(insertedRange, NSMakeRange(0, storage.length));
+        if (clamped.length > 0) {
+          [storage addAttribute:ENRMBlockTypeAttributeName value:@(ENRMInputBlockTypeUnorderedListItem) range:clamped];
+          [storage addAttribute:ENRMListDepthAttributeName value:@(depth) range:clamped];
+        }
+      }
+    } else {
+      // A newline continues the list: the new line becomes a list item at the
+      // same depth. Pressing Enter on an empty item exits the list instead.
+      NSUInteger scan = editLocation;
+      while (scan > 0 && [fullText characterAtIndex:scan - 1] != '\n') {
+        scan--;
+      }
+      NSUInteger prevLineStart = scan;
+      NSUInteger prevContentLength = editLocation > prevLineStart ? editLocation - prevLineStart : 0;
+
+      BOOL prevIsList = NO;
+      NSInteger prevDepth = 0;
+      if (prevContentLength > 0) {
+        id type = [storage attribute:ENRMBlockTypeAttributeName atIndex:prevLineStart effectiveRange:NULL];
+        prevIsList = type && [type integerValue] == ENRMInputBlockTypeUnorderedListItem;
+        if (prevIsList) {
+          id depthValue = [storage attribute:ENRMListDepthAttributeName atIndex:prevLineStart effectiveRange:NULL];
+          prevDepth = depthValue ? [depthValue integerValue] : 0;
+        }
+      } else {
+        // Empty previous line — recover its kind from the pending state.
+        prevIsList = _pendingBlockType == ENRMInputBlockTypeUnorderedListItem;
+        prevDepth = _pendingListDepth;
+      }
+
+      if (prevIsList && prevContentLength > 0) {
+        _pendingBlockType = ENRMInputBlockTypeUnorderedListItem;
+        _pendingListDepth = prevDepth;
+      } else {
+        // Exit the list (empty item) or a plain newline.
+        _pendingBlockType = ENRMInputBlockTypeParagraph;
+        _pendingListDepth = 0;
+      }
+      // The inserted newline must never carry a block attribute itself.
+      NSRange clampedInserted = NSIntersectionRange(insertedRange, NSMakeRange(0, storage.length));
+      if (clampedInserted.length > 0) {
+        [storage removeAttribute:ENRMBlockTypeAttributeName range:clampedInserted];
+        [storage removeAttribute:ENRMListDepthAttributeName range:clampedInserted];
+      }
+      [self syncTypingAttributesWithPendingStyles];
+    }
   }
 
   _lastTextLength = newLength;
@@ -1446,6 +1715,12 @@ using namespace facebook::react;
 #endif
 
   [self applyFormatting];
+
+  // Keep the caret's typing attributes aligned with the list line so the next
+  // character continues the bullet (UIKit otherwise drops the custom attribute).
+  if ([self blockTypeForCursorParagraph] == ENRMInputBlockTypeUnorderedListItem) {
+    [self syncTypingAttributesWithPendingStyles];
+  }
 
   NSUInteger clampedEditLocation = MIN(editLocation, newLength);
   NSUInteger clampedInsertedLength = MIN(insertedLength, newLength - clampedEditLocation);
@@ -1518,10 +1793,47 @@ using namespace facebook::react;
   if ([self deleteLinkForReplacementRange:range replacementText:text]) {
     return NO;
   }
+  if ([self handleListKeyForReplacementRange:range replacementText:text]) {
+    return NO;
+  }
   _preEditSelectedRange = _lastSelectedRange;
   _isTextChanging = YES;
   [self stripLinkTypingAttributes];
   return YES;
+}
+
+/// Intercepts Tab (indent) and Backspace at the start of a list item (outdent,
+/// then un-list at depth 0) so list nesting is keyboard-editable. Returns YES if
+/// the edit was handled and the default text change should be suppressed.
+- (BOOL)handleListKeyForReplacementRange:(NSRange)range replacementText:(NSString *)text
+{
+  if ([self blockTypeForCursorParagraph] != ENRMInputBlockTypeUnorderedListItem) {
+    return NO;
+  }
+
+  // Tab indents the current item.
+  if ([text isEqualToString:@"\t"]) {
+    [self indentList];
+    return YES;
+  }
+
+  // Backspace at the very start of an item's content: outdent, or remove the
+  // list marker entirely once at depth 0.
+  if (text.length == 0 && range.length == 1) {
+    NSString *plainText = ENRMGetPlainText(_textView);
+    NSRange paragraphRange = [plainText paragraphRangeForRange:NSMakeRange(NSMaxRange(range), 0)];
+    BOOL atItemStart = NSMaxRange(range) == paragraphRange.location;
+    if (atItemStart) {
+      if ([self listDepthForCursorParagraph] > 0) {
+        [self outdentList];
+      } else {
+        [self toggleUnorderedList];
+      }
+      return YES;
+    }
+  }
+
+  return NO;
 }
 
 - (void)textViewDidChange:(UITextView *)textView

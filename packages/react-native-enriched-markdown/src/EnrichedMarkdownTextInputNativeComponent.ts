@@ -58,6 +58,7 @@ export interface OnChangeStateEvent {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
+  unorderedList: { isActive: boolean };
 }
 
 export interface OnRequestMarkdownResultEvent {
@@ -139,6 +140,7 @@ export interface OnContextMenuItemPressEvent {
     strikethrough: { isActive: boolean };
     spoiler: { isActive: boolean };
     link: { isActive: boolean };
+    unorderedList: { isActive: boolean };
   };
 }
 
@@ -283,6 +285,9 @@ interface NativeCommands {
   toggleUnderline: (viewRef: React.ElementRef<ComponentType>) => void;
   toggleStrikethrough: (viewRef: React.ElementRef<ComponentType>) => void;
   toggleSpoiler: (viewRef: React.ElementRef<ComponentType>) => void;
+  toggleUnorderedList: (viewRef: React.ElementRef<ComponentType>) => void;
+  indentList: (viewRef: React.ElementRef<ComponentType>) => void;
+  outdentList: (viewRef: React.ElementRef<ComponentType>) => void;
   setLink: (viewRef: React.ElementRef<ComponentType>, url: string) => void;
   insertLink: (
     viewRef: React.ElementRef<ComponentType>,
@@ -320,6 +325,9 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'toggleUnderline',
     'toggleStrikethrough',
     'toggleSpoiler',
+    'toggleUnorderedList',
+    'indentList',
+    'outdentList',
     'setLink',
     'insertLink',
     'insertMention',

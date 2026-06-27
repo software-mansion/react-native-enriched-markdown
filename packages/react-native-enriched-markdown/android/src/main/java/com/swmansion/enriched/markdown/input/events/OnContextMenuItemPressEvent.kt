@@ -17,6 +17,7 @@ class OnContextMenuItemPressEvent(
   private val isStrikethrough: Boolean,
   private val isSpoiler: Boolean,
   private val isLink: Boolean,
+  private val isUnorderedList: Boolean,
 ) : Event<OnContextMenuItemPressEvent>(surfaceId, viewId) {
   override fun getEventName(): String = EVENT_NAME
 
@@ -37,6 +38,7 @@ class OnContextMenuItemPressEvent(
           putMap("strikethrough", styleEntry(isStrikethrough))
           putMap("spoiler", styleEntry(isSpoiler))
           putMap("link", styleEntry(isLink))
+          putMap("unorderedList", styleEntry(isUnorderedList))
         },
       )
     }

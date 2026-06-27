@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   Text,
-  View,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   type StyleProp,
@@ -30,6 +30,12 @@ interface FormattingToolbarProps {
 
 const ICON_COLOR = '#001A72';
 const ICON_SIZE = 18;
+
+const LIST_TEXT_STYLE = {
+  color: ICON_COLOR,
+  fontWeight: '700' as const,
+  fontSize: 13,
+};
 
 const ITEMS = [
   {
@@ -68,6 +74,11 @@ const ITEMS = [
     icon: (
       <SpoilerIcon width={ICON_SIZE} height={ICON_SIZE} color={ICON_COLOR} />
     ),
+  },
+  {
+    styleKey: 'unorderedList',
+    action: 'toggleUnorderedList',
+    icon: <Text style={LIST_TEXT_STYLE}>• List</Text>,
   },
 ] as const;
 
@@ -110,7 +121,14 @@ export function FormattingToolbar({
 
   return (
     <>
-      <View style={[styles.toolbar, style]} testID={testID}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={[styles.toolbar, style]}
+        contentContainerStyle={styles.toolbarContent}
+        testID={testID}
+      >
         {ITEMS.map(({ styleKey, action, icon }) => (
           <TouchableOpacity
             key={styleKey}
@@ -134,6 +152,20 @@ export function FormattingToolbar({
         >
           {LINK_ICON}
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.toolbarButton}
+          onPress={() => inputRef.current?.outdentList()}
+          testID="toolbar-outdent"
+        >
+          <Text style={LIST_TEXT_STYLE}>⇤</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.toolbarButton}
+          onPress={() => inputRef.current?.indentList()}
+          testID="toolbar-indent"
+        >
+          <Text style={LIST_TEXT_STYLE}>⇥</Text>
+        </TouchableOpacity>
         {mentionIndicators?.map((indicator) => (
           <TouchableOpacity
             key={indicator}
@@ -144,7 +176,7 @@ export function FormattingToolbar({
             <Text style={styles.mentionButtonText}>{indicator}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
       <LinkModal
         visible={linkModalVisible}
         initialText=""
@@ -158,13 +190,17 @@ export function FormattingToolbar({
 
 const styles = StyleSheet.create({
   toolbar: {
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    flexGrow: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
     backgroundColor: '#F9FAFB',
+  },
+  toolbarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   toolbarButton: {
     minWidth: 34,
