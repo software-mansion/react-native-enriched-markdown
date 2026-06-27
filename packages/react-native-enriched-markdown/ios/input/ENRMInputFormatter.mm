@@ -136,8 +136,6 @@
     return;
   }
 
-  NSMutableArray<ENRMFormattingRange *> *deferredLinkRanges = [NSMutableArray array];
-
   for (ENRMFormattingRange *formattingRange in ranges) {
     if (formattingRange.range.length == 0 || NSMaxRange(formattingRange.range) > textLength) {
       continue;
@@ -157,25 +155,10 @@
       }
     }
 
-    // Defer link styling to a second pass so its variant color wins over a font style's base text
-    // color: a bold/italic mention must keep its chip color instead of turning black.
-    if (formattingRange.type == ENRMInputStyleTypeLink) {
-      [deferredLinkRanges addObject:formattingRange];
-      continue;
-    }
-
     [handler applyNonFontAttributesToTextStorage:textStorage
                                            range:formattingRange.range
                                  formattingRange:formattingRange
                                            style:style];
-  }
-
-  for (ENRMFormattingRange *linkRange in deferredLinkRanges) {
-    id<ENRMStyleHandler> linkHandler = _styleHandlers[@(linkRange.type)];
-    [linkHandler applyNonFontAttributesToTextStorage:textStorage
-                                               range:linkRange.range
-                                     formattingRange:linkRange
-                                               style:style];
   }
 
   NSUInteger runStart = 0;
