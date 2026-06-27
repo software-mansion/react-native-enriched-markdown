@@ -1549,32 +1549,13 @@ using namespace facebook::react;
 - (void)textViewDidChangeSelection:(UITextView *)textView
 {
   NSRange newSelection = textView.selectedRange;
-  // Links (e.g. mentions) are atomic: a selection can't cover only part of a link, and the caret
-  // can't sit inside one. Snap a partial selection to the whole link, and a caret inside it to its end.
+  // Links (e.g. mentions) are atomic: snap a partial selection to the whole link, and a caret inside
+  // a link to its end. Returning hands the adjusted selection to the recursive change (no double emit).
   if (!_isApplyingFormatting && !_isTextChanging && !ENRMHasMarkedText(_textView)) {
-    if (newSelection.length > 0) {
-      NSUInteger snapStart = newSelection.location;
-      NSUInteger snapEnd = NSMaxRange(newSelection);
-      ENRMFormattingRange *startLink = [_formattingStore rangeOfType:ENRMInputStyleTypeLink containingPosition:snapStart];
-      if (startLink != nil) {
-        snapStart = MIN(snapStart, startLink.range.location);
-      }
-      if (snapEnd > 0) {
-        ENRMFormattingRange *endLink = [_formattingStore rangeOfType:ENRMInputStyleTypeLink containingPosition:(snapEnd - 1)];
-        if (endLink != nil) {
-          snapEnd = MAX(snapEnd, NSMaxRange(endLink.range));
-        }
-      }
-      if (snapStart != newSelection.location || snapEnd != NSMaxRange(newSelection)) {
-        newSelection = NSMakeRange(snapStart, snapEnd - snapStart);
-        _textView.selectedRange = newSelection;
-      }
-    } else {
-      ENRMFormattingRange *caretLink = [_formattingStore rangeOfType:ENRMInputStyleTypeLink containingPosition:newSelection.location];
-      if (caretLink != nil && newSelection.location > caretLink.range.location && newSelection.location < NSMaxRange(caretLink.range)) {
-        newSelection = NSMakeRange(NSMaxRange(caretLink.range), 0);
-        _textView.selectedRange = newSelection;
-      }
+    NSRange adjusted = [_formattingStore selectionAdjustedForAtomicLinks:newSelection];
+    if (!NSEqualRanges(adjusted, newSelection)) {
+      _textView.selectedRange = adjusted;
+      return;
     }
   }
   NSRange previousSelection = _lastSelectedRange;

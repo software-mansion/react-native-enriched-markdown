@@ -276,26 +276,13 @@ class EnrichedMarkdownTextInputView(
     super.onSelectionChanged(selStart, selEnd)
     if (!isComponentReady || isDuringTransaction) return
 
-    // Links (e.g. mentions) are atomic: a selection can't cover only part of a link, and the caret
-    // can't sit inside one. Snap a partial selection to the whole link, and a caret inside it to its end.
-    if (selStart != selEnd) {
-      var ns = selStart
-      var ne = selEnd
-      formattingStore.rangeOfType(StyleType.LINK, ns)?.let { ns = minOf(ns, it.start) }
-      if (ne > 0) formattingStore.rangeOfType(StyleType.LINK, ne - 1)?.let { ne = maxOf(ne, it.end) }
-      if (ns != selStart || ne != selEnd) {
-        setSelection(ns, ne)
-        return
-      }
-    } else {
-      val link = formattingStore.rangeOfType(StyleType.LINK, selStart)
-      if (link != null && selStart > link.start && selStart < link.end) {
-        setSelection(link.end)
-        return
-      }
-    }
-
     if (!isTextChanging) {
+      // Links (e.g. mentions) are atomic: snap a partial selection to the whole link, and a caret
+      // inside a link to its end. Returning lets the recursive onSelectionChanged emit for the result.
+      formattingStore.selectionAdjustedForAtomicLinks(selStart, selEnd)?.let { (newStart, newEnd) ->
+        setSelection(newStart, newEnd)
+        return
+      }
       if (didTextChangeRecently) {
         didTextChangeRecently = false
       } else {
