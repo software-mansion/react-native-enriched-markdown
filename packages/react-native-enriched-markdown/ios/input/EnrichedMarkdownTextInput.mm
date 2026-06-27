@@ -4,6 +4,7 @@
 #import "ENRMDetectorPipeline.h"
 #import "ENRMFormattingRange.h"
 #import "ENRMFormattingStore.h"
+#import "ENRMInputBlockType.h"
 #import "ENRMInputFormatter.h"
 #import "ENRMInputLayoutManager.h"
 #import "ENRMInputLinkPrompt.h"
@@ -59,6 +60,9 @@ using namespace facebook::react;
   ENRMFormattingStore *_formattingStore;
   NSMutableSet<NSNumber *> *_pendingStyles;
   NSMutableSet<NSNumber *> *_pendingStyleRemovals;
+  // Heading kind the next typed character should adopt when the cursor sits on an
+  // empty line (which has no character to carry the block attribute yet).
+  ENRMInputBlockType _pendingBlockType;
   BOOL _isApplyingFormatting;
   BOOL _isTextChanging;
   BOOL _emitMarkdown;
@@ -71,7 +75,9 @@ using namespace facebook::react;
   NSRange _preEditSelectedRange;
 
   struct {
-    BOOL bold, italic, underline, strikethrough, spoiler, link, initialized;
+    BOOL bold, italic, underline, strikethrough, spoiler, link;
+    BOOL h1, h2, h3;
+    BOOL initialized;
   } _prevState;
 
   std::optional<CGRect> _prevCaretRect;
@@ -540,6 +546,7 @@ using namespace facebook::react;
 
   _isApplyingFormatting = YES;
   ENRMSetPlainText(_textView, parsed.plainText);
+  [self applyBlockRanges:parsed.blockRanges];
   _isApplyingFormatting = NO;
 
   [_formattingStore setRanges:parsed.formattingRanges];
@@ -765,6 +772,104 @@ using namespace facebook::react;
   [self emitFormattingChanged];
 }
 
+#pragma mark - Block styles
+
+- (void)toggleH1
+{
+  [self toggleHeadingLevel:1];
+}
+
+- (void)toggleH2
+{
+  [self toggleHeadingLevel:2];
+}
+
+- (void)toggleH3
+{
+  [self toggleHeadingLevel:3];
+}
+
+/// Block type stored on the paragraph containing the cursor. Falls back to the
+/// pending kind for empty lines (no character holds the attribute yet).
+- (ENRMInputBlockType)blockTypeForCursorParagraph
+{
+  NSTextStorage *storage = _textView.textStorage;
+  NSString *text = storage.string;
+  if (text.length == 0) {
+    return _pendingBlockType;
+  }
+  NSRange paragraphRange = [text paragraphRangeForRange:_textView.selectedRange];
+  // Read the attribute from the paragraph's first non-newline character.
+  NSUInteger probe = paragraphRange.location;
+  if (probe >= text.length || [text characterAtIndex:probe] == '\n') {
+    return _pendingBlockType;
+  }
+  id value = [storage attribute:ENRMBlockTypeAttributeName atIndex:probe effectiveRange:NULL];
+  return value ? (ENRMInputBlockType)[value integerValue] : ENRMInputBlockTypeParagraph;
+}
+
+- (void)toggleHeadingLevel:(NSInteger)level
+{
+  ENRMInputBlockType targetType = ENRMBlockTypeForHeadingLevel(level);
+  BOOL turningOff = ([self blockTypeForCursorParagraph] == targetType);
+  ENRMInputBlockType newType = turningOff ? ENRMInputBlockTypeParagraph : targetType;
+
+  NSTextStorage *storage = _textView.textStorage;
+  NSString *text = storage.string;
+
+  if (text.length > 0) {
+    NSRange paragraphRange = [text paragraphRangeForRange:_textView.selectedRange];
+    [storage beginEditing];
+    // Apply per line so a multi-line selection toggles each paragraph, never the
+    // separating newline (headings are single-line in Markdown).
+    [text enumerateSubstringsInRange:paragraphRange
+                             options:NSStringEnumerationByLines
+                          usingBlock:^(NSString *line, NSRange lineRange, NSRange enclosingRange, BOOL *stop) {
+                            if (lineRange.length == 0) {
+                              return;
+                            }
+                            if (newType == ENRMInputBlockTypeParagraph) {
+                              [storage removeAttribute:ENRMBlockTypeAttributeName range:lineRange];
+                            } else {
+                              [storage addAttribute:ENRMBlockTypeAttributeName value:@(newType) range:lineRange];
+                            }
+                          }];
+    [storage endEditing];
+  }
+
+  // Carry the kind for the cursor's (possibly empty) line into the next keystroke.
+  _pendingBlockType = newType;
+
+  [self applyFormatting];
+  [self syncTypingAttributesWithPendingStyles];
+  [self emitFormattingChanged];
+}
+
+/// Writes parsed heading ranges into the text storage as block attributes.
+/// Caller is responsible for the surrounding `_isApplyingFormatting` guard.
+- (void)applyBlockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+{
+  NSTextStorage *storage = _textView.textStorage;
+  NSUInteger length = storage.length;
+  if (length == 0) {
+    return;
+  }
+  NSRange fullRange = NSMakeRange(0, length);
+  [storage beginEditing];
+  [storage removeAttribute:ENRMBlockTypeAttributeName range:fullRange];
+  for (ENRMBlockRange *blockRange in blockRanges) {
+    if (blockRange.type == ENRMInputBlockTypeParagraph) {
+      continue;
+    }
+    NSRange range = NSIntersectionRange(blockRange.range, fullRange);
+    if (range.length == 0) {
+      continue;
+    }
+    [storage addAttribute:ENRMBlockTypeAttributeName value:@(blockRange.type) range:range];
+  }
+  [storage endEditing];
+}
+
 - (void)setLink:(NSString *)url
 {
   NSRange selection = _textView.selectedRange;
@@ -900,7 +1005,8 @@ using namespace facebook::react;
     return;
   }
   NSString *markdown = [ENRMMarkdownSerializer serializePlainText:ENRMGetPlainText(_textView)
-                                                           ranges:[self allRangesIncludingTransient]];
+                                                           ranges:[self allRangesIncludingTransient]
+                                                      blockRanges:[self currentBlockRanges]];
   emitter->onRequestMarkdownResult({
       .requestId = static_cast<int>(requestId),
       .markdown = std::string([markdown UTF8String] ?: ""),
@@ -975,8 +1081,15 @@ using namespace facebook::react;
     traits |= UIFontDescriptorTraitItalic;
   }
 
+  NSInteger headingLevel = ENRMHeadingLevelForBlockType([self blockTypeForCursorParagraph]);
+
   NSMutableDictionary *attrs = [_textView.typingAttributes mutableCopy];
-  attrs[NSFontAttributeName] = [_formatterStyle fontForTraits:traits];
+  attrs[NSFontAttributeName] = [_formatterStyle fontForTraits:traits headingLevel:headingLevel];
+  if (headingLevel > 0) {
+    attrs[ENRMBlockTypeAttributeName] = @(ENRMBlockTypeForHeadingLevel(headingLevel));
+  } else {
+    [attrs removeObjectForKey:ENRMBlockTypeAttributeName];
+  }
   _textView.typingAttributes = attrs;
 }
 
@@ -992,6 +1105,9 @@ using namespace facebook::react;
   }
   [_pendingStyles removeAllObjects];
   [_pendingStyleRemovals removeAllObjects];
+  // Heading carries via the stored attribute on non-empty lines; clear the
+  // pending kind so it never leaks onto a different (empty) line.
+  _pendingBlockType = ENRMInputBlockTypeParagraph;
   [self rebuildPendingStylesFromContext];
   [self syncTypingAttributesWithPendingStyles];
 }
@@ -1165,8 +1281,35 @@ using namespace facebook::react;
     return;
   }
   NSString *markdown = [ENRMMarkdownSerializer serializePlainText:ENRMGetPlainText(_textView)
-                                                           ranges:[self allRangesIncludingTransient]];
+                                                           ranges:[self allRangesIncludingTransient]
+                                                      blockRanges:[self currentBlockRanges]];
   emitter->onChangeMarkdown({.value = std::string([markdown UTF8String] ?: "")});
+}
+
+/// Block (heading) ranges currently stored as text attributes, in text-storage
+/// coordinates. Source of truth for serialization and state queries.
+- (NSArray<ENRMBlockRange *> *)currentBlockRanges
+{
+  NSTextStorage *storage = _textView.textStorage;
+  NSUInteger length = storage.length;
+  if (length == 0) {
+    return @[];
+  }
+  NSMutableArray<ENRMBlockRange *> *result = [NSMutableArray array];
+  [storage enumerateAttribute:ENRMBlockTypeAttributeName
+                      inRange:NSMakeRange(0, length)
+                      options:0
+                   usingBlock:^(id value, NSRange range, BOOL *stop) {
+                     if (!value) {
+                       return;
+                     }
+                     ENRMInputBlockType type = (ENRMInputBlockType)[value integerValue];
+                     if (type == ENRMInputBlockTypeParagraph) {
+                       return;
+                     }
+                     [result addObject:[ENRMBlockRange rangeWithType:type range:range]];
+                   }];
+  return result;
 }
 
 - (void)emitOnChangeSelection
@@ -1197,9 +1340,15 @@ using namespace facebook::react;
   BOOL spoilerActive = [self isEffectiveStyleActive:ENRMInputStyleTypeSpoiler atPosition:cursor];
   BOOL linkActive = [self isEffectiveStyleActive:ENRMInputStyleTypeLink atPosition:cursor];
 
+  ENRMInputBlockType blockType = [self blockTypeForCursorParagraph];
+  BOOL h1Active = blockType == ENRMInputBlockTypeHeading1;
+  BOOL h2Active = blockType == ENRMInputBlockTypeHeading2;
+  BOOL h3Active = blockType == ENRMInputBlockTypeHeading3;
+
   if (_prevState.initialized && _prevState.bold == boldActive && _prevState.italic == italicActive &&
       _prevState.underline == underlineActive && _prevState.strikethrough == strikethroughActive &&
-      _prevState.spoiler == spoilerActive && _prevState.link == linkActive) {
+      _prevState.spoiler == spoilerActive && _prevState.link == linkActive && _prevState.h1 == h1Active &&
+      _prevState.h2 == h2Active && _prevState.h3 == h3Active) {
     return;
   }
 
@@ -1209,6 +1358,9 @@ using namespace facebook::react;
   _prevState.strikethrough = strikethroughActive;
   _prevState.spoiler = spoilerActive;
   _prevState.link = linkActive;
+  _prevState.h1 = h1Active;
+  _prevState.h2 = h2Active;
+  _prevState.h3 = h3Active;
   _prevState.initialized = YES;
 
   emitter->onChangeState({
@@ -1218,6 +1370,9 @@ using namespace facebook::react;
       .strikethrough = {.isActive = strikethroughActive},
       .spoiler = {.isActive = spoilerActive},
       .link = {.isActive = linkActive},
+      .h1 = {.isActive = h1Active},
+      .h2 = {.isActive = h2Active},
+      .h3 = {.isActive = h3Active},
   });
 }
 
@@ -1289,6 +1444,8 @@ using namespace facebook::react;
   BOOL spoilerActive = isActive(ENRMInputStyleTypeSpoiler);
   BOOL linkActive = isActive(ENRMInputStyleTypeLink);
 
+  ENRMInputBlockType blockType = [self blockTypeForCursorParagraph];
+
   eventEmitter->onContextMenuItemPress({
       .itemText = std::string(itemText.UTF8String),
       .selectedText = std::string(selectedText.UTF8String),
@@ -1302,6 +1459,9 @@ using namespace facebook::react;
               .strikethrough = {.isActive = strikethroughActive},
               .spoiler = {.isActive = spoilerActive},
               .link = {.isActive = linkActive},
+              .h1 = {.isActive = blockType == ENRMInputBlockTypeHeading1},
+              .h2 = {.isActive = blockType == ENRMInputBlockTypeHeading2},
+              .h3 = {.isActive = blockType == ENRMInputBlockTypeHeading3},
           },
   });
 }
@@ -1428,12 +1588,39 @@ using namespace facebook::react;
                                                                      range:insertedRange];
         [_formattingStore addRange:newRange];
       }
+
+      // Stamp the heading attribute onto the inserted glyphs when typing inside a
+      // heading paragraph. UIKit drops custom attributes from typingAttributes
+      // after the first insertion, so relying on it alone styles only the first
+      // character — apply directly to storage instead, matching how inline
+      // pending styles are applied above.
+      ENRMInputBlockType blockType = [self blockTypeForCursorParagraph];
+      if (blockType != ENRMInputBlockTypeParagraph) {
+        NSTextStorage *storage = _textView.textStorage;
+        NSRange clamped = NSIntersectionRange(insertedRange, NSMakeRange(0, storage.length));
+        if (clamped.length > 0) {
+          [storage addAttribute:ENRMBlockTypeAttributeName value:@(blockType) range:clamped];
+        }
+      }
     }
 
     // adjustForEditAtLocation may have expanded an existing range to cover
     // the insertion — carve out the inserted portion for removed styles.
     for (NSNumber *styleNum in _pendingStyleRemovals) {
       [_formattingStore removeType:(ENRMInputStyleType)styleNum.integerValue inRange:insertedRange];
+    }
+
+    // A newline ends a heading: Markdown headings are single-line, so the new
+    // paragraph starts plain. Strip any heading attribute the newline inherited
+    // and reset the pending kind + typing attributes so the next line is normal.
+    if (!insertedHasGlyphContent) {
+      NSTextStorage *storage = _textView.textStorage;
+      NSRange clampedInserted = NSIntersectionRange(insertedRange, NSMakeRange(0, storage.length));
+      if (clampedInserted.length > 0) {
+        [storage removeAttribute:ENRMBlockTypeAttributeName range:clampedInserted];
+      }
+      _pendingBlockType = ENRMInputBlockTypeParagraph;
+      [self syncTypingAttributesWithPendingStyles];
     }
   }
 
@@ -1446,6 +1633,12 @@ using namespace facebook::react;
 #endif
 
   [self applyFormatting];
+
+  // Keep the caret's typing font in sync with the heading paragraph so the next
+  // character keeps the heading size (UIKit otherwise resets it to the base font).
+  if ([self blockTypeForCursorParagraph] != ENRMInputBlockTypeParagraph) {
+    [self syncTypingAttributesWithPendingStyles];
+  }
 
   NSUInteger clampedEditLocation = MIN(editLocation, newLength);
   NSUInteger clampedInsertedLength = MIN(insertedLength, newLength - clampedEditLocation);

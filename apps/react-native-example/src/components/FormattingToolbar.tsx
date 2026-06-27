@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   Text,
-  View,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   type StyleProp,
@@ -30,6 +30,12 @@ interface FormattingToolbarProps {
 
 const ICON_COLOR = '#001A72';
 const ICON_SIZE = 18;
+
+const HEADING_TEXT_STYLE = {
+  color: ICON_COLOR,
+  fontWeight: '700' as const,
+  fontSize: 13,
+};
 
 const ITEMS = [
   {
@@ -68,6 +74,21 @@ const ITEMS = [
     icon: (
       <SpoilerIcon width={ICON_SIZE} height={ICON_SIZE} color={ICON_COLOR} />
     ),
+  },
+  {
+    styleKey: 'h1',
+    action: 'toggleH1',
+    icon: <Text style={HEADING_TEXT_STYLE}>H1</Text>,
+  },
+  {
+    styleKey: 'h2',
+    action: 'toggleH2',
+    icon: <Text style={HEADING_TEXT_STYLE}>H2</Text>,
+  },
+  {
+    styleKey: 'h3',
+    action: 'toggleH3',
+    icon: <Text style={HEADING_TEXT_STYLE}>H3</Text>,
   },
 ] as const;
 
@@ -110,7 +131,14 @@ export function FormattingToolbar({
 
   return (
     <>
-      <View style={[styles.toolbar, style]} testID={testID}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={[styles.toolbar, style]}
+        contentContainerStyle={styles.toolbarContent}
+        testID={testID}
+      >
         {ITEMS.map(({ styleKey, action, icon }) => (
           <TouchableOpacity
             key={styleKey}
@@ -144,7 +172,7 @@ export function FormattingToolbar({
             <Text style={styles.mentionButtonText}>{indicator}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
       <LinkModal
         visible={linkModalVisible}
         initialText=""
@@ -158,13 +186,17 @@ export function FormattingToolbar({
 
 const styles = StyleSheet.create({
   toolbar: {
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    flexGrow: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
     backgroundColor: '#F9FAFB',
+  },
+  toolbarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   toolbarButton: {
     minWidth: 34,

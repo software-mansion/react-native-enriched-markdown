@@ -19,6 +19,7 @@ import com.swmansion.enriched.markdown.input.events.OnRequestCaretRectResultEven
 import com.swmansion.enriched.markdown.input.events.OnRequestMarkdownResultEvent
 import com.swmansion.enriched.markdown.input.events.OnStartMentionEvent
 import com.swmansion.enriched.markdown.input.formatting.MarkdownSerializer
+import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.CaretRect
 import com.swmansion.enriched.markdown.input.model.StyleType
 
@@ -26,6 +27,7 @@ class InputEventEmitter(
   private val view: EnrichedMarkdownTextInputView,
 ) {
   private var prevState: Map<StyleType, Boolean> = emptyMap()
+  private var prevBlockType: BlockType? = null
   private var prevCaretRect: CaretRect? = null
 
   fun emitChangeText() {
@@ -50,9 +52,11 @@ class InputEventEmitter(
       StyleType.entries.associateWith { style ->
         isStyleEffectivelyActive(style, pos)
       }
+    val blockType = view.blockTypeAtCursor()
 
-    if (current == prevState) return
+    if (current == prevState && blockType == prevBlockType) return
     prevState = current
+    prevBlockType = blockType
 
     dispatch(
       OnChangeStateEvent(
@@ -64,6 +68,9 @@ class InputEventEmitter(
         current[StyleType.STRIKETHROUGH] ?: false,
         current[StyleType.SPOILER] ?: false,
         current[StyleType.LINK] ?: false,
+        blockType == BlockType.HEADING_1,
+        blockType == BlockType.HEADING_2,
+        blockType == BlockType.HEADING_3,
       ),
     )
   }
@@ -169,6 +176,9 @@ class InputEventEmitter(
         isStrikethrough = isActive(StyleType.STRIKETHROUGH),
         isSpoiler = isActive(StyleType.SPOILER),
         isLink = isActive(StyleType.LINK),
+        isH1 = view.blockTypeAtCursor() == BlockType.HEADING_1,
+        isH2 = view.blockTypeAtCursor() == BlockType.HEADING_2,
+        isH3 = view.blockTypeAtCursor() == BlockType.HEADING_3,
       ),
     )
   }
@@ -185,7 +195,11 @@ class InputEventEmitter(
 
   private fun serializeToMarkdown(): String {
     val plainText = view.text?.toString() ?: ""
-    return MarkdownSerializer.serialize(plainText, view.allFormattingRangesForSerialization())
+    return MarkdownSerializer.serialize(
+      plainText,
+      view.allFormattingRangesForSerialization(),
+      view.currentBlockRanges(),
+    )
   }
 
   private fun surfaceId(): Int {

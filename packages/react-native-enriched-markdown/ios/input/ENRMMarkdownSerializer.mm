@@ -219,4 +219,71 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
   return markdown;
 }
 
+static NSString *headingPrefixForLevel(NSInteger level)
+{
+  switch (level) {
+    case 1:
+      return @"# ";
+    case 2:
+      return @"## ";
+    case 3:
+      return @"### ";
+    default:
+      return @"";
+  }
+}
+
++ (NSString *)serializePlainText:(NSString *)text
+                          ranges:(NSArray<ENRMFormattingRange *> *)ranges
+                     blockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+{
+  NSString *inlineMarkdown = [self serializePlainText:text ranges:ranges];
+
+  if (blockRanges.count == 0) {
+    return inlineMarkdown;
+  }
+
+  // Inline serialization never adds or removes newlines, so line N of the
+  // inline markdown maps to paragraph N of the plain text. Walk plain-text
+  // lines to find each one's char range, look up its heading level, and prefix
+  // the matching markdown line.
+  NSArray<NSString *> *plainLines = [text componentsSeparatedByString:@"\n"];
+  NSMutableArray<NSString *> *markdownLines = [[inlineMarkdown componentsSeparatedByString:@"\n"] mutableCopy];
+
+  // Line counts must align for the index mapping to be valid; bail out safely if
+  // an inline edge case ever breaks the invariant.
+  if (plainLines.count != markdownLines.count) {
+    return inlineMarkdown;
+  }
+
+  NSUInteger lineStart = 0;
+  for (NSUInteger lineIndex = 0; lineIndex < plainLines.count; lineIndex++) {
+    NSUInteger lineLength = plainLines[lineIndex].length;
+    NSRange lineRange = NSMakeRange(lineStart, lineLength);
+
+    NSInteger level = 0;
+    for (ENRMBlockRange *blockRange in blockRanges) {
+      NSInteger blockLevel = ENRMHeadingLevelForBlockType(blockRange.type);
+      if (blockLevel <= 0) {
+        continue;
+      }
+      // A heading covers its paragraph; intersection (or an empty line whose
+      // start sits inside the block range) marks the line as that heading.
+      if (NSIntersectionRange(lineRange, blockRange.range).length > 0 ||
+          (lineLength == 0 && NSLocationInRange(lineStart, blockRange.range))) {
+        level = blockLevel;
+        break;
+      }
+    }
+
+    if (level > 0) {
+      markdownLines[lineIndex] = [headingPrefixForLevel(level) stringByAppendingString:markdownLines[lineIndex]];
+    }
+
+    lineStart += lineLength + 1; // +1 for the '\n' separator
+  }
+
+  return [markdownLines componentsJoinedByString:@"\n"];
+}
+
 @end

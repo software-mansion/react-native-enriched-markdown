@@ -66,6 +66,25 @@ Each call toggles the style within the current text selection. They are being to
 
 Styles are also available through the built-in native format bar that appears on text selection, and through the system context menu.
 
+## Block Styles
+
+Supported block styles:
+
+- heading 1 (`toggleH1()`)
+- heading 2 (`toggleH2()`)
+- heading 3 (`toggleH3()`)
+
+Unlike inline styles, block styles apply to the whole line (or every line the
+selection touches) and are mutually exclusive — toggling one heading level off
+returns the line to a normal paragraph, and toggling a different level replaces
+the current one. Calling a heading `toggle` again with the same level removes it.
+
+Headings render in-editor at their configured size and serialize to Markdown as
+ATX headings (`# `, `## `, `### `); the markers only exist in the serialized
+output, never in the editor text. The active heading level for the cursor's line
+is reported through `onChangeState` as `h1`, `h2`, and `h3` (each with an
+`isActive` property), the same shape as inline styles.
+
 ## Links
 
 Links are a piece of text with a URL attributed to it. They can be managed by calling methods on the input ref:

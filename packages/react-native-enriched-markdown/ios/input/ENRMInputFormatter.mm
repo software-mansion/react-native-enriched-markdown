@@ -1,5 +1,6 @@
 #import "ENRMInputFormatter.h"
 #import "ENRMBoldStyleHandler.h"
+#import "ENRMInputBlockType.h"
 #import "ENRMItalicStyleHandler.h"
 #import "ENRMLinkStyleHandler.h"
 #import "ENRMSpoilerStyleHandler.h"
@@ -77,6 +78,48 @@
   return derived;
 }
 
+/// Size multipliers applied to the base font for each heading level. Tuned to
+/// read as a clear hierarchy in-editor; the readonly renderer's StyleConfig can
+/// override these once heading style props are plumbed through.
+static CGFloat headingScaleForLevel(NSInteger level)
+{
+  switch (level) {
+    case 1:
+      return 1.6;
+    case 2:
+      return 1.4;
+    case 3:
+      return 1.2;
+    default:
+      return 1.0;
+  }
+}
+
+- (UIFont *)baseFontForHeadingLevel:(NSInteger)level
+{
+  if (level <= 0) {
+    return _baseFont;
+  }
+  CGFloat size = _baseFont.pointSize * headingScaleForLevel(level);
+  UIFontDescriptorSymbolicTraits traits = _baseFont.fontDescriptor.symbolicTraits | UIFontDescriptorTraitBold;
+  UIFontDescriptor *descriptor = [_baseFont.fontDescriptor fontDescriptorWithSymbolicTraits:traits];
+  return descriptor ? [UIFont fontWithDescriptor:descriptor size:size] : [_baseFont fontWithSize:size];
+}
+
+- (UIFont *)fontForTraits:(UIFontDescriptorSymbolicTraits)traits headingLevel:(NSInteger)level
+{
+  if (level <= 0) {
+    return [self fontForTraits:traits];
+  }
+  UIFont *base = [self baseFontForHeadingLevel:level];
+  UIFontDescriptorSymbolicTraits effective = base.fontDescriptor.symbolicTraits | traits;
+  if (effective == base.fontDescriptor.symbolicTraits) {
+    return base;
+  }
+  UIFontDescriptor *descriptor = [base.fontDescriptor fontDescriptorWithSymbolicTraits:effective];
+  return descriptor ? [UIFont fontWithDescriptor:descriptor size:base.pointSize] : base;
+}
+
 @end
 
 @implementation ENRMInputFormatter {
@@ -123,7 +166,6 @@
 
   [textStorage beginEditing];
 
-  [textStorage addAttribute:NSFontAttributeName value:style.baseFont range:fullTextRange];
   [textStorage addAttribute:NSForegroundColorAttributeName value:style.baseTextColor range:fullTextRange];
   [textStorage removeAttribute:NSUnderlineStyleAttributeName range:fullTextRange];
   [textStorage removeAttribute:NSStrikethroughStyleAttributeName range:fullTextRange];
@@ -131,10 +173,31 @@
 
   UIFontDescriptorSymbolicTraits *traitMap =
       (UIFontDescriptorSymbolicTraits *)calloc(textLength, sizeof(UIFontDescriptorSymbolicTraits));
-  if (!traitMap) {
+  // Per-character heading level, read from the block attribute TextKit migrates
+  // across edits. Drives both the base font size and the run boundaries below.
+  NSInteger *headingMap = (NSInteger *)calloc(textLength, sizeof(NSInteger));
+  if (!traitMap || !headingMap) {
+    free(traitMap);
+    free(headingMap);
     [textStorage endEditing];
     return;
   }
+
+  [textStorage enumerateAttribute:ENRMBlockTypeAttributeName
+                          inRange:fullTextRange
+                          options:0
+                       usingBlock:^(id value, NSRange attrRange, BOOL *stop) {
+                         if (!value) {
+                           return;
+                         }
+                         NSInteger level = ENRMHeadingLevelForBlockType((ENRMInputBlockType)[value integerValue]);
+                         if (level <= 0) {
+                           return;
+                         }
+                         for (NSUInteger i = attrRange.location; i < NSMaxRange(attrRange); i++) {
+                           headingMap[i] = level;
+                         }
+                       }];
 
   for (ENRMFormattingRange *formattingRange in ranges) {
     if (formattingRange.range.length == 0 || NSMaxRange(formattingRange.range) > textLength) {
@@ -161,22 +224,24 @@
                                            style:style];
   }
 
+  // Emit font runs keyed by (traits, heading level). Unlike the inline-only
+  // path, a heading run with no inline traits still needs its own (larger) font,
+  // so plain runs are no longer skipped.
   NSUInteger runStart = 0;
-  UIFontDescriptorSymbolicTraits currentTraits = traitMap[0];
-
   for (NSUInteger i = 1; i <= textLength; i++) {
-    UIFontDescriptorSymbolicTraits nextTraits = (i < textLength) ? traitMap[i] : ~currentTraits;
-    if (nextTraits != currentTraits) {
-      if (currentTraits != 0) {
-        UIFont *font = [style fontForTraits:currentTraits];
-        [textStorage addAttribute:NSFontAttributeName value:font range:NSMakeRange(runStart, i - runStart)];
-      }
-      runStart = i;
-      currentTraits = (i < textLength) ? traitMap[i] : 0;
+    BOOL boundary = (i == textLength) || traitMap[i] != traitMap[i - 1] || headingMap[i] != headingMap[i - 1];
+    if (!boundary) {
+      continue;
     }
+    UIFontDescriptorSymbolicTraits traits = traitMap[runStart];
+    NSInteger level = headingMap[runStart];
+    UIFont *font = (traits == 0 && level == 0) ? style.baseFont : [style fontForTraits:traits headingLevel:level];
+    [textStorage addAttribute:NSFontAttributeName value:font range:NSMakeRange(runStart, i - runStart)];
+    runStart = i;
   }
 
   free(traitMap);
+  free(headingMap);
 
   [textStorage endEditing];
 

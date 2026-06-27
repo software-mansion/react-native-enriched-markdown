@@ -70,6 +70,9 @@ export interface StyleState {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
+  h1: { isActive: boolean };
+  h2: { isActive: boolean };
+  h3: { isActive: boolean };
 }
 
 export interface ContextMenuItem {
@@ -103,6 +106,9 @@ export interface EnrichedMarkdownTextInputInstance {
   toggleUnderline: () => void;
   toggleStrikethrough: () => void;
   toggleSpoiler: () => void;
+  toggleH1: () => void;
+  toggleH2: () => void;
+  toggleH3: () => void;
   setLink: (url: string) => void;
   insertLink: (text: string, url: string) => void;
   insertMention: (displayText: string, url: string) => void;
@@ -356,8 +362,17 @@ export const EnrichedMarkdownTextInput = ({
 
   const handleChangeState = useCallback(
     (e: NativeSyntheticEvent<OnChangeStateEvent>) => {
-      const { bold, italic, underline, strikethrough, spoiler, link } =
-        e.nativeEvent;
+      const {
+        bold,
+        italic,
+        underline,
+        strikethrough,
+        spoiler,
+        link,
+        h1,
+        h2,
+        h3,
+      } = e.nativeEvent;
       onChangeState?.({
         bold,
         italic,
@@ -365,6 +380,9 @@ export const EnrichedMarkdownTextInput = ({
         strikethrough,
         spoiler,
         link,
+        h1,
+        h2,
+        h3,
       });
     },
     [onChangeState]
@@ -470,6 +488,9 @@ export const EnrichedMarkdownTextInput = ({
       toggleUnderline: () => Commands.toggleUnderline(commandRef),
       toggleStrikethrough: () => Commands.toggleStrikethrough(commandRef),
       toggleSpoiler: () => Commands.toggleSpoiler(commandRef),
+      toggleH1: () => Commands.toggleH1(commandRef),
+      toggleH2: () => Commands.toggleH2(commandRef),
+      toggleH3: () => Commands.toggleH3(commandRef),
       setLink: (url) => Commands.setLink(commandRef, url),
       insertLink: (text, url) => Commands.insertLink(commandRef, text, url),
       insertMention: (displayText, url) =>

@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.os.Build
 import android.text.Editable
 import android.text.InputType
+import android.text.Spanned
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.KeyEvent
@@ -33,10 +34,13 @@ import com.swmansion.enriched.markdown.input.formatting.InputFormatter
 import com.swmansion.enriched.markdown.input.formatting.InputParser
 import com.swmansion.enriched.markdown.input.layout.InputEventEmitter
 import com.swmansion.enriched.markdown.input.layout.InputLayoutManager
+import com.swmansion.enriched.markdown.input.model.BlockRange
+import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
 import com.swmansion.enriched.markdown.input.model.StyleType
 import com.swmansion.enriched.markdown.input.toolbar.InputContextMenu
+import com.swmansion.enriched.markdown.spans.InputHeadingSpan
 import com.swmansion.enriched.markdown.utils.input.AutoCapitalizeUtils
 import kotlin.math.ceil
 
@@ -51,6 +55,10 @@ class EnrichedMarkdownTextInputView(
   val formatter = InputFormatter()
   val pendingStyles = mutableSetOf<StyleType>()
   val pendingStyleRemovals = mutableSetOf<StyleType>()
+
+  // Heading kind the next typed character should adopt when the cursor sits on an
+  // empty line (no character holds the heading span yet).
+  private var pendingBlockType: BlockType = BlockType.PARAGRAPH
 
   var isDuringTransaction = false
     private set
@@ -249,6 +257,16 @@ class EnrichedMarkdownTextInputView(
     try {
       formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
       applyPendingStyles(editStart, insertedLength)
+
+      val insertedHasGlyph =
+        insertedLength > 0 &&
+          run {
+            val t = text
+            val end = editStart + insertedLength
+            t != null && end <= t.length && (editStart until end).any { !t[it].isLineBreak() }
+          }
+      normalizeHeadingSpans(insertedHasGlyph)
+
       applyFormatting()
 
       val editable = text
@@ -282,6 +300,9 @@ class EnrichedMarkdownTextInputView(
       } else {
         pendingStyles.clear()
         pendingStyleRemovals.clear()
+        // Heading carries via the span on non-empty lines; clear the pending kind
+        // so it never leaks onto a different (empty) line.
+        pendingBlockType = BlockType.PARAGRAPH
       }
     }
 
@@ -404,6 +425,126 @@ class EnrichedMarkdownTextInputView(
       applyFormattingAndEmit()
     }
   }
+
+  // region Block styles
+
+  /** Start/end (exclusive) offsets of the line's content containing [offset], excluding newlines. */
+  private fun lineBounds(offset: Int): Pair<Int, Int> {
+    val s = text ?: return 0 to 0
+    val len = s.length
+    val pos = offset.coerceIn(0, len)
+    var start = pos
+    while (start > 0 && s[start - 1] != '\n') start--
+    var end = pos
+    while (end < len && s[end] != '\n') end++
+    return start to end
+  }
+
+  private fun removeHeadingSpans(
+    editable: Editable,
+    start: Int,
+    end: Int,
+  ) {
+    for (span in editable.getSpans(start, end, InputHeadingSpan::class.java)) {
+      editable.removeSpan(span)
+    }
+  }
+
+  /** Block kind of the cursor's line, falling back to the pending kind for empty lines. */
+  fun blockTypeAtCursor(): BlockType {
+    val editable = text ?: return pendingBlockType
+    if (editable.isEmpty()) return pendingBlockType
+    val (ls, le) = lineBounds(selectionStart)
+    if (le <= ls) return pendingBlockType
+    return editable
+      .getSpans(ls, le, InputHeadingSpan::class.java)
+      .firstOrNull()
+      ?.blockType ?: BlockType.PARAGRAPH
+  }
+
+  /** Heading ranges currently stored as spans, in text coordinates. */
+  fun currentBlockRanges(): List<BlockRange> {
+    val editable = text ?: return emptyList()
+    return editable
+      .getSpans(0, editable.length, InputHeadingSpan::class.java)
+      .mapNotNull { span ->
+        val start = editable.getSpanStart(span)
+        val end = editable.getSpanEnd(span)
+        if (end > start) BlockRange(span.blockType, start, end) else null
+      }
+  }
+
+  fun toggleHeading(level: Int) {
+    val editable = text ?: return
+    val target = BlockType.forHeadingLevel(level)
+    val turningOff = blockTypeAtCursor() == target
+    val newType = if (turningOff) BlockType.PARAGRAPH else target
+
+    // Apply per line so a multi-line selection toggles each line, never the
+    // separating newline (headings are single-line in Markdown).
+    val selEnd = selectionEnd
+    var cursor = lineBounds(selectionStart).first
+    while (cursor <= editable.length) {
+      val (ls, le) = lineBounds(cursor)
+      removeHeadingSpans(editable, ls, le)
+      if (newType != BlockType.PARAGRAPH && le > ls) {
+        editable.setSpan(InputHeadingSpan(newType), ls, le, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+      }
+      if (le >= selEnd) break
+      cursor = le + 1
+    }
+
+    // Carry the kind for the cursor's (possibly empty) line into the next keystroke.
+    pendingBlockType = newType
+
+    applyFormatting()
+    forceScrollToSelection()
+    if (emitMarkdown) eventEmitter.emitChangeMarkdown()
+    eventEmitter.emitState()
+  }
+
+  /**
+   * Keeps heading spans well-formed after an edit: seeds a span for the first
+   * character typed on a freshly-toggled empty line, re-clamps every heading
+   * span to its line's content (so typing extends it and it never crosses a
+   * newline), and ends a heading when a newline is inserted.
+   */
+  private fun normalizeHeadingSpans(insertedHasGlyph: Boolean) {
+    val editable = text ?: return
+
+    if (insertedHasGlyph && pendingBlockType != BlockType.PARAGRAPH) {
+      val (ls, le) = lineBounds(selectionStart)
+      if (le > ls && editable.getSpans(ls, le, InputHeadingSpan::class.java).isEmpty()) {
+        editable.setSpan(InputHeadingSpan(pendingBlockType), ls, le, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+      }
+    }
+
+    for (span in editable.getSpans(0, editable.length, InputHeadingSpan::class.java)) {
+      val (ls, le) = lineBounds(editable.getSpanStart(span))
+      editable.removeSpan(span)
+      if (le > ls) {
+        editable.setSpan(InputHeadingSpan(span.blockType), ls, le, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+      }
+    }
+
+    if (!insertedHasGlyph) pendingBlockType = BlockType.PARAGRAPH
+  }
+
+  /** Writes parsed heading ranges into the text as spans. */
+  private fun applyBlockRanges(blockRanges: List<BlockRange>) {
+    val editable = text ?: return
+    removeHeadingSpans(editable, 0, editable.length)
+    for (range in blockRanges) {
+      if (range.type == BlockType.PARAGRAPH) continue
+      val start = range.start.coerceIn(0, editable.length)
+      val end = range.end.coerceIn(start, editable.length)
+      if (end > start) {
+        editable.setSpan(InputHeadingSpan(range.type), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+      }
+    }
+  }
+
+  // endregion
 
   fun setLinkForSelection(url: String) {
     val selStart = selectionStart
@@ -569,6 +710,7 @@ class EnrichedMarkdownTextInputView(
         formattingStore.clearAll()
         formattingStore.setRanges(parsed.formattingRanges)
         setText(parsed.plainText)
+        applyBlockRanges(parsed.blockRanges)
         setSelection(text?.length ?: 0)
       }
       applyFormatting()

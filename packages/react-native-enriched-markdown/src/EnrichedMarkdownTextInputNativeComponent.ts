@@ -58,6 +58,9 @@ export interface OnChangeStateEvent {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
+  h1: { isActive: boolean };
+  h2: { isActive: boolean };
+  h3: { isActive: boolean };
 }
 
 export interface OnRequestMarkdownResultEvent {
@@ -139,6 +142,9 @@ export interface OnContextMenuItemPressEvent {
     strikethrough: { isActive: boolean };
     spoiler: { isActive: boolean };
     link: { isActive: boolean };
+    h1: { isActive: boolean };
+    h2: { isActive: boolean };
+    h3: { isActive: boolean };
   };
 }
 
@@ -283,6 +289,9 @@ interface NativeCommands {
   toggleUnderline: (viewRef: React.ElementRef<ComponentType>) => void;
   toggleStrikethrough: (viewRef: React.ElementRef<ComponentType>) => void;
   toggleSpoiler: (viewRef: React.ElementRef<ComponentType>) => void;
+  toggleH1: (viewRef: React.ElementRef<ComponentType>) => void;
+  toggleH2: (viewRef: React.ElementRef<ComponentType>) => void;
+  toggleH3: (viewRef: React.ElementRef<ComponentType>) => void;
   setLink: (viewRef: React.ElementRef<ComponentType>, url: string) => void;
   insertLink: (
     viewRef: React.ElementRef<ComponentType>,
@@ -320,6 +329,9 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'toggleUnderline',
     'toggleStrikethrough',
     'toggleSpoiler',
+    'toggleH1',
+    'toggleH2',
+    'toggleH3',
     'setLink',
     'insertLink',
     'insertMention',

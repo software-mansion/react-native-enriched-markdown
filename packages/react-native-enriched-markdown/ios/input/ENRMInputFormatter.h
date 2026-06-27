@@ -40,6 +40,16 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) RCTUIColor *spoilerBackgroundColor;
 
 - (UIFont *)fontForTraits:(UIFontDescriptorSymbolicTraits)traits;
+
+/// Bold, size-scaled font for a heading level (1-3). Level 0 returns the base
+/// font unchanged. Heading typography is derived from the base font so it tracks
+/// the configured font family and size automatically.
+- (UIFont *)baseFontForHeadingLevel:(NSInteger)level;
+
+/// Font combining a heading's base typography (size + bold) with inline traits,
+/// so a bold/italic mark inside a heading composes correctly.
+- (UIFont *)fontForTraits:(UIFontDescriptorSymbolicTraits)traits headingLevel:(NSInteger)level;
+
 - (void)invalidateFontCache;
 
 @end

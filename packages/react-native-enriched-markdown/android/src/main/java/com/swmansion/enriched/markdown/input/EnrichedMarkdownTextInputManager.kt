@@ -414,6 +414,18 @@ class EnrichedMarkdownTextInputManager :
     view?.toggleInlineStyle(StyleType.SPOILER)
   }
 
+  override fun toggleH1(view: EnrichedMarkdownTextInputView?) {
+    view?.toggleHeading(1)
+  }
+
+  override fun toggleH2(view: EnrichedMarkdownTextInputView?) {
+    view?.toggleHeading(2)
+  }
+
+  override fun toggleH3(view: EnrichedMarkdownTextInputView?) {
+    view?.toggleHeading(3)
+  }
+
   override fun setLink(
     view: EnrichedMarkdownTextInputView?,
     url: String?,

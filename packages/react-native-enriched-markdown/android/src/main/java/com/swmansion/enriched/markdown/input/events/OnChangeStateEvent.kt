@@ -13,6 +13,9 @@ class OnChangeStateEvent(
   private val isStrikethrough: Boolean,
   private val isSpoiler: Boolean,
   private val isLink: Boolean,
+  private val isH1: Boolean,
+  private val isH2: Boolean,
+  private val isH3: Boolean,
 ) : Event<OnChangeStateEvent>(surfaceId, viewId) {
   override fun getEventName(): String = EVENT_NAME
 
@@ -41,6 +44,18 @@ class OnChangeStateEvent(
       putMap(
         "link",
         Arguments.createMap().apply { putBoolean("isActive", isLink) },
+      )
+      putMap(
+        "h1",
+        Arguments.createMap().apply { putBoolean("isActive", isH1) },
+      )
+      putMap(
+        "h2",
+        Arguments.createMap().apply { putBoolean("isActive", isH2) },
+      )
+      putMap(
+        "h3",
+        Arguments.createMap().apply { putBoolean("isActive", isH3) },
       )
     }
 

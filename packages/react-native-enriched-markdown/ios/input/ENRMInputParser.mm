@@ -1,5 +1,6 @@
 #import "ENRMInputParser.h"
 #import "ENRMFormattingRange.h"
+#import "ENRMInputBlockType.h"
 #import "ENRMInputRemend.h"
 #include "md4c.h"
 #include <string>
@@ -8,6 +9,7 @@
 @interface ENRMParseResult ()
 @property (nonatomic, strong, readwrite) NSString *plainText;
 @property (nonatomic, strong, readwrite) NSArray<ENRMFormattingRange *> *formattingRanges;
+@property (nonatomic, strong, readwrite) NSArray<ENRMBlockRange *> *blockRanges;
 @end
 
 @implementation ENRMParseResult
@@ -235,6 +237,84 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   return md_parse(completedUTF8, (MD_SIZE)completedLength, &parser, &context) == 0;
 }
 
+/// Strips ATX heading prefixes (`# `, `## `, `### `) from the start of each line
+/// and returns the heading block ranges. md4c leaves block markers as literal
+/// text (its block callbacks are no-ops), so headings are extracted here as a
+/// line-based post-pass. Inline formatting ranges are remapped through an
+/// old->new index map so they stay anchored to the same characters after the
+/// prefixes are removed.
+static void extractHeadingBlocks(NSString *plainText, NSArray<ENRMFormattingRange *> *inlineRanges, NSString **outText,
+                                 NSArray<ENRMFormattingRange *> **outInlineRanges,
+                                 NSArray<ENRMBlockRange *> **outBlockRanges)
+{
+  NSUInteger length = plainText.length;
+  NSMutableString *result = [NSMutableString stringWithCapacity:length];
+  std::vector<NSUInteger> map(length + 1, 0);
+  NSMutableArray<ENRMBlockRange *> *blocks = [NSMutableArray array];
+
+  NSUInteger newPos = 0;
+  NSUInteger lineStart = 0;
+  while (lineStart <= length) {
+    NSUInteger lineEnd = lineStart;
+    while (lineEnd < length && [plainText characterAtIndex:lineEnd] != '\n') {
+      lineEnd++;
+    }
+
+    NSUInteger marker = lineStart;
+    NSUInteger hashes = 0;
+    while (marker < lineEnd && [plainText characterAtIndex:marker] == '#') {
+      hashes++;
+      marker++;
+    }
+    BOOL isHeading = hashes >= 1 && hashes <= 3 && marker < lineEnd && [plainText characterAtIndex:marker] == ' ';
+    NSUInteger contentStart = isHeading ? marker + 1 : lineStart;
+
+    // Stripped prefix characters collapse onto the next kept position.
+    for (NSUInteger i = lineStart; i < contentStart; i++) {
+      map[i] = newPos;
+    }
+
+    NSUInteger blockStartNew = newPos;
+    if (lineEnd > contentStart) {
+      [result appendString:[plainText substringWithRange:NSMakeRange(contentStart, lineEnd - contentStart)]];
+      for (NSUInteger i = contentStart; i < lineEnd; i++) {
+        map[i] = newPos++;
+      }
+    }
+
+    if (isHeading) {
+      [blocks addObject:[ENRMBlockRange rangeWithType:ENRMBlockTypeForHeadingLevel((NSInteger)hashes)
+                                                range:NSMakeRange(blockStartNew, newPos - blockStartNew)]];
+    }
+
+    if (lineEnd < length) {
+      map[lineEnd] = newPos++;
+      [result appendString:@"\n"];
+      lineStart = lineEnd + 1;
+    } else {
+      break;
+    }
+  }
+  map[length] = newPos;
+
+  NSMutableArray<ENRMFormattingRange *> *remapped = [NSMutableArray arrayWithCapacity:inlineRanges.count];
+  for (ENRMFormattingRange *range in inlineRanges) {
+    NSUInteger start = MIN(range.range.location, length);
+    NSUInteger end = MIN(NSMaxRange(range.range), length);
+    NSUInteger newStart = map[start];
+    NSUInteger newEnd = map[end];
+    if (newEnd > newStart) {
+      [remapped addObject:[ENRMFormattingRange rangeWithType:range.type
+                                                       range:NSMakeRange(newStart, newEnd - newStart)
+                                                         url:range.url]];
+    }
+  }
+
+  *outText = result;
+  *outInlineRanges = remapped;
+  *outBlockRanges = blocks;
+}
+
 } // namespace
 
 @implementation ENRMInputParser
@@ -306,6 +386,7 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   if (markdown.length == 0) {
     parseResult.plainText = @"";
     parseResult.formattingRanges = @[];
+    parseResult.blockRanges = @[];
     return parseResult;
   }
 
@@ -394,8 +475,14 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
     [formattingRanges addObject:formattingRange];
   }
 
-  parseResult.plainText = plainText;
-  parseResult.formattingRanges = formattingRanges;
+  NSString *blockText = nil;
+  NSArray<ENRMFormattingRange *> *blockAdjustedRanges = nil;
+  NSArray<ENRMBlockRange *> *blockRanges = nil;
+  extractHeadingBlocks(plainText, formattingRanges, &blockText, &blockAdjustedRanges, &blockRanges);
+
+  parseResult.plainText = blockText;
+  parseResult.formattingRanges = blockAdjustedRanges;
+  parseResult.blockRanges = blockRanges;
   return parseResult;
 }
 
