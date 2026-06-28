@@ -104,6 +104,7 @@ class EnrichedMarkdownTextInputView(
     if (isManagingZwsp) return
     val editable = text ?: return
     isManagingZwsp = true
+    var anchorChanged = false
     try {
       val cursorLineStart = lineBounds(selectionStart).first
       val onEmptyListLine =
@@ -121,38 +122,47 @@ class EnrichedMarkdownTextInputView(
       while (i >= 0) {
         if (editable[i] == '\u200B') {
           val keep = onEmptyListLine && lineBounds(i).first == cursorLineStart
-          if (!keep) runAsATransaction { editable.delete(i, i + 1) }
+          if (!keep) {
+            runAsATransaction { editable.delete(i, i + 1) }
+            anchorChanged = true
+          }
         }
         i--
       }
 
-      if (!onEmptyListLine) return
-
-      val (ls, le) = lineBounds(selectionStart)
-      if (le == ls) {
-        runAsATransaction {
-          editable.insert(ls, "\u200B")
-          editable.setSpan(
-            InputBulletSpan(listDepthAtCursor(), displayDensity),
-            ls,
-            ls + 1,
-            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-          )
-          applyListItemSpacingSpan(editable, ls, ls + 1)
+      if (onEmptyListLine) {
+        val (ls, le) = lineBounds(selectionStart)
+        if (le == ls) {
+          runAsATransaction {
+            editable.insert(ls, "\u200B")
+            editable.setSpan(
+              InputBulletSpan(listDepthAtCursor(), displayDensity),
+              ls,
+              ls + 1,
+              Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            applyListItemSpacingSpan(editable, ls, ls + 1)
+          }
+          setSelection(ls + 1)
+          anchorChanged = true
+        } else {
+          if (bulletSpansIn(editable, ls, le).isEmpty()) {
+            editable.setSpan(
+              InputBulletSpan(listDepthAtCursor(), displayDensity),
+              ls,
+              le,
+              Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            applyListItemSpacingSpan(editable, ls, le)
+            anchorChanged = true
+          }
+          if (selectionStart != le) setSelection(le)
         }
-        setSelection(ls + 1)
-      } else {
-        if (bulletSpansIn(editable, ls, le).isEmpty()) {
-          editable.setSpan(
-            InputBulletSpan(listDepthAtCursor(), displayDensity),
-            ls,
-            le,
-            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-          )
-          applyListItemSpacingSpan(editable, ls, le)
-        }
-        if (selectionStart != le) setSelection(le)
       }
+
+      // The anchored empty item serializes to a trailing "- " (the ZWSP is
+      // stripped), so re-emit the markdown to keep the preview in sync.
+      if (anchorChanged && emitMarkdown) eventEmitter.emitChangeMarkdown()
     } finally {
       isManagingZwsp = false
     }
