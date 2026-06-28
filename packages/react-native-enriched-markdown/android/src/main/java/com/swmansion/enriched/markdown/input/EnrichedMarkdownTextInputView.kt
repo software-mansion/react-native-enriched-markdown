@@ -3,6 +3,7 @@ package com.swmansion.enriched.markdown.input
 import android.content.Context
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
+import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Build
 import android.text.Editable
@@ -61,6 +62,11 @@ class EnrichedMarkdownTextInputView(
   // an empty line (no character holds the block span yet).
   private var pendingBlockType: BlockType = BlockType.PARAGRAPH
   private var pendingListDepth: Int = 0
+
+  // Set when a block is toggled onto an empty line so the selection-change it
+  // triggers doesn't immediately clear the pending kind (which is the only thing
+  // keeping the marker visible until a character is typed).
+  private var keepPendingBlockOnEmptyLine = false
 
   var isDuringTransaction = false
     private set
@@ -179,6 +185,44 @@ class EnrichedMarkdownTextInputView(
       return true
     }
     return super.onKeyDown(keyCode, event)
+  }
+
+  override fun onDraw(canvas: Canvas) {
+    super.onDraw(canvas)
+    // An empty current list line carries no span range for a LeadingMarginSpan to
+    // hang on, so draw the just-toggled marker directly (mirrors the iOS empty
+    // editor path). Once a character is typed the span takes over.
+    if (pendingBlockType != BlockType.UNORDERED_LIST_ITEM) return
+    val offset = selectionStart.coerceIn(0, text?.length ?: 0)
+    val (ls, le) = lineBounds(offset)
+    if (le > ls) return
+    val dir = if (layoutDirection == LAYOUT_DIRECTION_RTL) -1 else 1
+    val x = totalPaddingLeft - scrollX
+    val textLayout = layout
+    val top: Int
+    val baseline: Int
+    val bottom: Int
+    if (textLayout != null) {
+      val line = textLayout.getLineForOffset(offset)
+      top = textLayout.getLineTop(line) + totalPaddingTop - scrollY
+      baseline = textLayout.getLineBaseline(line) + totalPaddingTop - scrollY
+      bottom = textLayout.getLineBottom(line) + totalPaddingTop - scrollY
+    } else {
+      // No layout yet (e.g. an empty hinted editor) — derive the first line from
+      // the paint's font metrics so the marker still renders.
+      val fm = paint.fontMetricsInt
+      top = totalPaddingTop - scrollY
+      baseline = totalPaddingTop - fm.ascent - scrollY
+      bottom = totalPaddingTop + (fm.descent - fm.ascent) - scrollY
+    }
+    // super.onDraw may leave the paint set to the hint color (light gray); force
+    // the text color so the marker is visible against the background.
+    val savedColor = paint.color
+    paint.color = currentTextColor
+    InputBulletSpan(pendingListDepth, displayDensity).drawLeadingMargin(
+      canvas, paint, x, dir, top, baseline, bottom, null, 0, 0, true, textLayout,
+    )
+    paint.color = savedColor
   }
 
   // Prevents TextView from deferring its internal layout when a Fabric
@@ -306,9 +350,16 @@ class EnrichedMarkdownTextInputView(
         pendingStyles.clear()
         pendingStyleRemovals.clear()
         // List kind carries via the span on non-empty lines; clear the pending
-        // kind so it never leaks onto a different (empty) line.
-        pendingBlockType = BlockType.PARAGRAPH
-        pendingListDepth = 0
+        // kind so it never leaks onto a different (empty) line — unless a list was
+        // just toggled onto this still-empty line, where pending is the only marker.
+        val (cls, cle) = lineBounds(selStart)
+        if (keepPendingBlockOnEmptyLine && cle == cls) {
+          keepPendingBlockOnEmptyLine = false
+        } else {
+          keepPendingBlockOnEmptyLine = false
+          pendingBlockType = BlockType.PARAGRAPH
+          pendingListDepth = 0
+        }
       }
     }
 
@@ -520,8 +571,10 @@ class EnrichedMarkdownTextInputView(
     }
     pendingBlockType = if (turningOff) BlockType.PARAGRAPH else BlockType.UNORDERED_LIST_ITEM
     pendingListDepth = 0
+    keepPendingBlockOnEmptyLine = !turningOff
     applyFormatting()
     forceScrollToSelection()
+    invalidate() // redraw the empty-line marker (no span change to trigger it)
     if (emitMarkdown) eventEmitter.emitChangeMarkdown()
     eventEmitter.emitState()
   }
@@ -546,8 +599,10 @@ class EnrichedMarkdownTextInputView(
       cursor = le + 1
     }
     pendingListDepth = (listDepthAtCursor() + delta).coerceIn(0, MAX_LIST_DEPTH)
+    keepPendingBlockOnEmptyLine = true
     applyFormatting()
     forceScrollToSelection()
+    invalidate() // redraw the empty-line marker at the new depth
     if (emitMarkdown) eventEmitter.emitChangeMarkdown()
     eventEmitter.emitState()
   }
