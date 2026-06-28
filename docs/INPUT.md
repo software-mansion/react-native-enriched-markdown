@@ -81,6 +81,12 @@ Lists support nesting:
 
 Bullets render in-editor (filled dot, ring, then square as depth increases) and serialize to Markdown as `- ` markers, indented two spaces per nesting level. The markers only exist in the serialized output, never in the editor text. The active list state for the cursor's line is reported through `onChangeState` as `unorderedList` (with an `isActive` property), the same shape as inline styles.
 
+To add breathing room between items, set the `listItemSpacing` prop (in points, default `0`) — it adds vertical spacing above each list item so bullets read as separate rows:
+
+```jsx
+<EnrichedMarkdownTextInput listItemSpacing={6} />
+```
+
 ## Links
 
 Links are a piece of text with a URL attributed to it. They can be managed by calling methods on the input ref:
