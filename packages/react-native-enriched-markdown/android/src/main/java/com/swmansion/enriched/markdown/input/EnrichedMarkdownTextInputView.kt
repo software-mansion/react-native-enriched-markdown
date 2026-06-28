@@ -3,7 +3,6 @@ package com.swmansion.enriched.markdown.input
 import android.content.Context
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
-import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Build
 import android.text.Editable
@@ -43,7 +42,6 @@ import com.swmansion.enriched.markdown.input.model.MAX_LIST_DEPTH
 import com.swmansion.enriched.markdown.input.model.StyleType
 import com.swmansion.enriched.markdown.input.toolbar.InputContextMenu
 import com.swmansion.enriched.markdown.spans.InputBulletSpan
-import com.swmansion.enriched.markdown.spans.InputListIndentSpan
 import com.swmansion.enriched.markdown.spans.InputListItemSpacingSpan
 import com.swmansion.enriched.markdown.utils.input.AutoCapitalizeUtils
 import kotlin.math.ceil
@@ -73,6 +71,11 @@ class EnrichedMarkdownTextInputView(
   // Extra vertical spacing (px) added above each list item; 0 = none.
   private var listItemSpacingPx = 0f
 
+  // Guards re-entrancy while the empty-list-line ZWSP anchor is being managed
+  // (its insert/delete + setSelection would otherwise loop back through the
+  // text/selection callbacks).
+  private var isManagingZwsp = false
+
   // The consumer-set placeholder. Hidden while a bullet is drawn on the empty
   // editor so the marker doesn't overlap it (mirrors the iOS placeholder hide).
   private var userHint: CharSequence? = null
@@ -86,34 +89,73 @@ class EnrichedMarkdownTextInputView(
     val hideForBullet = text.isNullOrEmpty() && pendingBlockType == BlockType.UNORDERED_LIST_ITEM
     val target: CharSequence? = if (hideForBullet) "" else userHint
     if (hint != target) super.setHint(target)
-    syncEmptyLineIndent()
+    syncEmptyListZwsp()
   }
 
   /**
-   * Reserves the list indent on the cursor's empty list line so the caret sits
-   * after the bullet (which the view draws) rather than before it. An empty line
-   * has no character for an [InputBulletSpan]'s leading margin, so a draw-less
-   * [InputListIndentSpan] supplies it. Cleared when the caret isn't on an empty
-   * list line (a typed line gets its margin from the real bullet span).
+   * On an empty list line the caret would render *before* the bullet: Android
+   * doesn't apply a [LeadingMarginSpan]'s indent to the caret on an empty
+   * paragraph. So anchor the line with a zero-width space carrying the bullet
+   * span — the marker draws and the caret sits after it like a normal item. The
+   * ZWSP is removed once the line gains real content or the caret leaves, and is
+   * stripped on serialization, so it never reaches the Markdown output.
    */
-  private fun syncEmptyLineIndent() {
+  private fun syncEmptyListZwsp() {
+    if (isManagingZwsp) return
     val editable = text ?: return
-    for (span in editable.getSpans(0, editable.length, InputListIndentSpan::class.java)) {
-      editable.removeSpan(span)
+    isManagingZwsp = true
+    try {
+      val cursorLineStart = lineBounds(selectionStart).first
+      val onEmptyListLine =
+        selectionStart == selectionEnd &&
+          blockTypeAtCursor() == BlockType.UNORDERED_LIST_ITEM &&
+          run {
+            val (ls, le) = lineBounds(selectionStart)
+            val content = editable.subSequence(ls, le).toString()
+            content.isEmpty() || content == "\u200B"
+          }
+
+      // Drop every ZWSP that isn't the anchor on the current empty list line
+      // (covers leaving the line and typing real content onto it).
+      var i = editable.length - 1
+      while (i >= 0) {
+        if (editable[i] == '\u200B') {
+          val keep = onEmptyListLine && lineBounds(i).first == cursorLineStart
+          if (!keep) runAsATransaction { editable.delete(i, i + 1) }
+        }
+        i--
+      }
+
+      if (!onEmptyListLine) return
+
+      val (ls, le) = lineBounds(selectionStart)
+      if (le == ls) {
+        runAsATransaction {
+          editable.insert(ls, "\u200B")
+          editable.setSpan(
+            InputBulletSpan(listDepthAtCursor(), displayDensity),
+            ls,
+            ls + 1,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+          )
+          applyListItemSpacingSpan(editable, ls, ls + 1)
+        }
+        setSelection(ls + 1)
+      } else {
+        if (bulletSpansIn(editable, ls, le).isEmpty()) {
+          editable.setSpan(
+            InputBulletSpan(listDepthAtCursor(), displayDensity),
+            ls,
+            le,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+          )
+          applyListItemSpacingSpan(editable, ls, le)
+        }
+        if (selectionStart != le) setSelection(le)
+      }
+    } finally {
+      isManagingZwsp = false
     }
-    if (selectionStart != selectionEnd) return
-    if (blockTypeAtCursor() != BlockType.UNORDERED_LIST_ITEM) return
-    val (ls, le) = lineBounds(selectionStart)
-    if (le > ls) return // line has content; the bullet span provides the margin
-    // Include the line's terminating newline (if any) so the paragraph span
-    // attaches; the trailing line has none and uses a zero-length span.
-    val end = if (le < editable.length && editable[le] == '\n') le + 1 else le
-    editable.setSpan(
-      InputListIndentSpan(listDepthAtCursor(), displayDensity),
-      ls,
-      end,
-      Spanned.SPAN_INCLUSIVE_INCLUSIVE,
-    )
   }
 
   var isDuringTransaction = false
@@ -233,55 +275,6 @@ class EnrichedMarkdownTextInputView(
       return true
     }
     return super.onKeyDown(keyCode, event)
-  }
-
-  override fun onDraw(canvas: Canvas) {
-    super.onDraw(canvas)
-    // An empty current list line carries no span range for a LeadingMarginSpan to
-    // hang on, so draw the just-toggled marker directly (mirrors the iOS empty
-    // editor path). Once a character is typed the span takes over.
-    if (pendingBlockType != BlockType.UNORDERED_LIST_ITEM) return
-    val offset = selectionStart.coerceIn(0, text?.length ?: 0)
-    val (ls, le) = lineBounds(offset)
-    if (le > ls) return
-    val dir = if (layoutDirection == LAYOUT_DIRECTION_RTL) -1 else 1
-    val x = totalPaddingLeft - scrollX
-    val textLayout = layout
-    val top: Int
-    val baseline: Int
-    val bottom: Int
-    if (textLayout != null) {
-      val line = textLayout.getLineForOffset(offset)
-      top = textLayout.getLineTop(line) + totalPaddingTop - scrollY
-      baseline = textLayout.getLineBaseline(line) + totalPaddingTop - scrollY
-      bottom = textLayout.getLineBottom(line) + totalPaddingTop - scrollY
-    } else {
-      // No layout yet (e.g. an empty hinted editor) — derive the first line from
-      // the paint's font metrics so the marker still renders.
-      val fm = paint.fontMetricsInt
-      top = totalPaddingTop - scrollY
-      baseline = totalPaddingTop - fm.ascent - scrollY
-      bottom = totalPaddingTop + (fm.descent - fm.ascent) - scrollY
-    }
-    // super.onDraw may leave the paint set to the hint color (light gray); force
-    // the text color so the marker is visible against the background.
-    val savedColor = paint.color
-    paint.color = currentTextColor
-    InputBulletSpan(pendingListDepth, displayDensity).drawLeadingMargin(
-      canvas,
-      paint,
-      x,
-      dir,
-      top,
-      baseline,
-      bottom,
-      null,
-      0,
-      0,
-      true,
-      textLayout,
-    )
-    paint.color = savedColor
   }
 
   // Prevents TextView from deferring its internal layout when a Fabric
@@ -791,9 +784,15 @@ class EnrichedMarkdownTextInputView(
       }
 
       KeyEvent.KEYCODE_DEL -> {
-        if (selectionStart == selectionEnd && selectionStart == lineBounds(selectionStart).first) {
-          if (listDepthAtCursor() > 0) outdentList() else toggleUnorderedList()
-          return true
+        if (selectionStart == selectionEnd) {
+          val (ls, le) = lineBounds(selectionStart)
+          val content = text?.subSequence(ls, le)?.toString() ?: ""
+          // At the item's start, or on an empty/ZWSP-anchored item (caret sits
+          // after the anchor, not at the line start) — outdent, then un-list.
+          if (selectionStart == ls || content.isEmpty() || content == "\u200B") {
+            if (listDepthAtCursor() > 0) outdentList() else toggleUnorderedList()
+            return true
+          }
         }
       }
     }

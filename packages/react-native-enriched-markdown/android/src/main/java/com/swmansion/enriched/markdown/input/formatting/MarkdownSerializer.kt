@@ -92,7 +92,8 @@ object MarkdownSerializer {
       markdown.append(text, lastPosition, text.length)
     }
 
-    return markdown.toString()
+    // Strip the zero-width space used as a caret anchor on empty list lines.
+    return markdown.toString().replace("\u200B", "")
   }
 
   private fun openingDelimiter(type: StyleType): String =
