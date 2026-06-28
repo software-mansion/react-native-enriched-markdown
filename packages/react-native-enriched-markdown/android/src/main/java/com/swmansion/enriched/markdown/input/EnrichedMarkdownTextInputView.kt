@@ -43,6 +43,7 @@ import com.swmansion.enriched.markdown.input.model.MAX_LIST_DEPTH
 import com.swmansion.enriched.markdown.input.model.StyleType
 import com.swmansion.enriched.markdown.input.toolbar.InputContextMenu
 import com.swmansion.enriched.markdown.spans.InputBulletSpan
+import com.swmansion.enriched.markdown.spans.InputListIndentSpan
 import com.swmansion.enriched.markdown.spans.InputListItemSpacingSpan
 import com.swmansion.enriched.markdown.utils.input.AutoCapitalizeUtils
 import kotlin.math.ceil
@@ -85,6 +86,34 @@ class EnrichedMarkdownTextInputView(
     val hideForBullet = text.isNullOrEmpty() && pendingBlockType == BlockType.UNORDERED_LIST_ITEM
     val target: CharSequence? = if (hideForBullet) "" else userHint
     if (hint != target) super.setHint(target)
+    syncEmptyLineIndent()
+  }
+
+  /**
+   * Reserves the list indent on the cursor's empty list line so the caret sits
+   * after the bullet (which the view draws) rather than before it. An empty line
+   * has no character for an [InputBulletSpan]'s leading margin, so a draw-less
+   * [InputListIndentSpan] supplies it. Cleared when the caret isn't on an empty
+   * list line (a typed line gets its margin from the real bullet span).
+   */
+  private fun syncEmptyLineIndent() {
+    val editable = text ?: return
+    for (span in editable.getSpans(0, editable.length, InputListIndentSpan::class.java)) {
+      editable.removeSpan(span)
+    }
+    if (selectionStart != selectionEnd) return
+    if (blockTypeAtCursor() != BlockType.UNORDERED_LIST_ITEM) return
+    val (ls, le) = lineBounds(selectionStart)
+    if (le > ls) return // line has content; the bullet span provides the margin
+    // Include the line's terminating newline (if any) so the paragraph span
+    // attaches; the trailing line has none and uses a zero-length span.
+    val end = if (le < editable.length && editable[le] == '\n') le + 1 else le
+    editable.setSpan(
+      InputListIndentSpan(listDepthAtCursor(), displayDensity),
+      ls,
+      end,
+      Spanned.SPAN_INCLUSIVE_INCLUSIVE,
+    )
   }
 
   var isDuringTransaction = false
