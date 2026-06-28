@@ -1648,6 +1648,14 @@ using namespace facebook::react;
 - (void)textInputDidChangeSelection
 {
   NSRange newSelection = _textView.selectedRange;
+  // Atomic link snapping — same logic as textViewDidChangeSelection: (iOS).
+  if (!_isApplyingFormatting && !_isTextChanging && !ENRMHasMarkedText(_textView)) {
+    NSRange adjusted = [_formattingStore selectionAdjustedForAtomicLinks:newSelection];
+    if (!NSEqualRanges(adjusted, newSelection)) {
+      _textView.selectedRange = adjusted;
+      return;
+    }
+  }
   NSRange previousSelection = _lastSelectedRange;
   _lastSelectedRange = newSelection;
 
