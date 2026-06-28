@@ -1,4 +1,5 @@
 #import "ENRMInputTextView.h"
+#import "ENRMInputLayoutManager.h"
 #import "EnrichedMarkdownTextInput.h"
 #if TARGET_OS_OSX
 #import "EnrichedMarkdownTextInput+Internal.h"
@@ -76,6 +77,19 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
   [super layoutSubviews];
   if (self.markdownTextInput != nil) {
     [self.markdownTextInput scheduleRelayoutIfNeeded];
+  }
+}
+
+- (void)drawRect:(CGRect)rect
+{
+  [super drawRect:rect];
+  // A wholly empty editor has no glyphs, so the layout manager's
+  // drawGlyphsForGlyphRange: never runs — draw the just-toggled list marker here.
+  if (self.text.length == 0) {
+    NSLayoutManager *layoutManager = self.layoutManager;
+    if ([layoutManager isKindOfClass:[ENRMInputLayoutManager class]]) {
+      [(ENRMInputLayoutManager *)layoutManager drawEmptyEditorBulletWithInset:self.textContainerInset];
+    }
   }
 }
 
