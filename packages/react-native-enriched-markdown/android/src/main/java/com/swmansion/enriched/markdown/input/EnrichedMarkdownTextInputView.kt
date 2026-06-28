@@ -106,7 +106,6 @@ class EnrichedMarkdownTextInputView(
     isManagingZwsp = true
     var anchorChanged = false
     try {
-      val cursorLineStart = lineBounds(selectionStart).first
       val onEmptyListLine =
         selectionStart == selectionEnd &&
           blockTypeAtCursor() == BlockType.UNORDERED_LIST_ITEM &&
@@ -116,12 +115,16 @@ class EnrichedMarkdownTextInputView(
             content.isEmpty() || content == "\u200B"
           }
 
-      // Drop every ZWSP that isn't the anchor on the current empty list line
-      // (covers leaving the line and typing real content onto it).
+      // Keep a ZWSP only as the anchor of a still-empty list item (so empty
+      // bullets persist when the caret leaves); drop it once the line gains real
+      // content or stops being a list item.
       var i = editable.length - 1
       while (i >= 0) {
         if (editable[i] == '\u200B') {
-          val keep = onEmptyListLine && lineBounds(i).first == cursorLineStart
+          val (zls, zle) = lineBounds(i)
+          val keep =
+            editable.subSequence(zls, zle).toString() == "\u200B" &&
+              bulletSpansIn(editable, zls, zle).isNotEmpty()
           if (!keep) {
             runAsATransaction { editable.delete(i, i + 1) }
             anchorChanged = true
@@ -737,25 +740,39 @@ class EnrichedMarkdownTextInputView(
       }
     } else if (insertedLength > 0) {
       // A newline was inserted: continue the list, or exit on an empty item.
+      // A lone ZWSP anchor counts as empty content here.
       val prevLineEnd = editStart
       var prevLineStart = prevLineEnd
       while (prevLineStart > 0 && editable[prevLineStart - 1] != '\n') prevLineStart--
-      val prevContentLength = (prevLineEnd - prevLineStart).coerceAtLeast(0)
+      val prevRealLength = (prevLineStart until prevLineEnd).count { editable[it] != '\u200B' }
+      val prevIsEmptyBullet =
+        prevRealLength == 0 &&
+          prevLineEnd > prevLineStart &&
+          bulletSpansIn(editable, prevLineStart, prevLineEnd).isNotEmpty()
 
-      var prevIsList = false
+      var continueList = false
       var prevDepth = 0
-      if (prevContentLength > 0) {
-        val span = bulletSpansIn(editable, prevLineStart, prevLineEnd).firstOrNull()
-        if (span != null) {
-          prevIsList = true
-          prevDepth = span.depth
+      when {
+        prevIsEmptyBullet -> {
+          continueList = false
         }
-      } else {
-        prevIsList = pendingBlockType == BlockType.UNORDERED_LIST_ITEM
-        prevDepth = pendingListDepth
+
+        // Return on an empty bullet exits
+        prevRealLength > 0 -> {
+          val span = bulletSpansIn(editable, prevLineStart, prevLineEnd).firstOrNull()
+          if (span != null) {
+            continueList = true
+            prevDepth = span.depth
+          }
+        }
+
+        else -> {
+          continueList = pendingBlockType == BlockType.UNORDERED_LIST_ITEM
+          prevDepth = pendingListDepth
+        }
       }
 
-      if (prevIsList && prevContentLength > 0) {
+      if (continueList) {
         pendingBlockType = BlockType.UNORDERED_LIST_ITEM
         pendingListDepth = prevDepth
       } else {
