@@ -80,11 +80,30 @@ using namespace facebook::react;
   ENRMInputBlockType _pendingBlockType;
   NSInteger _pendingListDepth;
 
+  // Set when the pending block kind was established for an empty line (list
+  // toggled on, or a list continued onto a fresh line by Return). While set, a
+  // selection change on that still-empty line must NOT clear the pending kind —
+  // it is the only thing keeping the marker alive until the first character is
+  // typed. Cleared once a glyph lands (the attribute then lives on real text) or
+  // the caret leaves the empty line. Without this, a selection event arriving
+  // after the post-edit grace window (more likely under heavier app load) wipes
+  // the pending kind and the continued bullet is lost.
+  BOOL _keepPendingBlockOnEmptyLine;
+
   // Block kind/depth of the edited line captured before a text change, so it can
   // be restored if the edit (e.g. autocorrect) replaced the attribute-bearing
   // characters.
   ENRMInputBlockType _preEditBlockType;
   NSInteger _preEditListDepth;
+
+  // Length of text the pending edit will replace (range.length from
+  // shouldChangeTextInRange). A non-zero value means existing characters — which
+  // may carry the line's block attribute — are being overwritten, as with
+  // autocorrect or paste. handleTextChanged models edits off the caret selection
+  // and underestimates the inserted span for such replacements, so it heals the
+  // line's block attribute separately when this is set.
+  NSUInteger _preEditReplacementLength;
+  BOOL _preEditReplacementHasNewline;
 
   std::optional<CGRect> _prevCaretRect;
 
@@ -538,7 +557,11 @@ using namespace facebook::react;
 
 - (void)updatePlaceholderVisibility
 {
-  _placeholderLabel.hidden = (ENRMGetPlainText(_textView).length > 0);
+  // Hide the placeholder while a bullet is drawn on the empty editor (block just
+  // toggled, nothing typed yet) — otherwise the marker overlaps the placeholder.
+  BOOL hasText = ENRMGetPlainText(_textView).length > 0;
+  BOOL emptyListMarker = !hasText && [self blockTypeForCursorParagraph] == ENRMInputBlockTypeUnorderedListItem;
+  _placeholderLabel.hidden = hasText || emptyListMarker;
 }
 
 #pragma mark - Markdown import
@@ -782,6 +805,7 @@ using namespace facebook::react;
 
   _pendingBlockType = newType;
   _pendingListDepth = 0;
+  _keepPendingBlockOnEmptyLine = (newType == ENRMInputBlockTypeUnorderedListItem);
 
   [self applyFormatting];
   [self syncTypingAttributesWithPendingStyles];
@@ -809,6 +833,7 @@ using namespace facebook::react;
   NSString *text = storage.string;
   if (text.length == 0) {
     _pendingListDepth = MIN(MAX(_pendingListDepth + delta, (NSInteger)0), ENRMMaxListDepth);
+    _keepPendingBlockOnEmptyLine = YES;
     [self emitFormattingChanged];
     return;
   }
@@ -1189,6 +1214,10 @@ using namespace facebook::react;
     CGFloat indent = depth * ENRMListIndentPerDepth + ENRMListMarkerWidth;
     paragraph.firstLineHeadIndent = indent;
     paragraph.headIndent = indent;
+    // Gap goes ABOVE each item (paragraphSpacingBefore), not below, so it's
+    // present on the empty line immediately without inflating the empty
+    // paragraph's caret (which would make the caret shrink on the first keystroke).
+    paragraph.paragraphSpacingBefore = _formatterStyle.listItemSpacing;
     attrs[NSParagraphStyleAttributeName] = paragraph;
   } else {
     [attrs removeObjectForKey:ENRMBlockTypeAttributeName];
@@ -1217,6 +1246,24 @@ using namespace facebook::react;
       show = YES;
       location = paragraphRange.location;
       depth = [self listDepthForCursorParagraph];
+
+      // A mid-document empty list line is just a newline with no paragraph style,
+      // so it lays out flush left — the caret stays un-indented and the marker is
+      // drawn off the left edge (clipped). Stamp the list paragraph style onto the
+      // line so it indents and the bullet positions correctly, immediately, before
+      // any character is typed. (The trailing empty line uses the extra line
+      // fragment, which is why only the last line worked before.)
+      if (paragraphRange.length > 0) {
+        NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
+        CGFloat indent = depth * ENRMListIndentPerDepth + ENRMListMarkerWidth;
+        paragraph.firstLineHeadIndent = indent;
+        paragraph.headIndent = indent;
+        paragraph.paragraphSpacingBefore = _formatterStyle.listItemSpacing;
+        NSTextStorage *storage = _textView.textStorage;
+        [storage beginEditing];
+        [storage addAttribute:NSParagraphStyleAttributeName value:paragraph range:paragraphRange];
+        [storage endEditing];
+      }
     }
   }
 
@@ -1224,6 +1271,7 @@ using namespace facebook::react;
   _layoutManager.emptyBulletLocation = location;
   _layoutManager.emptyBulletFont = _formatterStyle.baseFont;
   _layoutManager.emptyBulletColor = _formatterStyle.baseTextColor;
+  _layoutManager.listItemSpacing = _formatterStyle.listItemSpacing;
 
   // An empty editor never runs the formatter (it early-returns at length 0), so
   // the trailing/extra line fragment the marker draws into isn't laid out yet —
@@ -1232,6 +1280,9 @@ using namespace facebook::react;
     [_layoutManager ensureLayoutForTextContainer:_textView.textContainer];
   }
   ENRMSetNeedsDisplay(_textView);
+
+  // The empty-editor bullet would otherwise overlap the placeholder.
+  [self updatePlaceholderVisibility];
 }
 
 - (void)resetPendingStylesForSelectionChange
@@ -1247,11 +1298,37 @@ using namespace facebook::react;
   [_pendingStyles removeAllObjects];
   [_pendingStyleRemovals removeAllObjects];
   // List kind carries via the stored attribute on non-empty lines; clear the
-  // pending kind so it never leaks onto a different (empty) line.
-  _pendingBlockType = ENRMInputBlockTypeParagraph;
-  _pendingListDepth = 0;
+  // pending kind so it never leaks onto a different (empty) line — unless a list
+  // was just continued/toggled onto this still-empty line, where the pending kind
+  // is the only thing keeping the marker alive until the first character.
+  if (_keepPendingBlockOnEmptyLine && [self cursorIsOnEmptyLine]) {
+    // Keep the pending list kind; the flag persists until a glyph lands or the
+    // caret leaves the empty line.
+  } else {
+    _keepPendingBlockOnEmptyLine = NO;
+    _pendingBlockType = ENRMInputBlockTypeParagraph;
+    _pendingListDepth = 0;
+  }
   [self rebuildPendingStylesFromContext];
   [self syncTypingAttributesWithPendingStyles];
+}
+
+/// Whether the caret (no selection) sits on a line with no text content.
+- (BOOL)cursorIsOnEmptyLine
+{
+  if (_textView.selectedRange.length != 0) {
+    return NO;
+  }
+  NSString *text = _textView.textStorage.string;
+  if (text.length == 0) {
+    return YES;
+  }
+  NSUInteger loc = MIN(_textView.selectedRange.location, text.length);
+  NSRange paragraph = [text paragraphRangeForRange:NSMakeRange(loc, 0)];
+  if (paragraph.length == 0) {
+    return YES;
+  }
+  return [[text substringWithRange:paragraph] isEqualToString:@"\n"];
 }
 
 - (void)rebuildPendingStylesFromContext
@@ -1774,10 +1851,12 @@ using namespace facebook::react;
       if (prevIsList && prevContentLength > 0) {
         _pendingBlockType = ENRMInputBlockTypeUnorderedListItem;
         _pendingListDepth = prevDepth;
+        _keepPendingBlockOnEmptyLine = YES;
       } else {
         // Exit the list (empty item) or a plain newline.
         _pendingBlockType = ENRMInputBlockTypeParagraph;
         _pendingListDepth = 0;
+        _keepPendingBlockOnEmptyLine = NO;
       }
       // The inserted newline must never carry a block attribute itself.
       NSRange clampedInserted = NSIntersectionRange(insertedRange, NSMakeRange(0, storage.length));
@@ -1787,6 +1866,23 @@ using namespace facebook::react;
       }
       [self syncTypingAttributesWithPendingStyles];
     }
+  }
+
+  // Autocorrect/paste replaces existing characters (range.length > 0); the edit
+  // model above is keyed off the caret selection and underestimates the inserted
+  // span for such replacements, so the block re-stamp can be skipped entirely.
+  // Heal the edited line's block attribute directly. A replacement that inserts a
+  // newline is a structural change handled above, so skip it here.
+  if (_preEditReplacementLength > 0 && !_preEditReplacementHasNewline) {
+    [self healCurrentLineBlockAttribute];
+  }
+  _preEditReplacementLength = 0;
+  _preEditReplacementHasNewline = NO;
+
+  // Once a glyph lands the block attribute lives on real text, so the empty-line
+  // keep-flag is no longer needed; drop it to avoid leaking onto another line.
+  if (![self cursorIsOnEmptyLine]) {
+    _keepPendingBlockOnEmptyLine = NO;
   }
 
   _lastTextLength = newLength;
@@ -1887,6 +1983,9 @@ using namespace facebook::react;
     return NO;
   }
   _preEditSelectedRange = _lastSelectedRange;
+  _preEditReplacementLength = range.length;
+  _preEditReplacementHasNewline =
+      [text rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]].location != NSNotFound;
   [self capturePreEditBlockForRange:range];
   _isTextChanging = YES;
   [self stripLinkTypingAttributes];
@@ -1922,6 +2021,60 @@ using namespace facebook::react;
   }
 }
 
+/// Re-applies the edited line's block attribute across its whole content after an
+/// in-line replacement (autocorrect/paste) that may have overwritten the
+/// attribute-bearing characters. Prefers any block attribute that survived
+/// somewhere on the line, falling back to the kind captured before the edit.
+- (void)healCurrentLineBlockAttribute
+{
+  NSTextStorage *storage = _textView.textStorage;
+  if (storage.length == 0) {
+    return;
+  }
+  NSString *plain = storage.string;
+  NSUInteger loc = MIN(_textView.selectedRange.location, plain.length);
+  NSRange content = [plain paragraphRangeForRange:NSMakeRange(loc, 0)];
+  if (content.length > 0 && [plain characterAtIndex:NSMaxRange(content) - 1] == '\n') {
+    content.length -= 1;
+  }
+  if (content.length == 0) {
+    return;
+  }
+
+  __block ENRMInputBlockType type = ENRMInputBlockTypeParagraph;
+  __block NSInteger depth = 0;
+  [storage enumerateAttribute:ENRMBlockTypeAttributeName
+                      inRange:content
+                      options:0
+                   usingBlock:^(id value, NSRange attrRange, BOOL *stop) {
+                     if (value) {
+                       type = (ENRMInputBlockType)[value integerValue];
+                       if (type == ENRMInputBlockTypeUnorderedListItem) {
+                         id depthValue = [storage attribute:ENRMListDepthAttributeName
+                                                    atIndex:attrRange.location
+                                             effectiveRange:NULL];
+                         depth = depthValue ? [depthValue integerValue] : 0;
+                       }
+                       *stop = YES;
+                     }
+                   }];
+
+  if (type == ENRMInputBlockTypeParagraph && _preEditBlockType != ENRMInputBlockTypeParagraph) {
+    type = _preEditBlockType;
+    depth = _preEditListDepth;
+  }
+  if (type == ENRMInputBlockTypeParagraph) {
+    return;
+  }
+
+  [storage addAttribute:ENRMBlockTypeAttributeName value:@(type) range:content];
+  if (type == ENRMInputBlockTypeUnorderedListItem) {
+    [storage addAttribute:ENRMListDepthAttributeName value:@(depth) range:content];
+  } else {
+    [storage removeAttribute:ENRMListDepthAttributeName range:content];
+  }
+}
+
 /// Intercepts Tab (indent) and Backspace at the start of a list item (outdent,
 /// then un-list at depth 0) so list nesting is keyboard-editable. Returns YES if
 /// the edit was handled and the default text change should be suppressed.
@@ -1954,6 +2107,23 @@ using namespace facebook::react;
   }
 
   return NO;
+}
+
+- (BOOL)handleBackspaceAtDocumentStart
+{
+  NSRange selection = _textView.selectedRange;
+  if (selection.location != 0 || selection.length != 0) {
+    return NO;
+  }
+  if ([self blockTypeForCursorParagraph] != ENRMInputBlockTypeUnorderedListItem) {
+    return NO;
+  }
+  if ([self listDepthForCursorParagraph] > 0) {
+    [self outdentList];
+  } else {
+    [self toggleUnorderedList];
+  }
+  return YES;
 }
 
 - (void)textViewDidChange:(UITextView *)textView

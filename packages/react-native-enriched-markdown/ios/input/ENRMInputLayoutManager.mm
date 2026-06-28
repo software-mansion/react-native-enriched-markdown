@@ -2,8 +2,10 @@
 #import "ENRMInputBlockType.h"
 #import <UIKit/UIKit.h>
 
-/// Gap between the bullet glyph and the start of the item text.
-static const CGFloat kBulletGap = 5.0;
+/// Gap between the bullet glyph's center and the start of the item text. Sized so
+/// the marker sits roughly mid-column (text indents by ENRMListMarkerWidth),
+/// matching the Android spacing.
+static const CGFloat kBulletGap = 9.0;
 
 @implementation ENRMInputLayoutManager
 
@@ -17,7 +19,11 @@ static const CGFloat kBulletGap = 5.0;
 
 /// Draws the depth-styled bullet (filled dot, ring, then square) centered at
 /// (markerX, centerY).
-- (void)drawBulletAtX:(CGFloat)markerX centerY:(CGFloat)centerY depth:(NSInteger)depth font:(UIFont *)font color:(UIColor *)color
+- (void)drawBulletAtX:(CGFloat)markerX
+              centerY:(CGFloat)centerY
+                depth:(NSInteger)depth
+                 font:(UIFont *)font
+                color:(UIColor *)color
 {
   CGContextRef ctx = UIGraphicsGetCurrentContext();
   if (!ctx || isnan(markerX) || isnan(centerY)) {
@@ -102,10 +108,18 @@ static const CGFloat kBulletGap = 5.0;
 
                                    UIFont *font = nil;
                                    UIColor *color = nil;
-                                   if (charRange.location < storage.length) {
+                                   // An empty list line has no character carrying the font/color, so
+                                   // use the values the view supplied for the empty marker.
+                                   if (isEmptyListLine) {
+                                     font = self.emptyBulletFont;
+                                     color = self.emptyBulletColor;
+                                   }
+                                   if (!font && charRange.location < storage.length) {
                                      font = [storage attribute:NSFontAttributeName
                                                        atIndex:charRange.location
                                                 effectiveRange:NULL];
+                                   }
+                                   if (!color && charRange.location < storage.length) {
                                      color = [storage attribute:NSForegroundColorAttributeName
                                                         atIndex:charRange.location
                                                  effectiveRange:NULL];
@@ -117,8 +131,16 @@ static const CGFloat kBulletGap = 5.0;
                                      color = [UIColor labelColor];
                                    }
 
-                                   CGPoint glyphLoc = [self locationForGlyphAtIndex:glyphRange.location];
-                                   CGFloat baselineY = origin.y + rect.origin.y + glyphLoc.y;
+                                   // An empty line's only glyph is a newline, whose location sits at the
+                                   // line's bottom rather than a text baseline — using it would draw the
+                                   // marker too low. Derive the baseline from the font ascender (plus the
+                                   // leading paragraph spacing, which pushes the text down within the
+                                   // fragment) so an empty list line's bullet lands exactly where the
+                                   // first typed glyph's bullet will.
+                                   CGFloat baselineOffset = isEmptyListLine
+                                                                ? self.listItemSpacing + font.ascender
+                                                                : [self locationForGlyphAtIndex:glyphRange.location].y;
+                                   CGFloat baselineY = origin.y + rect.origin.y + baselineOffset;
                                    CGFloat markerX = origin.x + usedRect.origin.x - kBulletGap;
                                    CGFloat centerY = baselineY - (font.xHeight + font.capHeight) / 4.0;
                                    [self drawBulletAtX:markerX centerY:centerY depth:depth font:font color:color];
@@ -133,7 +155,9 @@ static const CGFloat kBulletGap = 5.0;
     UIColor *color = self.emptyBulletColor ?: [UIColor labelColor];
     CGRect used = self.extraLineFragmentUsedRect;
     CGFloat markerX = origin.x + used.origin.x - kBulletGap;
-    CGFloat centerY = origin.y + used.origin.y + used.size.height / 2.0;
+    // Center on the text line height, not the fragment height (which includes the
+    // item's leading paragraph spacing).
+    CGFloat centerY = origin.y + used.origin.y + font.lineHeight / 2.0;
     [self drawBulletAtX:markerX centerY:centerY depth:self.emptyBulletDepth font:font color:color];
   }
 }
@@ -147,6 +171,9 @@ static const CGFloat kBulletGap = 5.0;
   UIColor *color = self.emptyBulletColor ?: [UIColor labelColor];
   CGFloat headIndent = self.emptyBulletDepth * ENRMListIndentPerDepth + ENRMListMarkerWidth;
   CGFloat markerX = inset.left + headIndent - kBulletGap;
+  // This path only ever draws the wholly-empty editor's first line, and TextKit
+  // doesn't apply paragraphSpacingBefore to the first paragraph, so no spacing
+  // offset here.
   CGFloat centerY = inset.top + font.lineHeight / 2.0;
   [self drawBulletAtX:markerX centerY:centerY depth:self.emptyBulletDepth font:font color:color];
 }

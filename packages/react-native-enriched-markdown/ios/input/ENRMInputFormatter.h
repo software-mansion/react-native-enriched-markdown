@@ -23,6 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) UIFont *baseFont;
 @property (nonatomic, strong) RCTUIColor *baseTextColor;
 
+/// Extra vertical spacing (points) added above each list item. 0 = none.
+@property (nonatomic, assign) CGFloat listItemSpacing;
+
 /// Bold — color override (nil = inherit baseTextColor)
 @property (nonatomic, strong, nullable) RCTUIColor *boldColor;
 

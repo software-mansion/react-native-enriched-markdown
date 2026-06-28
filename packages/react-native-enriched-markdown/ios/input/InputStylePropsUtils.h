@@ -63,6 +63,11 @@ BOOL applyInputStyleProps(ENRMInputFormatterStyle *style, const InputProps &newP
     changed = YES;
   }
 
+  if (newProps.listItemSpacing != oldProps.listItemSpacing) {
+    style.listItemSpacing = newProps.listItemSpacing > 0 ? newProps.listItemSpacing : 0;
+    changed = YES;
+  }
+
   if (newProps.markdownStyle.strong.color != oldProps.markdownStyle.strong.color) {
     if (isColorMeaningful(newProps.markdownStyle.strong.color)) {
       style.boldColor = RCTUIColorFromSharedColor(newProps.markdownStyle.strong.color);

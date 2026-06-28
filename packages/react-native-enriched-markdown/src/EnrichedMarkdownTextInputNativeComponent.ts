@@ -190,6 +190,12 @@ export interface NativeProps extends ViewProps {
    */
   selectionColor?: ColorValue;
   /**
+   * Extra vertical spacing (in points) added above each list item so bullets
+   * read as separate rows. 0 keeps list lines at the normal line height.
+   * @default 0
+   */
+  listItemSpacing?: CodegenTypes.Double;
+  /**
    * Inline format style overrides.
    * Always provided with complete defaults via normalizeMarkdownTextInputStyle.
    */

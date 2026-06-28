@@ -120,7 +120,7 @@ class EnrichedMarkdownTextInputManager :
     view: EnrichedMarkdownTextInputView?,
     value: String?,
   ) {
-    view?.hint = value
+    view?.setUserHint(value)
   }
 
   @ReactProp(name = "placeholderTextColor", customType = "Color")
@@ -229,6 +229,14 @@ class EnrichedMarkdownTextInputManager :
     if (value > 0 && view != null) {
       view.setLineSpacing(value - view.textSize, 1f)
     }
+  }
+
+  @ReactProp(name = "listItemSpacing", defaultDouble = 0.0)
+  override fun setListItemSpacing(
+    view: EnrichedMarkdownTextInputView?,
+    value: Double,
+  ) {
+    view?.setListItemSpacingFromProps(value.toFloat())
   }
 
   @ReactProp(name = "fontFamily")

@@ -17,6 +17,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) UIFont *emptyBulletFont;
 @property (nonatomic, strong, nullable) UIColor *emptyBulletColor;
 
+/// Leading spacing (points) applied above list items, so the empty-line marker's
+/// baseline can account for the spacing that pushes the text down in the fragment.
+@property (nonatomic, assign) CGFloat listItemSpacing;
+
 /// Draws the marker for a wholly empty editor. `drawGlyphsForGlyphRange:` is
 /// never called when there are zero glyphs, so the text view drives this from its
 /// own `drawRect:`. No-op unless an empty list line is flagged.

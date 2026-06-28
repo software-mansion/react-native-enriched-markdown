@@ -80,6 +80,17 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
   }
 }
 
+- (void)deleteBackward
+{
+  // Backspace at the very start of the document doesn't fire the text-change
+  // delegate (nothing precedes the caret), so removing the first line's list
+  // marker has to be handled here.
+  if (self.markdownTextInput != nil && [self.markdownTextInput handleBackspaceAtDocumentStart]) {
+    return;
+  }
+  [super deleteBackward];
+}
+
 - (void)drawRect:(CGRect)rect
 {
   [super drawRect:rect];

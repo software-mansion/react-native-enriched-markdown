@@ -43,6 +43,7 @@ import com.swmansion.enriched.markdown.input.model.MAX_LIST_DEPTH
 import com.swmansion.enriched.markdown.input.model.StyleType
 import com.swmansion.enriched.markdown.input.toolbar.InputContextMenu
 import com.swmansion.enriched.markdown.spans.InputBulletSpan
+import com.swmansion.enriched.markdown.spans.InputListItemSpacingSpan
 import com.swmansion.enriched.markdown.utils.input.AutoCapitalizeUtils
 import kotlin.math.ceil
 
@@ -67,6 +68,24 @@ class EnrichedMarkdownTextInputView(
   // triggers doesn't immediately clear the pending kind (which is the only thing
   // keeping the marker visible until a character is typed).
   private var keepPendingBlockOnEmptyLine = false
+
+  // Extra vertical spacing (px) added above each list item; 0 = none.
+  private var listItemSpacingPx = 0f
+
+  // The consumer-set placeholder. Hidden while a bullet is drawn on the empty
+  // editor so the marker doesn't overlap it (mirrors the iOS placeholder hide).
+  private var userHint: CharSequence? = null
+
+  fun setUserHint(value: CharSequence?) {
+    userHint = value
+    syncHintVisibility()
+  }
+
+  private fun syncHintVisibility() {
+    val hideForBullet = text.isNullOrEmpty() && pendingBlockType == BlockType.UNORDERED_LIST_ITEM
+    val target: CharSequence? = if (hideForBullet) "" else userHint
+    if (hint != target) super.setHint(target)
+  }
 
   var isDuringTransaction = false
     private set
@@ -220,7 +239,18 @@ class EnrichedMarkdownTextInputView(
     val savedColor = paint.color
     paint.color = currentTextColor
     InputBulletSpan(pendingListDepth, displayDensity).drawLeadingMargin(
-      canvas, paint, x, dir, top, baseline, bottom, null, 0, 0, true, textLayout,
+      canvas,
+      paint,
+      x,
+      dir,
+      top,
+      baseline,
+      bottom,
+      null,
+      0,
+      0,
+      true,
+      textLayout,
     )
     paint.color = savedColor
   }
@@ -331,6 +361,7 @@ class EnrichedMarkdownTextInputView(
       isTextChanging = false
       didTextChangeRecently = true
       lastProcessedText = currentText
+      syncHintVisibility()
     } finally {
       isProcessingTextChange = false
     }
@@ -367,6 +398,7 @@ class EnrichedMarkdownTextInputView(
     updateActiveMention()
     eventEmitter.emitState()
     eventEmitter.emitCaretRectChangeIfNeeded()
+    syncHintVisibility()
   }
 
   private fun applyPendingStyles(
@@ -511,6 +543,7 @@ class EnrichedMarkdownTextInputView(
     end: Int,
   ) {
     for (span in bulletSpansIn(editable, start, end)) editable.removeSpan(span)
+    for (span in editable.getSpans(start, end, InputListItemSpacingSpan::class.java)) editable.removeSpan(span)
   }
 
   /** Block kind of the cursor's line, falling back to the pending kind for empty lines. */
@@ -552,6 +585,26 @@ class EnrichedMarkdownTextInputView(
     if (end <= start) return
     removeBulletSpans(editable, start, end)
     editable.setSpan(InputBulletSpan(depth, displayDensity), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+    applyListItemSpacingSpan(editable, start, end)
+  }
+
+  /**
+   * Adds the configured leading spacing above a list item. Applied to only the
+   * first character so it affects just the item's first visual line, not wrapped
+   * continuations. No-op when spacing is 0.
+   */
+  private fun applyListItemSpacingSpan(
+    editable: Editable,
+    start: Int,
+    end: Int,
+  ) {
+    if (listItemSpacingPx <= 0f || end <= start) return
+    editable.setSpan(
+      InputListItemSpacingSpan(listItemSpacingPx.toInt()),
+      start,
+      (start + 1).coerceAtMost(end),
+      Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+    )
   }
 
   fun toggleUnorderedList() {
@@ -575,6 +628,7 @@ class EnrichedMarkdownTextInputView(
     applyFormatting()
     forceScrollToSelection()
     invalidate() // redraw the empty-line marker (no span change to trigger it)
+    syncHintVisibility()
     if (emitMarkdown) eventEmitter.emitChangeMarkdown()
     eventEmitter.emitState()
   }
@@ -617,6 +671,7 @@ class EnrichedMarkdownTextInputView(
       val end = range.end.coerceIn(start, editable.length)
       if (end > start) {
         editable.setSpan(InputBulletSpan(range.depth, displayDensity), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        applyListItemSpacingSpan(editable, start, end)
       }
     }
   }
@@ -645,6 +700,7 @@ class EnrichedMarkdownTextInputView(
             le,
             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
           )
+          applyListItemSpacingSpan(editable, ls, le)
         }
       }
     } else if (insertedLength > 0) {
@@ -683,6 +739,8 @@ class EnrichedMarkdownTextInputView(
       editable.removeSpan(span)
       if (le > ls) {
         editable.setSpan(InputBulletSpan(depth, displayDensity), ls, le, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        for (s in editable.getSpans(ls, le, InputListItemSpacingSpan::class.java)) editable.removeSpan(s)
+        applyListItemSpacingSpan(editable, ls, le)
       }
     }
   }
@@ -900,6 +958,21 @@ class EnrichedMarkdownTextInputView(
     val sizePx = ceil(PixelUtil.toPixelFromSP(size))
     setTextSize(TypedValue.COMPLEX_UNIT_PX, sizePx)
     layoutManager.invalidateLayout()
+  }
+
+  fun setListItemSpacingFromProps(spacing: Float) {
+    listItemSpacingPx = if (spacing > 0f) PixelUtil.toPixelFromDIP(spacing) else 0f
+    val editable = text ?: return
+    // Re-stamp existing list items so the spacing span is added/removed/resized.
+    for (span in editable.getSpans(0, editable.length, InputListItemSpacingSpan::class.java)) {
+      editable.removeSpan(span)
+    }
+    if (listItemSpacingPx > 0f) {
+      for (span in bulletSpansIn(editable, 0, editable.length)) {
+        applyListItemSpacingSpan(editable, editable.getSpanStart(span), editable.getSpanEnd(span))
+      }
+    }
+    invalidate()
   }
 
   fun setColorFromProps(colorInt: Int?) {

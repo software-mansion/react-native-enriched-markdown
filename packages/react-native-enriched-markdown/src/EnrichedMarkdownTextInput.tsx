@@ -162,6 +162,11 @@ export interface EnrichedMarkdownTextInputProps extends Omit<
   cursorColor?: ColorValue;
   selectionColor?: ColorValue;
   markdownStyle?: MarkdownTextInputStyle;
+  /**
+   * Extra vertical spacing (points) above each list item so bullets read as
+   * separate rows. Defaults to 0 (normal line height).
+   */
+  listItemSpacing?: number;
   style?: ViewStyle | TextStyle;
   onChangeText?: (text: string) => void;
   onChangeMarkdown?: (markdown: string) => void;
@@ -240,6 +245,7 @@ export const EnrichedMarkdownTextInput = ({
   multiline = true,
   cursorColor,
   selectionColor,
+  listItemSpacing = 0,
   onChangeText,
   onChangeMarkdown,
   onChangeSelection,
@@ -514,6 +520,7 @@ export const EnrichedMarkdownTextInput = ({
       ref={nativeRef}
       style={style}
       markdownStyle={normalizedStyle}
+      listItemSpacing={listItemSpacing}
       defaultValue={defaultValue}
       placeholder={placeholder}
       placeholderTextColor={placeholderTextColor}
