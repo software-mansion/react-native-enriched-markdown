@@ -34,6 +34,25 @@ class FormattingStore {
     end: Int,
   ): Boolean = ranges.any { it.type == type && it.start < end && it.end > start }
 
+  /**
+   * Snaps a selection so it never partially overlaps an atomic link: a partial selection expands to
+   * the whole link, a caret inside a link moves to its end. Returns the adjusted (start, end) or null.
+   */
+  fun selectionAdjustedForAtomicLinks(
+    start: Int,
+    end: Int,
+  ): Pair<Int, Int>? {
+    if (start != end) {
+      var newStart = start
+      var newEnd = end
+      rangeOfType(StyleType.LINK, newStart)?.let { newStart = minOf(newStart, it.start) }
+      if (newEnd > 0) rangeOfType(StyleType.LINK, newEnd - 1)?.let { newEnd = maxOf(newEnd, it.end) }
+      return if (newStart != start || newEnd != end) Pair(newStart, newEnd) else null
+    }
+    val link = rangeOfType(StyleType.LINK, start)
+    return if (link != null && start > link.start && start < link.end) Pair(link.end, link.end) else null
+  }
+
   fun addRange(newRange: FormattingRange) {
     var mergedStart = newRange.start
     var mergedEnd = newRange.end

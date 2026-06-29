@@ -10,6 +10,7 @@ android {
   defaultConfig {
     minSdk = rootProject.ext.minSdkVersion
     consumerProguardFiles("consumer-rules.pro")
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     externalNativeBuild {
       cmake {
@@ -20,6 +21,16 @@ android {
 
     ndk {
       abiFilters("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+    }
+  }
+
+  buildFeatures {
+    prefab = true
+  }
+
+  packaging {
+    jniLibs {
+      pickFirsts += ["**/libc++_shared.so", "**/libfbjni.so"]
     }
   }
 
@@ -34,6 +45,12 @@ android {
     targetCompatibility = JavaVersion.VERSION_11
   }
 
+  testOptions {
+    unitTests {
+      includeAndroidResources = true
+    }
+  }
+
   externalNativeBuild {
     cmake {
       path = file("src/main/cpp/CMakeLists.txt")
@@ -41,4 +58,14 @@ android {
   }
 
   ndkVersion = rootProject.ext.ndkVersion
+}
+
+dependencies {
+  // Prefab for CMake only; runtime .so files are packaged via externalNativeBuild.
+  compileOnly("com.facebook.fbjni:fbjni:0.7.0")
+
+  androidTestImplementation("junit:junit:4.13.2")
+  androidTestImplementation("androidx.test:core:1.6.1")
+  androidTestImplementation("androidx.test.ext:junit:1.2.1")
+  androidTestImplementation("androidx.test:runner:1.6.2")
 }

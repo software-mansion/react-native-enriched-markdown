@@ -22,8 +22,9 @@
                             formattingRange:(ENRMFormattingRange *)formattingRange
                                       style:(ENRMInputFormatterStyle *)style
 {
-  RCTUIColor *color = style.boldColor ?: style.baseTextColor;
-  [storage addAttribute:NSForegroundColorAttributeName value:color range:range];
+  if (style.boldColor) {
+    [storage addAttribute:NSForegroundColorAttributeName value:style.boldColor range:range];
+  }
 }
 
 @end

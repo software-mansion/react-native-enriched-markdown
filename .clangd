@@ -1,0 +1,21 @@
+CompileFlags:
+  Add:
+    - -DENRICHED_MARKDOWN_MATH=1
+  # Strip out Xcode's module caching flags to prevent clangd from crashing
+  Remove:
+    - -fmodules
+    - -fmodules-cache-path=*
+    - -fmodule-map-file=*
+    - -fmodule-name=*
+    - -gmodules
+    - -ivfsstatcache
+    - -ivfsoverlay
+    - -index-store-path
+
+---
+# Apply C++ standard ONLY to C++, Objective-C++, and Header files
+If:
+  PathMatch: .*\.(mm|cpp|cc|cxx|hpp|h)
+CompileFlags:
+  Add:
+    - -std=c++20
