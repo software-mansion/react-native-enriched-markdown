@@ -28,6 +28,7 @@ import com.swmansion.enriched.markdown.input.detection.WordsUtils
 import com.swmansion.enriched.markdown.input.editing.InputConnectionWrapper
 import com.swmansion.enriched.markdown.input.editing.MarkdownEditableFactory
 import com.swmansion.enriched.markdown.input.editing.MarkdownTextWatcher
+import com.swmansion.enriched.markdown.input.formatting.BlockStore
 import com.swmansion.enriched.markdown.input.formatting.FormattingStore
 import com.swmansion.enriched.markdown.input.formatting.InputFormatter
 import com.swmansion.enriched.markdown.input.formatting.InputParser
@@ -48,6 +49,7 @@ class EnrichedMarkdownTextInputView(
   private var isComponentReady = false
 
   val formattingStore = FormattingStore()
+  val blockStore = BlockStore()
   val formatter = InputFormatter()
   val pendingStyles = mutableSetOf<StyleType>()
   val pendingStyleRemovals = mutableSetOf<StyleType>()
@@ -248,6 +250,7 @@ class EnrichedMarkdownTextInputView(
     isProcessingTextChange = true
     try {
       formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
+      blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
       applyPendingStyles(editStart, insertedLength)
       applyFormatting()
 
@@ -329,6 +332,7 @@ class EnrichedMarkdownTextInputView(
   fun applyFormatting() {
     val editable = text ?: return
     formatter.applyFormatting(editable, formattingStore.allRanges)
+    formatter.applyBlockFormatting(editable, blockStore.allRanges)
   }
 
   private fun applyFormattingAndEmit() {
@@ -574,6 +578,7 @@ class EnrichedMarkdownTextInputView(
       runAsATransaction {
         formattingStore.clearAll()
         formattingStore.setRanges(parsed.formattingRanges)
+        blockStore.setRanges(parsed.blockRanges)
         setText(parsed.plainText)
         setSelection(text?.length ?: 0)
       }
