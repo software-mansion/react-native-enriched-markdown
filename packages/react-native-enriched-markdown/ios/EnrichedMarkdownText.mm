@@ -1,6 +1,7 @@
 #import "EnrichedMarkdownText.h"
 #import "CodeBlockBackground.h"
 #import "ContextMenuUtils.h"
+#import "ENRMAccessibilityLabels.h"
 #import "ENRMAsyncRenderCoordinator.h"
 #import "ENRMContextMenuTextView+macOS.h"
 #import "ENRMImageAttachment.h"
@@ -88,6 +89,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
   ENRMTailFadeInAnimator *_fadeAnimator;
 
   AccessibilityInfo *_accessibilityInfo;
+  ENRMAccessibilityLabels *_accessibilityLabels;
 #if !TARGET_OS_OSX
   NSMutableArray<UIAccessibilityElement *> *_accessibilityElements;
 #else
@@ -538,6 +540,27 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
       .copyImageURL = newViewProps.selectionMenuConfig.copyImageUrl,
   };
 
+  _accessibilityLabels = [[ENRMAccessibilityLabels alloc] init];
+  _accessibilityLabels.bulletPoint =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.bulletPoint.c_str()];
+  _accessibilityLabels.nestedBulletPoint =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.nestedBulletPoint.c_str()];
+  _accessibilityLabels.orderedItem =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.orderedItem.c_str()];
+  _accessibilityLabels.nestedOrderedItem =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.nestedOrderedItem.c_str()];
+  _accessibilityLabels.tableRow =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.table.row.c_str()];
+  _accessibilityLabels.mathEquation =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.math.equation.c_str()];
+  _accessibilityLabels.rotorHeadings =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.headings.c_str()];
+  _accessibilityLabels.rotorLinks =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.links.c_str()];
+  _accessibilityLabels.rotorImages =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.images.c_str()];
+  _accessibilityNeedsRebuild = YES;
+
   if (newViewProps.streamingAnimation != oldViewProps.streamingAnimation) {
     _streamingAnimation = newViewProps.streamingAnimation;
     if (_streamingAnimation) {
@@ -749,9 +772,11 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
     return;
   }
   _accessibilityNeedsRebuild = NO;
+  ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
 #if !TARGET_OS_OSX
   _accessibilityElements = [MarkdownAccessibilityElementBuilder buildElementsForTextView:_textView
                                                                                     info:_accessibilityInfo
+                                                                                  labels:labels
                                                                                container:self];
 #else
   _accessibilityElements = [NSMutableArray array];
@@ -794,7 +819,8 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
 - (NSArray<UIAccessibilityCustomRotor *> *)accessibilityCustomRotors
 {
   [self rebuildAccessibilityElementsIfNeeded];
-  return [MarkdownAccessibilityElementBuilder buildRotorsFromElements:_accessibilityElements];
+  ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
+  return [MarkdownAccessibilityElementBuilder buildRotorsFromElements:_accessibilityElements labels:labels];
 }
 #endif
 

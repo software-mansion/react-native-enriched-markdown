@@ -19,6 +19,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import androidx.core.view.ViewCompat
+import com.swmansion.enriched.markdown.accessibility.AccessibilityLabels
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode.NodeType
 import com.swmansion.enriched.markdown.renderer.Renderer
@@ -50,6 +51,12 @@ class TableContainerView(
   var maxFontSizeMultiplier = 0f
   var onLinkPress: ((String) -> Unit)? = null
   var onLinkLongPress: ((String) -> Unit)? = null
+  var accessibilityLabels: AccessibilityLabels = AccessibilityLabels()
+    set(value) {
+      if (field == value) return
+      field = value
+      if (rowCount > 0) renderGrid()
+    }
 
   private val scrollView =
     HorizontalScrollView(context).apply {
@@ -215,7 +222,6 @@ class TableContainerView(
     gridContainer.layoutParams = LayoutParams(ceil(totalTableWidth).toInt(), ceil(totalTableHeight).toInt())
   }
 
-  // TODO: consume `accessibilityLabels.table.row` once the prop is wired through codegen.
   private fun addRowAccessibilityOverlay(
     row: List<TableCellData>,
     rowIndex: Int,
@@ -224,9 +230,8 @@ class TableContainerView(
     rowHeight: Float,
   ) {
     val joinedContent = row.joinToString(", ") { it.plainText }
-    val template = "Row {n}: {content}"
     val description =
-      template
+      accessibilityLabels.tableRow
         .replace("{n}", (rowIndex + 1).toString())
         .replace("{content}", joinedContent)
 

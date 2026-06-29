@@ -1,4 +1,5 @@
 #import "ENRMMathContainerView.h"
+#import "ENRMAccessibilityLabels.h"
 #import "ENRMFeatureFlags.h"
 #include <TargetConditionals.h>
 
@@ -210,14 +211,10 @@
 }
 #endif
 
-// TODO: consume `accessibilityLabels.math.equation` once the prop is wired through codegen.
-// Default in src/accessibilityLabelDefaults.ts: "Math: {latex}". RaTeX has no TTS capability, so
-// the latex is read verbatim — if there's ever a need for a proper math-to-speech library, it
-// should plug in here.
 - (NSString *)accessibilityLabel
 {
-  NSString *template = @"Math: {latex}";
-  return [template stringByReplacingOccurrencesOfString:@"{latex}" withString:_cachedLatex ?: @""];
+  ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
+  return [labels.mathEquation stringByReplacingOccurrencesOfString:@"{latex}" withString:_cachedLatex ?: @""];
 }
 
 #if !TARGET_OS_OSX

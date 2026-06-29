@@ -2,38 +2,40 @@
 #include <TargetConditionals.h>
 
 @class AccessibilityInfo;
+@class ENRMAccessibilityLabels;
 
 NS_ASSUME_NONNULL_BEGIN
 
-/**
- * Builds accessibility elements from markdown content for assistive technologies.
- * On iOS this provides VoiceOver support; on macOS this is a no-op stub pending full NSAccessibility implementation.
- */
 @interface MarkdownAccessibilityElementBuilder : NSObject
 
 #if !TARGET_OS_OSX
-/**
- * Builds UIAccessibilityElement objects from markdown content for VoiceOver.
- */
 + (NSMutableArray<UIAccessibilityElement *> *)buildElementsForTextView:(UITextView *)textView
                                                                   info:(AccessibilityInfo *)info
+                                                                labels:(ENRMAccessibilityLabels *)labels
                                                              container:(id)container;
 + (NSArray<UIAccessibilityElement *> *)filterHeadingElements:(NSArray<UIAccessibilityElement *> *)elements;
 + (NSArray<UIAccessibilityElement *> *)filterLinkElements:(NSArray<UIAccessibilityElement *> *)elements;
 + (NSArray<UIAccessibilityElement *> *)filterImageElements:(NSArray<UIAccessibilityElement *> *)elements;
-+ (UIAccessibilityCustomRotor *)createHeadingRotorWithElements:(NSArray<UIAccessibilityElement *> *)elements;
-+ (UIAccessibilityCustomRotor *)createLinkRotorWithElements:(NSArray<UIAccessibilityElement *> *)elements;
-+ (UIAccessibilityCustomRotor *)createImageRotorWithElements:(NSArray<UIAccessibilityElement *> *)elements;
-+ (NSArray<UIAccessibilityCustomRotor *> *)buildRotorsFromElements:(NSArray<UIAccessibilityElement *> *)elements;
++ (UIAccessibilityCustomRotor *)createHeadingRotorWithElements:(NSArray<UIAccessibilityElement *> *)elements
+                                                          name:(NSString *)name;
++ (UIAccessibilityCustomRotor *)createLinkRotorWithElements:(NSArray<UIAccessibilityElement *> *)elements
+                                                       name:(NSString *)name;
++ (UIAccessibilityCustomRotor *)createImageRotorWithElements:(NSArray<UIAccessibilityElement *> *)elements
+                                                        name:(NSString *)name;
++ (NSArray<UIAccessibilityCustomRotor *> *)buildRotorsFromElements:(NSArray<UIAccessibilityElement *> *)elements
+                                                            labels:(ENRMAccessibilityLabels *)labels;
 #else
-+ (NSMutableArray *)buildElementsForTextView:(id)textView info:(AccessibilityInfo *)info container:(id)container;
++ (NSMutableArray *)buildElementsForTextView:(id)textView
+                                        info:(AccessibilityInfo *)info
+                                      labels:(ENRMAccessibilityLabels *)labels
+                                   container:(id)container;
 + (NSArray *)filterHeadingElements:(NSArray *)elements;
 + (NSArray *)filterLinkElements:(NSArray *)elements;
 + (NSArray *)filterImageElements:(NSArray *)elements;
-+ (id _Nullable)createHeadingRotorWithElements:(NSArray *)elements;
-+ (id _Nullable)createLinkRotorWithElements:(NSArray *)elements;
-+ (id _Nullable)createImageRotorWithElements:(NSArray *)elements;
-+ (NSArray *)buildRotorsFromElements:(NSArray *)elements;
++ (id _Nullable)createHeadingRotorWithElements:(NSArray *)elements name:(NSString *)name;
++ (id _Nullable)createLinkRotorWithElements:(NSArray *)elements name:(NSString *)name;
++ (id _Nullable)createImageRotorWithElements:(NSArray *)elements name:(NSString *)name;
++ (NSArray *)buildRotorsFromElements:(NSArray *)elements labels:(ENRMAccessibilityLabels *)labels;
 #endif
 
 @end

@@ -8,6 +8,7 @@
 
 @class RenderContext;
 @class AccessibilityInfo;
+@class ENRMAccessibilityLabels;
 @class ENRMSpoilerOverlayManager;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -26,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) ENRMSpoilerOverlay spoilerOverlay;
 
 @property (nonatomic, strong, nullable) AccessibilityInfo *accessibilityInfo;
+@property (nonatomic, strong, nullable) ENRMAccessibilityLabels *accessibilityLabels;
 
 @property (nonatomic, strong) StyleConfig *config;
 

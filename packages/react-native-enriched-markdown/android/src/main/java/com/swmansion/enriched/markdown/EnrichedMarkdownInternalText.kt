@@ -6,6 +6,7 @@ import android.os.Build
 import android.text.Layout
 import android.util.AttributeSet
 import android.view.MotionEvent
+import com.swmansion.enriched.markdown.accessibility.AccessibilityLabels
 import com.swmansion.enriched.markdown.accessibility.AccessibleMarkdownTextView
 import com.swmansion.enriched.markdown.spoiler.SpoilerCapable
 import com.swmansion.enriched.markdown.spoiler.SpoilerOverlay
@@ -47,6 +48,11 @@ class EnrichedMarkdownInternalText
     private var contextMenuItemTexts: List<String> = emptyList()
     private var onContextMenuItemPress: ((itemText: String, selectedText: String, selectionStart: Int, selectionEnd: Int) -> Unit)? = null
     var selectionMenuConfig: SelectionMenuConfig = SelectionMenuConfig()
+    var accessibilityLabels: AccessibilityLabels = AccessibilityLabels()
+      set(value) {
+        field = value
+        accessibilityHelper.labels = value
+      }
 
     init {
       setupAsMarkdownTextView()

@@ -11,6 +11,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import com.facebook.react.bridge.ReadableMap
+import com.swmansion.enriched.markdown.accessibility.AccessibilityLabels
 import com.swmansion.enriched.markdown.accessibility.AccessibleMarkdownTextView
 import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
@@ -273,6 +274,10 @@ class EnrichedMarkdownText
     fun setSelectionMenuConfig(config: SelectionMenuConfig) {
       if (selectionMenuConfig == config) return
       selectionMenuConfig = config
+    }
+
+    fun setAccessibilityLabels(labels: AccessibilityLabels) {
+      accessibilityHelper.labels = labels
     }
 
     fun setIsSelectable(selectable: Boolean) {

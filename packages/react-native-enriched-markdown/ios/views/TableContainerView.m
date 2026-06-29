@@ -1,5 +1,6 @@
 #import "TableContainerView.h"
 #import "AttributedRenderer.h"
+#import "ENRMAccessibilityLabels.h"
 #import "HTMLGenerator.h"
 #import "LinkTapUtils.h"
 #import "MarkdownASTNode.h"
@@ -587,12 +588,8 @@
     if (cellTexts.count > 0) {
 #if !TARGET_OS_OSX
       UIAccessibilityElement *element = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:self];
-      // TODO: consume `accessibilityLabels.table.row` once the prop is wired through codegen.
-      // Default in src/accessibilityLabelDefaults.ts: "Row {n}: {content}". The no-plural cardinal
-      // form ("Row 2", not "second row") is intentional so the same template works in every
-      // language without count-aware variants — see the AccessibilityLabels docs.
-      NSString *template = @"Row {n}: {content}";
-      NSString *withN = [template
+      ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
+      NSString *withN = [labels.tableRow
           stringByReplacingOccurrencesOfString:@"{n}"
                                     withString:[NSString stringWithFormat:@"%lu", (unsigned long)(rowIndex + 1)]];
       element.accessibilityLabel =

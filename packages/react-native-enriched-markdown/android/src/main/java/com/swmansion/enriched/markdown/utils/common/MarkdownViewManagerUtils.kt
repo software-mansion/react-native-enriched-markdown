@@ -4,6 +4,7 @@ import android.view.View
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.uimanager.UIManagerHelper
+import com.swmansion.enriched.markdown.accessibility.AccessibilityLabels
 import com.swmansion.enriched.markdown.events.ContextMenuItemPressEvent
 import com.swmansion.enriched.markdown.events.LinkLongPressEvent
 import com.swmansion.enriched.markdown.events.LinkPressEvent
@@ -96,5 +97,25 @@ fun parseSelectionMenuConfig(value: ReadableMap?): SelectionMenuConfig {
   return SelectionMenuConfig(
     copyAsMarkdown = value.getBoolean("copyAsMarkdown"),
     copyImageUrl = value.getBoolean("copyImageUrl"),
+  )
+}
+
+fun parseAccessibilityLabels(value: ReadableMap?): AccessibilityLabels {
+  if (value == null) return AccessibilityLabels()
+  val list = value.getMap("list")
+  val table = value.getMap("table")
+  val math = value.getMap("math")
+  val rotor = value.getMap("rotor")
+  val defaults = AccessibilityLabels()
+  return AccessibilityLabels(
+    bulletPoint = list?.getString("bulletPoint") ?: defaults.bulletPoint,
+    nestedBulletPoint = list?.getString("nestedBulletPoint") ?: defaults.nestedBulletPoint,
+    orderedItem = list?.getString("orderedItem") ?: defaults.orderedItem,
+    nestedOrderedItem = list?.getString("nestedOrderedItem") ?: defaults.nestedOrderedItem,
+    tableRow = table?.getString("row") ?: defaults.tableRow,
+    mathEquation = math?.getString("equation") ?: defaults.mathEquation,
+    rotorHeadings = rotor?.getString("headings") ?: defaults.rotorHeadings,
+    rotorLinks = rotor?.getString("links") ?: defaults.rotorLinks,
+    rotorImages = rotor?.getString("images") ?: defaults.rotorImages,
   )
 }

@@ -23,6 +23,13 @@ class MarkdownAccessibilityHelper(
   private var lastLayoutHashCode = 0
   private var pendingLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
 
+  var labels: AccessibilityLabels = AccessibilityLabels()
+    set(value) {
+      if (field == value) return
+      field = value
+      invalidateAccessibilityItems()
+    }
+
   data class AccessibilityItem(
     val id: Int,
     val text: String,
@@ -349,19 +356,14 @@ class MarkdownAccessibilityHelper(
     }
   }
 
-  // TODO: consume `accessibilityLabels.list.{bulletPoint,nestedBulletPoint,orderedItem,nestedOrderedItem}`
-  // once the prop is wired through codegen. Defaults defined in
-  // packages/react-native-enriched-markdown/src/accessibilityLabelDefaults.ts must stay in sync with
-  // the literals below — both use the same `{n}` placeholder convention and the same no-plural form
-  // (cardinal "List item 2", not ordinal "second list item").
   private val ListItemInfo.listAnnouncement: String
     get() {
       val nested = depth > 0
       return if (isOrdered) {
-        val template = if (nested) "Nested list item {n}" else "List item {n}"
+        val template = if (nested) labels.nestedOrderedItem else labels.orderedItem
         template.replace("{n}", itemNumber.toString())
       } else {
-        if (nested) "Nested bullet point" else "Bullet point"
+        if (nested) labels.nestedBulletPoint else labels.bulletPoint
       }
     }
 

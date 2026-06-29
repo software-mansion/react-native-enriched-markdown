@@ -18,6 +18,7 @@ import com.swmansion.enriched.markdown.utils.common.emitLinkLongPress
 import com.swmansion.enriched.markdown.utils.common.emitLinkPress
 import com.swmansion.enriched.markdown.utils.common.emitTaskListItemPress
 import com.swmansion.enriched.markdown.utils.common.markdownEventTypeConstants
+import com.swmansion.enriched.markdown.utils.common.parseAccessibilityLabels
 import com.swmansion.enriched.markdown.utils.common.parseContextMenuItems
 import com.swmansion.enriched.markdown.utils.common.parseMd4cFlags
 import com.swmansion.enriched.markdown.utils.common.parseSelectionMenuConfig
@@ -221,6 +222,15 @@ class EnrichedMarkdownManager :
   ) {
     if (view == null) return
     view.setSelectionMenuConfig(parseSelectionMenuConfig(value))
+  }
+
+  @ReactProp(name = "accessibilityLabels")
+  override fun setAccessibilityLabels(
+    view: EnrichedMarkdown?,
+    value: ReadableMap?,
+  ) {
+    if (view == null) return
+    view.setAccessibilityLabels(parseAccessibilityLabels(value))
   }
 
   override fun setPadding(
