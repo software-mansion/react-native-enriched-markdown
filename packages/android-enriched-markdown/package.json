@@ -4,7 +4,9 @@
   "private": true,
   "description": "Android native code for android-enriched-markdown",
   "scripts": {
-    "build": "./gradlew assembleRelease",
+    "build": "./gradlew assembleRelease --no-daemon --console=plain",
+    "test:android-native": "./gradlew testDebugUnitTest --no-daemon --console=plain",
+    "lint:android-native": "./gradlew ktlintCheck --no-daemon --console=plain",
     "clean": "./gradlew clean"
   }
 }
