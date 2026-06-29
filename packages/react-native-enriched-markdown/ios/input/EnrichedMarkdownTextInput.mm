@@ -1,6 +1,8 @@
 #import "EnrichedMarkdownTextInput.h"
 #import "ContextMenuUtils.h"
 #import "ENRMAutoLinkDetector.h"
+#import "ENRMBlockHandler.h"
+#import "ENRMBlockStore.h"
 #import "ENRMDetectorPipeline.h"
 #import "ENRMFormattingRange.h"
 #import "ENRMFormattingStore.h"
@@ -57,6 +59,7 @@ using namespace facebook::react;
   ENRMInputFormatter *_formatter;
   ENRMInputFormatterStyle *_formatterStyle;
   ENRMFormattingStore *_formattingStore;
+  ENRMBlockStore *_blockStore;
   NSMutableSet<NSNumber *> *_pendingStyles;
   NSMutableSet<NSNumber *> *_pendingStyleRemovals;
   BOOL _isApplyingFormatting;
@@ -121,6 +124,7 @@ using namespace facebook::react;
     _formatter = [[ENRMInputFormatter alloc] init];
     _formatterStyle = [[ENRMInputFormatterStyle alloc] init];
     _formattingStore = [[ENRMFormattingStore alloc] init];
+    _blockStore = [[ENRMBlockStore alloc] init];
     _pendingStyles = [NSMutableSet set];
     _pendingStyleRemovals = [NSMutableSet set];
     _lastTextLength = 0;
@@ -543,6 +547,7 @@ using namespace facebook::react;
   _isApplyingFormatting = NO;
 
   [_formattingStore setRanges:parsed.formattingRanges];
+  [_blockStore setRanges:parsed.blockRanges];
   _lastTextLength = parsed.plainText.length;
   _lastSelectedRange = _textView.selectedRange;
   [self applyFormatting];
@@ -562,6 +567,7 @@ using namespace facebook::react;
   _isApplyingFormatting = NO;
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
+  [_blockStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
 
   for (ENRMFormattingRange *range in ranges) {
     NSRange shifted = NSMakeRange(range.range.location + editLocation, range.range.length);
@@ -619,6 +625,7 @@ using namespace facebook::react;
   NSRange savedSelection = _textView.selectedRange;
 
   [_formatter applyFormattingRanges:_formattingStore.allRanges toTextView:_textView style:_formatterStyle];
+  [_formatter applyBlockRanges:_blockStore.allRanges toTextView:_textView style:_formatterStyle];
   [_detectorPipeline refreshAllStyling];
   [self applyWritingDirection];
 
@@ -863,6 +870,26 @@ using namespace facebook::react;
   ENRMShowLinkPrompt(self, existingURL, ^(NSString *url) { [weakSelf setLink:url]; });
 }
 
+/// Serializes plain text with inline + block formatting, resolving each block's
+/// markdown line prefix through its registered handler. With no block handlers
+/// registered the prefix provider is never consulted productively and output
+/// equals the inline-only serialization.
+- (NSString *)serializeText:(NSString *)text
+                     ranges:(NSArray<ENRMFormattingRange *> *)ranges
+                blockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+{
+  // The provider runs synchronously inside the serializer call, so capturing
+  // the formatter directly is safe — no escaping closure, no retain cycle.
+  ENRMInputFormatter *formatter = _formatter;
+  return [ENRMMarkdownSerializer serializePlainText:text
+                                             ranges:ranges
+                                        blockRanges:blockRanges
+                                blockPrefixProvider:^NSString *(ENRMBlockRange *blockRange) {
+                                  id<ENRMBlockHandler> handler = [formatter handlerForBlockType:blockRange.type];
+                                  return [handler markdownLinePrefixForBlockRange:blockRange];
+                                }];
+}
+
 - (nullable NSString *)markdownForSelectedRange
 {
   NSRange selection = _textView.selectedRange;
@@ -890,7 +917,23 @@ using namespace facebook::react;
     [clippedRanges addObject:[ENRMFormattingRange rangeWithType:range.type range:shifted url:range.url]];
   }
 
-  return [ENRMMarkdownSerializer serializePlainText:selectedText ranges:clippedRanges];
+  NSMutableArray<ENRMBlockRange *> *clippedBlockRanges = [NSMutableArray array];
+  for (ENRMBlockRange *blockRange in _blockStore.allRanges) {
+    NSUInteger rangeStart = blockRange.range.location;
+    NSUInteger rangeEnd = NSMaxRange(blockRange.range);
+
+    if (rangeEnd <= selection.location || rangeStart >= selEnd) {
+      continue;
+    }
+
+    NSUInteger clippedStart = MAX(rangeStart, selection.location);
+    NSUInteger clippedEnd = MIN(rangeEnd, selEnd);
+    NSRange shifted = NSMakeRange(clippedStart - selection.location, clippedEnd - clippedStart);
+
+    [clippedBlockRanges addObject:[ENRMBlockRange rangeWithType:blockRange.type range:shifted level:blockRange.level]];
+  }
+
+  return [self serializeText:selectedText ranges:clippedRanges blockRanges:clippedBlockRanges];
 }
 
 - (void)requestMarkdown:(NSInteger)requestId
@@ -899,8 +942,9 @@ using namespace facebook::react;
   if (emitter == nullptr) {
     return;
   }
-  NSString *markdown = [ENRMMarkdownSerializer serializePlainText:ENRMGetPlainText(_textView)
-                                                           ranges:[self allRangesIncludingTransient]];
+  NSString *markdown = [self serializeText:ENRMGetPlainText(_textView)
+                                    ranges:[self allRangesIncludingTransient]
+                               blockRanges:_blockStore.allRanges];
   emitter->onRequestMarkdownResult({
       .requestId = static_cast<int>(requestId),
       .markdown = std::string([markdown UTF8String] ?: ""),
@@ -1164,8 +1208,9 @@ using namespace facebook::react;
   if (emitter == nullptr) {
     return;
   }
-  NSString *markdown = [ENRMMarkdownSerializer serializePlainText:ENRMGetPlainText(_textView)
-                                                           ranges:[self allRangesIncludingTransient]];
+  NSString *markdown = [self serializeText:ENRMGetPlainText(_textView)
+                                    ranges:[self allRangesIncludingTransient]
+                               blockRanges:_blockStore.allRanges];
   emitter->onChangeMarkdown({.value = std::string([markdown UTF8String] ?: "")});
 }
 
@@ -1403,6 +1448,7 @@ using namespace facebook::react;
   }
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
+  [_blockStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
 
   if (insertedLength > 0) {
     NSRange insertedRange = NSMakeRange(editLocation, insertedLength);
