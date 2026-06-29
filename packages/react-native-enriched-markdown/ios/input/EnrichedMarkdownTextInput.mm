@@ -893,6 +893,20 @@ using namespace facebook::react;
   return [ENRMMarkdownSerializer serializePlainText:selectedText ranges:clippedRanges];
 }
 
+- (nullable NSString *)markdownForFullContent
+{
+  NSString *plainText = ENRMGetPlainText(_textView);
+  if (plainText.length == 0) {
+    return nil;
+  }
+  return [ENRMMarkdownSerializer serializePlainText:plainText ranges:[self allRangesIncludingTransient]];
+}
+
+- (void)copyToClipboard
+{
+  [_textView copyEntireContents];
+}
+
 - (void)requestMarkdown:(NSInteger)requestId
 {
   auto emitter = [self getEventEmitter];

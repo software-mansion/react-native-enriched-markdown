@@ -1,5 +1,7 @@
 package com.swmansion.enriched.markdown.input
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
@@ -409,6 +411,17 @@ class EnrichedMarkdownTextInputView(
       }
       applyFormattingAndEmit()
     }
+  }
+
+  // Copies the whole rich content to the system clipboard, matching the
+  // result of selecting all text and pressing the context menu's copy action.
+  // Writing the full Editable directly preserves inline styles for rich paste
+  // targets without disturbing the current selection.
+  fun copyToClipboard() {
+    val content = text
+    if (content.isNullOrEmpty()) return
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText(null, content))
   }
 
   fun setLinkForSelection(url: String) {

@@ -843,6 +843,10 @@ Inserts a link with the given text and URL at the current cursor position. Usefu
 
 Removes the link from the current selection.
 
+### `copyToClipboard()`
+
+Copies the input's full rich content to the system clipboard, matching the result of selecting all text and pressing the context menu's copy action. The selection is left unchanged, and calling it on an empty input is a no-op.
+
 ### `startMention(indicator: string)`
 
 Programmatically triggers a mention flow by inserting the indicator character at the current cursor position. The indicator must be listed in the `mentionIndicators` prop. Useful for toolbar buttons.

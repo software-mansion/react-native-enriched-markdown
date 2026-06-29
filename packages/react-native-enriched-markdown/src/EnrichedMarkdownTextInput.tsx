@@ -108,6 +108,12 @@ export interface EnrichedMarkdownTextInputInstance {
   insertMention: (displayText: string, url: string) => void;
   startMention: (indicator: string) => void;
   removeLink: () => void;
+  /**
+   * Copies the input's full rich content to the system clipboard, matching
+   * the result of selecting all text and pressing the context menu's copy
+   * action. A no-op when the input is empty.
+   */
+  copyToClipboard: () => void;
   getMarkdown: () => Promise<string>;
   getCaretRect: () => Promise<CaretRect>;
 }
@@ -476,6 +482,7 @@ export const EnrichedMarkdownTextInput = ({
         Commands.insertMention(commandRef, displayText, url),
       startMention: (indicator) => Commands.startMention(commandRef, indicator),
       removeLink: () => Commands.removeLink(commandRef),
+      copyToClipboard: () => Commands.copyToClipboard(commandRef),
       getMarkdown: () =>
         new Promise<string>((resolve, reject) => {
           const requestId = nextRequestId.current++;
