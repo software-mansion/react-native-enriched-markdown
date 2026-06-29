@@ -677,7 +677,16 @@ class EnrichedMarkdownTextInputView(
   fun outdentList() = changeListDepthBy(-1)
 
   private fun changeListDepthBy(delta: Int) {
-    if (blockTypeAtCursor() != BlockType.UNORDERED_LIST_ITEM) return
+    if (blockTypeAtCursor() != BlockType.UNORDERED_LIST_ITEM) {
+      // Indent on a plain paragraph starts a bullet list; ignore on headings.
+      if (delta > 0 && blockTypeAtCursor() == BlockType.PARAGRAPH) toggleUnorderedList()
+      return
+    }
+    // Outdent past depth 0 removes the list marker.
+    if (delta < 0 && listDepthAtCursor() == 0) {
+      toggleUnorderedList()
+      return
+    }
     val editable = text ?: return
     val selEnd = selectionEnd
     var cursor = lineBounds(selectionStart).first
