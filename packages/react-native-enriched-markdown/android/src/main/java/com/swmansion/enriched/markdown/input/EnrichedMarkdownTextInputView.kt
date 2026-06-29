@@ -135,11 +135,15 @@ class EnrichedMarkdownTextInputView(
 
       if (onEmptyListLine) {
         val (ls, le) = lineBounds(selectionStart)
+        // Capture the depth before mutating: inserting the anchor moves the cursor
+        // onto a now non-empty line whose bullet span isn't set yet, so a later
+        // listDepthAtCursor() would read 0 instead of the continued item's depth.
+        val depth = listDepthAtCursor()
         if (le == ls) {
           runAsATransaction {
             editable.insert(ls, "\u200B")
             editable.setSpan(
-              InputBulletSpan(listDepthAtCursor(), displayDensity),
+              InputBulletSpan(depth, displayDensity),
               ls,
               ls + 1,
               Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
@@ -151,7 +155,7 @@ class EnrichedMarkdownTextInputView(
         } else {
           if (bulletSpansIn(editable, ls, le).isEmpty()) {
             editable.setSpan(
-              InputBulletSpan(listDepthAtCursor(), displayDensity),
+              InputBulletSpan(depth, displayDensity),
               ls,
               le,
               Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
