@@ -9,11 +9,16 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.TextView
 import com.swmansion.enriched.markdown.spans.ImageSpan
+import com.swmansion.enriched.markdown.utils.text.conversion.MarkdownExtractor
 
+private const val MENU_ITEM_COPY_MARKDOWN = 1000
 private const val MENU_ITEM_COPY_IMAGE_URL = 1001
+private const val DEFAULT_COPY_AS_MARKDOWN_LABEL = "Copy as Markdown"
 
 data class SelectionMenuConfig(
+  val copyAsMarkdown: Boolean = true,
   val copyImageUrl: Boolean = true,
+  val copyAsMarkdownLabel: String = "",
 )
 
 fun createSelectionActionModeCallback(
@@ -35,9 +40,23 @@ fun createSelectionActionModeCallback(
     ): Boolean {
       if (menu == null) return false
 
+      menu.removeItem(MENU_ITEM_COPY_MARKDOWN)
       menu.removeItem(MENU_ITEM_COPY_IMAGE_URL)
 
       val selectionMenuConfig = getSelectionMenuConfig()
+
+      if (
+        selectionMenuConfig.copyAsMarkdown &&
+        textView.selectionStart >= 0 &&
+        textView.selectionEnd > textView.selectionStart
+      ) {
+        val label =
+          selectionMenuConfig.copyAsMarkdownLabel.ifEmpty {
+            DEFAULT_COPY_AS_MARKDOWN_LABEL
+          }
+        menu.add(Menu.NONE, MENU_ITEM_COPY_MARKDOWN, Menu.NONE, label)
+      }
+
       val imageUrls =
         if (selectionMenuConfig.copyImageUrl) {
           textView.getImageUrlsInSelection()
@@ -70,6 +89,12 @@ fun createSelectionActionModeCallback(
           return true
         }
 
+        MENU_ITEM_COPY_MARKDOWN -> {
+          textView.copyMarkdownToClipboard()
+          mode?.finish()
+          return true
+        }
+
         MENU_ITEM_COPY_IMAGE_URL -> {
           textView.copyImageUrlsToClipboard()
           mode?.finish()
@@ -82,6 +107,12 @@ fun createSelectionActionModeCallback(
 
     override fun onDestroyActionMode(mode: ActionMode?) {}
   }
+
+private fun TextView.copyMarkdownToClipboard() {
+  val markdown = MarkdownExtractor.getMarkdownForSelection(this) ?: return
+  val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+  clipboard.setPrimaryClip(ClipData.newPlainText("Markdown", markdown))
+}
 
 private fun TextView.copyPlainTextToClipboard() {
   val start = selectionStart

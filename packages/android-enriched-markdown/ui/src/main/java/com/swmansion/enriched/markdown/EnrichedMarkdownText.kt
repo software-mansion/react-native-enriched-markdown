@@ -15,6 +15,7 @@ import com.swmansion.enriched.markdown.parser.Parser
 import com.swmansion.enriched.markdown.renderer.Renderer
 import com.swmansion.enriched.markdown.styles.StyleConfig
 import com.swmansion.enriched.markdown.utils.text.view.LinkLongPressMovementMethod
+import com.swmansion.enriched.markdown.utils.text.view.SelectionMenuConfig
 import com.swmansion.enriched.markdown.utils.text.view.applySelectableState
 import com.swmansion.enriched.markdown.utils.text.view.applySelectionColors
 import com.swmansion.enriched.markdown.utils.text.view.createSelectionActionModeCallback
@@ -48,10 +49,15 @@ class EnrichedMarkdownText
     private var selectionColor: Int? = null
     private var selectionHandleColor: Int? = null
     private var isSelectable = true
+    private var selectionMenuConfig = SelectionMenuConfig()
 
     init {
       setupAsMarkdownTextView()
-      customSelectionActionModeCallback = createSelectionActionModeCallback(this)
+      customSelectionActionModeCallback =
+        createSelectionActionModeCallback(
+          this,
+          getSelectionMenuConfig = { selectionMenuConfig },
+        )
     }
 
     fun setMarkdownContent(markdown: String) {
@@ -123,6 +129,11 @@ class EnrichedMarkdownText
       if (selectionHandleColor == color) return
       selectionHandleColor = color
       applySelectionColors(selectionColor, selectionHandleColor)
+    }
+
+    fun setSelectionMenuConfig(config: SelectionMenuConfig) {
+      if (selectionMenuConfig == config) return
+      selectionMenuConfig = config
     }
 
     fun emitOnLinkPress(url: String) {
