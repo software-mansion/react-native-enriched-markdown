@@ -116,9 +116,6 @@ export interface EnrichedMarkdownTextInputInstance {
 /**
  * Per-item shape: `{ enabled }` toggles visibility, `label` overrides the
  * English default. Wire `label` to your i18n library to localize the menu.
- *
- * The legacy boolean form is still accepted at runtime (it logs a one-time
- * deprecation warning) and will be removed in 0.8.
  */
 type MenuItem = { enabled?: boolean; label?: string };
 
@@ -311,22 +308,13 @@ export const EnrichedMarkdownTextInput = ({
   const normalizedStyle = normalizeMarkdownTextInputStyle(markdownStyle);
 
   const normalizedSelectionMenuConfig = useMemo(() => {
-    // Runtime accepts the legacy boolean form, so widen via `unknown` before
-    // handing to normalizeMenuItem — the public type only exposes the object.
-    const config = selectionMenuConfig as
-      | { format?: unknown; copyAsMarkdown?: unknown }
-      | undefined;
     const format = normalizeMenuItem(
-      config?.format,
-      'selectionMenuConfig',
-      'format',
+      selectionMenuConfig?.format,
       true,
       'Format'
     );
     const copyAsMarkdown = normalizeMenuItem(
-      config?.copyAsMarkdown,
-      'selectionMenuConfig',
-      'copyAsMarkdown',
+      selectionMenuConfig?.copyAsMarkdown,
       true,
       'Copy as Markdown'
     );
@@ -339,58 +327,24 @@ export const EnrichedMarkdownTextInput = ({
   }, [selectionMenuConfig]);
 
   const normalizedFormatMenuConfig = useMemo(() => {
-    const config = formatMenuConfig as
-      | {
-          bold?: unknown;
-          italic?: unknown;
-          underline?: unknown;
-          strikethrough?: unknown;
-          spoiler?: unknown;
-          link?: unknown;
-        }
-      | undefined;
-    const bold = normalizeMenuItem(
-      config?.bold,
-      'formatMenuConfig',
-      'bold',
-      true,
-      'Bold'
-    );
-    const italic = normalizeMenuItem(
-      config?.italic,
-      'formatMenuConfig',
-      'italic',
-      true,
-      'Italic'
-    );
+    const bold = normalizeMenuItem(formatMenuConfig?.bold, true, 'Bold');
+    const italic = normalizeMenuItem(formatMenuConfig?.italic, true, 'Italic');
     const underline = normalizeMenuItem(
-      config?.underline,
-      'formatMenuConfig',
-      'underline',
+      formatMenuConfig?.underline,
       true,
       'Underline'
     );
     const strikethrough = normalizeMenuItem(
-      config?.strikethrough,
-      'formatMenuConfig',
-      'strikethrough',
+      formatMenuConfig?.strikethrough,
       true,
       'Strikethrough'
     );
     const spoiler = normalizeMenuItem(
-      config?.spoiler,
-      'formatMenuConfig',
-      'spoiler',
+      formatMenuConfig?.spoiler,
       true,
       'Spoiler'
     );
-    const link = normalizeMenuItem(
-      config?.link,
-      'formatMenuConfig',
-      'link',
-      true,
-      'Link'
-    );
+    const link = normalizeMenuItem(formatMenuConfig?.link, true, 'Link');
     return {
       bold: bold.enabled,
       boldLabel: bold.label,

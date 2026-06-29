@@ -1,9 +1,4 @@
 import React from 'react';
-import type {
-  EnrichedMarkdownTextInputProps,
-  FormatMenuConfig,
-  InputSelectionMenuConfig,
-} from 'react-native-enriched-markdown';
 import { EnrichedMarkdownTextInputStory } from '../EnrichedMarkdownTextInputStory';
 import { storyMeta } from '../shared/storyMeta';
 import type { InputStory } from '../shared/storyTypes';
@@ -160,33 +155,6 @@ export const EnglishDefaults: InputStory = {
       title="Format Menu — English Defaults"
       description="No selectionMenuConfig / formatMenuConfig. Submenu title, items, and 'Copy as Markdown' should all show their English defaults: Format / Bold / Italic / Underline / Strikethrough / Spoiler / Link / Copy as Markdown."
       {...args}
-    />
-  ),
-};
-
-// Legacy boolean form (`bold: false`) — accepted by the runtime shim and
-// logs a one-time warnOnce. Removed in 0.8. Cast through unknown because
-// the TS surface no longer exposes the boolean shape.
-const deprecatedFormatConfig = {
-  bold: false,
-} as unknown as FormatMenuConfig;
-
-const deprecatedSelectionConfig = {
-  copyAsMarkdown: false,
-} as unknown as InputSelectionMenuConfig;
-
-export const DeprecatedBooleanForm: InputStory = {
-  args: {
-    initialMarkdown:
-      'Select this text. "Bold" should be hidden inside Format, "Copy as Markdown" should be missing, and the console should log one-time deprecation warnings for both.',
-  },
-  render: (args: EnrichedMarkdownTextInputProps) => (
-    <EnrichedMarkdownTextInputStory
-      title="Format Menu — Deprecated Boolean Form"
-      description="Runtime compatibility shim: passing `bold: false` / `copyAsMarkdown: false` (instead of `{ enabled: false }`) still works but logs deprecation warnings. Removed in 0.8."
-      {...args}
-      selectionMenuConfig={deprecatedSelectionConfig}
-      formatMenuConfig={deprecatedFormatConfig}
     />
   ),
 };

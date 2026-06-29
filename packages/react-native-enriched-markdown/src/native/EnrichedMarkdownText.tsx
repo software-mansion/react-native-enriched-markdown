@@ -3,7 +3,10 @@ import EnrichedMarkdownTextNativeComponent from '../EnrichedMarkdownTextNativeCo
 import type { MarkdownStyleInternal } from '../EnrichedMarkdownTextNativeComponent';
 import EnrichedMarkdownNativeComponent from '../EnrichedMarkdownNativeComponent';
 import { normalizeMarkdownStyle } from '../normalizeMarkdownStyle';
-import { normalizeMenuItem } from '../shared/normalizeMenuItem';
+import {
+  normalizeMenuItem,
+  normalizeLegacyBooleanMenuItem,
+} from '../shared/normalizeMenuItem';
 import type { NativeSyntheticEvent } from 'react-native';
 import type { MarkdownStyle, Md4cFlags } from '../types/MarkdownStyle';
 import type {
@@ -217,21 +220,15 @@ export const EnrichedMarkdownText = ({
         }
       | undefined;
 
-    const copy = normalizeMenuItem(
-      config?.copy,
-      'selectionMenuConfig',
-      'copy',
-      true,
-      DEFAULT_COPY_LABEL
-    );
-    const copyAsMarkdown = normalizeMenuItem(
+    const copy = normalizeMenuItem(config?.copy, true, DEFAULT_COPY_LABEL);
+    const copyAsMarkdown = normalizeLegacyBooleanMenuItem(
       config?.copyAsMarkdown,
       'selectionMenuConfig',
       'copyAsMarkdown',
       true,
       DEFAULT_COPY_AS_MARKDOWN_LABEL
     );
-    const copyImageUrl = normalizeMenuItem(
+    const copyImageUrl = normalizeLegacyBooleanMenuItem(
       config?.copyImageUrl,
       'selectionMenuConfig',
       'copyImageUrl',

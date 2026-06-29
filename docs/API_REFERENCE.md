@@ -728,8 +728,6 @@ Controls built-in items in the text selection context menu — the **Format** su
 | -------------------------- | -------------------------------------- | ------------------- |
 | `InputSelectionMenuConfig` | `{}` (see shape below for per-field defaults) | iOS, Android, macOS |
 
-> **Deprecation:** the previous boolean shape (`format: false`, `copyAsMarkdown: false`) is still accepted at runtime for backward compatibility but logs a one-time warning. It will be removed in 0.8 — migrate to `{ enabled: false }`.
-
 **`InputSelectionMenuConfig` shape:**
 
 ```ts
@@ -765,7 +763,7 @@ See [COPY_OPTIONS.md](./COPY_OPTIONS.md#localizing-menu-labels) for details on t
 
 ### `formatMenuConfig`
 
-Controls which items appear inside the Format submenu and the label for each. Only effective when `selectionMenuConfig.format` is enabled (the default). Same `{ enabled?, label? }` shape and same deprecation rule as `selectionMenuConfig` above.
+Controls which items appear inside the Format submenu and the label for each. Only effective when `selectionMenuConfig.format` is enabled (the default). Same `{ enabled?, label? }` shape as `selectionMenuConfig` above.
 
 | Type               | Default Value                                  | Platform            |
 | ------------------ | ---------------------------------------------- | ------------------- |
