@@ -144,8 +144,24 @@ val CustomMarkdownStyle: MarkdownStyle =
  * Mirrors the partial override used in [apps/example/src/screens/playground/PlaygroundScreen.tsx].
  */
 val PlaygroundMarkdownStyle: MarkdownStyle =
-  CustomMarkdownStyle.copy {
+  markdownStyle {
+    link {
+      color = Color(0xFF2563EB)
+      underline = true
+    }
+    code {
+      color = Color(0xFF7C3AED)
+      backgroundColor = Color(0xFFF5F3FF)
+    }
+    codeBlock {
+      color = Color(0xFFF3F4F6)
+      backgroundColor = Color(0xFF1F2937)
+      cornerRadius = 8.dp
+    }
     blockquote {
+      color = Color(0xFF4B5563)
+      borderColor = Color(0xFFD1D5DB)
+      borderWidth = 3.dp
       gapWidth = 12.dp
     }
   }
