@@ -277,6 +277,12 @@ class EnrichedMarkdownTextInputView(
     if (!isComponentReady || isDuringTransaction) return
 
     if (!isTextChanging) {
+      // Links (e.g. mentions) are atomic: snap a partial selection to the whole link, and a caret
+      // inside a link to its end. Returning lets the recursive onSelectionChanged emit for the result.
+      formattingStore.selectionAdjustedForAtomicLinks(selStart, selEnd)?.let { (newStart, newEnd) ->
+        setSelection(newStart, newEnd)
+        return
+      }
       if (didTextChangeRecently) {
         didTextChangeRecently = false
       } else {

@@ -9,6 +9,7 @@ object InputRemend {
 
   private val DELIMITER_PAIRS =
     arrayOf(
+      DelimiterPair("***", "***", true),
       DelimiterPair("**", "**", true),
       DelimiterPair("*", "*", true),
       DelimiterPair("_", "_", true),
