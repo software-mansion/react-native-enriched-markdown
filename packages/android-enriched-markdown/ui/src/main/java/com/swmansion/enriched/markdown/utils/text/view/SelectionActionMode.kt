@@ -8,7 +8,10 @@ import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.TextView
+import com.swmansion.enriched.markdown.EnrichedMarkdownText
 import com.swmansion.enriched.markdown.spans.ImageSpan
+import com.swmansion.enriched.markdown.utils.common.layout.isLayoutRTL
+import com.swmansion.enriched.markdown.utils.text.conversion.HTMLGenerator
 import com.swmansion.enriched.markdown.utils.text.conversion.MarkdownExtractor
 
 private const val MENU_ITEM_COPY_MARKDOWN = 1000
@@ -21,6 +24,10 @@ data class SelectionMenuConfig(
   val copyAsMarkdownLabel: String = "",
 )
 
+/**
+ * Creates an ActionMode.Callback that adds custom copy options and
+ * overrides the default "Copy" action to include HTML for rich text support.
+ */
 fun createSelectionActionModeCallback(
   textView: TextView,
   getCustomItemTexts: () -> List<String> = { emptyList() },
@@ -84,7 +91,7 @@ fun createSelectionActionModeCallback(
 
       when (itemId) {
         android.R.id.copy -> {
-          textView.copyPlainTextToClipboard()
+          textView.copyWithHTML()
           mode?.finish()
           return true
         }
@@ -108,20 +115,40 @@ fun createSelectionActionModeCallback(
     override fun onDestroyActionMode(mode: ActionMode?) {}
   }
 
-private fun TextView.copyMarkdownToClipboard() {
-  val markdown = MarkdownExtractor.getMarkdownForSelection(this) ?: return
-  val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-  clipboard.setPrimaryClip(ClipData.newPlainText("Markdown", markdown))
-}
-
-private fun TextView.copyPlainTextToClipboard() {
+/** Copies selection as both plain text and HTML with inline styles. */
+private fun TextView.copyWithHTML() {
   val start = selectionStart
   val end = selectionEnd
   if (start < 0 || end < 0 || start >= end) return
 
-  val plainText = text.subSequence(start, end).toString()
+  val spannable = text as? Spannable ?: return
+  val selectedText = spannable.subSequence(start, end)
+  val plainText = selectedText.toString()
+
+  val styleConfig = (this as? EnrichedMarkdownText)?.markdownStyle
   val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-  clipboard.setPrimaryClip(ClipData.newPlainText("Text", plainText))
+
+  if (styleConfig != null && selectedText is Spannable) {
+    val displayMetrics = context.resources.displayMetrics
+    val isRTL = context.resources.isLayoutRTL()
+    val html =
+      HTMLGenerator.generateHTML(
+        selectedText,
+        styleConfig,
+        displayMetrics.scaledDensity,
+        displayMetrics.density,
+        isRTL,
+      )
+    clipboard.setPrimaryClip(ClipData.newHtmlText("EnrichedMarkdown", plainText, html))
+  } else {
+    clipboard.setPrimaryClip(ClipData.newPlainText("Text", plainText))
+  }
+}
+
+private fun TextView.copyMarkdownToClipboard() {
+  val markdown = MarkdownExtractor.getMarkdownForSelection(this) ?: return
+  val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+  clipboard.setPrimaryClip(ClipData.newPlainText("Markdown", markdown))
 }
 
 private fun TextView.getImageUrlsInSelection(): List<String> {
