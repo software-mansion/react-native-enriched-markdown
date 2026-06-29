@@ -66,6 +66,7 @@
       "outputs": []
     },
     "lint:android-native": {
+      "env": ["ANDROID_HOME"],
       "inputs": [
         "package.json",
         "**/*.kt",
