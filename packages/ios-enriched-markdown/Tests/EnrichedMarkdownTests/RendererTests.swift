@@ -188,4 +188,74 @@ private extension String {
         }
         XCTAssertTrue(boldFound)
     }
+
+    func testLinkHasURLAttribute() {
+        let result = MarkdownRenderer.render("[text](https://example.com)", config: config)
+        XCTAssertTrue(result.string.contains("text"))
+
+        var foundLink = false
+        result.enumerateAttribute(.link, in: NSRange(location: 0, length: result.length)) { value, range, _ in
+            let urlString: String?
+            if let url = value as? URL {
+                urlString = url.absoluteString
+            } else {
+                urlString = value as? String
+            }
+            guard let urlString else { return }
+            let substring = (result.string as NSString).substring(with: range)
+            if substring == "text" {
+                XCTAssertEqual(urlString, "https://example.com")
+                foundLink = true
+            }
+        }
+        XCTAssertTrue(foundLink)
+    }
+
+    func testLinkThemeOverrideAppliesColor() {
+        var customConfig = config!
+        customConfig.link.foregroundColor = .systemBlue
+
+        let result = MarkdownRenderer.render("[link](https://example.com)", config: customConfig)
+
+        var foundBlue = false
+        result.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: result.length)) { value, range, _ in
+            guard let color = value as? UIColor else { return }
+            if result.string[range] == "link" {
+                XCTAssertEqual(color, UIColor.systemBlue)
+                foundBlue = true
+            }
+        }
+        XCTAssertTrue(foundBlue)
+    }
+
+    func testLinkInsideParagraphWithInlineStyles() {
+        let result = MarkdownRenderer.render("**bold** and [link](https://example.com) and *italic*", config: config)
+        XCTAssertTrue(result.string.contains("link"))
+
+        var linkFound = false
+        result.enumerateAttribute(.link, in: NSRange(location: 0, length: result.length)) { value, range, _ in
+            guard value != nil else { return }
+            if result.string[range] == "link" {
+                linkFound = true
+            }
+        }
+        XCTAssertTrue(linkFound)
+    }
+
+    func testAllAttributeRangesWithinBounds() {
+        let samples = [
+            "# Heading one\n\n## Heading two\n\nA paragraph with a [link](https://example.com) and **bold** nearby.",
+            Self.headingsAndLinksFixture,
+            "Plain\n\n**bold**"
+        ]
+
+        for sample in samples {
+            let result = MarkdownRenderer.render(sample, config: config)
+            let length = result.length
+            result.enumerateAttributes(in: NSRange(location: 0, length: length)) { _, range, _ in
+                XCTAssertGreaterThanOrEqual(range.location, 0)
+                XCTAssertLessThanOrEqual(NSMaxRange(range), length)
+            }
+        }
+    }
 }
