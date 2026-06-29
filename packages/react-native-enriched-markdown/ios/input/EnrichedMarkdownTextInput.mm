@@ -827,6 +827,15 @@ using namespace facebook::react;
 - (void)changeListDepthBy:(NSInteger)delta
 {
   if ([self blockTypeForCursorParagraph] != ENRMInputBlockTypeUnorderedListItem) {
+    // Indent on a plain paragraph starts a bullet list; ignore on headings.
+    if (delta > 0 && [self blockTypeForCursorParagraph] == ENRMInputBlockTypeParagraph) {
+      [self toggleUnorderedList];
+    }
+    return;
+  }
+  // Outdent past depth 0 removes the list marker.
+  if (delta < 0 && [self listDepthForCursorParagraph] == 0) {
+    [self toggleUnorderedList];
     return;
   }
   NSTextStorage *storage = _textView.textStorage;
