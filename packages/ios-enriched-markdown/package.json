@@ -2,5 +2,9 @@
   "name": "@enriched-markdown/ios",
   "version": "0.0.0",
   "private": true,
-  "description": "iOS native code for react-native-enriched-markdown"
+  "description": "Standalone iOS native library for enriched-markdown",
+  "scripts": {
+    "build": "cd ../.. && swift build",
+    "clean": "cd ../.. && swift package clean"
+  }
 }
