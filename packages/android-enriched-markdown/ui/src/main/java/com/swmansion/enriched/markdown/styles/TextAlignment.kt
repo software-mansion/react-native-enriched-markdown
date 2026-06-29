@@ -18,5 +18,4 @@ enum class TextAlignment(
    * Only CENTER and RIGHT need explicit spans; LEFT/AUTO use default, JUSTIFY is handled at TextView level.
    */
   val needsAlignmentSpan: Boolean get() = this == CENTER || this == RIGHT
-
 }

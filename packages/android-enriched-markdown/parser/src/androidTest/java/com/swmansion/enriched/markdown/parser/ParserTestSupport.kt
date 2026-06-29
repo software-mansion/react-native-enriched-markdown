@@ -32,7 +32,8 @@ private fun MarkdownASTNode.collectNodesOfType(
 }
 
 fun MarkdownASTNode.assertHasChildType(type: MarkdownASTNode.NodeType): MarkdownASTNode {
-  val child = children.firstOrNull { it.type == type }
-    ?: throw AssertionError("Expected child of type $type in $this")
+  val child =
+    children.firstOrNull { it.type == type }
+      ?: throw AssertionError("Expected child of type $type in $this")
   return child
 }

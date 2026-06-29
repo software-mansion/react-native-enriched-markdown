@@ -1,6 +1,5 @@
 package com.swmansion.enriched.markdown.styles
 
-
 data class ListStyle(
   override val fontSize: Float,
   override val fontFamily: String,
@@ -18,5 +17,4 @@ data class ListStyle(
   val marginLeft: Float,
 ) : BaseBlockStyle {
   fun effectiveMarkerWidth(naturalWidth: Float): Float = naturalWidth.coerceAtLeast(markerMinWidth)
-
 }

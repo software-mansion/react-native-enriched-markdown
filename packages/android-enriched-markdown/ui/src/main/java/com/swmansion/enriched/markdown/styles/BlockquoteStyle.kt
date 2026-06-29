@@ -1,6 +1,5 @@
 package com.swmansion.enriched.markdown.styles
 
-
 data class BlockquoteStyle(
   override val fontSize: Float,
   override val fontFamily: String,
@@ -13,5 +12,4 @@ data class BlockquoteStyle(
   val borderWidth: Float,
   val gapWidth: Float,
   val backgroundColor: Int?,
-) : BaseBlockStyle {
-}
+) : BaseBlockStyle

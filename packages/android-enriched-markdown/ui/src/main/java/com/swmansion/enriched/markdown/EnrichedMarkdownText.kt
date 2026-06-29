@@ -2,10 +2,10 @@ package com.swmansion.enriched.markdown
 
 import android.content.Context
 import android.content.res.Configuration
-import android.text.Layout
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.text.Layout
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -33,6 +33,7 @@ class EnrichedMarkdownText
     private var onLinkLongPressCallback: ((String) -> Unit)? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
+
     @Volatile private var currentRenderId = 0L
 
     var markdownStyle: StyleConfig = StyleConfig.default(context)

@@ -1,9 +1,9 @@
 package com.swmansion.enriched.markdown.compose
 
 import androidx.compose.runtime.Immutable
-import com.swmansion.enriched.markdown.compose.style.StyleResolveContext
 import com.swmansion.enriched.markdown.compose.style.StyleConfigMerger
 import com.swmansion.enriched.markdown.compose.style.StylePatch
+import com.swmansion.enriched.markdown.compose.style.StyleResolveContext
 import com.swmansion.enriched.markdown.compose.style.StyleUnits
 import com.swmansion.enriched.markdown.styles.StyleConfig
 
