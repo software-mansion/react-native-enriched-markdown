@@ -1,3 +1,4 @@
 package com.swmansion.enriched.markdown.compose
 
-object ComposeModule
+@DslMarker
+annotation class MarkdownStyleDsl

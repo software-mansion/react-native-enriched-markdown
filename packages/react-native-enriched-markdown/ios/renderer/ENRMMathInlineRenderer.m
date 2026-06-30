@@ -32,7 +32,11 @@
   [attachment renderForMacOS];
 #endif
 
-  NSAttributedString *attachmentString = [NSAttributedString attributedStringWithAttachment:attachment];
+  NSMutableAttributedString *attachmentString =
+      [[NSAttributedString attributedStringWithAttachment:attachment] mutableCopy];
+  if (currentFont) {
+    [attachmentString addAttribute:NSFontAttributeName value:currentFont range:NSMakeRange(0, attachmentString.length)];
+  }
   [output appendAttributedString:attachmentString];
 }
 

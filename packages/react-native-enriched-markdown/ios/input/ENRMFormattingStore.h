@@ -17,6 +17,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isStyleAdjacentBefore:(ENRMInputStyleType)type position:(NSUInteger)position;
 - (NSArray<ENRMFormattingRange *> *)rangesOfType:(ENRMInputStyleType)type;
 
+/// Snaps a selection so it never partially overlaps an atomic link: a partial selection expands to
+/// the whole link, a caret inside a link moves to its end (unchanged when no adjustment is needed).
+- (NSRange)selectionAdjustedForAtomicLinks:(NSRange)selection;
+
 - (void)addRange:(ENRMFormattingRange *)range;
 - (void)removeType:(ENRMInputStyleType)type inRange:(NSRange)range;
 - (void)removeRange:(ENRMFormattingRange *)range;

@@ -42,6 +42,13 @@ if [ "$STATE" != "(Booted)" ]; then
   done
 fi
 
+# Disable autocorrect/capitalization/spell-check so Maestro typing is deterministic.
+PREFS_PLIST="$HOME/Library/Developer/CoreSimulator/Devices/$UDID/data/Library/Preferences/com.apple.Preferences.plist"
+defaults write "$PREFS_PLIST" KeyboardAutocapitalization -bool false
+defaults write "$PREFS_PLIST" KeyboardAutocorrection -bool false
+defaults write "$PREFS_PLIST" KeyboardCheckSpelling -bool false
+xcrun simctl spawn "$UDID" launchctl kickstart -k system/com.apple.SpringBoard 2>/dev/null || true
+
 open -a Simulator
 
 echo "Simulator ready: $DEVICE_NAME ($UDID)"

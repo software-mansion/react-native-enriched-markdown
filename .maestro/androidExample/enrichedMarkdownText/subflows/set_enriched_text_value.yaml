@@ -1,0 +1,26 @@
+appId: swmansion.enriched.markdown.android.example
+---
+
+- tapOn:
+    id: set-markdown-button
+
+- tapOn:
+    id: set-markdown-input
+
+- runScript:
+    file: '../../../scripts/split_lines.js'
+    env:
+      VALUE: ${VALUE}
+- repeat:
+    times: ${output.lineCount}
+    commands:
+      - runScript:
+          file: '../../../scripts/next_line.js'
+          env:
+            LINES: ${output.lines}
+            INDEX: ${output.lineIndex}
+      - inputText: ${output.currentLine}
+      - pressKey: Enter
+
+- tapOn:
+    id: set-markdown-confirm

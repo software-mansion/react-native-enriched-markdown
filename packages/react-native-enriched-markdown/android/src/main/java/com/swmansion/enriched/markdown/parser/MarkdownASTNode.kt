@@ -41,3 +41,20 @@ data class MarkdownASTNode(
 
   fun getAttribute(key: String): String? = attributes[key]
 }
+
+// A node type that md4c emits as a standalone block stacked vertically, as opposed to an inline span.
+internal fun MarkdownASTNode.NodeType.isTopLevelBlock(): Boolean =
+  when (this) {
+    MarkdownASTNode.NodeType.Paragraph,
+    MarkdownASTNode.NodeType.Heading,
+    MarkdownASTNode.NodeType.Blockquote,
+    MarkdownASTNode.NodeType.UnorderedList,
+    MarkdownASTNode.NodeType.OrderedList,
+    MarkdownASTNode.NodeType.CodeBlock,
+    MarkdownASTNode.NodeType.ThematicBreak,
+    MarkdownASTNode.NodeType.Table,
+    MarkdownASTNode.NodeType.LatexMathDisplay,
+    -> true
+
+    else -> false
+  }

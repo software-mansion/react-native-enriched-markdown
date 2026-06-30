@@ -37,6 +37,47 @@ static inline NSString *ENRMResolveImageURLsTitle(ENRMSelectionMenuConfig config
 }
 
 #ifdef __cplusplus
+
+/// Strong owners for the label strings in ENRMSelectionMenuConfig.
+struct ENRMSelectionMenuLabels {
+  NSString *copyLabel = nil;
+  NSString *copyAsMarkdownLabel = nil;
+  NSString *copyImageUrlLabel = nil;
+  NSString *copyImageUrlsLabel = nil;
+  NSArray<NSString *> *copyImageUrlPluralTemplates = nil;
+};
+
+/// Converts a codegen SelectionMenuConfig struct into strong NSString labels.
+template <typename T> static inline ENRMSelectionMenuLabels ENRMParseSelectionMenuLabels(const T &src)
+{
+  NSMutableArray<NSString *> *templates = [NSMutableArray array];
+  for (const auto &s : src.copyImageUrlPluralTemplates) {
+    [templates addObject:[[NSString alloc] initWithUTF8String:s.c_str()]];
+  }
+  return {
+      [[NSString alloc] initWithUTF8String:src.copyLabel.c_str()],
+      [[NSString alloc] initWithUTF8String:src.copyAsMarkdownLabel.c_str()],
+      [[NSString alloc] initWithUTF8String:src.copyImageUrlLabel.c_str()],
+      [[NSString alloc] initWithUTF8String:src.copyImageUrlsLabel.c_str()],
+      templates,
+  };
+}
+
+/// Builds an ENRMSelectionMenuConfig from pre-parsed labels and boolean flags.
+static inline ENRMSelectionMenuConfig ENRMBuildSelectionMenuConfig(const ENRMSelectionMenuLabels &labels,
+                                                                   bool copyAsMarkdown, bool copyImageUrl)
+{
+  return (ENRMSelectionMenuConfig){
+      .copyAsMarkdown = copyAsMarkdown,
+      .copyImageURL = copyImageUrl,
+      .copyLabel = labels.copyLabel,
+      .copyAsMarkdownLabel = labels.copyAsMarkdownLabel,
+      .copyImageUrlLabel = labels.copyImageUrlLabel,
+      .copyImageUrlsLabel = labels.copyImageUrlsLabel,
+      .copyImageUrlPluralTemplates = labels.copyImageUrlPluralTemplates,
+  };
+}
+
 extern "C" {
 #endif
 

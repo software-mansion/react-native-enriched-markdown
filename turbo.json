@@ -41,6 +41,39 @@
         "$TURBO_ROOT$/packages/react-native-enriched-markdown/package.json"
       ],
       "outputs": []
+    },
+    "build:android-native": {
+      "env": ["ANDROID_HOME"],
+      "inputs": [
+        "package.json",
+        "app/**",
+        "gradle/**",
+        "$TURBO_ROOT$/packages/android-enriched-markdown/**",
+        "!$TURBO_ROOT$/packages/android-enriched-markdown/**/build/**",
+        "$TURBO_ROOT$/packages/core/cpp/**"
+      ],
+      "outputs": []
+    },
+    "test:android-native": {
+      "env": ["ANDROID_HOME"],
+      "inputs": [
+        "package.json",
+        "**/*.kt",
+        "**/*.gradle",
+        "gradle/**",
+        "$TURBO_ROOT$/packages/core/cpp/**"
+      ],
+      "outputs": []
+    },
+    "lint:android-native": {
+      "env": ["ANDROID_HOME"],
+      "inputs": [
+        "package.json",
+        "**/*.kt",
+        "**/*.gradle",
+        "gradle/**"
+      ],
+      "outputs": []
     }
   }
 }
