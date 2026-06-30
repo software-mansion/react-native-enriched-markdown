@@ -15,6 +15,10 @@ export const DEFAULT_ACCESSIBILITY_LABELS: ResolvedAccessibilityLabels = {
     orderedItem: 'List item {n}',
     nestedOrderedItem: 'Nested list item {n}',
   },
+  blockquote: {
+    quote: 'Blockquote',
+    nestedQuote: 'Nested blockquote',
+  },
   table: {
     row: 'Row {n}: {content}',
   },
@@ -52,6 +56,14 @@ export function resolveAccessibilityLabels(
       nestedOrderedItem:
         labels?.list?.nestedOrderedItem ??
         DEFAULT_ACCESSIBILITY_LABELS.list.nestedOrderedItem,
+    },
+    blockquote: {
+      quote:
+        labels?.blockquote?.quote ??
+        DEFAULT_ACCESSIBILITY_LABELS.blockquote.quote,
+      nestedQuote:
+        labels?.blockquote?.nestedQuote ??
+        DEFAULT_ACCESSIBILITY_LABELS.blockquote.nestedQuote,
     },
     table: {
       row: labels?.table?.row ?? DEFAULT_ACCESSIBILITY_LABELS.table.row,

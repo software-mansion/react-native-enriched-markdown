@@ -245,6 +245,10 @@ export interface AccessibilityLabelsListProps {
   orderedItem: string;
   nestedOrderedItem: string;
 }
+export interface AccessibilityLabelsBlockquoteProps {
+  quote: string;
+  nestedQuote: string;
+}
 export interface AccessibilityLabelsTableProps {
   row: string;
 }
@@ -258,6 +262,7 @@ export interface AccessibilityLabelsRotorProps {
 }
 export interface AccessibilityLabelsProps {
   list: Readonly<AccessibilityLabelsListProps>;
+  blockquote: Readonly<AccessibilityLabelsBlockquoteProps>;
   table: Readonly<AccessibilityLabelsTableProps>;
   math: Readonly<AccessibilityLabelsMathProps>;
   rotor: Readonly<AccessibilityLabelsRotorProps>;

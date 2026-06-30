@@ -49,6 +49,8 @@
   CGFloat _borderWidth;
 
   NSString *_cachedMarkdown;
+
+  NSArray *_cachedAccessibilityElements;
 }
 
 - (instancetype)initWithConfig:(StyleConfig *)config
@@ -75,6 +77,8 @@
 #if !TARGET_OS_OSX
   _scrollView.bounces = YES;
   _scrollView.alwaysBounceHorizontal = NO;
+  _scrollView.isAccessibilityElement = NO;
+  _scrollView.accessibilityElementsHidden = YES;
 #endif
   [self addSubview:_scrollView];
 
@@ -243,6 +247,7 @@
 
   _rows = [allRows copy];
   _cachedMarkdown = [self buildMarkdownFromRows];
+  _cachedAccessibilityElements = nil;
   [self computeLayout];
   [self renderGrid];
 }
@@ -567,10 +572,20 @@
   return NO;
 }
 
+- (void)setAccessibilityLabels:(ENRMAccessibilityLabels *)labels
+{
+  if (_accessibilityLabels == labels)
+    return;
+  _accessibilityLabels = labels;
+  _cachedAccessibilityElements = nil;
+}
+
 - (NSArray *)accessibilityElements
 {
   if (_rows.count == 0)
     return nil;
+  if (_cachedAccessibilityElements != nil)
+    return _cachedAccessibilityElements;
 
   NSMutableArray *elements = [NSMutableArray array];
   CGFloat yOffset = 0;
@@ -609,6 +624,7 @@
     }
     yOffset += rowHeight;
   }
+  _cachedAccessibilityElements = elements;
   return elements;
 }
 

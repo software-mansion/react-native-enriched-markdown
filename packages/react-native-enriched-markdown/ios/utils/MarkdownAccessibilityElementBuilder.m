@@ -1,5 +1,6 @@
 #import "MarkdownAccessibilityElementBuilder.h"
 #import "AccessibilityInfo.h"
+#import "BlockquoteBorder.h"
 #import "ENRMAccessibilityLabels.h"
 #include <TargetConditionals.h>
 
@@ -177,11 +178,34 @@ static const CGFloat kFocusRectPadding = 2.0;
     element.accessibilityTraits = UIAccessibilityTraitHeader;
   }
 
+  NSMutableArray<NSString *> *valueParts = [NSMutableArray array];
   if (listInfo && type != ElementTypeImage) {
-    element.accessibilityValue = [self formatListAnnouncement:listInfo labels:labels];
+    [valueParts addObject:[self formatListAnnouncement:listInfo labels:labels]];
+  }
+  NSString *blockquoteAnnouncement = [self blockquoteAnnouncementForRange:range textView:textView labels:labels];
+  if (blockquoteAnnouncement) {
+    [valueParts addObject:blockquoteAnnouncement];
+  }
+  if (valueParts.count > 0) {
+    element.accessibilityValue = [valueParts componentsJoinedByString:@", "];
   }
 
   return element;
+}
+
++ (NSString *)blockquoteAnnouncementForRange:(NSRange)range
+                                    textView:(UITextView *)textView
+                                      labels:(ENRMAccessibilityLabels *)labels
+{
+  if (textView.attributedText.length == 0 || range.location >= textView.attributedText.length)
+    return nil;
+  NSRange effective;
+  NSNumber *depth = [textView.attributedText attribute:BlockquoteDepthAttributeName
+                                               atIndex:range.location
+                                        effectiveRange:&effective];
+  if (depth == nil)
+    return nil;
+  return depth.integerValue >= 1 ? labels.nestedBlockquote : labels.blockquote;
 }
 
 #pragma mark - Helpers

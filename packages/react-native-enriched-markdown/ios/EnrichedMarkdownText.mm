@@ -549,6 +549,10 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
       [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.orderedItem.c_str()];
   _accessibilityLabels.nestedOrderedItem =
       [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.nestedOrderedItem.c_str()];
+  _accessibilityLabels.blockquote =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.blockquote.quote.c_str()];
+  _accessibilityLabels.nestedBlockquote =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.blockquote.nestedQuote.c_str()];
   _accessibilityLabels.tableRow =
       [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.table.row.c_str()];
   _accessibilityLabels.mathEquation =

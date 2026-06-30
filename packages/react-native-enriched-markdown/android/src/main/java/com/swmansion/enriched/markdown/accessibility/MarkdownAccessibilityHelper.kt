@@ -10,6 +10,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.customview.widget.ExploreByTouchHelper
 import com.swmansion.enriched.markdown.spans.BaseListSpan
+import com.swmansion.enriched.markdown.spans.BlockquoteSpan
 import com.swmansion.enriched.markdown.spans.HeadingSpan
 import com.swmansion.enriched.markdown.spans.ImageSpan
 import com.swmansion.enriched.markdown.spans.LinkSpan
@@ -331,6 +332,7 @@ class MarkdownAccessibilityHelper(
       )
     }
 
+    val blockquoteAnnouncement = blockquoteAnnouncementFor(item)
     when {
       // Mirrors iOS commit 675f37f: the explicit "heading level N" suffix is intentionally gone.
       // `isHeading = true` is enough — TalkBack auto-announces "heading" as the role, matching
@@ -338,22 +340,45 @@ class MarkdownAccessibilityHelper(
       // "{text}, heading" instead of doubling the announcement.
       item.isHeading -> {
         isHeading = true
+        if (blockquoteAnnouncement != null) {
+          roleDescription = blockquoteAnnouncement
+        }
       }
 
       item.isImage -> {
-        roleDescription = "image"
+        roleDescription = appendBlockquote("image", blockquoteAnnouncement)
       }
 
       item.isLink -> {
         isClickable = true
         addAction(AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK)
-        roleDescription = item.listInfo?.let { "link, ${it.listAnnouncement}" } ?: "link"
+        val base = item.listInfo?.let { "link, ${it.listAnnouncement}" } ?: "link"
+        roleDescription = appendBlockquote(base, blockquoteAnnouncement)
       }
 
       item.isListItem -> {
-        roleDescription = item.listInfo!!.listAnnouncement
+        roleDescription = appendBlockquote(item.listInfo!!.listAnnouncement, blockquoteAnnouncement)
+      }
+
+      blockquoteAnnouncement != null -> {
+        roleDescription = blockquoteAnnouncement
       }
     }
+  }
+
+  private fun appendBlockquote(
+    base: String,
+    blockquoteAnnouncement: String?,
+  ): String = if (blockquoteAnnouncement != null) "$base, $blockquoteAnnouncement" else base
+
+  private fun blockquoteAnnouncementFor(item: AccessibilityItem): String? {
+    val spanned = textView.text as? Spanned ?: return null
+    val pos = item.start.coerceIn(0, spanned.length - 1).coerceAtLeast(0)
+    if (pos >= spanned.length) return null
+    val spans = spanned.getSpans(pos, pos + 1, BlockquoteSpan::class.java)
+    if (spans.isEmpty()) return null
+    val maxDepth = spans.maxOf { it.depth }
+    return if (maxDepth >= 1) labels.nestedBlockquote else labels.blockquote
   }
 
   private val ListItemInfo.listAnnouncement: String

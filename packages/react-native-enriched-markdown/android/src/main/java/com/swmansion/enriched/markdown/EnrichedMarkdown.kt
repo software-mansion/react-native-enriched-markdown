@@ -245,6 +245,15 @@ class EnrichedMarkdown
       segmentViews.filterIsInstance<TableContainerView>().forEach {
         it.accessibilityLabels = labels
       }
+      mathContainerClass?.let { mathClass ->
+        segmentViews.filter { mathClass.isInstance(it) }.forEach { view ->
+          runCatching {
+            mathClass
+              .getMethod("setAccessibilityLabels", AccessibilityLabels::class.java)
+              .invoke(view, labels)
+          }
+        }
+      }
     }
 
     private fun forwardContextMenuItemPress(
@@ -492,6 +501,11 @@ class EnrichedMarkdown
           resolvedClass
             .getConstructor(Context::class.java, StyleConfig::class.java)
             .newInstance(context, style) as View
+        runCatching {
+          resolvedClass
+            .getMethod("setAccessibilityLabels", AccessibilityLabels::class.java)
+            .invoke(view, accessibilityLabels)
+        }
         resolvedClass.getMethod("applyLatex", String::class.java).invoke(view, segment.latex)
         view
       } catch (e: Exception) {

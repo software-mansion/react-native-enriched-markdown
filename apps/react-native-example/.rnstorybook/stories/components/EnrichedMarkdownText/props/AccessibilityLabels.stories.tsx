@@ -8,6 +8,8 @@ type AccessibilityLabelsStoryExtra = {
   nestedBulletPoint: string;
   orderedItem: string;
   nestedOrderedItem: string;
+  blockquote: string;
+  nestedBlockquote: string;
   tableRow: string;
   mathEquation: string;
   rotorHeadings: string;
@@ -19,6 +21,8 @@ const MARKDOWN = `# Heading level 1
 
 A paragraph with an inline [link](https://example.com).
 
+A paragraph with **bold text**, *italic text*, __underline text__, ~~strikethrough~~ and \`inline code\` mixed together.
+
 - Top-level bullet
 - Another bullet
   - Nested bullet
@@ -28,6 +32,10 @@ A paragraph with an inline [link](https://example.com).
 2. Another ordered item
    1. Nested ordered item
    2. Another nested ordered item
+
+> A top-level blockquote line.
+>
+> > A nested blockquote line.
 
 | Column A | Column B |
 |----------|----------|
@@ -58,6 +66,16 @@ const argTypes = {
     control: 'text',
     description:
       'accessibilityLabels.list.nestedOrderedItem — nested ordered item. `{n}` → 1-based index.',
+  },
+  blockquote: {
+    control: 'text',
+    description:
+      'accessibilityLabels.blockquote.quote — appended to elements that sit inside a top-level blockquote.',
+  },
+  nestedBlockquote: {
+    control: 'text',
+    description:
+      'accessibilityLabels.blockquote.nestedQuote — appended to elements that sit inside a nested blockquote.',
   },
   tableRow: {
     control: 'text',
@@ -91,15 +109,17 @@ export default storyMeta('Props', 'Accessibility Labels');
 export const Default: TextStory<AccessibilityLabelsStoryExtra> = {
   args: {
     markdown: MARKDOWN,
-    bulletPoint: 'Bullet point',
-    nestedBulletPoint: 'Nested bullet point',
-    orderedItem: 'List item {n}',
-    nestedOrderedItem: 'Nested list item {n}',
-    tableRow: 'Row {n}: {content}',
-    mathEquation: 'Math: {latex}',
-    rotorHeadings: 'Headings',
+    bulletPoint: 'Aufzählungspunkt',
+    nestedBulletPoint: 'Verschachtelter Aufzählungspunkt',
+    orderedItem: 'Listenelement {n}',
+    nestedOrderedItem: 'Verschachteltes Listenelement {n}',
+    blockquote: 'Zitat',
+    nestedBlockquote: 'Verschachteltes Zitat',
+    tableRow: 'Zeile {n}: {content}',
+    mathEquation: 'Formel: {latex}',
+    rotorHeadings: 'Überschriften',
     rotorLinks: 'Links',
-    rotorImages: 'Images',
+    rotorImages: 'Bilder',
   },
   argTypes,
   render: ({
@@ -107,6 +127,8 @@ export const Default: TextStory<AccessibilityLabelsStoryExtra> = {
     nestedBulletPoint,
     orderedItem,
     nestedOrderedItem,
+    blockquote,
+    nestedBlockquote,
     tableRow,
     mathEquation,
     rotorHeadings,
@@ -117,6 +139,8 @@ export const Default: TextStory<AccessibilityLabelsStoryExtra> = {
     <EnrichedMarkdownTextStory
       title="Accessibility Labels"
       description="Strings spoken by VoiceOver (iOS) and TalkBack (Android). Edit any field and toggle the screen reader to hear the override. Placeholders ({n}, {content}, {latex}) are substituted at speak time. Rotor labels are iOS-only."
+      flavor="github"
+      md4cFlags={{ underline: true, latexMath: true }}
       {...args}
       accessibilityLabels={{
         list: {
@@ -125,6 +149,7 @@ export const Default: TextStory<AccessibilityLabelsStoryExtra> = {
           orderedItem,
           nestedOrderedItem,
         },
+        blockquote: { quote: blockquote, nestedQuote: nestedBlockquote },
         table: { row: tableRow },
         math: { equation: mathEquation },
         rotor: {

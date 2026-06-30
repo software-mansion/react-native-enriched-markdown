@@ -822,6 +822,10 @@ static char kENRMSegmentFadeAnimatorKey;
       [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.orderedItem.c_str()];
   _accessibilityLabels.nestedOrderedItem =
       [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.nestedOrderedItem.c_str()];
+  _accessibilityLabels.blockquote =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.blockquote.quote.c_str()];
+  _accessibilityLabels.nestedBlockquote =
+      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.blockquote.nestedQuote.c_str()];
   _accessibilityLabels.tableRow =
       [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.table.row.c_str()];
   _accessibilityLabels.mathEquation =
@@ -1112,26 +1116,7 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
 
 - (NSArray *)accessibilityElements
 {
-  NSMutableArray *allElements = [NSMutableArray array];
-  for (RCTUIView *segment in _segmentViews) {
-    if ([segment isKindOfClass:[EnrichedMarkdownInternalText class]]) {
-      NSArray *elements = [(EnrichedMarkdownInternalText *)segment accessibilityElements];
-      if (elements) {
-        [allElements addObjectsFromArray:elements];
-      }
-    } else if ([segment isKindOfClass:[TableContainerView class]]) {
-      NSArray *elements = [(TableContainerView *)segment accessibilityElements];
-      if (elements) {
-        [allElements addObjectsFromArray:elements];
-      }
-    }
-#if ENRICHED_MARKDOWN_MATH
-    else if ([segment isKindOfClass:[ENRMMathContainerView class]]) {
-      [allElements addObject:segment];
-    }
-#endif
-  }
-  return allElements;
+  return _segmentViews;
 }
 
 - (NSInteger)accessibilityElementCount

@@ -62,7 +62,12 @@ class TableContainerView(
     HorizontalScrollView(context).apply {
       isHorizontalScrollBarEnabled = true
       overScrollMode = View.OVER_SCROLL_NEVER
-      addView(GridContainerView(context))
+      importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+      addView(
+        GridContainerView(context).apply {
+          importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        },
+      )
     }
   private val gridContainer get() = scrollView.getChildAt(0) as GridContainerView
 
@@ -101,6 +106,7 @@ class TableContainerView(
   private var tableMarkdown = ""
 
   init {
+    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
     addView(scrollView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
   }
 

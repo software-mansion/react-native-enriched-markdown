@@ -103,6 +103,7 @@ fun parseSelectionMenuConfig(value: ReadableMap?): SelectionMenuConfig {
 fun parseAccessibilityLabels(value: ReadableMap?): AccessibilityLabels {
   if (value == null) return AccessibilityLabels()
   val list = value.getMap("list")
+  val blockquote = value.getMap("blockquote")
   val table = value.getMap("table")
   val math = value.getMap("math")
   val rotor = value.getMap("rotor")
@@ -112,6 +113,8 @@ fun parseAccessibilityLabels(value: ReadableMap?): AccessibilityLabels {
     nestedBulletPoint = list?.getString("nestedBulletPoint") ?: defaults.nestedBulletPoint,
     orderedItem = list?.getString("orderedItem") ?: defaults.orderedItem,
     nestedOrderedItem = list?.getString("nestedOrderedItem") ?: defaults.nestedOrderedItem,
+    blockquote = blockquote?.getString("quote") ?: defaults.blockquote,
+    nestedBlockquote = blockquote?.getString("nestedQuote") ?: defaults.nestedBlockquote,
     tableRow = table?.getString("row") ?: defaults.tableRow,
     mathEquation = math?.getString("equation") ?: defaults.mathEquation,
     rotorHeadings = rotor?.getString("headings") ?: defaults.rotorHeadings,

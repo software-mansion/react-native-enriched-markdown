@@ -47,6 +47,14 @@ export interface AccessibilityLabels {
     nestedOrderedItem?: string;
   };
 
+  /** Labels appended for content inside a blockquote. iOS + Android. */
+  blockquote?: {
+    /** Default: `"Blockquote"`. Spoken for top-level blockquote content. */
+    quote?: string;
+    /** Default: `"Nested blockquote"`. Spoken for content nested inside another blockquote. */
+    nestedQuote?: string;
+  };
+
   /** Labels spoken for tables. iOS only — Android currently does not vend per-row a11y. */
   table?: {
     /**
@@ -105,6 +113,10 @@ export interface ResolvedAccessibilityLabels {
     nestedBulletPoint: string;
     orderedItem: string;
     nestedOrderedItem: string;
+  };
+  blockquote: {
+    quote: string;
+    nestedQuote: string;
   };
   table: {
     row: string;
