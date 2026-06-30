@@ -37,7 +37,7 @@ import type {
   ColorValue,
 } from 'react-native';
 import { normalizeMarkdownTextInputStyle } from './normalizeMarkdownTextInputStyle';
-import { normalizeMenuItem } from './shared/normalizeMenuItem';
+import { normalizeMenuItem } from './normalizeMenuItem';
 import { toNativeRegexConfig } from './utils/regexParser';
 import type { RefObject } from 'react';
 

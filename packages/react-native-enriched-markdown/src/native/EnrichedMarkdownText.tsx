@@ -6,7 +6,7 @@ import { normalizeMarkdownStyle } from '../normalizeMarkdownStyle';
 import {
   normalizeMenuItem,
   normalizeLegacyBooleanMenuItem,
-} from '../shared/normalizeMenuItem';
+} from '../normalizeMenuItem';
 import type { NativeSyntheticEvent } from 'react-native';
 import type { MarkdownStyle, Md4cFlags } from '../types/MarkdownStyle';
 import type {

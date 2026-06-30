@@ -10,6 +10,8 @@ const warnOnce = (key: string, msg: string) => {
 
 export type NormalizedMenuItem = { enabled: boolean; label: string };
 
+// TODO: revisit grouping cross-cutting utilities (this, styleUtils, linkVariantUtils,
+// normalizeMarkdownStyle, etc.) into a shared module once the set grows further.
 export const normalizeMenuItem = (
   raw: unknown,
   defaultEnabled: boolean,
