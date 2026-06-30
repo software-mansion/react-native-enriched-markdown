@@ -433,7 +433,7 @@ interface AccessibilityLabels {
     nestedQuote?: string;          // "Nested blockquote"
   };
   table?: {
-    row?: string;                  // "Row {n}: {content}" (iOS only)
+    row?: string;                  // "Row {n}: {content}"
   };
   math?: {
     equation?: string;             // "Math: {latex}"
