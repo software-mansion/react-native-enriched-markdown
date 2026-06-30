@@ -93,9 +93,8 @@
     if (!strongSelf)
       return nil;
     NSMenu *menu = [[NSMenu alloc] initWithTitle:@""];
-    [menu addItem:ENRMCreateMenuItem(NSLocalizedString(@"Copy", nil), ^{ [strongSelf copyTableToPasteboard]; })];
-    [menu addItem:ENRMCreateMenuItem(NSLocalizedString(@"Copy as Markdown", nil),
-                                     ^{ [strongSelf copyMarkdownToPasteboard]; })];
+    [menu addItem:ENRMCreateMenuItem(strongSelf.copyLabel, ^{ [strongSelf copyTableToPasteboard]; })];
+    [menu addItem:ENRMCreateMenuItem(strongSelf.copyAsMarkdownLabel, ^{ [strongSelf copyMarkdownToPasteboard]; })];
     return menu;
   };
   _gridContainer = gridView;
@@ -408,13 +407,13 @@
                   previewProvider:nil
                    actionProvider:^UIMenu *(NSArray<UIMenuElement *> *suggestedActions) {
                      UIAction *copyMarkdown =
-                         [UIAction actionWithTitle:@"Copy as Markdown"
+                         [UIAction actionWithTitle:self.copyAsMarkdownLabel
                                              image:[RCTUIImage systemImageNamed:@"doc.text"]
                                         identifier:nil
                                            handler:^(__kindof UIAction *action) { [self copyMarkdownToPasteboard]; }];
 
                      UIAction *copyPlainText =
-                         [UIAction actionWithTitle:@"Copy"
+                         [UIAction actionWithTitle:self.copyLabel
                                              image:[RCTUIImage systemImageNamed:@"doc.on.doc"]
                                         identifier:nil
                                            handler:^(__kindof UIAction *action) { [self copyTableToPasteboard]; }];

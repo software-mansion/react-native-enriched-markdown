@@ -58,6 +58,9 @@ class TableContainerView(
       if (rowCount > 0) renderGrid()
     }
 
+  var copyLabel: String = ""
+  var copyAsMarkdownLabel: String = ""
+
   private val scrollView =
     HorizontalScrollView(context).apply {
       isHorizontalScrollBarEnabled = true
@@ -333,7 +336,7 @@ class TableContainerView(
   private fun showContextMenu(anchor: View) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     ContextMenuPopup.show(anchor, this) {
-      item(ContextMenuPopup.Icon.COPY, "Copy") {
+      item(ContextMenuPopup.Icon.COPY, copyLabel) {
         val plainText = rows.joinToString("\n") { row -> row.joinToString("\t") { it.plainText } }
         if (plainText.isNotEmpty()) {
           val displayMetrics = context.resources.displayMetrics
@@ -345,7 +348,7 @@ class TableContainerView(
           clipboard.setPrimaryClip(ClipData.newHtmlText("Table", plainText, html))
         }
       }
-      item(ContextMenuPopup.Icon.DOCUMENT, "Copy as Markdown") {
+      item(ContextMenuPopup.Icon.DOCUMENT, copyAsMarkdownLabel) {
         if (tableMarkdown.isNotEmpty()) clipboard.setPrimaryClip(ClipData.newPlainText("Table", tableMarkdown))
       }
     }

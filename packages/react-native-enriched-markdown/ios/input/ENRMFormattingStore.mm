@@ -99,6 +99,31 @@ static EditOverlap classifyOverlap(NSUInteger rangeStart, NSUInteger rangeEnd, N
   return nil;
 }
 
+- (NSRange)selectionAdjustedForAtomicLinks:(NSRange)selection
+{
+  if (selection.length > 0) {
+    NSUInteger start = selection.location;
+    NSUInteger end = NSMaxRange(selection);
+    ENRMFormattingRange *startLink = [self rangeOfType:ENRMInputStyleTypeLink containingPosition:start];
+    if (startLink != nil) {
+      start = MIN(start, startLink.range.location);
+    }
+    if (end > 0) {
+      ENRMFormattingRange *endLink = [self rangeOfType:ENRMInputStyleTypeLink containingPosition:(end - 1)];
+      if (endLink != nil) {
+        end = MAX(end, NSMaxRange(endLink.range));
+      }
+    }
+    return NSMakeRange(start, end - start);
+  }
+  ENRMFormattingRange *caretLink = [self rangeOfType:ENRMInputStyleTypeLink containingPosition:selection.location];
+  if (caretLink != nil && selection.location > caretLink.range.location &&
+      selection.location < NSMaxRange(caretLink.range)) {
+    return NSMakeRange(NSMaxRange(caretLink.range), 0);
+  }
+  return selection;
+}
+
 - (BOOL)isStyleActive:(ENRMInputStyleType)type atPosition:(NSUInteger)position
 {
   return [self rangeOfType:type containingPosition:position] != nil;
@@ -119,8 +144,8 @@ static EditOverlap classifyOverlap(NSUInteger rangeStart, NSUInteger rangeEnd, N
   if (position == 0) {
     return NO;
   }
-  return [self rangeOfType:type containingPosition:position] != nil ||
-         [self rangeOfType:type containingPosition:position - 1] != nil;
+  return [self rangeOfType:type containingPosition:position] != nil || [self rangeOfType:type
+                                                                           containingPosition:position - 1] != nil;
 }
 
 - (void)addRange:(ENRMFormattingRange *)newRange

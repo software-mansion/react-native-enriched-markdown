@@ -22,22 +22,25 @@ add_library(
   enriched_markdown_parser
   SHARED
   ${PARSER_SOURCES}
-  jni-adapter.cpp
+  jni/ParserJni.cpp
 )
 
 target_include_directories(
   enriched_markdown_parser
   PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/jni"
   "${CPP_ROOT}/md4c"
   "${CPP_ROOT}/parser"
 )
 
 target_compile_definitions(enriched_markdown_parser PRIVATE MD4C_USE_UTF8=1)
 
+find_package(fbjni REQUIRED CONFIG)
 find_library(LOG_LIB log)
 
 target_link_libraries(
   enriched_markdown_parser
   md4c_lib
+  fbjni::fbjni
   ${LOG_LIB}
 )

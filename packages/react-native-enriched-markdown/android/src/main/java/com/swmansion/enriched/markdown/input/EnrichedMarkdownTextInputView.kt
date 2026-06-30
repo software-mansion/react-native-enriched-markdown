@@ -69,6 +69,7 @@ class EnrichedMarkdownTextInputView(
   var autoFocusRequested = false
   var stateWrapper: StateWrapper? = null
   val layoutManager = InputLayoutManager(this)
+  private var pendingAutoFocusKeyboard = false
 
   private var typefaceDirty = false
   private var fontFamilyValue: String? = null
@@ -138,6 +139,13 @@ class EnrichedMarkdownTextInputView(
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
     runAsATransaction { super.setTextIsSelectable(true) }
+  }
+
+  override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+    super.onWindowFocusChanged(hasWindowFocus)
+    // The autofocus keyboard request may run before the window has IME focus (e.g. while a modal is
+    // still presenting), where showSoftInput() is dropped.
+    showAutoFocusKeyboardIfPending()
   }
 
   override fun clearFocus() {
@@ -269,6 +277,12 @@ class EnrichedMarkdownTextInputView(
     if (!isComponentReady || isDuringTransaction) return
 
     if (!isTextChanging) {
+      // Links (e.g. mentions) are atomic: snap a partial selection to the whole link, and a caret
+      // inside a link to its end. Returning lets the recursive onSelectionChanged emit for the result.
+      formattingStore.selectionAdjustedForAtomicLinks(selStart, selEnd)?.let { (newStart, newEnd) ->
+        setSelection(newStart, newEnd)
+        return
+      }
       if (didTextChangeRecently) {
         didTextChangeRecently = false
       } else {
@@ -641,11 +655,25 @@ class EnrichedMarkdownTextInputView(
     setSelection(selectionStart.coerceAtLeast(0))
   }
 
+  private fun showAutoFocusKeyboardIfPending() {
+    if (!pendingAutoFocusKeyboard || !hasWindowFocus()) return
+    pendingAutoFocusKeyboard = false
+    inputMethodManager?.showSoftInput(this, 0)
+  }
+
   fun afterUpdateTransaction() {
     updateTypeface()
     if (autoFocusRequested) {
       autoFocusRequested = false
-      requestFocusProgrammatically()
+      pendingAutoFocusKeyboard = true
+      post {
+        // afterUpdateTransaction runs before onAttachedToWindow, where requestFocus()/showSoftInput()
+        // are dropped and setTextIsSelectable(true) would reset the caret to 0. Defer to the next loop
+        // so focus sticks and the caret lands at end (matching iOS).
+        requestFocus()
+        setSelection(text?.length ?: 0)
+        showAutoFocusKeyboardIfPending()
+      }
     }
   }
 

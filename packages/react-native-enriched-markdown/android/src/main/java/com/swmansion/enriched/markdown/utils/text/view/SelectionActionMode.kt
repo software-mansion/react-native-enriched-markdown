@@ -25,7 +25,29 @@ private const val MENU_ITEM_CUSTOM_GROUP = 2001
 data class SelectionMenuConfig(
   val copyAsMarkdown: Boolean = true,
   val copyImageUrl: Boolean = true,
+  val copyLabel: String = "",
+  val copyAsMarkdownLabel: String = "",
+  val copyImageUrlLabel: String = "",
+  val copyImageUrlsLabel: String = "",
+  // Plural templates indexed by image count (0..100). Empty when no pluralLabels
+  // are set; counts > 100 use copyImageUrlsLabel (the "other" form).
+  val copyImageUrlPluralTemplates: List<String> = emptyList(),
 )
+
+/**
+ * Resolves the "Copy Image URL(s)" menu title for the given image count. Uses the
+ * precomputed plural templates when present (counts > 100 use the "other" form),
+ * otherwise the singular/`{count}` templates. All labels are resolved JS-side.
+ */
+private fun SelectionMenuConfig.imageUrlsTitle(count: Int): String {
+  val template =
+    when {
+      copyImageUrlPluralTemplates.isNotEmpty() && count in 0..100 -> copyImageUrlPluralTemplates[count]
+      count == 1 -> copyImageUrlLabel
+      else -> copyImageUrlsLabel
+    }
+  return template.replace("{count}", count.toString())
+}
 
 /**
  * Creates an ActionMode.Callback that adds custom copy options and
@@ -56,12 +78,24 @@ fun createSelectionActionModeCallback(
 
       val selectionMenuConfig = getSelectionMenuConfig()
 
+      // The system Copy item is added by the platform; relabel it so it
+      // matches the rest of the localized menu (iOS rebuilds the menu so
+      // gets this for free; Android only intercepts the click).
+      if (selectionMenuConfig.copyLabel.isNotEmpty()) {
+        menu.findItem(android.R.id.copy)?.title = selectionMenuConfig.copyLabel
+      }
+
       if (
         selectionMenuConfig.copyAsMarkdown &&
         textView.selectionStart >= 0 &&
         textView.selectionEnd > textView.selectionStart
       ) {
-        menu.add(Menu.NONE, MENU_ITEM_COPY_MARKDOWN, Menu.NONE, "Copy as Markdown")
+        menu.add(
+          Menu.NONE,
+          MENU_ITEM_COPY_MARKDOWN,
+          Menu.NONE,
+          selectionMenuConfig.copyAsMarkdownLabel,
+        )
       }
 
       if (textView.selectionStart >= 0 && textView.selectionEnd > textView.selectionStart) {
@@ -80,12 +114,7 @@ fun createSelectionActionModeCallback(
           emptyList()
         }
       if (imageUrls.isNotEmpty()) {
-        val title =
-          if (imageUrls.size == 1) {
-            "Copy Image URL"
-          } else {
-            "Copy ${imageUrls.size} Image URLs"
-          }
+        val title = selectionMenuConfig.imageUrlsTitle(imageUrls.size)
         menu.add(Menu.NONE, MENU_ITEM_COPY_IMAGE_URL, Menu.NONE, title)
       }
 

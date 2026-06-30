@@ -1,0 +1,30 @@
+ENV['RCT_NEW_ARCH_ENABLED'] = '1'
+
+# LaTeX math rendering is disabled on macOS because react-native-macos does not
+# support use_frameworks! (needed for SPM/RaTeX). See microsoft/react-native-macos#1969.
+ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0'
+
+require 'pathname'
+
+ws_dir = Pathname.new(__dir__)
+ws_dir = ws_dir.parent until
+  File.exist?("#{ws_dir}/node_modules/react-native-macos/scripts/react_native_pods.rb") ||
+  ws_dir.expand_path.to_s == '/'
+require "#{ws_dir}/node_modules/react-native-macos/scripts/react_native_pods.rb"
+
+prepare_react_native_project!
+
+target 'MacosExample-macOS' do
+  platform :macos, '14.0'
+  use_native_modules!
+
+  use_react_native!(
+    :path => '../node_modules/react-native-macos',
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  post_install do |installer|
+    react_native_post_install(installer, :mac_catalyst_enabled => false)
+  end
+end

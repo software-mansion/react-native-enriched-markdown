@@ -97,6 +97,9 @@ This excludes **RaTeX** from the build. Rebuild the app after running `pod insta
 > ```
 > This is required for CocoaPods to resolve the RaTeX Swift Package dependency.
 
+> [!NOTE]
+> **macOS**: LaTeX math is currently not supported on macOS because `react-native-macos` does not support `use_frameworks!` ([microsoft/react-native-macos#1969](https://github.com/microsoft/react-native-macos/issues/1969)). Math is automatically disabled in the macOS example app.
+
 ### 3. Remove the native Android dependency
 
 Add the following to your project's `gradle.properties`:

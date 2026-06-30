@@ -25,8 +25,9 @@ NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, 
 
   // Replace the system Copy item with our enhanced version (copies RTF/HTML/Markdown).
   // This mirrors the iOS behaviour where we replace the standard-edit Copy action.
+  NSString *copyTitle = selectionMenuConfig.copyLabel;
   NSMenuItem *enhancedCopy =
-      ENRMCreateMenuItem(@"Copy", ^{ copyAttributedStringToPasteboard(selectedText, markdown, styleConfig); });
+      ENRMCreateMenuItem(copyTitle, ^{ copyAttributedStringToPasteboard(selectedText, markdown, styleConfig); });
   NSInteger systemCopyIndex = [menu indexOfItemWithTarget:nil andAction:@selector(copy:)];
   if (systemCopyIndex != NSNotFound) {
     [menu removeItemAtIndex:systemCopyIndex];
@@ -39,13 +40,11 @@ NSMenu *_Nullable buildEditMenuForSelection(NSAttributedString *attributedText, 
   }
 
   if (selectionMenuConfig.copyAsMarkdown && markdown.length > 0) {
-    [menu addItem:ENRMCreateMenuItem(@"Copy as Markdown", ^{ copyStringToPasteboard(markdown); })];
+    [menu addItem:ENRMCreateMenuItem(selectionMenuConfig.copyAsMarkdownLabel, ^{ copyStringToPasteboard(markdown); })];
   }
 
   if (selectionMenuConfig.copyImageURL && imageURLs.count > 0) {
-    NSString *title = (imageURLs.count == 1)
-                          ? @"Copy Image URL"
-                          : [NSString stringWithFormat:@"Copy %lu Image URLs", (unsigned long)imageURLs.count];
+    NSString *title = ENRMResolveImageURLsTitle(selectionMenuConfig, imageURLs.count);
     [menu addItem:ENRMCreateMenuItem(title, ^{
             NSString *urlsToCopy = [imageURLs componentsJoinedByString:@"\n"];
             copyStringToPasteboard(urlsToCopy);

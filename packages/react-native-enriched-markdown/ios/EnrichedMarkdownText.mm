@@ -100,6 +100,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
   NSArray<NSString *> *_contextMenuItemTexts;
   NSArray<NSString *> *_contextMenuItemIcons;
   ENRMSelectionMenuConfig _selectionMenuConfig;
+  ENRMSelectionMenuLabels _selectionMenuLabels;
 
   ENRMSpoilerOverlayManager *_spoilerManager;
 
@@ -535,10 +536,10 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
     _contextMenuItemIcons = ENRMContextMenuIconsFromItems(newViewProps.contextMenuItems);
   }
 
-  _selectionMenuConfig = (ENRMSelectionMenuConfig){
-      .copyAsMarkdown = newViewProps.selectionMenuConfig.copyAsMarkdown,
-      .copyImageURL = newViewProps.selectionMenuConfig.copyImageUrl,
-  };
+  _selectionMenuLabels = ENRMParseSelectionMenuLabels(newViewProps.selectionMenuConfig);
+  _selectionMenuConfig =
+      ENRMBuildSelectionMenuConfig(_selectionMenuLabels, newViewProps.selectionMenuConfig.copyAsMarkdown,
+                                   newViewProps.selectionMenuConfig.copyImageUrl);
 
   _accessibilityLabels = [[ENRMAccessibilityLabels alloc] init];
   _accessibilityLabels.bulletPoint =

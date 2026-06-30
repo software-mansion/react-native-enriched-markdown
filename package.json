@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "react-native-example": "yarn workspace react-native-enriched-markdown-example",
-    "macos-example": "yarn workspace react-native-enriched-markdown-macos-example",
-    "web-example": "yarn workspace react-native-enriched-markdown-web-example",
+    "react-native-macos-example": "yarn workspace react-native-enriched-markdown-macos-example",
+    "react-native-web-example": "yarn workspace react-native-enriched-markdown-web-example",
     "android-example": "yarn workspace enriched-markdown-android-example start",
     "build:wasm": "yarn workspace react-native-enriched-markdown build:wasm",
     "android:build:release": "cd apps/react-native-example && npx react-native build-android --mode=release",
@@ -36,7 +36,7 @@
     "lint-clang:fix": "yarn workspace react-native-enriched-markdown lint-clang:fix",
     "lint-kotlin": "cd apps/react-native-example/android && ./gradlew :react-native-enriched-markdown:ktlintCheck",
     "lint-kotlin:fix": "cd apps/react-native-example/android && ./gradlew :react-native-enriched-markdown:ktlintFormat",
-    "clean": "yarn workspace react-native-enriched-markdown clean && del-cli apps/react-native-example/android/build apps/react-native-example/android/app/build apps/react-native-example/ios/build apps/macos-example/macos/build",
+    "clean": "yarn workspace react-native-enriched-markdown clean && del-cli apps/react-native-example/android/build apps/react-native-example/android/app/build apps/react-native-example/ios/build apps/react-native-macos-example/macos/build",
     "sync-md4c": "yarn workspace react-native-enriched-markdown sync-md4c",
     "prepare": "yarn workspace react-native-enriched-markdown prepare",
     "release": "release-it --only-version"

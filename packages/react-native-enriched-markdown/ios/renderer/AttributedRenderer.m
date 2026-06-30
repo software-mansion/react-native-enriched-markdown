@@ -3,6 +3,7 @@
 #import "LastElementUtils.h"
 #import "MarkdownASTNode.h"
 #import "NodeRenderer.h"
+#import "ParagraphStyleUtils.h"
 #import "RenderContext.h"
 #import "RendererFactory.h"
 #import "StyleConfig.h"
@@ -58,7 +59,32 @@
   return output;
 }
 
-/// Removes trailing margin spacing while preserving code block padding
+/**
+ * Trims trailing newlines after the last rendered block, with special handling for code blocks.
+ *
+ * For non-code-block tail elements: deletes all trailing newlines after the last non-newline
+ * character and zeroes the last element's paragraph spacing so it doesn't render a margin past
+ * the content.
+ *
+ * For code blocks (`isLastBlockACodeBlock` == YES): keeps the bottom padding spacer in place
+ * AND preserves a single trailing newline immediately after it (typically the
+ * codeBlockMarginBottom spacer that CodeBlockRenderer already appended; if none exists, one is
+ * synthesized here). That extra newline matters because of an iOS layout quirk:
+ *
+ *   - iOS treats the trailing `\n` of the storage as a paragraph terminator and reports the
+ *     line fragment for the paragraph after it via `extraLineFragmentRect`.
+ *   - `boundingRectForGlyphRange:` excludes that extra line, and the graphics-context clip
+ *     passed to `drawBackgroundForGlyphRange:` is tiled to the laid-out content area (rounded
+ *     up to 128pt boundaries) which also excludes it.
+ *   - If the bottom padding spacer were the trailing `\n`, its 16/19pt line fragment would
+ *     fall into that excluded zone — the background rect would have to be manually extended
+ *     past the clip and the bottom rounded corner would get sliced off at the tile boundary
+ *     (the original visual bug in #354).
+ *
+ * By keeping a 1pt-tall tail newline beyond the bottom padding spacer, iOS lays the spacer
+ * out as a normal interior line fragment included in usedRect/boundingRect and inside the
+ * drawing tiles, so the corner renders intact and no rect extension is needed.
+ */
 - (void)removeTrailingSpacing:(NSMutableAttributedString *)output
 {
   if (output.length == 0)
@@ -83,15 +109,34 @@
 
   // 2. Trim trailing characters
   NSUInteger logicalEnd = NSMaxRange(lastContent);
-  BOOL isCodeBlock = isLastElementCodeBlock(output);
+  BOOL isCodeBlock = isLastBlockACodeBlock(output);
+  NSRange codeRange = NSMakeRange(0, 0);
   if (isCodeBlock) {
-    NSRange codeRange;
-    [output attribute:CodeBlockAttributeName atIndex:lastContent.location effectiveRange:&codeRange];
-    logicalEnd = NSMaxRange(codeRange);
+    [output attribute:CodeBlockAttributeName
+                      atIndex:lastContent.location
+        longestEffectiveRange:&codeRange
+                      inRange:NSMakeRange(0, output.length)];
+    NSUInteger codeEnd = NSMaxRange(codeRange);
+    if (codeEnd >= output.length) {
+      [output appendAttributedString:kNewlineAttributedString];
+    }
+    logicalEnd = codeEnd + 1;
   }
 
   if (logicalEnd < output.length) {
     [output deleteCharactersInRange:NSMakeRange(logicalEnd, output.length - logicalEnd)];
+  }
+
+  if (isCodeBlock && NSMaxRange(codeRange) < output.length) {
+    NSUInteger tailIdx = NSMaxRange(codeRange);
+    [output removeAttribute:CodeBlockAttributeName range:NSMakeRange(tailIdx, 1)];
+    NSParagraphStyle *style = [output attribute:NSParagraphStyleAttributeName atIndex:tailIdx effectiveRange:NULL];
+    NSMutableParagraphStyle *mutableStyle = style ? [style mutableCopy] : [[NSMutableParagraphStyle alloc] init];
+    mutableStyle.paragraphSpacing = 0;
+    mutableStyle.paragraphSpacingBefore = 0;
+    mutableStyle.minimumLineHeight = 1;
+    mutableStyle.maximumLineHeight = 1;
+    [output addAttribute:NSParagraphStyleAttributeName value:mutableStyle range:NSMakeRange(tailIdx, 1)];
   }
 
   // 3. Zero out internal spacing for the last element (if not a code block)
