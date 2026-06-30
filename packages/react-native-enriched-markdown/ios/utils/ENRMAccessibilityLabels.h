@@ -16,8 +16,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *rotorLinks;
 @property (nonatomic, copy) NSString *rotorImages;
 
-+ (instancetype)defaults;
-
 @end
 
 NS_ASSUME_NONNULL_END

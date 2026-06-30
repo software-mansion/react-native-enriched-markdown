@@ -191,9 +191,7 @@ class MarkdownAccessibilityHelper(
         }
       }
 
-      // The semantic span itself.
-      // Mirrors iOS commit 675f37f: empty-alt images are intentionally silent now (no "Image"
-      // fallback). If users want a label they can supply one through the markdown alt text.
+      // The semantic span itself
       val content = span.imageAltText ?: spanned.substring(span.start, span.end).trim()
       if (content.isNotEmpty()) {
         items.add(createSpanItem(nextId++, content, span, spanned))
@@ -334,10 +332,6 @@ class MarkdownAccessibilityHelper(
 
     val blockquoteAnnouncement = blockquoteAnnouncementFor(item)
     when {
-      // Mirrors iOS commit 675f37f: the explicit "heading level N" suffix is intentionally gone.
-      // `isHeading = true` is enough — TalkBack auto-announces "heading" as the role, matching
-      // VoiceOver's behavior with `UIAccessibilityTraitHeader` so both platforms speak
-      // "{text}, heading" instead of doubling the announcement.
       item.isHeading -> {
         isHeading = true
         if (blockquoteAnnouncement != null) {

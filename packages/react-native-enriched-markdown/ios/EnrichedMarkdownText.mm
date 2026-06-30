@@ -777,11 +777,10 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
     return;
   }
   _accessibilityNeedsRebuild = NO;
-  ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
 #if !TARGET_OS_OSX
   _accessibilityElements = [MarkdownAccessibilityElementBuilder buildElementsForTextView:_textView
                                                                                     info:_accessibilityInfo
-                                                                                  labels:labels
+                                                                                  labels:_accessibilityLabels
                                                                                container:self];
 #else
   _accessibilityElements = [NSMutableArray array];
@@ -824,8 +823,8 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownTextCls(void)
 - (NSArray<UIAccessibilityCustomRotor *> *)accessibilityCustomRotors
 {
   [self rebuildAccessibilityElementsIfNeeded];
-  ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
-  return [MarkdownAccessibilityElementBuilder buildRotorsFromElements:_accessibilityElements labels:labels];
+  return [MarkdownAccessibilityElementBuilder buildRotorsFromElements:_accessibilityElements
+                                                               labels:_accessibilityLabels];
 }
 #endif
 

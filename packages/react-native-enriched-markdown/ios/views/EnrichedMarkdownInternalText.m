@@ -114,10 +114,9 @@
   }
   _accessibilityNeedsRebuild = NO;
 #if !TARGET_OS_OSX
-  ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
   _accessibilityElements = [MarkdownAccessibilityElementBuilder buildElementsForTextView:_textView
                                                                                     info:_accessibilityInfo
-                                                                                  labels:labels
+                                                                                  labels:_accessibilityLabels
                                                                                container:self];
 #endif
 }

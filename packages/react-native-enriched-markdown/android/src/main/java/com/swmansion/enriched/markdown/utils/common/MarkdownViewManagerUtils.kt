@@ -112,19 +112,18 @@ fun parseAccessibilityLabels(value: ReadableMap?): AccessibilityLabels {
   val table = value.getMap("table")
   val math = value.getMap("math")
   val rotor = value.getMap("rotor")
-  val defaults = AccessibilityLabels()
   return AccessibilityLabels(
-    bulletPoint = list?.getString("bulletPoint") ?: defaults.bulletPoint,
-    nestedBulletPoint = list?.getString("nestedBulletPoint") ?: defaults.nestedBulletPoint,
-    orderedItem = list?.getString("orderedItem") ?: defaults.orderedItem,
-    nestedOrderedItem = list?.getString("nestedOrderedItem") ?: defaults.nestedOrderedItem,
-    blockquote = blockquote?.getString("quote") ?: defaults.blockquote,
-    nestedBlockquote = blockquote?.getString("nestedQuote") ?: defaults.nestedBlockquote,
-    tableRow = table?.getString("row") ?: defaults.tableRow,
-    mathEquation = math?.getString("equation") ?: defaults.mathEquation,
-    rotorHeadings = rotor?.getString("headings") ?: defaults.rotorHeadings,
-    rotorLinks = rotor?.getString("links") ?: defaults.rotorLinks,
-    rotorImages = rotor?.getString("images") ?: defaults.rotorImages,
+    bulletPoint = list?.getString("bulletPoint") ?: "",
+    nestedBulletPoint = list?.getString("nestedBulletPoint") ?: "",
+    orderedItem = list?.getString("orderedItem") ?: "",
+    nestedOrderedItem = list?.getString("nestedOrderedItem") ?: "",
+    blockquote = blockquote?.getString("quote") ?: "",
+    nestedBlockquote = blockquote?.getString("nestedQuote") ?: "",
+    tableRow = table?.getString("row") ?: "",
+    mathEquation = math?.getString("equation") ?: "",
+    rotorHeadings = rotor?.getString("headings") ?: "",
+    rotorLinks = rotor?.getString("links") ?: "",
+    rotorImages = rotor?.getString("images") ?: "",
   )
 }
 

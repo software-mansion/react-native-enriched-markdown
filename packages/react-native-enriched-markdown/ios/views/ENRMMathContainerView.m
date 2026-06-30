@@ -213,8 +213,8 @@
 
 - (NSString *)accessibilityLabel
 {
-  ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
-  return [labels.mathEquation stringByReplacingOccurrencesOfString:@"{latex}" withString:_cachedLatex ?: @""];
+  return [_accessibilityLabels.mathEquation stringByReplacingOccurrencesOfString:@"{latex}"
+                                                                      withString:_cachedLatex ?: @""];
 }
 
 #if !TARGET_OS_OSX

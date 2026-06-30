@@ -23,55 +23,53 @@
 export interface AccessibilityLabels {
   /** Labels spoken for list items. iOS + Android. */
   list?: {
-    /**
-     * Default: `"Bullet point"`.
-     * TODO: wire through to native — currently hardcoded in
-     * `MarkdownAccessibilityElementBuilder.m::formatListAnnouncement:` and
-     * `MarkdownAccessibilityHelper.kt::listAnnouncement`.
-     */
+    /** @default 'Bullet point' */
     bulletPoint?: string;
     /**
-     * Default: `"Nested bullet point"`. Spoken when the bullet is inside another list.
-     * TODO: wire through to native (same call sites as `bulletPoint`).
+     * Spoken when the bullet is inside another list.
+     * @default 'Nested bullet point'
      */
     nestedBulletPoint?: string;
     /**
-     * Default: `"List item {n}"`. `{n}` → 1-based item number.
-     * TODO: wire through to native (same call sites as `bulletPoint`).
+     * `{n}` → 1-based item number.
+     * @default 'List item {n}'
      */
     orderedItem?: string;
     /**
-     * Default: `"Nested list item {n}"`. `{n}` → 1-based item number.
-     * TODO: wire through to native (same call sites as `bulletPoint`).
+     * `{n}` → 1-based item number.
+     * @default 'Nested list item {n}'
      */
     nestedOrderedItem?: string;
   };
 
   /** Labels appended for content inside a blockquote. iOS + Android. */
   blockquote?: {
-    /** Default: `"Blockquote"`. Spoken for top-level blockquote content. */
+    /**
+     * Spoken for top-level blockquote content.
+     * @default 'Blockquote'
+     */
     quote?: string;
-    /** Default: `"Nested blockquote"`. Spoken for content nested inside another blockquote. */
+    /**
+     * Spoken for content nested inside another blockquote.
+     * @default 'Nested blockquote'
+     */
     nestedQuote?: string;
   };
 
-  /** Labels spoken for tables. iOS only — Android currently does not vend per-row a11y. */
+  /** Labels spoken for tables. iOS + Android. */
   table?: {
     /**
-     * Default: `"Row {n}: {content}"`. `{n}` → 1-based row index,
-     * `{content}` → comma-joined cell texts.
-     * TODO: wire through to native — currently hardcoded in
-     * `TableContainerView.m` row accessibility label.
+     * `{n}` → 1-based row index, `{content}` → comma-joined cell texts.
+     * @default 'Row {n}: {content}'
      */
     row?: string;
   };
 
-  /** Labels spoken for math equations. iOS only — Android currently does not announce math. */
+  /** Labels spoken for math equations. iOS + Android. */
   math?: {
     /**
-     * Default: `"Math: {latex}"`. `{latex}` → equation source.
-     * TODO: wire through to native — currently hardcoded in
-     * `ENRMMathContainerView.m::accessibilityLabel`.
+     * `{latex}` → equation source.
+     * @default 'Math: {latex}'
      */
     equation?: string;
   };
@@ -81,23 +79,11 @@ export interface AccessibilityLabels {
    * iOS only — Android has no rotor concept.
    */
   rotor?: {
-    /**
-     * Default: `"Headings"`.
-     * TODO: wire through to native — currently hardcoded in
-     * `MarkdownAccessibilityElementBuilder.m::createHeadingRotorWithElements:`.
-     */
+    /** @default 'Headings' */
     headings?: string;
-    /**
-     * Default: `"Links"`.
-     * TODO: wire through to native — currently hardcoded in
-     * `MarkdownAccessibilityElementBuilder.m::createLinkRotorWithElements:`.
-     */
+    /** @default 'Links' */
     links?: string;
-    /**
-     * Default: `"Images"`.
-     * TODO: wire through to native — currently hardcoded in
-     * `MarkdownAccessibilityElementBuilder.m::createImageRotorWithElements:`.
-     */
+    /** @default 'Images' */
     images?: string;
   };
 }

@@ -602,8 +602,7 @@
     if (cellTexts.count > 0) {
 #if !TARGET_OS_OSX
       UIAccessibilityElement *element = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:self];
-      ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
-      NSString *withN = [labels.tableRow
+      NSString *withN = [_accessibilityLabels.tableRow
           stringByReplacingOccurrencesOfString:@"{n}"
                                     withString:[NSString stringWithFormat:@"%lu", (unsigned long)(rowIndex + 1)]];
       element.accessibilityLabel =

@@ -53,7 +53,7 @@ Every field is optional. Any field you omit falls back to the English default be
 | `list.nestedOrderedItem` | `"Nested list item {n}"` | iOS + Android |
 | `blockquote.quote` | `"Blockquote"` | iOS + Android |
 | `blockquote.nestedQuote` | `"Nested blockquote"` | iOS + Android |
-| `table.row` | `"Row {n}: {content}"` | iOS only |
+| `table.row` | `"Row {n}: {content}"` | iOS + Android |
 | `math.equation` | `"Math: {latex}"` | iOS + Android |
 | `rotor.headings` | `"Headings"` | iOS only |
 | `rotor.links` | `"Links"` | iOS only |

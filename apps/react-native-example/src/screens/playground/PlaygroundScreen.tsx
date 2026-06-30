@@ -167,8 +167,7 @@ export default function PlaygroundScreen() {
         <View style={styles.editorContainer} testID="editor-container">
           <EnrichedMarkdownTextInput
             ref={inputRef}
-            autoFocus
-            defaultValue="Hello world"
+            placeholder="Type markdown here..."
             placeholderTextColor="#9CA3AF"
             style={
               sizeMode === 'max'

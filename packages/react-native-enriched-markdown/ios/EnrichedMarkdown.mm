@@ -1168,8 +1168,8 @@ Class<RCTComponentViewProtocol> EnrichedMarkdownCls(void)
 #if !TARGET_OS_OSX
 - (NSArray<UIAccessibilityCustomRotor *> *)accessibilityCustomRotors
 {
-  ENRMAccessibilityLabels *labels = _accessibilityLabels ?: [ENRMAccessibilityLabels defaults];
-  return [MarkdownAccessibilityElementBuilder buildRotorsFromElements:[self accessibilityElements] labels:labels];
+  return [MarkdownAccessibilityElementBuilder buildRotorsFromElements:[self accessibilityElements]
+                                                               labels:_accessibilityLabels];
 }
 #endif
 
