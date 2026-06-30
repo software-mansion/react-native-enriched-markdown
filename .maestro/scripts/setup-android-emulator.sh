@@ -83,6 +83,10 @@ until adb -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | grep -q "^
 done
 
 adb -s "$SERIAL" shell settings put secure show_ime_with_hard_keyboard 0
+# Disable spell-check/autofill so Maestro typing isn't altered by suggestions.
+adb -s "$SERIAL" shell settings put secure spell_checker_enabled 0
+adb -s "$SERIAL" shell settings put secure selected_spell_checker '""'
+adb -s "$SERIAL" shell settings put secure autofill_service null
 
 echo "Emulator ready: $AVD_NAME ($SERIAL)"
 echo "DEVICE_ID=$SERIAL"

@@ -1549,6 +1549,15 @@ using namespace facebook::react;
 - (void)textViewDidChangeSelection:(UITextView *)textView
 {
   NSRange newSelection = textView.selectedRange;
+  // Links (e.g. mentions) are atomic: snap a partial selection to the whole link, and a caret inside
+  // a link to its end. Returning hands the adjusted selection to the recursive change (no double emit).
+  if (!_isApplyingFormatting && !_isTextChanging && !ENRMHasMarkedText(_textView)) {
+    NSRange adjusted = [_formattingStore selectionAdjustedForAtomicLinks:newSelection];
+    if (!NSEqualRanges(adjusted, newSelection)) {
+      _textView.selectedRange = adjusted;
+      return;
+    }
+  }
   NSRange previousSelection = _lastSelectedRange;
   _lastSelectedRange = newSelection;
 
@@ -1639,6 +1648,14 @@ using namespace facebook::react;
 - (void)textInputDidChangeSelection
 {
   NSRange newSelection = _textView.selectedRange;
+  // Atomic link snapping — same logic as textViewDidChangeSelection: (iOS).
+  if (!_isApplyingFormatting && !_isTextChanging && !ENRMHasMarkedText(_textView)) {
+    NSRange adjusted = [_formattingStore selectionAdjustedForAtomicLinks:newSelection];
+    if (!NSEqualRanges(adjusted, newSelection)) {
+      _textView.selectedRange = adjusted;
+      return;
+    }
+  }
   NSRange previousSelection = _lastSelectedRange;
   _lastSelectedRange = newSelection;
 

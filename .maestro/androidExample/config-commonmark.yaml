@@ -1,0 +1,2 @@
+flows:
+  - "androidExample/enrichedMarkdownText/flows/**"
