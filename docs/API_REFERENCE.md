@@ -379,6 +379,59 @@ interface SelectionMenuConfig {
 
 ---
 
+### `accessibilityLabels`
+
+Translates every string spoken by VoiceOver (iOS) and TalkBack (Android) when navigating the rendered markdown. All fields are optional; omitted fields fall back to the English defaults defined in `accessibilityLabelDefaults.ts`. See the [Accessibility guide](ACCESSIBILITY.md#translating-announcements--accessibilitylabels) for the full defaults table and placeholder syntax.
+
+| Type                  | Default Value                | Platform        |
+| --------------------- | ---------------------------- | --------------- |
+| `AccessibilityLabels` | English strings (see guide)  | iOS, Android    |
+
+**`AccessibilityLabels` shape:**
+
+```ts
+interface AccessibilityLabels {
+  list?: {
+    bulletPoint?: string;          // "Bullet point"
+    nestedBulletPoint?: string;    // "Nested bullet point"
+    orderedItem?: string;          // "List item {n}"
+    nestedOrderedItem?: string;    // "Nested list item {n}"
+  };
+  blockquote?: {
+    quote?: string;                // "Blockquote"
+    nestedQuote?: string;          // "Nested blockquote"
+  };
+  table?: {
+    row?: string;                  // "Row {n}: {content}" (iOS only)
+  };
+  math?: {
+    equation?: string;             // "Math: {latex}"
+  };
+  rotor?: {                        // iOS only
+    headings?: string;             // "Headings"
+    links?: string;                // "Links"
+    images?: string;               // "Images"
+  };
+}
+```
+
+Placeholders (`{n}`, `{content}`, `{latex}`) are substituted on the native side at speak time and must be preserved in translations.
+
+**Example:**
+
+```tsx
+<EnrichedMarkdownText
+  markdown={content}
+  accessibilityLabels={{
+    list: { bulletPoint: 'Punkt', orderedItem: 'Element {n}' },
+    blockquote: { quote: 'Zitat' },
+    math: { equation: 'Formel: {latex}' },
+  }}
+/>
+```
+
+---
+
 ## EnrichedMarkdownTextInput
 
 ### Props
