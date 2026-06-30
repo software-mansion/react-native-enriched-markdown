@@ -367,6 +367,7 @@ class MarkdownAccessibilityHelper(
 
   private fun blockquoteAnnouncementFor(item: AccessibilityItem): String? {
     val spanned = textView.text as? Spanned ?: return null
+    if (spanned.isEmpty()) return null
     val pos = item.start.coerceIn(0, spanned.length - 1).coerceAtLeast(0)
     if (pos >= spanned.length) return null
     val spans = spanned.getSpans(pos, pos + 1, BlockquoteSpan::class.java)
