@@ -217,7 +217,7 @@ export default function PlaygroundScreen() {
           <Text style={styles.getMarkdownText}>Set Raw Markdown</Text>
         </TouchableOpacity>
 
-        <View style={styles.buttonRowSplit}>
+        <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[styles.getMarkdownButton, styles.buttonHalf]}
             onPress={handleGetMarkdown}
@@ -422,10 +422,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#BEEBD0',
     alignItems: 'center',
-  },
-  buttonRowSplit: {
-    flexDirection: 'row',
-    gap: 8,
   },
   buttonHalf: {
     flex: 1,
