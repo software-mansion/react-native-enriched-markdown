@@ -6,6 +6,20 @@
 @implementation BlockStyle
 @end
 
+@interface ENRMBlockStyleFrame : NSObject
+@property (nonatomic, assign) BlockType blockType;
+@property (nonatomic, assign) NSInteger headingLevel;
+@property (nonatomic, assign) CGFloat fontSize;
+@property (nonatomic, strong) NSString *fontFamily;
+@property (nonatomic, strong) NSString *fontWeight;
+@property (nonatomic, strong) RCTUIColor *color;
+@property (nonatomic, strong) UIFont *cachedFont;
+@property (nonatomic, strong) NSDictionary *cachedTextAttributes;
+@end
+
+@implementation ENRMBlockStyleFrame
+@end
+
 @implementation RenderContext {
   NSMutableDictionary<NSString *, UIFont *> *_fontCache;
   NSParagraphStyle *_baseSpacerTemplate;
@@ -233,6 +247,33 @@
   _currentHeadingLevel = 0;
   _currentBlockStyle.cachedFont = nil;
   _currentBlockStyle.cachedTextAttributes = nil;
+}
+
+- (id)snapshotBlockStyle
+{
+  ENRMBlockStyleFrame *frame = [[ENRMBlockStyleFrame alloc] init];
+  frame.blockType = _currentBlockType;
+  frame.headingLevel = _currentHeadingLevel;
+  frame.fontSize = _currentBlockStyle.fontSize;
+  frame.fontFamily = _currentBlockStyle.fontFamily;
+  frame.fontWeight = _currentBlockStyle.fontWeight;
+  frame.color = _currentBlockStyle.color;
+  frame.cachedFont = _currentBlockStyle.cachedFont;
+  frame.cachedTextAttributes = _currentBlockStyle.cachedTextAttributes;
+  return frame;
+}
+
+- (void)restoreBlockStyle:(id)snapshot
+{
+  ENRMBlockStyleFrame *frame = snapshot;
+  _currentBlockType = frame.blockType;
+  _currentHeadingLevel = frame.headingLevel;
+  _currentBlockStyle.fontSize = frame.fontSize;
+  _currentBlockStyle.fontFamily = frame.fontFamily;
+  _currentBlockStyle.fontWeight = frame.fontWeight;
+  _currentBlockStyle.color = frame.color;
+  _currentBlockStyle.cachedFont = frame.cachedFont;
+  _currentBlockStyle.cachedTextAttributes = frame.cachedTextAttributes;
 }
 
 #pragma mark - Reset

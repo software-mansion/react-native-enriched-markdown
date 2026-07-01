@@ -10,6 +10,7 @@
 NSString *const ListDepthAttribute = @"ListDepth";
 NSString *const ListTypeAttribute = @"ListType";
 NSString *const ListItemNumberAttribute = @"ListItemNumber";
+NSString *const ListItemMarkerStartAttribute = @"ListItemMarkerStart";
 NSString *const TaskItemAttribute = @"TaskItem";
 NSString *const TaskCheckedAttribute = @"TaskChecked";
 NSString *const TaskIndexAttribute = @"TaskIndex";
@@ -83,42 +84,60 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
     metadata[TaskIndexAttribute] = @(taskIndex);
   }
 
-  // We enumerate to ensure we don't overwrite styles of nested sub-lists
-  // or code blocks that may have already been rendered inside this item.
+  // Preserve styles of nested sub-lists and code blocks by applying the list
+  // paragraph style only to the surviving gaps between them.
+  NSMutableArray<NSValue *> *skipRanges = [NSMutableArray array];
+  [output enumerateAttribute:CodeBlockAttributeName
+                     inRange:itemRange
+                     options:0
+                  usingBlock:^(id value, NSRange range, BOOL *stop) {
+                    if ([value boolValue]) {
+                      [skipRanges addObject:[NSValue valueWithRange:range]];
+                    }
+                  }];
   [output enumerateAttribute:ListDepthAttribute
                      inRange:itemRange
                      options:0
                   usingBlock:^(id depthAttr, NSRange range, BOOL *stop) {
-                    // If a segment already has a Depth attribute higher than our current level,
-                    // it belongs to a nested list and we should skip it to preserve its styling.
                     if (depthAttr && [depthAttr integerValue] > nestingLevel) {
-                      return;
+                      [skipRanges addObject:[NSValue valueWithRange:range]];
                     }
-
-                    // Skip code block ranges — CodeBlockRenderer already applied its own
-                    // paragraph style (padding, LTR indent). Overwriting would add list
-                    // markers ("2.") inside the code block.
-                    NSNumber *isCodeBlock = [output attribute:CodeBlockAttributeName
-                                                      atIndex:range.location
-                                               effectiveRange:nil];
-                    if ([isCodeBlock boolValue]) {
-                      return;
-                    }
-
-                    NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-                    style.firstLineHeadIndent = totalIndent;
-                    style.headIndent = totalIndent;
-
-                    if (lineHeightConfig > 0) {
-                      style.minimumLineHeight = lineHeightConfig;
-                      style.maximumLineHeight = lineHeightConfig;
-                    }
-
-                    NSMutableDictionary *attributesToApply = [metadata mutableCopy];
-                    attributesToApply[NSParagraphStyleAttributeName] = style;
-
-                    [output addAttributes:attributesToApply range:range];
                   }];
+  [skipRanges sortUsingComparator:^NSComparisonResult(NSValue *a, NSValue *b) {
+    NSUInteger la = [a rangeValue].location;
+    NSUInteger lb = [b rangeValue].location;
+    return la < lb ? NSOrderedAscending : (la > lb ? NSOrderedDescending : NSOrderedSame);
+  }];
+
+  void (^applyStyleToRange)(NSRange) = ^(NSRange range) {
+    if (range.length == 0)
+      return;
+    NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+    style.firstLineHeadIndent = totalIndent;
+    style.headIndent = totalIndent;
+    if (lineHeightConfig > 0) {
+      style.minimumLineHeight = lineHeightConfig;
+      style.maximumLineHeight = lineHeightConfig;
+    }
+    NSMutableDictionary *attributesToApply = [metadata mutableCopy];
+    attributesToApply[NSParagraphStyleAttributeName] = style;
+    [output addAttributes:attributesToApply range:range];
+  };
+
+  NSUInteger pos = itemRange.location;
+  const NSUInteger itemEnd = NSMaxRange(itemRange);
+  for (NSValue *val in skipRanges) {
+    NSRange skip = [val rangeValue];
+    if (pos < skip.location) {
+      applyStyleToRange(NSMakeRange(pos, skip.location - pos));
+    }
+    pos = MAX(pos, NSMaxRange(skip));
+  }
+  if (pos < itemEnd) {
+    applyStyleToRange(NSMakeRange(pos, itemEnd - pos));
+  }
+
+  [output addAttribute:ListItemMarkerStartAttribute value:@YES range:NSMakeRange(startLocation, 1)];
 
   if (isTask && isChecked) {
     [self applyCheckedDecorationsTo:output range:itemRange nestingLevel:nestingLevel];
