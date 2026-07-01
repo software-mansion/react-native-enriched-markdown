@@ -24,8 +24,6 @@
 #import <React/RCTI18nUtil.h>
 #if TARGET_OS_OSX
 #import <React/RCTBackedTextInputDelegate.h>
-#else
-#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #endif
 
 #import <ReactNativeEnrichedMarkdown/EnrichedMarkdownTextInputComponentDescriptor.h>
@@ -937,27 +935,7 @@ using namespace facebook::react;
     return;
   }
   NSString *markdown = [ENRMMarkdownSerializer serializePlainText:plainText ranges:[self allRangesIncludingTransient]];
-#if TARGET_OS_OSX
-  NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-  [pasteboard clearContents];
-  NSMutableArray *types = [NSMutableArray arrayWithObject:NSPasteboardTypeString];
-  if (markdown.length > 0) {
-    [types addObject:kENRMMarkdownPasteboardType];
-  }
-  [pasteboard declareTypes:types owner:nil];
-  [pasteboard setString:plainText forType:NSPasteboardTypeString];
-  if (markdown.length > 0) {
-    [pasteboard setString:markdown forType:kENRMMarkdownPasteboardType];
-  }
-#else
-  UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
-  NSMutableDictionary *items = [NSMutableDictionary dictionary];
-  items[UTTypePlainText.identifier] = plainText;
-  if (markdown.length > 0) {
-    items[kENRMMarkdownPasteboardType] = markdown;
-  }
-  pasteboard.items = @[ items ];
-#endif
+  ENRMWriteToPasteboard(plainText, markdown);
 }
 
 - (void)requestMarkdown:(NSInteger)requestId

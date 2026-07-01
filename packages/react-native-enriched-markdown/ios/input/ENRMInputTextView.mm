@@ -10,6 +10,17 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
 
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
+void ENRMWriteToPasteboard(NSString *plainText, NSString *_Nullable markdown)
+{
+  UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+  NSMutableDictionary *items = [NSMutableDictionary dictionary];
+  items[UTTypePlainText.identifier] = plainText;
+  if (markdown.length > 0) {
+    items[kENRMMarkdownPasteboardType] = markdown;
+  }
+  pasteboard.items = @[ items ];
+}
+
 @implementation ENRMInputTextView
 
 - (void)copy:(id)sender
@@ -21,14 +32,7 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
 
   NSString *plainText = [self.text substringWithRange:selection];
   NSString *markdown = [self.markdownTextInput markdownForSelectedRange];
-
-  UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
-  NSMutableDictionary *items = [NSMutableDictionary dictionary];
-  items[UTTypePlainText.identifier] = plainText;
-  if (markdown.length > 0) {
-    items[kENRMMarkdownPasteboardType] = markdown;
-  }
-  pasteboard.items = @[ items ];
+  ENRMWriteToPasteboard(plainText, markdown);
 }
 
 - (void)cut:(id)sender
@@ -83,18 +87,8 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
 
 #else // TARGET_OS_OSX
 
-@implementation ENRMInputTextView
-
-- (void)copy:(id)sender
+void ENRMWriteToPasteboard(NSString *plainText, NSString *_Nullable markdown)
 {
-  NSRange selection = self.selectedRange;
-  if (selection.length == 0) {
-    return;
-  }
-
-  NSString *plainText = [self.string substringWithRange:selection];
-  NSString *markdown = [self.markdownTextInput markdownForSelectedRange];
-
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
   [pasteboard clearContents];
   NSMutableArray *types = [NSMutableArray arrayWithObject:NSPasteboardTypeString];
@@ -106,6 +100,20 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
   if (markdown.length > 0) {
     [pasteboard setString:markdown forType:kENRMMarkdownPasteboardType];
   }
+}
+
+@implementation ENRMInputTextView
+
+- (void)copy:(id)sender
+{
+  NSRange selection = self.selectedRange;
+  if (selection.length == 0) {
+    return;
+  }
+
+  NSString *plainText = [self.string substringWithRange:selection];
+  NSString *markdown = [self.markdownTextInput markdownForSelectedRange];
+  ENRMWriteToPasteboard(plainText, markdown);
 }
 
 - (void)cut:(id)sender
