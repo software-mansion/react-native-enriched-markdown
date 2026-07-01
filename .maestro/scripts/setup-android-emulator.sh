@@ -87,6 +87,11 @@ adb -s "$SERIAL" shell settings put secure show_ime_with_hard_keyboard 0
 adb -s "$SERIAL" shell settings put secure spell_checker_enabled 0
 adb -s "$SERIAL" shell settings put secure selected_spell_checker '""'
 adb -s "$SERIAL" shell settings put secure autofill_service null
+# Legacy IME toggles — Gboard honors these best-effort. Prevents auto-cap /
+# autocorrect (e.g. "i" -> "I") / auto-punctuate from mutating Maestro input.
+adb -s "$SERIAL" shell settings put system auto_caps 0
+adb -s "$SERIAL" shell settings put system auto_replace 0
+adb -s "$SERIAL" shell settings put system auto_punctuate 0
 
 echo "Emulator ready: $AVD_NAME ($SERIAL)"
 echo "DEVICE_ID=$SERIAL"
