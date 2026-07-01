@@ -256,6 +256,7 @@ export const EnrichedMarkdownTextInput = ({
   ...rest
 }: EnrichedMarkdownTextInputProps) => {
   const nativeRef = useRef<NativeRef | null>(null);
+  const initialDefaultValue = useRef(defaultValue).current;
 
   const nextRequestId = useRef(1);
   const pendingRequests = useRef(new Map<number, PendingRequest<string>>());
@@ -499,7 +500,7 @@ export const EnrichedMarkdownTextInput = ({
       ref={nativeRef}
       style={style}
       markdownStyle={normalizedStyle}
-      defaultValue={defaultValue}
+      defaultValue={initialDefaultValue}
       placeholder={placeholder}
       placeholderTextColor={placeholderTextColor}
       editable={editable}
