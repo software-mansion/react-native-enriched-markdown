@@ -541,30 +541,32 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
       ENRMBuildSelectionMenuConfig(_selectionMenuLabels, newViewProps.selectionMenuConfig.copyAsMarkdown,
                                    newViewProps.selectionMenuConfig.copyImageUrl);
 
-  _accessibilityLabels = [[ENRMAccessibilityLabels alloc] init];
-  _accessibilityLabels.bulletPoint =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.bulletPoint.c_str()];
-  _accessibilityLabels.nestedBulletPoint =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.nestedBulletPoint.c_str()];
-  _accessibilityLabels.orderedItem =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.orderedItem.c_str()];
-  _accessibilityLabels.nestedOrderedItem =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.nestedOrderedItem.c_str()];
-  _accessibilityLabels.blockquote =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.blockquote.quote.c_str()];
-  _accessibilityLabels.nestedBlockquote =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.blockquote.nestedQuote.c_str()];
-  _accessibilityLabels.tableRow =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.table.row.c_str()];
-  _accessibilityLabels.mathEquation =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.math.equation.c_str()];
-  _accessibilityLabels.rotorHeadings =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.headings.c_str()];
-  _accessibilityLabels.rotorLinks =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.links.c_str()];
-  _accessibilityLabels.rotorImages =
-      [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.images.c_str()];
-  _accessibilityNeedsRebuild = YES;
+  if (newViewProps.accessibilityLabels != oldViewProps.accessibilityLabels) {
+    _accessibilityLabels = [[ENRMAccessibilityLabels alloc] init];
+    _accessibilityLabels.bulletPoint =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.bulletPoint.c_str()];
+    _accessibilityLabels.nestedBulletPoint =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.nestedBulletPoint.c_str()];
+    _accessibilityLabels.orderedItem =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.orderedItem.c_str()];
+    _accessibilityLabels.nestedOrderedItem =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.nestedOrderedItem.c_str()];
+    _accessibilityLabels.blockquote =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.blockquote.quote.c_str()];
+    _accessibilityLabels.nestedBlockquote =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.blockquote.nestedQuote.c_str()];
+    _accessibilityLabels.tableRow =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.table.row.c_str()];
+    _accessibilityLabels.mathEquation =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.math.equation.c_str()];
+    _accessibilityLabels.rotorHeadings =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.headings.c_str()];
+    _accessibilityLabels.rotorLinks =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.links.c_str()];
+    _accessibilityLabels.rotorImages =
+        [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.rotor.images.c_str()];
+    _accessibilityNeedsRebuild = YES;
+  }
 
   if (newViewProps.streamingAnimation != oldViewProps.streamingAnimation) {
     _streamingAnimation = newViewProps.streamingAnimation;
