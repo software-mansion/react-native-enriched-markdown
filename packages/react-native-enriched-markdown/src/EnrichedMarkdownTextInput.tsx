@@ -109,18 +109,6 @@ export interface EnrichedMarkdownTextInputInstance {
   insertMention: (displayText: string, url: string) => void;
   startMention: (indicator: string) => void;
   removeLink: () => void;
-  /**
-   * Copies the input's full content to the system clipboard, matching the
-   * result of selecting all text and pressing the context menu's copy action.
-   * The selection is left unchanged, and calling it on an empty input is a
-   * no-op.
-   *
-   * On iOS and macOS the clipboard receives both plain text and a private
-   * markdown pasteboard type, so pasting back into an
-   * `EnrichedMarkdownTextInput` restores the formatting; external apps
-   * receive plain text only. On Android the clipboard receives plain text
-   * only — inline styles are not preserved for any paste target.
-   */
   copyToClipboard: () => void;
   getMarkdown: () => Promise<string>;
   getCaretRect: () => Promise<CaretRect>;
