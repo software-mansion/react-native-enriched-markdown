@@ -1,14 +1,14 @@
 package com.swmansion.enriched.markdown
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.createEnrichedMarkdownTextWithFullSelection
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.createTextViewSelectingText
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.createTextViewWithFullSelection
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.createTextViewWithSelection
 import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.extractFromFullSelection
 import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.extractSelectingText
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.indexOf
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.render
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createEnrichedMarkdownTextWithStoredMarkdown
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createTextViewSelectingText
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createTextViewWithFullSelection
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createTextViewWithSelection
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.indexOf
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.render
 import com.swmansion.enriched.markdown.test.TestAstFactory.blockquote
 import com.swmansion.enriched.markdown.test.TestAstFactory.code
 import com.swmansion.enriched.markdown.test.TestAstFactory.codeBlock
@@ -57,7 +57,7 @@ class MarkdownExtractorTest {
         ),
       )
 
-    val textView = createEnrichedMarkdownTextWithFullSelection(original, rendered)
+    val textView = createEnrichedMarkdownTextWithStoredMarkdown(original, rendered)
 
     assertEquals(original, MarkdownExtractor.getMarkdownForSelection(textView))
   }

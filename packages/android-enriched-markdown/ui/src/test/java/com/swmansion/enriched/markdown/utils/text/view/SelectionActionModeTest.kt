@@ -9,11 +9,14 @@ import android.widget.TextView
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.createTextViewSelectingText
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.createTextViewWithFullSelection
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.createTextViewWithSelection
-import com.swmansion.enriched.markdown.test.MarkdownExtractorTestSupport.render
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createEnrichedMarkdownTextSelectingText
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createEnrichedMarkdownTextWithSelection
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createTextViewSelectingText
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createTextViewWithFullSelection
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.createTextViewWithSelection
+import com.swmansion.enriched.markdown.test.MarkdownTextViewTestSupport.render
 import com.swmansion.enriched.markdown.test.TestAstFactory.document
+import com.swmansion.enriched.markdown.test.TestAstFactory.emphasis
 import com.swmansion.enriched.markdown.test.TestAstFactory.image
 import com.swmansion.enriched.markdown.test.TestAstFactory.paragraph
 import com.swmansion.enriched.markdown.test.TestAstFactory.strong
@@ -100,7 +103,7 @@ class SelectionActionModeTest {
   }
 
   @Test
-  fun clickingPlainCopyCopiesPlainTextToClipboard() {
+  fun clickingPlainCopyOnPlainTextViewCopiesPlainTextOnly() {
     val textView =
       createTextViewSelectingText(
         document(
@@ -118,6 +121,93 @@ class SelectionActionModeTest {
     assertTrue(callback.onActionItemClicked(null, menu.findItem(android.R.id.copy)))
 
     assertEquals("42", getClipboardText())
+    assertNull(getClipboardHtml())
+  }
+
+  @Test
+  fun clickingPlainCopyOnEnrichedMarkdownTextCopiesPlainTextAndHtml() {
+    val textView =
+      createEnrichedMarkdownTextSelectingText(
+        document(
+          paragraph(
+            text("Value: "),
+            strong(text("42")),
+          ),
+        ),
+        "42",
+      )
+    val callback = createSelectionActionModeCallback(textView)
+    val menu = MenuBuilder(context)
+    menu.add(0, android.R.id.copy, 0, "Copy")
+
+    assertTrue(callback.onActionItemClicked(null, menu.findItem(android.R.id.copy)))
+
+    assertEquals("42", getClipboardText())
+    getClipboardHtml().let { html ->
+      requireNotNull(html) { "Expected HTML clipboard content" }
+      assertTrue("Expected <strong> in HTML but was: $html", html.contains("<strong") && html.contains("42"))
+      assertTrue("Expected HTML wrapper but was: $html", html.startsWith("<html"))
+    }
+  }
+
+  @Test
+  fun clickingPlainCopyOnEnrichedMarkdownTextIncludesSemanticTagsForFormattedSelection() {
+    val textView =
+      createEnrichedMarkdownTextSelectingText(
+        document(
+          paragraph(
+            text("Mix "),
+            strong(text("bold")),
+            text(" and "),
+            emphasis(text("italic")),
+          ),
+        ),
+        "bold",
+      )
+    val callback = createSelectionActionModeCallback(textView)
+    val menu = MenuBuilder(context)
+    menu.add(0, android.R.id.copy, 0, "Copy")
+
+    assertTrue(callback.onActionItemClicked(null, menu.findItem(android.R.id.copy)))
+
+    assertEquals("bold", getClipboardText())
+    getClipboardHtml().let { html ->
+      requireNotNull(html)
+      assertTrue(html.contains("<strong") && html.contains("bold"))
+    }
+  }
+
+  @Test
+  fun clickingPlainCopyOnEnrichedMarkdownTextIncludesImageInHtml() {
+    val url = "https://example.com/image.png"
+    val spannable = render(document(paragraph(image(url))))
+    val imageStart = spannable.indexOf('\uFFFC')
+    val textView = createEnrichedMarkdownTextWithSelection(spannable, imageStart, imageStart + 1)
+
+    val callback = createSelectionActionModeCallback(textView)
+    val menu = MenuBuilder(context)
+    menu.add(0, android.R.id.copy, 0, "Copy")
+
+    assertTrue(callback.onActionItemClicked(null, menu.findItem(android.R.id.copy)))
+
+    getClipboardHtml().let { html ->
+      requireNotNull(html)
+      assertTrue("Expected image URL in HTML but was: $html", html.contains("src=\"$url\""))
+    }
+  }
+
+  @Test
+  fun clickingPlainCopyDoesNothingForEmptySelection() {
+    val spannable = render(document(paragraph(text("Hello"))))
+    val textView = createTextViewWithSelection(spannable, 2, 2)
+    val callback = createSelectionActionModeCallback(textView)
+    val menu = MenuBuilder(context)
+    menu.add(0, android.R.id.copy, 0, "Copy")
+
+    assertTrue(callback.onActionItemClicked(null, menu.findItem(android.R.id.copy)))
+
+    assertNull(getClipboardText())
+    assertNull(getClipboardHtml())
   }
 
   @Test
@@ -214,7 +304,15 @@ class SelectionActionModeTest {
 
   private fun getClipboardText(): String? {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    return clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+    return clipboard.primaryClip
+      ?.getItemAt(0)
+      ?.text
+      ?.toString()
+  }
+
+  private fun getClipboardHtml(): String? {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    return clipboard.primaryClip?.getItemAt(0)?.htmlText
   }
 
   private fun copyMarkdownDirectly(textView: TextView): Boolean {
