@@ -304,7 +304,10 @@ class SelectionActionModeTest {
 
   private fun getClipboardText(): String? {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    return clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+    return clipboard.primaryClip
+      ?.getItemAt(0)
+      ?.text
+      ?.toString()
   }
 
   private fun getClipboardHtml(): String? {

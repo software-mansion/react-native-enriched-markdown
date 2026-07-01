@@ -30,8 +30,7 @@ object MarkdownTextViewTestSupport {
     selectionEnd: Int,
   ): TextView = createTextViewWithSelection(render(document), selectionStart, selectionEnd)
 
-  fun createTextViewWithFullSelection(spannable: SpannableString): TextView =
-    createTextViewWithSelection(spannable, 0, spannable.length)
+  fun createTextViewWithFullSelection(spannable: SpannableString): TextView = createTextViewWithSelection(spannable, 0, spannable.length)
 
   fun createTextViewWithFullSelection(document: MarkdownASTNode): TextView {
     val spannable = render(document)
@@ -86,7 +85,10 @@ object MarkdownTextViewTestSupport {
     end: Int,
   ): Spannable = spannable.subSequence(start, end) as Spannable
 
-  fun indexOf(spannable: Spannable, text: String): Int {
+  fun indexOf(
+    spannable: Spannable,
+    text: String,
+  ): Int {
     val index = spannable.indexOf(text)
     require(index >= 0) { "Rendered text does not contain \"$text\": \"$spannable\"" }
     return index
