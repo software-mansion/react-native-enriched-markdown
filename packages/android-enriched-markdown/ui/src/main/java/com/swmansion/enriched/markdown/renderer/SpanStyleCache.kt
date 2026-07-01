@@ -82,6 +82,5 @@ class SpanStyleCache(
     return getTypeface(fontFamily, style)
   }
 
-  fun getMonospaceTypeface(currentStyle: Int): Typeface =
-    TypefaceUtils.getMonospaceTypeface(context, currentStyle)
+  fun getMonospaceTypeface(currentStyle: Int): Typeface = TypefaceUtils.getMonospaceTypeface(context, currentStyle)
 }

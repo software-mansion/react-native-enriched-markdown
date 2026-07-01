@@ -1,6 +1,5 @@
 package com.swmansion.enriched.markdown.styles
 
-
 data class HeadingStyle(
   override val fontSize: Float,
   override val fontFamily: String,
@@ -10,5 +9,4 @@ data class HeadingStyle(
   override val marginBottom: Float,
   override val lineHeight: Float,
   val textAlign: TextAlignment,
-) : BaseBlockStyle {
-}
+) : BaseBlockStyle

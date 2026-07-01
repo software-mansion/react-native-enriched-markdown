@@ -19,7 +19,13 @@ tags:
 - inputText: "Bold text"
 
 - tapOn:
+    id: blur-button
+
+- tapOn:
     id: toolbar-bold
+
+- tapOn:
+    id: focus-button
 
 - inputText: "Normal text"
 

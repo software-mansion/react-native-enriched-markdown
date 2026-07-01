@@ -37,6 +37,7 @@ import type {
   ColorValue,
 } from 'react-native';
 import { normalizeMarkdownTextInputStyle } from './normalizeMarkdownTextInputStyle';
+import { normalizeMenuItem } from './normalizeMenuItem';
 import { toNativeRegexConfig } from './utils/regexParser';
 import type { RefObject } from 'react';
 
@@ -118,34 +119,41 @@ export interface EnrichedMarkdownTextInputInstance {
   getCaretRect: () => Promise<CaretRect>;
 }
 
+/**
+ * Per-item shape: `{ enabled }` toggles visibility, `label` overrides the
+ * English default. Wire `label` to your i18n library to localize the menu.
+ */
+type MenuItem = { enabled?: boolean; label?: string };
+
 export interface InputSelectionMenuConfig {
   /**
-   * Shows the built-in "Format" submenu (Bold, Italic, Underline, etc.)
-   * in the text selection context menu.
-   * @default true
+   * The built-in "Format" submenu (Bold, Italic, Underline, etc.) in the
+   * text selection context menu. `label` overrides the submenu title.
+   * @default { enabled: true, label: "Format" }
    */
-  format?: boolean;
+  format?: MenuItem;
   /**
-   * Shows the built-in "Copy as Markdown" action in the text selection
-   * context menu.
-   * @default true
+   * The built-in "Copy as Markdown" action in the text selection context
+   * menu. `label` overrides the action title.
+   * @default { enabled: true, label: "Copy as Markdown" }
    */
-  copyAsMarkdown?: boolean;
+  copyAsMarkdown?: MenuItem;
 }
 
+/** Controls the individual items inside the Format submenu. */
 export interface FormatMenuConfig {
-  /** @default true */
-  bold?: boolean;
-  /** @default true */
-  italic?: boolean;
-  /** @default true */
-  underline?: boolean;
-  /** @default true */
-  strikethrough?: boolean;
-  /** @default true */
-  spoiler?: boolean;
-  /** @default true */
-  link?: boolean;
+  /** @default { enabled: true, label: "Bold" } */
+  bold?: MenuItem;
+  /** @default { enabled: true, label: "Italic" } */
+  italic?: MenuItem;
+  /** @default { enabled: true, label: "Underline" } */
+  underline?: MenuItem;
+  /** @default { enabled: true, label: "Strikethrough" } */
+  strikethrough?: MenuItem;
+  /** @default { enabled: true, label: "Spoiler" } */
+  spoiler?: MenuItem;
+  /** @default { enabled: true, label: "Link" } */
+  link?: MenuItem;
 }
 
 export interface EnrichedMarkdownTextInputProps extends Omit<
@@ -305,25 +313,59 @@ export const EnrichedMarkdownTextInput = ({
 
   const normalizedStyle = normalizeMarkdownTextInputStyle(markdownStyle);
 
-  const normalizedSelectionMenuConfig = useMemo(
-    () => ({
-      format: selectionMenuConfig?.format ?? true,
-      copyAsMarkdown: selectionMenuConfig?.copyAsMarkdown ?? true,
-    }),
-    [selectionMenuConfig]
-  );
+  const normalizedSelectionMenuConfig = useMemo(() => {
+    const format = normalizeMenuItem(
+      selectionMenuConfig?.format,
+      true,
+      'Format'
+    );
+    const copyAsMarkdown = normalizeMenuItem(
+      selectionMenuConfig?.copyAsMarkdown,
+      true,
+      'Copy as Markdown'
+    );
+    return {
+      format: format.enabled,
+      formatLabel: format.label,
+      copyAsMarkdown: copyAsMarkdown.enabled,
+      copyAsMarkdownLabel: copyAsMarkdown.label,
+    };
+  }, [selectionMenuConfig]);
 
-  const normalizedFormatMenuConfig = useMemo(
-    () => ({
-      bold: formatMenuConfig?.bold ?? true,
-      italic: formatMenuConfig?.italic ?? true,
-      underline: formatMenuConfig?.underline ?? true,
-      strikethrough: formatMenuConfig?.strikethrough ?? true,
-      spoiler: formatMenuConfig?.spoiler ?? true,
-      link: formatMenuConfig?.link ?? true,
-    }),
-    [formatMenuConfig]
-  );
+  const normalizedFormatMenuConfig = useMemo(() => {
+    const bold = normalizeMenuItem(formatMenuConfig?.bold, true, 'Bold');
+    const italic = normalizeMenuItem(formatMenuConfig?.italic, true, 'Italic');
+    const underline = normalizeMenuItem(
+      formatMenuConfig?.underline,
+      true,
+      'Underline'
+    );
+    const strikethrough = normalizeMenuItem(
+      formatMenuConfig?.strikethrough,
+      true,
+      'Strikethrough'
+    );
+    const spoiler = normalizeMenuItem(
+      formatMenuConfig?.spoiler,
+      true,
+      'Spoiler'
+    );
+    const link = normalizeMenuItem(formatMenuConfig?.link, true, 'Link');
+    return {
+      bold: bold.enabled,
+      boldLabel: bold.label,
+      italic: italic.enabled,
+      italicLabel: italic.label,
+      underline: underline.enabled,
+      underlineLabel: underline.label,
+      strikethrough: strikethrough.enabled,
+      strikethroughLabel: strikethrough.label,
+      spoiler: spoiler.enabled,
+      spoilerLabel: spoiler.label,
+      link: link.enabled,
+      linkLabel: link.label,
+    };
+  }, [formatMenuConfig]);
 
   const linkRegex = useMemo(
     () => toNativeRegexConfig(_linkRegex),

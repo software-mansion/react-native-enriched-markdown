@@ -1,0 +1,4 @@
+appId: swmansion.enriched.markdown.android.example
+---
+- tapOn:
+    id: home-block-playground

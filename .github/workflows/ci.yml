@@ -15,9 +15,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
+  changes:
     runs-on: ubuntu-latest
+    outputs:
+      react-native: ${{ steps.filter.outputs.react-native }}
+      android: ${{ steps.filter.outputs.android }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Detect changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            react-native:
+              - 'packages/react-native-enriched-markdown/**'
+              - 'packages/core/**'
+              - 'apps/react-native-example/**'
+              - 'package.json'
+              - 'yarn.lock'
+              - '.nvmrc'
+              - '.yarnrc.yml'
+              - '.github/**'
+            android:
+              - 'packages/android-enriched-markdown/**'
+              - 'packages/core/**'
+              - 'apps/android-example/**'
+              - 'package.json'
+              - 'yarn.lock'
+              - '.nvmrc'
+              - '.yarnrc.yml'
+              - '.github/**'
+
+  rn-lint:
+    needs: changes
+    if: needs.changes.outputs.react-native == 'true'
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -31,9 +67,10 @@ jobs:
       - name: Typecheck files
         run: yarn typecheck
 
-  build-library:
+  rn-build-library:
+    needs: changes
+    if: needs.changes.outputs.react-native == 'true'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -44,9 +81,13 @@ jobs:
       - name: Build package
         run: yarn prepare
 
-  build-android:
+  rn-build-android:
+    needs: changes
+    if: needs.changes.outputs.react-native == 'true'
     runs-on: ubuntu-latest
     env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       TURBO_CACHE_DIR: .turbo/android
     steps:
       - name: Checkout
@@ -77,36 +118,20 @@ jobs:
             echo "turbo_cache_hit=1" >> $GITHUB_ENV
           fi
 
-      - name: Install JDK
+      - name: Setup Android
         if: env.turbo_cache_hit != 1
-        uses: actions/setup-java@v4
+        uses: ./.github/actions/setup-android
         with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Finalize Android SDK
-        if: env.turbo_cache_hit != 1
-        run: |
-          /bin/bash -c "yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null"
-
-      - name: Cache Gradle
-        if: env.turbo_cache_hit != 1
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/wrapper
-            ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/react-native-example/android/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          gradle-wrapper-properties: apps/react-native-example/android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Build example for Android
         env:
           JAVA_OPTS: '-XX:MaxHeapSize=6g'
-        run: |
-          yarn turbo run build:android --cache-dir="${{ env.TURBO_CACHE_DIR }}"
+        run: yarn turbo run build:android --cache-dir="${{ env.TURBO_CACHE_DIR }}"
 
-  build-ios:
+  rn-build-ios:
+    needs: changes
+    if: needs.changes.outputs.react-native == 'true'
     runs-on: macos-latest
     env:
       TURBO_CACHE_DIR: .turbo/ios
@@ -175,5 +200,194 @@ jobs:
           key: ${{ steps.cocoapods-cache.outputs.cache-primary-key }}
 
       - name: Build example for iOS
+        run: yarn turbo run build:ios --cache-dir="${{ env.TURBO_CACHE_DIR }}"
+
+  android-build:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      TURBO_CACHE_DIR: .turbo/android-native
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Cache turborepo for Android native
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TURBO_CACHE_DIR }}
+          key: ${{ runner.os }}-turborepo-android-native-build-${{ hashFiles('yarn.lock', 'packages/android-enriched-markdown/**', 'apps/android-example/**', 'packages/core/cpp/**') }}
+          restore-keys: |
+            ${{ runner.os }}-turborepo-android-native-build-
+
+      - name: Check turborepo cache for Android native build
         run: |
-          yarn turbo run build:ios --cache-dir="${{ env.TURBO_CACHE_DIR }}"
+          TURBO_CACHE_STATUS=$(yarn turbo run build:android-native \
+            --filter=enriched-markdown-android-example \
+            --cache-dir="${{ env.TURBO_CACHE_DIR }}" \
+            --dry=json | jq -r '.tasks[0].cache.status')
+
+          if [[ $TURBO_CACHE_STATUS == "HIT" ]]; then
+            echo "turbo_cache_hit=1" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Android
+        if: env.turbo_cache_hit != 1
+        uses: ./.github/actions/setup-android
+        with:
+          gradle-wrapper-properties: apps/android-example/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Build Android example
+        env:
+          JAVA_OPTS: '-XX:MaxHeapSize=6g'
+        run: yarn turbo run build:android-native --filter=enriched-markdown-android-example --cache-dir="${{ env.TURBO_CACHE_DIR }}"
+
+  android-unit-tests:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      TURBO_CACHE_DIR: .turbo/android-native
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Cache turborepo for Android native tests
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TURBO_CACHE_DIR }}
+          key: ${{ runner.os }}-turborepo-android-native-test-${{ hashFiles('yarn.lock', 'packages/android-enriched-markdown/**', 'packages/core/cpp/**') }}
+          restore-keys: |
+            ${{ runner.os }}-turborepo-android-native-test-
+
+      - name: Check turborepo cache for Android native tests
+        run: |
+          TURBO_CACHE_STATUS=$(yarn turbo run test:android-native \
+            --filter=@enriched-markdown/android \
+            --cache-dir="${{ env.TURBO_CACHE_DIR }}" \
+            --dry=json | jq -r '.tasks[0].cache.status')
+
+          if [[ $TURBO_CACHE_STATUS == "HIT" ]]; then
+            echo "turbo_cache_hit=1" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Android
+        if: env.turbo_cache_hit != 1
+        uses: ./.github/actions/setup-android
+        with:
+          gradle-wrapper-properties: packages/android-enriched-markdown/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Run Android unit tests
+        env:
+          JAVA_OPTS: '-XX:MaxHeapSize=6g'
+        run: yarn turbo run test:android-native --filter=@enriched-markdown/android --cache-dir="${{ env.TURBO_CACHE_DIR }}"
+
+  android-kotlin-lint:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      TURBO_CACHE_DIR: .turbo/android-native
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Cache turborepo for Android native lint
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TURBO_CACHE_DIR }}
+          key: ${{ runner.os }}-turborepo-android-native-lint-${{ hashFiles('yarn.lock', 'packages/android-enriched-markdown/**') }}
+          restore-keys: |
+            ${{ runner.os }}-turborepo-android-native-lint-
+
+      - name: Check turborepo cache for Android native lint
+        run: |
+          TURBO_CACHE_STATUS=$(yarn turbo run lint:android-native \
+            --filter=@enriched-markdown/android \
+            --cache-dir="${{ env.TURBO_CACHE_DIR }}" \
+            --dry=json | jq -r '.tasks[0].cache.status')
+
+          if [[ $TURBO_CACHE_STATUS == "HIT" ]]; then
+            echo "turbo_cache_hit=1" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Android
+        if: env.turbo_cache_hit != 1
+        uses: ./.github/actions/setup-android
+        with:
+          gradle-wrapper-properties: packages/android-enriched-markdown/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Run Kotlin lint
+        run: yarn turbo run lint:android-native --filter=@enriched-markdown/android --cache-dir="${{ env.TURBO_CACHE_DIR }}"
+
+  ci-success:
+    needs:
+      - changes
+      - rn-lint
+      - rn-build-library
+      - rn-build-android
+      - rn-build-ios
+      - android-build
+      - android-unit-tests
+      - android-kotlin-lint
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required checks
+        env:
+          REACT_NATIVE: ${{ needs.changes.outputs.react-native }}
+          ANDROID: ${{ needs.changes.outputs.android }}
+          RN_LINT: ${{ needs.rn-lint.result }}
+          RN_BUILD_LIBRARY: ${{ needs.rn-build-library.result }}
+          RN_BUILD_ANDROID: ${{ needs.rn-build-android.result }}
+          RN_BUILD_IOS: ${{ needs.rn-build-ios.result }}
+          ANDROID_BUILD: ${{ needs.android-build.result }}
+          ANDROID_UNIT_TESTS: ${{ needs.android-unit-tests.result }}
+          ANDROID_KOTLIN_LINT: ${{ needs.android-kotlin-lint.result }}
+          CHANGES: ${{ needs.changes.result }}
+        run: |
+          if [[ "$CHANGES" != "success" ]]; then
+            echo "changes job failed"
+            exit 1
+          fi
+
+          check_required() {
+            local flag=$1
+            local result=$2
+            local name=$3
+
+            if [[ "$flag" == "true" && "$result" != "success" ]]; then
+              echo "Required job $name has result $result (expected success)"
+              exit 1
+            fi
+          }
+
+          if [[ "$REACT_NATIVE" != "true" && "$ANDROID" != "true" ]]; then
+            echo "No relevant changes detected - CI passed"
+            exit 0
+          fi
+
+          check_required "$REACT_NATIVE" "$RN_LINT" "rn-lint"
+          check_required "$REACT_NATIVE" "$RN_BUILD_LIBRARY" "rn-build-library"
+          check_required "$REACT_NATIVE" "$RN_BUILD_ANDROID" "rn-build-android"
+          check_required "$REACT_NATIVE" "$RN_BUILD_IOS" "rn-build-ios"
+          check_required "$ANDROID" "$ANDROID_BUILD" "android-build"
+          check_required "$ANDROID" "$ANDROID_UNIT_TESTS" "android-unit-tests"
+          check_required "$ANDROID" "$ANDROID_KOTLIN_LINT" "android-kotlin-lint"
+
+          echo "All required checks passed"

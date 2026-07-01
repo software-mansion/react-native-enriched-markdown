@@ -11,6 +11,7 @@ import {
   Image,
   Modal,
   TextInput,
+  Keyboard,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import {
@@ -80,6 +81,18 @@ export default function PlaygroundScreen() {
       { text: 'OK' },
     ]);
   }, []);
+
+  const handleSetMarkdownConfirm = useCallback(() => {
+    const value = rawInput;
+    Keyboard.dismiss();
+    setSetMarkdownModalVisible(false);
+    setRawInput('');
+
+    requestAnimationFrame(() => {
+      inputRef.current?.setValue(value);
+      setMarkdown(value);
+    });
+  }, [rawInput]);
 
   return (
     <KeyboardAvoidingView
@@ -212,6 +225,7 @@ export default function PlaygroundScreen() {
           <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
         </TouchableOpacity>
 
+<<<<<<< feat/341-copy-to-clipboard
         <TouchableOpacity
           style={styles.getMarkdownButton}
           onPress={handleCopyToClipboard}
@@ -270,6 +284,8 @@ export default function PlaygroundScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
+=======
+>>>>>>> main
         <View style={styles.divider} />
 
         <Text style={styles.previewLabel}>Preview</Text>
@@ -300,6 +316,52 @@ export default function PlaygroundScreen() {
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={setMarkdownModalVisible}
+        animationType={Platform.OS === 'android' ? 'fade' : 'slide'}
+        transparent
+        onRequestClose={() => setSetMarkdownModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Set Raw Markdown</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={rawInput}
+              onChangeText={setRawInput}
+              multiline
+              autoFocus
+              placeholder="Paste or type markdown..."
+              placeholderTextColor="#9CA3AF"
+              autoCorrect={false}
+              autoCapitalize="none"
+              testID="set-markdown-input"
+            />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={[styles.button, styles.modalCancelButton]}
+                onPress={() => setSetMarkdownModalVisible(false)}
+                testID="set-markdown-cancel"
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonActive]}
+                onPress={handleSetMarkdownConfirm}
+                testID="set-markdown-confirm"
+              >
+                <Text style={[styles.buttonText, styles.buttonTextActive]}>
+                  Set
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

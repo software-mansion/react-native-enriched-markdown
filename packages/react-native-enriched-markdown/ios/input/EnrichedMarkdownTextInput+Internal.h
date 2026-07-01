@@ -5,18 +5,28 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+// The owner must keep these strings alive for the duration of the call (the
+// view holds them in strong ivars).
 typedef struct {
   BOOL format;
+  __unsafe_unretained NSString *_Nullable formatLabel;
   BOOL copyAsMarkdown;
+  __unsafe_unretained NSString *_Nullable copyAsMarkdownLabel;
 } ENRMInputSelectionMenuConfig;
 
 typedef struct {
   BOOL bold;
+  __unsafe_unretained NSString *_Nullable boldLabel;
   BOOL italic;
+  __unsafe_unretained NSString *_Nullable italicLabel;
   BOOL underline;
+  __unsafe_unretained NSString *_Nullable underlineLabel;
   BOOL strikethrough;
+  __unsafe_unretained NSString *_Nullable strikethroughLabel;
   BOOL spoiler;
+  __unsafe_unretained NSString *_Nullable spoilerLabel;
   BOOL link;
+  __unsafe_unretained NSString *_Nullable linkLabel;
 } ENRMFormatMenuConfig;
 
 @interface EnrichedMarkdownTextInput (Internal)

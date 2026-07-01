@@ -2,8 +2,8 @@ package com.swmansion.enriched.markdown.compose
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.swmansion.enriched.markdown.compose.test.ComposeStyleTestSupport
 import org.junit.Assert.assertEquals

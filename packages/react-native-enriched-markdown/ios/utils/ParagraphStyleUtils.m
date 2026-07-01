@@ -1,6 +1,11 @@
 #import "ParagraphStyleUtils.h"
+#import "ENRMFeatureFlags.h"
 #import "LastElementUtils.h"
 #import <React/RCTI18nUtil.h>
+
+#if ENRICHED_MARKDOWN_MATH
+#import "ENRMMathInlineAttachment.h"
+#endif
 
 NSAttributedString *kNewlineAttributedString;
 static NSParagraphStyle *kBlockSpacerTemplate;
@@ -247,10 +252,24 @@ void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat l
     return;
   }
 
+  __block BOOL hasMath = NO;
+
+#if ENRICHED_MARKDOWN_MATH
+  [output enumerateAttribute:NSAttachmentAttributeName
+                     inRange:range
+                     options:0
+                  usingBlock:^(id value, __unused NSRange attrRange, BOOL *stop) {
+                    if ([value isKindOfClass:[ENRMMathInlineAttachment class]]) {
+                      hasMath = YES;
+                      *stop = YES;
+                    }
+                  }];
+#endif
+
   NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location);
 
   style.minimumLineHeight = lineHeight;
-  style.maximumLineHeight = lineHeight;
+  style.maximumLineHeight = hasMath ? 0 : lineHeight;
 
   [output addAttribute:NSParagraphStyleAttributeName value:style range:range];
 }

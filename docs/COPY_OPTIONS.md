@@ -44,13 +44,17 @@ Use `selectionMenuConfig` to hide built-in selection menu actions while keeping 
 />
 ```
 
-`EnrichedMarkdownTextInput` supports the same prop with the legacy boolean shape. In addition to `copyAsMarkdown`, the input's `selectionMenuConfig` can hide the built-in **Format** submenu:
+`EnrichedMarkdownTextInput` supports the same `{ enabled, label }` shape. In addition to `copyAsMarkdown`, the input's `selectionMenuConfig` exposes the built-in **Format** submenu, and `formatMenuConfig` controls the items inside it:
 
 ```tsx
 <EnrichedMarkdownTextInput
   selectionMenuConfig={{
-    format: false,
-    copyAsMarkdown: false,
+    format: { enabled: false },
+    copyAsMarkdown: { enabled: false },
+  }}
+  formatMenuConfig={{
+    spoiler: { enabled: false },
+    link: { enabled: false },
   }}
 />
 ```
@@ -91,10 +95,33 @@ Notes:
   is replaced by the number of selected images.
 - The labels apply to the main text selection menu as well as the table and math
   block copy menus.
-- The system **Copy** item on iOS/Android and OS-provided actions (Look Up,
-  Translate…) are already localized by the platform and are not affected.
-- Applies to `EnrichedMarkdownText`. On `EnrichedMarkdownTextInput` only the
-  visibility config (`selectionMenuConfig`) is available for now.
+- OS-provided actions (Look Up, Translate…) and the system **Cut / Paste /
+  Select All** items are localized by the platform and are not affected by this
+  config.
+
+### Input (`EnrichedMarkdownTextInput`)
+
+The input exposes the same `{ enabled, label }` shape on `selectionMenuConfig`
+(for the **Format** submenu title and **Copy as Markdown** action) and on
+`formatMenuConfig` (for each item inside the Format submenu — Bold, Italic,
+Underline, Strikethrough, Spoiler, Link):
+
+```tsx
+<EnrichedMarkdownTextInput
+  selectionMenuConfig={{
+    format: { label: t('format') },
+    copyAsMarkdown: { label: t('copyAsMarkdown') },
+  }}
+  formatMenuConfig={{
+    bold: { label: t('bold') },
+    italic: { label: t('italic') },
+    underline: { label: t('underline') },
+    strikethrough: { label: t('strikethrough') },
+    spoiler: { label: t('spoiler') },
+    link: { label: t('link') },
+  }}
+/>
+```
 
 > The simplest way to keep these in sync with the device language is to feed the
 > same translation function you already use for the rest of your UI.

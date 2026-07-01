@@ -1,6 +1,5 @@
 package com.swmansion.enriched.markdown.styles
 
-
 data class CodeBlockStyle(
   override val fontSize: Float,
   override val fontFamily: String,
@@ -14,5 +13,4 @@ data class CodeBlockStyle(
   val borderRadius: Float,
   val borderWidth: Float,
   val padding: Float,
-) : BaseBlockStyle {
-}
+) : BaseBlockStyle

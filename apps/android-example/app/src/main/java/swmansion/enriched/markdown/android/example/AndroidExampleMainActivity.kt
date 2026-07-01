@@ -38,7 +38,7 @@ class AndroidExampleMainActivity : ComponentActivity() {
       var currentRoute by rememberSaveable { mutableStateOf(ExampleRoute.Home) }
 
       MaterialTheme {
-        MarkdownTheme(style = CustomMarkdownStyle) {
+        MarkdownTheme {
           Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = Color.White,
