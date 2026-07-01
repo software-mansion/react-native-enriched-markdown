@@ -217,21 +217,23 @@ export default function PlaygroundScreen() {
           <Text style={styles.getMarkdownText}>Set Raw Markdown</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.getMarkdownButton}
-          onPress={handleGetMarkdown}
-          testID="get-markdown-button"
-        >
-          <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRowSplit}>
+          <TouchableOpacity
+            style={[styles.getMarkdownButton, styles.buttonHalf]}
+            onPress={handleGetMarkdown}
+            testID="get-markdown-button"
+          >
+            <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.getMarkdownButton}
-          onPress={handleCopyToClipboard}
-          testID="copy-to-clipboard-button"
-        >
-          <Text style={styles.getMarkdownText}>Copy Input to Clipboard</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.getMarkdownButton, styles.buttonHalf]}
+            onPress={handleCopyToClipboard}
+            testID="copy-to-clipboard-button"
+          >
+            <Text style={styles.getMarkdownText}>Copy Input to Clipboard</Text>
+          </TouchableOpacity>
+        </View>
 
         <Modal
           visible={setMarkdownModalVisible}
@@ -420,6 +422,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#BEEBD0',
     alignItems: 'center',
+  },
+  buttonRowSplit: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  buttonHalf: {
+    flex: 1,
   },
   getMarkdownText: {
     fontSize: 14,
