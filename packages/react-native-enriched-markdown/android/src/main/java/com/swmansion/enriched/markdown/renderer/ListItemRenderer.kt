@@ -5,6 +5,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.StrikethroughSpan
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.spans.BaseListSpan
+import com.swmansion.enriched.markdown.spans.CodeBlockSpan
 import com.swmansion.enriched.markdown.spans.OrderedListSpan
 import com.swmansion.enriched.markdown.spans.TaskListSpan
 import com.swmansion.enriched.markdown.spans.UnorderedListSpan
@@ -37,15 +38,15 @@ class ListItemRenderer(
 
     if (builder.length == start || builder.substring(start).isBlank()) return
 
-    while (builder.length > start && builder.last() == '\n') {
-      builder.delete(builder.length - 1, builder.length)
+    if (builder.last() != '\n') {
+      builder.append("\n")
     }
-    builder.append("\n")
 
     val depth = styleContext.listDepth - 1
     val listStyle = config.style.listStyle
     val itemEnd = builder.length
-    val span =
+
+    fun makeSpan(drawsMarker: Boolean): BaseListSpan =
       if (isTask) {
         TaskListSpan(
           taskStyle = config.style.taskListStyle,
@@ -55,22 +56,41 @@ class ListItemRenderer(
           styleCache = factory.styleCache,
           taskIndex = taskIndex,
           isChecked = isChecked,
+          drawsMarker = drawsMarker,
         )
       } else {
         when (listType) {
           BlockStyleContext.ListType.UNORDERED -> {
-            UnorderedListSpan(listStyle, depth, factory.context, factory.styleCache)
+            UnorderedListSpan(listStyle, depth, factory.context, factory.styleCache, drawsMarker)
           }
 
           BlockStyleContext.ListType.ORDERED -> {
-            OrderedListSpan(listStyle, depth, factory.context, factory.styleCache).apply {
+            OrderedListSpan(listStyle, depth, factory.context, factory.styleCache, drawsMarker).apply {
               setItemNumber(styleContext.listItemNumber)
             }
           }
         }
       }
 
-    builder.setSpan(span, start, itemEnd, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
+    val codeBlockRanges =
+      builder
+        .getSpans(start, itemEnd, CodeBlockSpan::class.java)
+        .map { builder.getSpanStart(it) to builder.getSpanEnd(it) }
+        .filter { it.first < it.second }
+        .sortedBy { it.first }
+
+    var pos = start
+    var isFirstSegment = true
+    for ((cbStart, cbEnd) in codeBlockRanges) {
+      if (pos < cbStart) {
+        builder.setSpan(makeSpan(drawsMarker = isFirstSegment), pos, cbStart, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
+        isFirstSegment = false
+      }
+      pos = maxOf(pos, cbEnd)
+    }
+    if (pos < itemEnd) {
+      builder.setSpan(makeSpan(drawsMarker = isFirstSegment), pos, itemEnd, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
+    }
 
     if (isTask && isChecked) {
       applyCheckedDecorations(builder, start, itemEnd, depth)
