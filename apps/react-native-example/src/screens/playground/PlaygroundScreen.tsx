@@ -225,7 +225,6 @@ export default function PlaygroundScreen() {
           <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
         </TouchableOpacity>
 
-<<<<<<< feat/341-copy-to-clipboard
         <TouchableOpacity
           style={styles.getMarkdownButton}
           onPress={handleCopyToClipboard}
@@ -284,8 +283,6 @@ export default function PlaygroundScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
-=======
->>>>>>> main
         <View style={styles.divider} />
 
         <Text style={styles.previewLabel}>Preview</Text>
