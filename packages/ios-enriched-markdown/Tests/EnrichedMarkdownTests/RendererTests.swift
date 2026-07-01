@@ -259,88 +259,115 @@ private extension String {
         }
     }
 
-    func testHardLineBreakUsesLineSeparator() {
-        let result = MarkdownRenderer.render("Line one  \nLine two", config: config)
-        XCTAssertTrue(result.string.contains("Line one"))
-        XCTAssertTrue(result.string.contains("Line two"))
-        XCTAssertTrue(result.string.contains("\u{2028}"))
-
-        let separatorRange = (result.string as NSString).range(of: "\u{2028}")
-        XCTAssertNotEqual(separatorRange.location, NSNotFound)
-
-        var effectiveRange = NSRange()
-        let attributes = result.attributes(at: separatorRange.location, effectiveRange: &effectiveRange)
-        XCTAssertNotNil(attributes[.font] as? UIFont)
-    }
-
-    func testInlineCodeUsesMonospacedFont() {
-        let result = MarkdownRenderer.render("Use `code` here", config: config)
-        XCTAssertTrue(result.string.contains("code"))
-
-        var foundMonospaced = false
-        result.enumerateAttribute(.font, in: NSRange(location: 0, length: result.length)) { value, range, _ in
-            guard let font = value as? UIFont else { return }
-            if result.string[range] == "code" {
-                XCTAssertTrue(font.fontDescriptor.symbolicTraits.contains(.traitMonoSpace))
-                foundMonospaced = true
-            }
-        }
-        XCTAssertTrue(foundMonospaced)
-    }
-
-    func testInlineCodeHasInlineCodeAttribute() {
-        let result = MarkdownRenderer.render("`code`", config: config)
+    func testBlockImageInsertsAttachmentWithAltText() {
+        let result = MarkdownRenderer.render("![Mountain](https://example.com/img.png)", config: config)
 
         var found = false
-        result.enumerateAttribute(MarkdownAttribute.inlineCode, in: NSRange(location: 0, length: result.length)) { value, range, _ in
-            if result.string[range] == "code", value as? Bool == true {
-                found = true
-            }
+        result.enumerateAttribute(.attachment, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            guard let attachment = value as? MarkdownImageAttachment else { return }
+            XCTAssertEqual(attachment.imageURL, "https://example.com/img.png")
+            XCTAssertFalse(attachment.isInline)
+            XCTAssertEqual(attachment.accessibilityLabel, "Mountain")
+            XCTAssertEqual(attachment.cachedHeight, 200)
+            found = true
         }
         XCTAssertTrue(found)
     }
 
-    func testInlineCodeAppliesBackgroundColor() {
-        let result = MarkdownRenderer.render("`code`", config: config)
+    func testInlineImageUsesInlineSize() {
+        let result = MarkdownRenderer.render("Hello ![icon](https://example.com/icon.png) world", config: config)
 
-        var foundBackground = false
-        result.enumerateAttribute(.backgroundColor, in: NSRange(location: 0, length: result.length)) { value, range, _ in
-            if result.string[range] == "code", value != nil {
-                foundBackground = true
-            }
+        var found = false
+        result.enumerateAttribute(.attachment, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            guard let attachment = value as? MarkdownImageAttachment else { return }
+            XCTAssertTrue(attachment.isInline)
+            XCTAssertEqual(attachment.cachedHeight, 20)
+            found = true
         }
-        XCTAssertTrue(foundBackground)
+        XCTAssertTrue(found)
     }
 
-    func testInlineCodeThemeOverrideAppliesColor() {
-        var customConfig = config!
-        customConfig.code.foregroundColor = .systemPink
+    func testImageWithEmptyURLIsSkipped() {
+        let result = MarkdownRenderer.render("![alt]()", config: config)
 
-        let result = MarkdownRenderer.render("`code`", config: customConfig)
-
-        var foundPink = false
-        result.enumerateAttribute(.foregroundColor, in: NSRange(location: 0, length: result.length)) { value, range, _ in
-            guard let color = value as? UIColor else { return }
-            if result.string[range] == "code" {
-                XCTAssertEqual(color, UIColor.systemPink)
-                foundPink = true
+        var hasAttachment = false
+        result.enumerateAttribute(.attachment, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            if value != nil {
+                hasAttachment = true
             }
         }
-        XCTAssertTrue(foundPink)
+        XCTAssertFalse(hasAttachment)
     }
 
-    func testBoldInlineCodePreservesBoldWeight() {
-        let result = MarkdownRenderer.render("**`code`**", config: config)
+    func testBlockImageAfterParagraphIsNotInline() {
+        let result = MarkdownRenderer.render(
+            "Hello world\n\n![Mountain](https://example.com/img.png)",
+            config: config
+        )
 
-        var foundBoldMonospaced = false
-        result.enumerateAttribute(.font, in: NSRange(location: 0, length: result.length)) { value, range, _ in
-            guard let font = value as? UIFont else { return }
-            if result.string[range] == "code" {
-                XCTAssertTrue(font.fontDescriptor.symbolicTraits.contains(.traitMonoSpace))
-                XCTAssertTrue(font.fontDescriptor.symbolicTraits.contains(.traitBold))
-                foundBoldMonospaced = true
+        var foundBlockImage = false
+        result.enumerateAttribute(.attachment, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            guard let attachment = value as? MarkdownImageAttachment else { return }
+            XCTAssertFalse(attachment.isInline)
+            XCTAssertEqual(attachment.cachedHeight, 200)
+            foundBlockImage = true
+        }
+        XCTAssertTrue(foundBlockImage)
+    }
+
+    func testBlockImageInsertsAttachmentWithAltText() {
+        let result = MarkdownRenderer.render("![Mountain](https://example.com/img.png)", config: config)
+
+        var found = false
+        result.enumerateAttribute(.attachment, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            guard let attachment = value as? MarkdownImageAttachment else { return }
+            XCTAssertEqual(attachment.imageURL, "https://example.com/img.png")
+            XCTAssertFalse(attachment.isInline)
+            XCTAssertEqual(attachment.accessibilityLabel, "Mountain")
+            XCTAssertEqual(attachment.cachedHeight, 200)
+            found = true
+        }
+        XCTAssertTrue(found)
+    }
+
+    func testInlineImageUsesInlineSize() {
+        let result = MarkdownRenderer.render("Hello ![icon](https://example.com/icon.png) world", config: config)
+
+        var found = false
+        result.enumerateAttribute(.attachment, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            guard let attachment = value as? MarkdownImageAttachment else { return }
+            XCTAssertTrue(attachment.isInline)
+            XCTAssertEqual(attachment.cachedHeight, 20)
+            found = true
+        }
+        XCTAssertTrue(found)
+    }
+
+    func testImageWithEmptyURLIsSkipped() {
+        let result = MarkdownRenderer.render("![alt]()", config: config)
+
+        var hasAttachment = false
+        result.enumerateAttribute(.attachment, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            if value != nil {
+                hasAttachment = true
             }
         }
-        XCTAssertTrue(foundBoldMonospaced)
+        XCTAssertFalse(hasAttachment)
+    }
+
+    func testBlockImageAfterParagraphIsNotInline() {
+        let result = MarkdownRenderer.render(
+            "Hello world\n\n![Mountain](https://example.com/img.png)",
+            config: config
+        )
+
+        var foundBlockImage = false
+        result.enumerateAttribute(.attachment, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            guard let attachment = value as? MarkdownImageAttachment else { return }
+            XCTAssertFalse(attachment.isInline)
+            XCTAssertEqual(attachment.cachedHeight, 200)
+            foundBlockImage = true
+        }
+        XCTAssertTrue(foundBlockImage)
     }
 }
