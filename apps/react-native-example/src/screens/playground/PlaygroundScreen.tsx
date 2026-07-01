@@ -74,6 +74,12 @@ export default function PlaygroundScreen() {
     const md = await inputRef.current?.getMarkdown();
     Alert.alert('Markdown', md ?? '(empty)', [{ text: 'OK' }]);
   }, []);
+  const handleCopyToClipboard = useCallback(() => {
+    inputRef.current?.copyToClipboard();
+    Alert.alert('Copied', 'Input contents copied to clipboard.', [
+      { text: 'OK' },
+    ]);
+  }, []);
 
   return (
     <KeyboardAvoidingView
@@ -204,6 +210,14 @@ export default function PlaygroundScreen() {
           testID="get-markdown-button"
         >
           <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.getMarkdownButton}
+          onPress={handleCopyToClipboard}
+          testID="copy-to-clipboard-button"
+        >
+          <Text style={styles.getMarkdownText}>Copy Input to Clipboard</Text>
         </TouchableOpacity>
 
         <Modal
