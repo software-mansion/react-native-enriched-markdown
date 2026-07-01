@@ -775,20 +775,20 @@ interface ContextMenuItem {
 
 ### `selectionMenuConfig`
 
-Controls built-in items in the text selection context menu. The Format submenu and the Copy as Markdown action can each be hidden independently. Custom app-provided actions are controlled separately with `contextMenuItems`.
+Controls built-in items in the text selection context menu — the **Format** submenu (Bold, Italic, …) and the **Copy as Markdown** action. Each item takes an object: `{ enabled }` toggles visibility and `label` overrides the English default; `format.label` controls the submenu title itself. Custom app-provided actions are controlled separately with `contextMenuItems`.
 
 | Type                       | Default Value                          | Platform            |
 | -------------------------- | -------------------------------------- | ------------------- |
-| `InputSelectionMenuConfig` | `{ format: true, copyAsMarkdown: true }` | iOS, Android, macOS |
+| `InputSelectionMenuConfig` | `{}` (see shape below for per-field defaults) | iOS, Android, macOS |
 
 **`InputSelectionMenuConfig` shape:**
 
 ```ts
 interface InputSelectionMenuConfig {
-  /** Shows the built-in "Format" submenu (Bold, Italic, Underline, etc.). */
-  format?: boolean;
-  /** Shows the built-in "Copy as Markdown" action. */
-  copyAsMarkdown?: boolean;
+  /** The "Format" submenu. @default { enabled: true, label: "Format" } */
+  format?: { enabled?: boolean; label?: string };
+  /** "Copy as Markdown" action. @default { enabled: true, label: "Copy as Markdown" } */
+  copyAsMarkdown?: { enabled?: boolean; label?: string };
 }
 ```
 
@@ -797,33 +797,47 @@ interface InputSelectionMenuConfig {
 ```tsx
 // Hide both the Format submenu and the Copy as Markdown action
 <EnrichedMarkdownTextInput
-  selectionMenuConfig={{ format: false, copyAsMarkdown: false }}
+  selectionMenuConfig={{
+    format: { enabled: false },
+    copyAsMarkdown: { enabled: false },
+  }}
 />
 
-// Keep Format but hide Copy as Markdown
+// Localize the visible labels
 <EnrichedMarkdownTextInput
-  selectionMenuConfig={{ copyAsMarkdown: false }}
+  selectionMenuConfig={{
+    format: { label: t('format') },
+    copyAsMarkdown: { label: t('copyAsMarkdown') },
+  }}
 />
 ```
 
+See [COPY_OPTIONS.md](./COPY_OPTIONS.md#localizing-menu-labels) for details on the localization pattern.
+
 ### `formatMenuConfig`
 
-Controls which individual items appear inside the Format submenu. Only effective when `selectionMenuConfig.format` is `true` (the default). Omitting the prop or any field shows all items.
+Controls which items appear inside the Format submenu and the label for each. Only effective when `selectionMenuConfig.format` is enabled (the default). Same `{ enabled?, label? }` shape as `selectionMenuConfig` above.
 
-| Type               | Default Value                                                                        | Platform            |
-| ------------------ | ------------------------------------------------------------------------------------ | ------------------- |
-| `FormatMenuConfig` | `{ bold: true, italic: true, underline: true, strikethrough: true, spoiler: true, link: true }` | iOS, Android, macOS |
+| Type               | Default Value                                  | Platform            |
+| ------------------ | ---------------------------------------------- | ------------------- |
+| `FormatMenuConfig` | `{}` (see shape below for per-field defaults)  | iOS, Android, macOS |
 
 **`FormatMenuConfig` shape:**
 
 ```ts
 interface FormatMenuConfig {
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  strikethrough?: boolean;
-  spoiler?: boolean;
-  link?: boolean;
+  /** @default { enabled: true, label: "Bold" } */
+  bold?: { enabled?: boolean; label?: string };
+  /** @default { enabled: true, label: "Italic" } */
+  italic?: { enabled?: boolean; label?: string };
+  /** @default { enabled: true, label: "Underline" } */
+  underline?: { enabled?: boolean; label?: string };
+  /** @default { enabled: true, label: "Strikethrough" } */
+  strikethrough?: { enabled?: boolean; label?: string };
+  /** @default { enabled: true, label: "Spoiler" } */
+  spoiler?: { enabled?: boolean; label?: string };
+  /** @default { enabled: true, label: "Link" } */
+  link?: { enabled?: boolean; label?: string };
 }
 ```
 
@@ -832,9 +846,26 @@ interface FormatMenuConfig {
 ```tsx
 // Hide Spoiler and Link from the Format submenu
 <EnrichedMarkdownTextInput
-  formatMenuConfig={{ spoiler: false, link: false }}
+  formatMenuConfig={{
+    spoiler: { enabled: false },
+    link: { enabled: false },
+  }}
+/>
+
+// Localize every item
+<EnrichedMarkdownTextInput
+  formatMenuConfig={{
+    bold: { label: t('bold') },
+    italic: { label: t('italic') },
+    underline: { label: t('underline') },
+    strikethrough: { label: t('strikethrough') },
+    spoiler: { label: t('spoiler') },
+    link: { label: t('link') },
+  }}
 />
 ```
+
+> System **Cut / Copy / Paste / Select All** items come from the platform (UIKit `UITextView`, Android `ActionMode`) and are already localized by the device language — they are not exposed through `selectionMenuConfig`.
 
 ### Ref Methods
 

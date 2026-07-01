@@ -8,6 +8,8 @@
 # Opts:
 #   --platform            Required. Target platform, either ios or android.
 #
+#   --app                 Which app to test: rn (default) or android-native.
+#
 #   --config              Path to a Maestro config.yaml to use for tag filtering and
 #                           flow discovery. When set, defaults to the enrichedMarkdownText
 #                           workspace root if no explicit flows are given.
@@ -58,6 +60,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 MAESTRO_ROOT="$REPO_ROOT/.maestro"
 SCREENSHOT_ROOT="$MAESTRO_ROOT"
 BUNDLE_ID="swmansion.enriched.markdown.example"
+APP="rn"
 
 PLATFORM=""
 CONFIG_FILE=""
@@ -70,6 +73,7 @@ FLOWS=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --platform)           PLATFORM="$2"; shift 2 ;;
+    --app)                APP="$2"; shift 2 ;;
     --config)             CONFIG_FILE="$2"; shift 2 ;;
     --include-tags)       INCLUDE_TAGS="$2"; shift 2 ;;
     --exclude-tags)       EXCLUDE_TAGS="$2"; shift 2 ;;
@@ -81,12 +85,30 @@ done
 
 if [ -z "$FLOWS" ]; then
   if [ -n "$CONFIG_FILE" ]; then
-    # Config file drives discovery — point at the maestro workspace root
     FLOWS="$MAESTRO_ROOT"
+  elif [ "$APP" = "android-native" ]; then
+    FLOWS="$MAESTRO_ROOT/androidExample/enrichedMarkdownText/flows"
   else
     FLOWS=$(find "$MAESTRO_ROOT/enrichedMarkdownText/flows" "$MAESTRO_ROOT/enrichedMarkdownInput/flows" -name "*.yaml" -exec dirname {} \; 2>/dev/null | sort -u | tr '\n' ' ')
   fi
 fi
+
+case "$APP" in
+  rn)
+    BUNDLE_ID="swmansion.enriched.markdown.example"
+    ;;
+  android-native)
+    BUNDLE_ID="swmansion.enriched.markdown.android.example"
+    if [ "$PLATFORM" != android ]; then
+      echo "Error: --app android-native requires --platform android" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Error: unknown --app value '$APP'. Use rn or android-native." >&2
+    exit 1
+    ;;
+esac
 
 case "$PLATFORM" in
   ios)      SETUP="$SCRIPT_DIR/setup-ios-simulator.sh" ;;
@@ -116,7 +138,10 @@ app_installed() {
 if [ -n "$REBUILD" ] || ! app_installed; then
   [ -n "$REBUILD" ] && echo "=== rebuild forced, building and installing ==="
   [ -z "$REBUILD" ] && echo "=== App ($BUNDLE_ID) not found, building and installing ==="
-  if [ "$PLATFORM" = ios ]; then
+  if [ "$APP" = "android-native" ]; then
+    ANDROID_SERIAL="$DEVICE_ID" yarn android-example build
+    adb -s "$DEVICE_ID" install -r "$REPO_ROOT/apps/android-example/app/build/outputs/apk/debug/app-debug.apk"
+  elif [ "$PLATFORM" = ios ]; then
     yarn react-native-example ios --udid "$DEVICE_ID"
   else
     yarn react-native-example android --device "$DEVICE_ID"

@@ -4,6 +4,10 @@ import type { MarkdownStyleInternal } from '../EnrichedMarkdownTextNativeCompone
 import EnrichedMarkdownNativeComponent from '../EnrichedMarkdownNativeComponent';
 import { normalizeMarkdownStyle } from '../normalizeMarkdownStyle';
 import { resolveAccessibilityLabels } from '../accessibilityLabelDefaults';
+import {
+  normalizeMenuItem,
+  normalizeLegacyBooleanMenuItem,
+} from '../normalizeMenuItem';
 import type { NativeSyntheticEvent } from 'react-native';
 import type { MarkdownStyle, Md4cFlags } from '../types/MarkdownStyle';
 import type {
@@ -89,46 +93,6 @@ const buildPluralTemplates = (
     );
   }
   return templates;
-};
-
-// One-time deprecation warnings for the legacy boolean shape of
-// selectionMenuConfig items. Not __DEV__-gated on purpose: deprecation warnings
-// need to surface in staging/TestFlight/CI prod builds too.
-const warned = new Set<string>();
-const warnOnce = (key: string, msg: string) => {
-  if (warned.has(key)) return;
-  warned.add(key);
-  console.warn(msg);
-};
-
-type NormalizedMenuItem = { enabled: boolean; label: string };
-
-/**
- * Normalizes a `selectionMenuConfig` item to `{ enabled, label }`, resolving the
- * English default label JS-side. Accepts the legacy boolean form at runtime
- * (deprecated, removed in 0.8) so JS-only consumers don't silently break.
- */
-const normalizeItem = (
-  raw: unknown,
-  field: string,
-  defaultEnabled: boolean,
-  defaultLabel: string
-): NormalizedMenuItem => {
-  if (raw === undefined)
-    return { enabled: defaultEnabled, label: defaultLabel };
-  if (typeof raw === 'boolean') {
-    warnOnce(
-      `selectionMenuConfig.${field}`,
-      `[react-native-enriched-markdown] selectionMenuConfig.${field} as a boolean is ` +
-        `deprecated; use { enabled: ${raw} }. The boolean form will be removed in 0.8.`
-    );
-    return { enabled: raw, label: defaultLabel };
-  }
-  const obj = raw as { enabled?: boolean; label?: string };
-  return {
-    enabled: obj.enabled ?? defaultEnabled,
-    label: obj.label ?? defaultLabel,
-  };
 };
 
 const defaultMd4cFlags: Md4cFlags = {
@@ -258,15 +222,17 @@ export const EnrichedMarkdownText = ({
         }
       | undefined;
 
-    const copy = normalizeItem(config?.copy, 'copy', true, DEFAULT_COPY_LABEL);
-    const copyAsMarkdown = normalizeItem(
+    const copy = normalizeMenuItem(config?.copy, true, DEFAULT_COPY_LABEL);
+    const copyAsMarkdown = normalizeLegacyBooleanMenuItem(
       config?.copyAsMarkdown,
+      'selectionMenuConfig',
       'copyAsMarkdown',
       true,
       DEFAULT_COPY_AS_MARKDOWN_LABEL
     );
-    const copyImageUrl = normalizeItem(
+    const copyImageUrl = normalizeLegacyBooleanMenuItem(
       config?.copyImageUrl,
+      'selectionMenuConfig',
       'copyImageUrl',
       true,
       DEFAULT_COPY_IMAGE_URL_LABEL

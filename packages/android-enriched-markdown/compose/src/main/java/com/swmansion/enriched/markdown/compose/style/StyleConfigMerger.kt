@@ -70,14 +70,13 @@ internal object StyleConfigMerger {
   private fun buildHeadingTypefaces(
     resolveContext: StyleResolveContext,
     headingStyles: Array<HeadingStyle?>,
-  ) =
-    Array(headingStyles.size) { level ->
-      if (level == 0) {
-        null
-      } else {
-        headingStyles[level]?.let { style ->
-          TypefaceUtils.applyStyles(resolveContext.context, style.fontFamily, style.fontWeight)
-        }
+  ) = Array(headingStyles.size) { level ->
+    if (level == 0) {
+      null
+    } else {
+      headingStyles[level]?.let { style ->
+        TypefaceUtils.applyStyles(resolveContext.context, style.fontFamily, style.fontWeight)
       }
     }
+  }
 }

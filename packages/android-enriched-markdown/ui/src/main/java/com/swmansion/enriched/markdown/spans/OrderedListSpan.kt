@@ -6,10 +6,10 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.text.Layout
 import android.text.TextPaint
-import com.swmansion.enriched.markdown.utils.text.TypefaceUtils
 import com.swmansion.enriched.markdown.renderer.BlockStyle
 import com.swmansion.enriched.markdown.renderer.SpanStyleCache
 import com.swmansion.enriched.markdown.styles.ListStyle
+import com.swmansion.enriched.markdown.utils.text.TypefaceUtils
 
 class OrderedListSpan(
   private val listStyle: ListStyle,

@@ -1,8 +1,8 @@
 package com.swmansion.enriched.markdown.compose.style
 
 import android.graphics.Typeface
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.text.font.FontFamily
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.swmansion.enriched.markdown.compose.test.ComposeStyleTestSupport
 import com.swmansion.enriched.markdown.utils.text.TypefaceUtils

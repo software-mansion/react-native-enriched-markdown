@@ -34,6 +34,7 @@ fun TextScreen(
     EnrichedMarkdownText(
       markdown = markdown,
       modifier = Modifier.fillMaxWidth(),
+      style = CustomMarkdownStyle,
       onLinkPress = { url ->
         runCatching {
           context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
