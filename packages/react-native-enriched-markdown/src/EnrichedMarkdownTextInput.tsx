@@ -256,6 +256,7 @@ export const EnrichedMarkdownTextInput = ({
   ...rest
 }: EnrichedMarkdownTextInputProps) => {
   const nativeRef = useRef<NativeRef | null>(null);
+  // Freeze `defaultValue` at mount (RN TextInput semantics): post-mount changes are ignored.
   const initialDefaultValue = useRef(defaultValue).current;
 
   const nextRequestId = useRef(1);
