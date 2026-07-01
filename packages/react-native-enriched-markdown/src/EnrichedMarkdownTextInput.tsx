@@ -109,6 +109,7 @@ export interface EnrichedMarkdownTextInputInstance {
   insertMention: (displayText: string, url: string) => void;
   startMention: (indicator: string) => void;
   removeLink: () => void;
+  copyToClipboard: () => void;
   getMarkdown: () => Promise<string>;
   getCaretRect: () => Promise<CaretRect>;
 }
@@ -520,6 +521,7 @@ export const EnrichedMarkdownTextInput = ({
         Commands.insertMention(commandRef, displayText, url),
       startMention: (indicator) => Commands.startMention(commandRef, indicator),
       removeLink: () => Commands.removeLink(commandRef),
+      copyToClipboard: () => Commands.copyToClipboard(commandRef),
       getMarkdown: () =>
         new Promise<string>((resolve, reject) => {
           const requestId = nextRequestId.current++;

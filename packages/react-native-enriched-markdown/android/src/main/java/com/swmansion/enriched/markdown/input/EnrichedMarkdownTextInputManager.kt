@@ -464,6 +464,10 @@ class EnrichedMarkdownTextInputManager :
     view?.removeLinkAtCursor()
   }
 
+  override fun copyToClipboard(view: EnrichedMarkdownTextInputView?) {
+    view?.copyToClipboard()
+  }
+
   override fun requestMarkdown(
     view: EnrichedMarkdownTextInputView?,
     requestId: Int,

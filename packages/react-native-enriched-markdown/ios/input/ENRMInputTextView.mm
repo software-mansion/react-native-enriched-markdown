@@ -1,14 +1,13 @@
 #import "ENRMInputTextView.h"
 #import "EnrichedMarkdownTextInput.h"
+#import "PasteboardUtils.h"
 #if TARGET_OS_OSX
 #import "EnrichedMarkdownTextInput+Internal.h"
 #endif
 
-static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.markdown";
+NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.markdown";
 
 #if !TARGET_OS_OSX
-
-#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 @implementation ENRMInputTextView
 
@@ -21,14 +20,12 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 
   NSString *plainText = [self.text substringWithRange:selection];
   NSString *markdown = [self.markdownTextInput markdownForSelectedRange];
-
-  UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
   NSMutableDictionary *items = [NSMutableDictionary dictionary];
-  items[UTTypePlainText.identifier] = plainText;
+  items[kUTIPlainText] = plainText;
   if (markdown.length > 0) {
     items[kENRMMarkdownPasteboardType] = markdown;
   }
-  pasteboard.items = @[ items ];
+  copyItemsToPasteboard(items);
 }
 
 - (void)cut:(id)sender
@@ -94,18 +91,12 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 
   NSString *plainText = [self.string substringWithRange:selection];
   NSString *markdown = [self.markdownTextInput markdownForSelectedRange];
-
-  NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-  [pasteboard clearContents];
-  NSMutableArray *types = [NSMutableArray arrayWithObject:NSPasteboardTypeString];
+  NSMutableDictionary *items = [NSMutableDictionary dictionary];
+  items[kUTIPlainText] = plainText;
   if (markdown.length > 0) {
-    [types addObject:kENRMMarkdownPasteboardType];
+    items[kENRMMarkdownPasteboardType] = markdown;
   }
-  [pasteboard declareTypes:types owner:nil];
-  [pasteboard setString:plainText forType:NSPasteboardTypeString];
-  if (markdown.length > 0) {
-    [pasteboard setString:markdown forType:kENRMMarkdownPasteboardType];
-  }
+  copyItemsToPasteboard(items);
 }
 
 - (void)cut:(id)sender

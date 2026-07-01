@@ -307,6 +307,7 @@ interface NativeCommands {
     indicator: string
   ) => void;
   removeLink: (viewRef: React.ElementRef<ComponentType>) => void;
+  copyToClipboard: (viewRef: React.ElementRef<ComponentType>) => void;
   requestMarkdown: (
     viewRef: React.ElementRef<ComponentType>,
     requestId: CodegenTypes.Int32
@@ -333,6 +334,7 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'insertMention',
     'startMention',
     'removeLink',
+    'copyToClipboard',
     'requestMarkdown',
     'requestCaretRect',
   ],

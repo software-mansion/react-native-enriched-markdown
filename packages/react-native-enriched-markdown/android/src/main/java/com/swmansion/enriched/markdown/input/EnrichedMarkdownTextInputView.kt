@@ -1,5 +1,7 @@
 package com.swmansion.enriched.markdown.input
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
@@ -409,6 +411,16 @@ class EnrichedMarkdownTextInputView(
       }
       applyFormattingAndEmit()
     }
+  }
+
+  // Copies the input's plain text to the system clipboard without disturbing
+  // the current selection. Android's system clipboard round-trip is plain text
+  // only — inline styles are not preserved for external paste targets.
+  fun copyToClipboard() {
+    val content = text
+    if (content.isNullOrEmpty()) return
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText(null, content))
   }
 
   fun setLinkForSelection(url: String) {

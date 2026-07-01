@@ -75,6 +75,12 @@ export default function PlaygroundScreen() {
     const md = await inputRef.current?.getMarkdown();
     Alert.alert('Markdown', md ?? '(empty)', [{ text: 'OK' }]);
   }, []);
+  const handleCopyToClipboard = useCallback(() => {
+    inputRef.current?.copyToClipboard();
+    Alert.alert('Copied', 'Input contents copied to clipboard.', [
+      { text: 'OK' },
+    ]);
+  }, []);
 
   const handleSetMarkdownConfirm = useCallback(() => {
     const value = rawInput;
@@ -218,6 +224,64 @@ export default function PlaygroundScreen() {
         >
           <Text style={styles.getMarkdownText}>Get Raw Markdown</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.getMarkdownButton}
+          onPress={handleCopyToClipboard}
+          testID="copy-to-clipboard-button"
+        >
+          <Text style={styles.getMarkdownText}>Copy Input to Clipboard</Text>
+        </TouchableOpacity>
+
+        <Modal
+          visible={setMarkdownModalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setSetMarkdownModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Set Raw Markdown</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={rawInput}
+                onChangeText={setRawInput}
+                multiline
+                autoFocus
+                placeholder="Paste or type markdown..."
+                placeholderTextColor="#9CA3AF"
+                autoCorrect={false}
+                autoCapitalize="none"
+                testID="set-markdown-input"
+              />
+              <View style={styles.modalButtonRow}>
+                <TouchableOpacity
+                  style={[styles.button, styles.modalCancelButton]}
+                  onPress={() => setSetMarkdownModalVisible(false)}
+                  testID="set-markdown-cancel"
+                >
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonActive]}
+                  onPress={() => {
+                    inputRef.current?.setValue(rawInput);
+                    setMarkdown(rawInput);
+                    setSetMarkdownModalVisible(false);
+                  }}
+                  testID="set-markdown-confirm"
+                >
+                  <Text style={[styles.buttonText, styles.buttonTextActive]}>
+                    Set
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
 
         <View style={styles.divider} />
 

@@ -19,6 +19,7 @@
 #import "EnrichedMarkdownTextInput+Internal.h"
 #import "InputStylePropsUtils.h"
 #import "ParagraphStyleUtils.h"
+#import "PasteboardUtils.h"
 #import "SelectionColorUtils.h"
 #import <QuartzCore/CABase.h>
 #import <React/RCTI18nUtil.h>
@@ -926,6 +927,21 @@ using namespace facebook::react;
   }
 
   return [ENRMMarkdownSerializer serializePlainText:selectedText ranges:clippedRanges];
+}
+
+- (void)copyToClipboard
+{
+  NSString *plainText = ENRMGetPlainText(_textView);
+  if (plainText.length == 0) {
+    return;
+  }
+  NSString *markdown = [ENRMMarkdownSerializer serializePlainText:plainText ranges:[self allRangesIncludingTransient]];
+  NSMutableDictionary *items = [NSMutableDictionary dictionary];
+  items[kUTIPlainText] = plainText;
+  if (markdown.length > 0) {
+    items[kENRMMarkdownPasteboardType] = markdown;
+  }
+  copyItemsToPasteboard(items);
 }
 
 - (void)requestMarkdown:(NSInteger)requestId

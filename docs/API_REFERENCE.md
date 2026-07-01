@@ -927,6 +927,12 @@ Inserts a link with the given text and URL at the current cursor position. Usefu
 
 Removes the link from the current selection.
 
+### `copyToClipboard()`
+
+Copies the input's full content to the system clipboard, matching the result of selecting all text and pressing the context menu's copy action. The selection is left unchanged, and calling it on an empty input is a no-op.
+
+On iOS and macOS the clipboard receives both plain text and a private Markdown pasteboard type, so pasting back into an `EnrichedMarkdownTextInput` restores the formatting; external apps receive plain text only. On Android the clipboard receives plain text only — inline styles are not preserved for any paste target.
+
 ### `startMention(indicator: string)`
 
 Programmatically triggers a mention flow by inserting the indicator character at the current cursor position. The indicator must be listed in the `mentionIndicators` prop. Useful for toolbar buttons.

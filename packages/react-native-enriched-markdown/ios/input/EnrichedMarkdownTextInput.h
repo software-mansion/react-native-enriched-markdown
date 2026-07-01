@@ -10,6 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) BOOL blockEmitting;
 - (CGSize)measureSize:(CGFloat)maxWidth;
 - (nullable NSString *)markdownForSelectedRange;
+- (void)copyToClipboard;
 - (void)pasteMarkdown:(NSString *)markdown;
 - (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray *)ranges;
 - (void)scheduleRelayoutIfNeeded;
