@@ -19,3 +19,18 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 NS_ASSUME_NONNULL_END
+
+#ifdef __cplusplus
+template <typename T> static bool ENRMAccessibilityLabelsChanged(const T &oldLabels, const T &newLabels)
+{
+  return oldLabels.list.bulletPoint != newLabels.list.bulletPoint ||
+         oldLabels.list.nestedBulletPoint != newLabels.list.nestedBulletPoint ||
+         oldLabels.list.orderedItem != newLabels.list.orderedItem ||
+         oldLabels.list.nestedOrderedItem != newLabels.list.nestedOrderedItem ||
+         oldLabels.blockquote.quote != newLabels.blockquote.quote ||
+         oldLabels.blockquote.nestedQuote != newLabels.blockquote.nestedQuote ||
+         oldLabels.table.row != newLabels.table.row || oldLabels.math.equation != newLabels.math.equation ||
+         oldLabels.rotor.headings != newLabels.rotor.headings || oldLabels.rotor.links != newLabels.rotor.links ||
+         oldLabels.rotor.images != newLabels.rotor.images;
+}
+#endif

@@ -840,7 +840,7 @@ static char kENRMSegmentFadeAnimatorKey;
                                    newViewProps.selectionMenuConfig.copyImageUrl);
   [self pushSelectionMenuLabelsToSegments];
 
-  if (newViewProps.accessibilityLabels != oldViewProps.accessibilityLabels) {
+  if (ENRMAccessibilityLabelsChanged(oldViewProps.accessibilityLabels, newViewProps.accessibilityLabels)) {
     _accessibilityLabels = [[ENRMAccessibilityLabels alloc] init];
     _accessibilityLabels.bulletPoint =
         [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.bulletPoint.c_str()];

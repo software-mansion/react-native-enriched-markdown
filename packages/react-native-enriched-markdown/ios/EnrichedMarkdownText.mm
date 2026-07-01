@@ -541,7 +541,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
       ENRMBuildSelectionMenuConfig(_selectionMenuLabels, newViewProps.selectionMenuConfig.copyAsMarkdown,
                                    newViewProps.selectionMenuConfig.copyImageUrl);
 
-  if (newViewProps.accessibilityLabels != oldViewProps.accessibilityLabels) {
+  if (ENRMAccessibilityLabelsChanged(oldViewProps.accessibilityLabels, newViewProps.accessibilityLabels)) {
     _accessibilityLabels = [[ENRMAccessibilityLabels alloc] init];
     _accessibilityLabels.bulletPoint =
         [[NSString alloc] initWithUTF8String:newViewProps.accessibilityLabels.list.bulletPoint.c_str()];
