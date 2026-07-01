@@ -18,6 +18,7 @@ import com.swmansion.enriched.markdown.utils.text.view.applySelectableState
 import com.swmansion.enriched.markdown.utils.text.view.cancelJSTouchForCheckboxTap
 import com.swmansion.enriched.markdown.utils.text.view.cancelJSTouchForLinkTap
 import com.swmansion.enriched.markdown.utils.text.view.createSelectionActionModeCallback
+import com.swmansion.enriched.markdown.utils.text.view.reallowParentInterceptIfLinkReleased
 import com.swmansion.enriched.markdown.utils.text.view.setupAsMarkdownTextView
 import com.swmansion.enriched.markdown.views.BlockSegmentView
 
@@ -109,8 +110,9 @@ class EnrichedMarkdownInternalText
         return true
       }
       val result = super.onTouchEvent(event)
-      if (event.action == MotionEvent.ACTION_DOWN) {
-        cancelJSTouchForLinkTap(event)
+      when (event.action) {
+        MotionEvent.ACTION_DOWN -> cancelJSTouchForLinkTap(event)
+        else -> reallowParentInterceptIfLinkReleased()
       }
       return result
     }

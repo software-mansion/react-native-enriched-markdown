@@ -15,6 +15,7 @@ import android.text.TextPaint
 import android.text.style.AlignmentSpan
 import android.text.style.MetricAffectingSpan
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
@@ -30,6 +31,8 @@ import com.swmansion.enriched.markdown.utils.common.serialization.MarkdownASTSer
 import com.swmansion.enriched.markdown.utils.text.conversion.HTMLGenerator
 import com.swmansion.enriched.markdown.utils.text.extensions.replaceMathSpansWithPlaceholders
 import com.swmansion.enriched.markdown.utils.text.view.LinkLongPressMovementMethod
+import com.swmansion.enriched.markdown.utils.text.view.cancelJSTouchForLinkTap
+import com.swmansion.enriched.markdown.utils.text.view.reallowParentInterceptIfLinkReleased
 import com.swmansion.enriched.markdown.views.ContextMenuPopup
 import kotlin.math.ceil
 import kotlin.math.max
@@ -546,6 +549,15 @@ class TableContainerView(
       layoutDirection = View.LAYOUT_DIRECTION_LOCALE
       textDirection = View.TEXT_DIRECTION_LOCALE
       importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+      val result = super.onTouchEvent(event)
+      when (event.action) {
+        MotionEvent.ACTION_DOWN -> cancelJSTouchForLinkTap(event)
+        else -> reallowParentInterceptIfLinkReleased()
+      }
+      return result
     }
   }
 
