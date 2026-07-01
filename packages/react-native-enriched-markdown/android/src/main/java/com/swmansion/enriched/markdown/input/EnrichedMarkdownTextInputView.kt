@@ -413,10 +413,9 @@ class EnrichedMarkdownTextInputView(
     }
   }
 
-  // Copies the whole rich content to the system clipboard, matching the
-  // result of selecting all text and pressing the context menu's copy action.
-  // Writing the full Editable directly preserves inline styles for rich paste
-  // targets without disturbing the current selection.
+  // Copies the input's plain text to the system clipboard without disturbing
+  // the current selection. Android's system clipboard round-trip is plain text
+  // only — inline styles are not preserved for external paste targets.
   fun copyToClipboard() {
     val content = text
     if (content.isNullOrEmpty()) return

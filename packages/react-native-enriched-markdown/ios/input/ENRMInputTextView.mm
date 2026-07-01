@@ -4,7 +4,7 @@
 #import "EnrichedMarkdownTextInput+Internal.h"
 #endif
 
-static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.markdown";
+NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.markdown";
 
 #if !TARGET_OS_OSX
 
@@ -21,24 +21,6 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 
   NSString *plainText = [self.text substringWithRange:selection];
   NSString *markdown = [self.markdownTextInput markdownForSelectedRange];
-
-  UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
-  NSMutableDictionary *items = [NSMutableDictionary dictionary];
-  items[UTTypePlainText.identifier] = plainText;
-  if (markdown.length > 0) {
-    items[kENRMMarkdownPasteboardType] = markdown;
-  }
-  pasteboard.items = @[ items ];
-}
-
-- (void)copyEntireContents
-{
-  NSString *plainText = self.text;
-  if (plainText.length == 0) {
-    return;
-  }
-
-  NSString *markdown = [self.markdownTextInput markdownForFullContent];
 
   UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
   NSMutableDictionary *items = [NSMutableDictionary dictionary];
@@ -112,28 +94,6 @@ static NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-ma
 
   NSString *plainText = [self.string substringWithRange:selection];
   NSString *markdown = [self.markdownTextInput markdownForSelectedRange];
-
-  NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-  [pasteboard clearContents];
-  NSMutableArray *types = [NSMutableArray arrayWithObject:NSPasteboardTypeString];
-  if (markdown.length > 0) {
-    [types addObject:kENRMMarkdownPasteboardType];
-  }
-  [pasteboard declareTypes:types owner:nil];
-  [pasteboard setString:plainText forType:NSPasteboardTypeString];
-  if (markdown.length > 0) {
-    [pasteboard setString:markdown forType:kENRMMarkdownPasteboardType];
-  }
-}
-
-- (void)copyEntireContents
-{
-  NSString *plainText = self.string;
-  if (plainText.length == 0) {
-    return;
-  }
-
-  NSString *markdown = [self.markdownTextInput markdownForFullContent];
 
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
   [pasteboard clearContents];

@@ -157,9 +157,9 @@ See [Mentions](MENTIONS.md) for full documentation on setup, events, ref methods
 
 The input's content can be copied to the system clipboard from a ref, without requiring the user to select text and open the context menu:
 
-- [`copyToClipboard()`](API_REFERENCE.md#copytoclipboard) — copies the full rich content to the system clipboard, matching the result of selecting all text and pressing the context menu's copy action. The selection is left unchanged, and calling it on an empty input is a no-op.
+- [`copyToClipboard()`](API_REFERENCE.md#copytoclipboard) — copies the full content to the system clipboard, matching the result of selecting all text and pressing the context menu's copy action. The selection is left unchanged, and calling it on an empty input is a no-op.
 
-This is useful for an app-level copy button that needs to copy the rich content rather than raw Markdown or plain text.
+On iOS and macOS the clipboard receives both plain text and a private Markdown pasteboard type, so pasting back into an `EnrichedMarkdownTextInput` restores the formatting; external apps receive plain text only. On Android the clipboard receives plain text only — inline styles are not preserved for any paste target.
 
 ## Style Detection
 
