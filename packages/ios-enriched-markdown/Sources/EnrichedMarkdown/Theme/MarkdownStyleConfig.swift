@@ -202,6 +202,60 @@ public struct BlockquoteStyle: Equatable, Sendable {
     }
 }
 
+public struct ListStyle: Equatable, Sendable {
+    public var font: UIFont?
+    public var foregroundColor: UIColor?
+    public var marginTop: CGFloat?
+    public var marginBottom: CGFloat?
+    public var lineHeight: CGFloat?
+    public var marginLeft: CGFloat?
+    public var gapWidth: CGFloat?
+    public var bulletColor: UIColor?
+    public var bulletSize: CGFloat?
+    public var markerMinWidth: CGFloat?
+    public var markerColor: UIColor?
+
+    public init(
+        font: UIFont? = nil,
+        foregroundColor: UIColor? = nil,
+        marginTop: CGFloat? = nil,
+        marginBottom: CGFloat? = nil,
+        lineHeight: CGFloat? = nil,
+        marginLeft: CGFloat? = nil,
+        gapWidth: CGFloat? = nil,
+        bulletColor: UIColor? = nil,
+        bulletSize: CGFloat? = nil,
+        markerMinWidth: CGFloat? = nil,
+        markerColor: UIColor? = nil
+    ) {
+        self.font = font
+        self.foregroundColor = foregroundColor
+        self.marginTop = marginTop
+        self.marginBottom = marginBottom
+        self.lineHeight = lineHeight
+        self.marginLeft = marginLeft
+        self.gapWidth = gapWidth
+        self.bulletColor = bulletColor
+        self.bulletSize = bulletSize
+        self.markerMinWidth = markerMinWidth
+        self.markerColor = markerColor
+    }
+
+    public mutating func merge(_ other: ListStyle) {
+        if let font = other.font { self.font = font }
+        if let foregroundColor = other.foregroundColor { self.foregroundColor = foregroundColor }
+        if let marginTop = other.marginTop { self.marginTop = marginTop }
+        if let marginBottom = other.marginBottom { self.marginBottom = marginBottom }
+        if let lineHeight = other.lineHeight { self.lineHeight = lineHeight }
+        if let marginLeft = other.marginLeft { self.marginLeft = marginLeft }
+        if let gapWidth = other.gapWidth { self.gapWidth = gapWidth }
+        if let bulletColor = other.bulletColor { self.bulletColor = bulletColor }
+        if let bulletSize = other.bulletSize { self.bulletSize = bulletSize }
+        if let markerMinWidth = other.markerMinWidth { self.markerMinWidth = markerMinWidth }
+        if let markerColor = other.markerColor { self.markerColor = markerColor }
+    }
+}
+
 public struct MarkdownStyleConfig: Equatable, Sendable {
     public var paragraph: ElementStyle
     public var heading1: ElementStyle
@@ -219,6 +273,7 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
     public var thematicBreak: ThematicBreakStyle
     public var codeBlock: CodeBlockStyle
     public var blockquote: BlockquoteStyle
+    public var list: ListStyle
 
     public init(
         paragraph: ElementStyle = ElementStyle(),
@@ -236,7 +291,8 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
         inlineImage: InlineImageStyle = InlineImageStyle(),
         thematicBreak: ThematicBreakStyle = ThematicBreakStyle(),
         codeBlock: CodeBlockStyle = CodeBlockStyle(),
-        blockquote: BlockquoteStyle = BlockquoteStyle()
+        blockquote: BlockquoteStyle = BlockquoteStyle(),
+        list: ListStyle = ListStyle()
     ) {
         self.paragraph = paragraph
         self.heading1 = heading1
@@ -254,6 +310,7 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
         self.thematicBreak = thematicBreak
         self.codeBlock = codeBlock
         self.blockquote = blockquote
+        self.list = list
     }
 
     public mutating func merge(_ other: MarkdownStyleConfig) {
@@ -273,6 +330,7 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
         thematicBreak.merge(other.thematicBreak)
         codeBlock.merge(other.codeBlock)
         blockquote.merge(other.blockquote)
+        list.merge(other.list)
     }
 
     public func headingStyle(for level: Int) -> ElementStyle {
@@ -299,83 +357,4 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
         }
     }
 
-    public static func baseline(traitCollection: UITraitCollection = .current) -> MarkdownStyleConfig {
-        let bodyFont = UIFont.preferredFont(forTextStyle: .body, compatibleWith: traitCollection)
-        let labelColor = UIColor.label.resolvedColor(with: traitCollection)
-
-        func headingStyle(textStyle: UIFont.TextStyle, marginBottom: CGFloat) -> ElementStyle {
-            ElementStyle(
-                font: UIFont.preferredFont(forTextStyle: textStyle, compatibleWith: traitCollection),
-                foregroundColor: labelColor,
-                marginTop: 0,
-                marginBottom: marginBottom
-            )
-        }
-
-        return MarkdownStyleConfig(
-            paragraph: ElementStyle(
-                font: bodyFont,
-                foregroundColor: labelColor,
-                marginTop: 0,
-                marginBottom: 12
-            ),
-            heading1: headingStyle(textStyle: .largeTitle, marginBottom: 16),
-            heading2: headingStyle(textStyle: .title1, marginBottom: 14),
-            heading3: headingStyle(textStyle: .title2, marginBottom: 12),
-            heading4: headingStyle(textStyle: .title3, marginBottom: 10),
-            heading5: headingStyle(textStyle: .headline, marginBottom: 8),
-            heading6: headingStyle(textStyle: .subheadline, marginBottom: 8),
-            link: ElementStyle(
-                foregroundColor: UIColor.tintColor.resolvedColor(with: traitCollection),
-                underline: true
-            ),
-            strong: ElementStyle(
-                foregroundColor: labelColor
-            ),
-            emphasis: ElementStyle(
-                foregroundColor: labelColor
-            ),
-            code: ElementStyle(
-                font: UIFont.monospacedSystemFont(ofSize: bodyFont.pointSize, weight: .regular),
-                foregroundColor: UIColor.secondaryLabel.resolvedColor(with: traitCollection),
-                backgroundColor: UIColor.quaternarySystemFill.resolvedColor(with: traitCollection)
-            ),
-            image: ImageStyle(
-                height: 200,
-                borderRadius: 0,
-                marginTop: 0,
-                marginBottom: 12
-            ),
-            inlineImage: InlineImageStyle(size: 20),
-            thematicBreak: ThematicBreakStyle(
-                color: UIColor.separator.resolvedColor(with: traitCollection),
-                height: 1,
-                marginTop: 24,
-                marginBottom: 24
-            ),
-            codeBlock: CodeBlockStyle(
-                font: UIFont.monospacedSystemFont(ofSize: 14, weight: .regular),
-                foregroundColor: UIColor(red: 0.95, green: 0.96, blue: 0.97, alpha: 1),
-                backgroundColor: UIColor(red: 0.12, green: 0.16, blue: 0.22, alpha: 1),
-                marginTop: 0,
-                marginBottom: 16,
-                lineHeight: 20,
-                padding: 16,
-                borderColor: UIColor(red: 0.22, green: 0.25, blue: 0.29, alpha: 1),
-                borderRadius: 8,
-                borderWidth: 1
-            ),
-            blockquote: BlockquoteStyle(
-                font: bodyFont,
-                foregroundColor: UIColor(red: 0.29, green: 0.33, blue: 0.39, alpha: 1),
-                backgroundColor: UIColor(red: 0.98, green: 0.98, blue: 0.99, alpha: 1),
-                marginTop: 0,
-                marginBottom: 16,
-                lineHeight: 24,
-                borderColor: UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1),
-                borderWidth: 3,
-                gapWidth: 16
-            )
-        )
-    }
 }
