@@ -44,6 +44,25 @@ object InputParser {
     return ParseResult(plainText.toString(), ranges)
   }
 
+  private fun walkListItems(
+    items: List<MarkdownASTNode>,
+    isOrdered: Boolean,
+    plainText: StringBuilder,
+    ranges: MutableList<FormattingRange>,
+    blankRuns: ArrayDeque<Int>,
+  ) {
+    items.forEachIndexed { index, item ->
+      if (index > 0) plainText.append("\n")
+      plainText.append(if (isOrdered) "${index + 1}. " else "- ")
+      if (item.getAttribute("isTask") == "true") {
+        plainText.append(if (item.getAttribute("taskChecked") == "true") "[x] " else "[ ] ")
+      }
+      for (child in item.children) {
+        walkNode(child, plainText, ranges, ArrayDeque(), blankRuns)
+      }
+    }
+  }
+
   private fun walkNode(
     node: MarkdownASTNode,
     plainText: StringBuilder,
@@ -51,6 +70,20 @@ object InputParser {
     activeStyles: ArrayDeque<ActiveStyle>,
     blankRuns: ArrayDeque<Int>,
   ) {
+    when (node.type) {
+      NodeType.UnorderedList -> {
+        walkListItems(node.children, isOrdered = false, plainText, ranges, blankRuns)
+        return
+      }
+
+      NodeType.OrderedList -> {
+        walkListItems(node.children, isOrdered = true, plainText, ranges, blankRuns)
+        return
+      }
+
+      else -> {}
+    }
+
     val styleType = nodeTypeToStyleType(node.type)
 
     if (styleType != null) {
