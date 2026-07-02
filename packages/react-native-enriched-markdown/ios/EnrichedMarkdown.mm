@@ -931,7 +931,8 @@ static char kENRMSegmentFadeAnimatorKey;
 
 - (void)prepareForRecycle
 {
-  _props = std::make_shared<const EnrichedMarkdownProps>();
+  const auto resetProps = std::make_shared<const EnrichedMarkdownProps>();
+  _props = resetProps;
   [_renderCoordinator invalidate];
 
   for (RCTUIView *segment in _segmentViews) {
@@ -951,6 +952,11 @@ static char kENRMSegmentFadeAnimatorKey;
   _renderedMarkdown = nil;
   _config = nil;
   _md4cFlags = [ENRMMd4cFlags defaultFlags];
+  _md4cFlags.underline = resetProps->md4cFlags.underline;
+  _md4cFlags.superscript = resetProps->md4cFlags.superscript;
+  _md4cFlags.subscript = resetProps->md4cFlags.subscript;
+  _md4cFlags.latexMath = resetProps->md4cFlags.latexMath;
+  _md4cFlags.highlight = resetProps->md4cFlags.highlight;
   _maxFontSizeMultiplier = 0;
   _allowTrailingMargin = NO;
   _streamingAnimation = NO;
