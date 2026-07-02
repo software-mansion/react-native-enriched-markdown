@@ -1,1 +1,2 @@
-module.exports = require('./lib/module/plugin/withReactNativeEnrichedMarkdown');
+module.exports =
+  require('./plugin/build/withReactNativeEnrichedMarkdown').default;

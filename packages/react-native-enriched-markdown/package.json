@@ -25,6 +25,7 @@
     "!**/__mocks__",
     "!**/.*",
     "app.plugin.js",
+    "plugin",
     "docs"
   ],
   "scripts": {
@@ -36,11 +37,12 @@
     "lint-clang:android:fix": "find android/ \\( -iname \"*.h\" -o -iname \"*.cpp\" \\) | grep -v -e build | xargs npx clang-format -i",
     "lint-clang": "yarn lint-clang:ios && yarn lint-clang:android",
     "lint-clang:fix": "yarn lint-clang:ios:fix && yarn lint-clang:android:fix",
-    "clean": "del-cli android/build lib",
+    "clean": "del-cli android/build lib plugin/build",
     "sync-md4c": "bash ../../scripts/fetch-md4c.sh",
     "prepack": "bash ../../scripts/prepare-npm-publish.sh prepack",
     "postpack": "bash ../../scripts/prepare-npm-publish.sh postpack",
-    "prepare": "bob build"
+    "build:plugin": "tsc -p plugin/tsconfig.build.json",
+    "prepare": "bob build && yarn build:plugin"
   },
   "keywords": [
     "react-native",
