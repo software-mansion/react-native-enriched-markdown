@@ -949,8 +949,16 @@ static char kENRMSegmentFadeAnimatorKey;
 
   _cachedMarkdown = nil;
   _renderedMarkdown = nil;
+  _config = nil;
+  _md4cFlags = [ENRMMd4cFlags defaultFlags];
+  _maxFontSizeMultiplier = 0;
+  _allowTrailingMargin = NO;
   _streamingAnimation = NO;
   _tableStreamingMode = ENRMTableStreamingModeProgressive;
+  _renderedStyleFingerprint = 0;
+  _pendingStyleFingerprint = 0;
+  _contextMenuItemTexts = nil;
+  _contextMenuItemIcons = nil;
   _dirtyFlags = ENRMDirtyNone;
 
   [super prepareForRecycle];
