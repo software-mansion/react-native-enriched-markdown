@@ -156,6 +156,52 @@ public struct CodeBlockStyle: Equatable, Sendable {
     }
 }
 
+public struct BlockquoteStyle: Equatable, Sendable {
+    public var font: UIFont?
+    public var foregroundColor: UIColor?
+    public var backgroundColor: UIColor?
+    public var marginTop: CGFloat?
+    public var marginBottom: CGFloat?
+    public var lineHeight: CGFloat?
+    public var borderColor: UIColor?
+    public var borderWidth: CGFloat?
+    public var gapWidth: CGFloat?
+
+    public init(
+        font: UIFont? = nil,
+        foregroundColor: UIColor? = nil,
+        backgroundColor: UIColor? = nil,
+        marginTop: CGFloat? = nil,
+        marginBottom: CGFloat? = nil,
+        lineHeight: CGFloat? = nil,
+        borderColor: UIColor? = nil,
+        borderWidth: CGFloat? = nil,
+        gapWidth: CGFloat? = nil
+    ) {
+        self.font = font
+        self.foregroundColor = foregroundColor
+        self.backgroundColor = backgroundColor
+        self.marginTop = marginTop
+        self.marginBottom = marginBottom
+        self.lineHeight = lineHeight
+        self.borderColor = borderColor
+        self.borderWidth = borderWidth
+        self.gapWidth = gapWidth
+    }
+
+    public mutating func merge(_ other: BlockquoteStyle) {
+        if let font = other.font { self.font = font }
+        if let foregroundColor = other.foregroundColor { self.foregroundColor = foregroundColor }
+        if let backgroundColor = other.backgroundColor { self.backgroundColor = backgroundColor }
+        if let marginTop = other.marginTop { self.marginTop = marginTop }
+        if let marginBottom = other.marginBottom { self.marginBottom = marginBottom }
+        if let lineHeight = other.lineHeight { self.lineHeight = lineHeight }
+        if let borderColor = other.borderColor { self.borderColor = borderColor }
+        if let borderWidth = other.borderWidth { self.borderWidth = borderWidth }
+        if let gapWidth = other.gapWidth { self.gapWidth = gapWidth }
+    }
+}
+
 public struct MarkdownStyleConfig: Equatable, Sendable {
     public var paragraph: ElementStyle
     public var heading1: ElementStyle
@@ -172,6 +218,7 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
     public var inlineImage: InlineImageStyle
     public var thematicBreak: ThematicBreakStyle
     public var codeBlock: CodeBlockStyle
+    public var blockquote: BlockquoteStyle
 
     public init(
         paragraph: ElementStyle = ElementStyle(),
@@ -188,7 +235,8 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
         image: ImageStyle = ImageStyle(),
         inlineImage: InlineImageStyle = InlineImageStyle(),
         thematicBreak: ThematicBreakStyle = ThematicBreakStyle(),
-        codeBlock: CodeBlockStyle = CodeBlockStyle()
+        codeBlock: CodeBlockStyle = CodeBlockStyle(),
+        blockquote: BlockquoteStyle = BlockquoteStyle()
     ) {
         self.paragraph = paragraph
         self.heading1 = heading1
@@ -205,6 +253,7 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
         self.inlineImage = inlineImage
         self.thematicBreak = thematicBreak
         self.codeBlock = codeBlock
+        self.blockquote = blockquote
     }
 
     public mutating func merge(_ other: MarkdownStyleConfig) {
@@ -223,6 +272,7 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
         inlineImage.merge(other.inlineImage)
         thematicBreak.merge(other.thematicBreak)
         codeBlock.merge(other.codeBlock)
+        blockquote.merge(other.blockquote)
     }
 
     public func headingStyle(for level: Int) -> ElementStyle {
@@ -314,6 +364,17 @@ public struct MarkdownStyleConfig: Equatable, Sendable {
                 borderColor: UIColor(red: 0.22, green: 0.25, blue: 0.29, alpha: 1),
                 borderRadius: 8,
                 borderWidth: 1
+            ),
+            blockquote: BlockquoteStyle(
+                font: bodyFont,
+                foregroundColor: UIColor(red: 0.29, green: 0.33, blue: 0.39, alpha: 1),
+                backgroundColor: UIColor(red: 0.98, green: 0.98, blue: 0.99, alpha: 1),
+                marginTop: 0,
+                marginBottom: 16,
+                lineHeight: 24,
+                borderColor: UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1),
+                borderWidth: 3,
+                gapWidth: 16
             )
         )
     }

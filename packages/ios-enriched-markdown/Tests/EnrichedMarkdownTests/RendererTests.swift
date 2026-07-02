@@ -198,6 +198,34 @@ final class RendererTests: XCTestCase {
         XCTAssertTrue(foundGreen)
     }
 
+    func testBlockquoteHasDepthAndIndent() {
+        let result = MarkdownRenderer.render("> quote text", config: config)
+
+        var foundDepth = false
+        result.enumerateAttribute(MarkdownAttribute.blockquoteDepth, in: NSRange(location: 0, length: result.length)) { value, range, _ in
+            guard let depth = value as? Int else { return }
+            XCTAssertEqual(depth, 0)
+            if let style = result.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle {
+                XCTAssertGreaterThan(style.headIndent, 0)
+            }
+            foundDepth = true
+        }
+        XCTAssertTrue(foundDepth)
+    }
+
+    func testNestedBlockquoteIncreasesDepth() {
+        let result = MarkdownRenderer.render("> outer\n> > inner", config: config)
+
+        var depths = Set<Int>()
+        result.enumerateAttribute(MarkdownAttribute.blockquoteDepth, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            if let depth = value as? Int {
+                depths.insert(depth)
+            }
+        }
+        XCTAssertTrue(depths.contains(0))
+        XCTAssertTrue(depths.contains(1))
+    }
+
     func testCodeBlockDoesNotIncludePrecedingParagraphLabel() {
         let result = MarkdownRenderer.render(
             "Fenced block:\n\n```\ncode\n```",
@@ -212,6 +240,26 @@ final class RendererTests: XCTestCase {
             }
         }
         XCTAssertFalse(labelHasCodeBlock)
+    }
+
+    func testNestedBlockquoteRendersOnSeparateLines() {
+        let result = MarkdownRenderer.render("> Outer quote\n> > Nested quote", config: config)
+        let outerRange = (result.string as NSString).range(of: "Outer quote")
+        let nestedRange = (result.string as NSString).range(of: "Nested quote")
+        XCTAssertNotEqual(outerRange.location, NSNotFound)
+        XCTAssertNotEqual(nestedRange.location, NSNotFound)
+        XCTAssertLessThan(outerRange.location, nestedRange.location)
+    }
+
+    func testBlockquoteDepthAttributeIsReadableAsInteger() {
+        let result = MarkdownRenderer.render("> quote", config: config)
+        var foundDepth = false
+        result.enumerateAttribute(MarkdownAttribute.blockquoteDepth, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            if MarkdownAttributeValue.intValue(from: value) == 0 {
+                foundDepth = true
+            }
+        }
+        XCTAssertTrue(foundDepth)
     }
     func testCodeBlockBackgroundRangeIncludesPaddingSpacers() {
         var customConfig = config!
@@ -569,5 +617,53 @@ private extension String {
             }
         }
         XCTAssertFalse(labelHasCodeBlock)
+    }
+
+    func testBlockquoteHasDepthAndIndent() {
+        let result = MarkdownRenderer.render("> quote text", config: config)
+
+        var foundDepth = false
+        result.enumerateAttribute(MarkdownAttribute.blockquoteDepth, in: NSRange(location: 0, length: result.length)) { value, range, _ in
+            guard let depth = value as? Int else { return }
+            XCTAssertEqual(depth, 0)
+            if let style = result.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle {
+                XCTAssertGreaterThan(style.headIndent, 0)
+            }
+            foundDepth = true
+        }
+        XCTAssertTrue(foundDepth)
+    }
+
+    func testNestedBlockquoteIncreasesDepth() {
+        let result = MarkdownRenderer.render("> outer\n> > inner", config: config)
+
+        var depths = Set<Int>()
+        result.enumerateAttribute(MarkdownAttribute.blockquoteDepth, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            if let depth = value as? Int {
+                depths.insert(depth)
+            }
+        }
+        XCTAssertTrue(depths.contains(0))
+        XCTAssertTrue(depths.contains(1))
+    }
+
+    func testNestedBlockquoteRendersOnSeparateLines() {
+        let result = MarkdownRenderer.render("> Outer quote\n> > Nested quote", config: config)
+        let outerRange = (result.string as NSString).range(of: "Outer quote")
+        let nestedRange = (result.string as NSString).range(of: "Nested quote")
+        XCTAssertNotEqual(outerRange.location, NSNotFound)
+        XCTAssertNotEqual(nestedRange.location, NSNotFound)
+        XCTAssertLessThan(outerRange.location, nestedRange.location)
+    }
+
+    func testBlockquoteDepthAttributeIsReadableAsInteger() {
+        let result = MarkdownRenderer.render("> quote", config: config)
+        var foundDepth = false
+        result.enumerateAttribute(MarkdownAttribute.blockquoteDepth, in: NSRange(location: 0, length: result.length)) { value, _, _ in
+            if MarkdownAttributeValue.intValue(from: value) == 0 {
+                foundDepth = true
+            }
+        }
+        XCTAssertTrue(foundDepth)
     }
 }
