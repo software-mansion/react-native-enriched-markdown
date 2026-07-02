@@ -38,36 +38,37 @@ import com.swmansion.enriched.markdown.utils.input.MarkdownStyleParser
 
 @ReactModule(name = EnrichedMarkdownTextInputManager.NAME)
 class EnrichedMarkdownTextInputManager :
-  SimpleViewManager<EnrichedMarkdownTextInputView>(),
-  EnrichedMarkdownTextInputManagerInterface<EnrichedMarkdownTextInputView> {
-  private val delegate: ViewManagerDelegate<EnrichedMarkdownTextInputView> =
+  SimpleViewManager<EnrichedMarkdownTextInputScrollView>(),
+  EnrichedMarkdownTextInputManagerInterface<EnrichedMarkdownTextInputScrollView> {
+  private val delegate: ViewManagerDelegate<EnrichedMarkdownTextInputScrollView> =
     EnrichedMarkdownTextInputManagerDelegate(this)
 
-  override fun getDelegate(): ViewManagerDelegate<EnrichedMarkdownTextInputView> = delegate
+  override fun getDelegate(): ViewManagerDelegate<EnrichedMarkdownTextInputScrollView> = delegate
 
   override fun getName(): String = NAME
 
-  override fun createViewInstance(reactContext: ThemedReactContext): EnrichedMarkdownTextInputView =
-    EnrichedMarkdownTextInputView(reactContext)
+  override fun createViewInstance(reactContext: ThemedReactContext): EnrichedMarkdownTextInputScrollView =
+    EnrichedMarkdownTextInputScrollView(reactContext)
 
   override fun updateState(
-    view: EnrichedMarkdownTextInputView,
+    view: EnrichedMarkdownTextInputScrollView,
     props: ReactStylesDiffMap?,
     stateWrapper: StateWrapper?,
   ): Any? {
-    view.stateWrapper = stateWrapper
+    // Route Fabric state to the editor so its auto-grow loop still drives the re-measure.
+    view.input.stateWrapper = stateWrapper
     return super.updateState(view, props, stateWrapper)
   }
 
-  override fun onAfterUpdateTransaction(view: EnrichedMarkdownTextInputView) {
+  override fun onAfterUpdateTransaction(view: EnrichedMarkdownTextInputScrollView) {
     super.onAfterUpdateTransaction(view)
-    view.afterUpdateTransaction()
+    view.input.afterUpdateTransaction()
   }
 
-  override fun onDropViewInstance(view: EnrichedMarkdownTextInputView) {
-    view.dismissActiveMention()
+  override fun onDropViewInstance(view: EnrichedMarkdownTextInputScrollView) {
+    view.input.dismissActiveMention()
     super.onDropViewInstance(view)
-    view.layoutManager.release()
+    view.input.layoutManager.release()
   }
 
   override fun measure(
@@ -81,6 +82,7 @@ class EnrichedMarkdownTextInputManager :
     heightMode: YogaMeasureMode?,
     attachmentsPositions: FloatArray?,
   ): Long {
+    // The editor's content is measured by the container's tag (the editor shares it via setId).
     val id = localData?.getInt("viewTag")
     return InputMeasurementStore.getMeasureById(context, id, width, height, heightMode, props)
   }
@@ -107,171 +109,184 @@ class EnrichedMarkdownTextInputManager :
 
   @ReactProp(name = "defaultValue")
   override fun setDefaultValue(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: String?,
   ) {
-    if (value != null && view?.text?.isEmpty() == true) {
-      view.setValueFromJS(value)
+    val input = view?.input ?: return
+    if (value != null && input.text?.isEmpty() == true) {
+      input.setValueFromJS(value)
     }
   }
 
   @ReactProp(name = "placeholder")
   override fun setPlaceholder(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: String?,
   ) {
-    view?.hint = value
+    view?.input?.hint = value
   }
 
   @ReactProp(name = "placeholderTextColor", customType = "Color")
   override fun setPlaceholderTextColor(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Int?,
   ) {
-    view?.setHintTextColor(value ?: Color.GRAY)
+    view?.input?.setHintTextColor(value ?: Color.GRAY)
   }
 
   @ReactProp(name = "editable", defaultBoolean = true)
   override fun setEditable(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Boolean,
   ) {
-    view?.isEnabled = value
+    view?.input?.isEnabled = value
   }
 
   @ReactProp(name = "autoFocus", defaultBoolean = false)
   override fun setAutoFocus(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Boolean,
   ) {
-    view?.autoFocusRequested = value
+    view?.input?.autoFocusRequested = value
   }
 
   @ReactProp(name = "scrollEnabled", defaultBoolean = true)
   override fun setScrollEnabled(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Boolean,
   ) {
-    view?.scrollEnabled = value
+    // The editor never scrolls itself; the container does. Gate the container's scrolling and its
+    // scrollbar so scrollEnabled={false} truly disables scrolling (parity with iOS).
+    view?.scrollingEnabled = value
     view?.isVerticalScrollBarEnabled = value
+  }
+
+  @ReactProp(name = "contentInset")
+  override fun setContentInset(
+    view: EnrichedMarkdownTextInputScrollView?,
+    value: ReadableMap?,
+  ) {
+    view?.setContentInsetFromProps(value)
   }
 
   @ReactProp(name = "autoCapitalize")
   override fun setAutoCapitalize(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: String?,
   ) {
-    view?.setAutoCapitalize(value)
+    view?.input?.setAutoCapitalize(value)
   }
 
   @ReactProp(name = "multiline", defaultBoolean = true)
   override fun setMultiline(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Boolean,
   ) {
-    view?.isSingleLine = !value
+    view?.input?.isSingleLine = !value
   }
 
   @ReactProp(name = "cursorColor", customType = "Color")
   override fun setCursorColor(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Int?,
   ) {
-    view?.setCursorColorFromProps(value)
+    view?.input?.setCursorColorFromProps(value)
   }
 
   @ReactProp(name = "selectionColor", customType = "Color")
   override fun setSelectionColor(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Int?,
   ) {
     if (value != null) {
-      view?.highlightColor = value
+      view?.input?.highlightColor = value
     }
   }
 
   @ReactProp(name = "markdownStyle")
   override fun setMarkdownStyle(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: ReadableMap?,
   ) {
-    if (view == null || value == null) return
+    val input = view?.input ?: return
+    if (value == null) return
 
     val style = MarkdownStyleParser.parse(value)
-    view.setAutoLinkStyle(style)
-    val changed = view.formatter.updateStyle(style)
+    input.setAutoLinkStyle(style)
+    val changed = input.formatter.updateStyle(style)
     if (changed) {
-      view.applyFormatting()
+      input.applyFormatting()
     }
   }
 
   @ReactProp(name = "color", customType = "Color")
   override fun setColor(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Int?,
   ) {
-    view?.setColorFromProps(value)
+    view?.input?.setColorFromProps(value)
   }
 
   @ReactProp(name = "fontSize", defaultFloat = 16f)
   override fun setFontSize(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Float,
   ) {
-    view?.setFontSizeFromProps(value)
+    view?.input?.setFontSizeFromProps(value)
   }
 
   @ReactProp(name = "lineHeight", defaultFloat = 0f)
   override fun setLineHeight(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Float,
   ) {
-    if (value > 0 && view != null) {
-      view.setLineSpacing(value - view.textSize, 1f)
+    val input = view?.input ?: return
+    if (value > 0) {
+      input.setLineSpacing(value - input.textSize, 1f)
     }
   }
 
   @ReactProp(name = "fontFamily")
   override fun setFontFamily(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: String?,
   ) {
-    view?.setFontFamily(value)
+    view?.input?.setFontFamily(value)
   }
 
   @ReactProp(name = "fontWeight")
   override fun setFontWeight(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: String?,
   ) {
-    view?.setFontWeight(value)
+    view?.input?.setFontWeight(value)
   }
 
   @ReactProp(name = "isOnChangeMarkdownSet", defaultBoolean = false)
   override fun setIsOnChangeMarkdownSet(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: Boolean,
   ) {
-    view?.emitMarkdown = value
+    view?.input?.emitMarkdown = value
   }
 
   @ReactProp(name = "contextMenuItems")
   override fun setContextMenuItems(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: ReadableArray?,
   ) {
-    if (view == null) return
+    val input = view?.input ?: return
     val items = (0 until (value?.size() ?: 0)).mapNotNull { value?.getMap(it)?.getString("text") }
-    view.setContextMenuItems(items)
+    input.setContextMenuItems(items)
   }
 
   @ReactProp(name = "selectionMenuConfig")
   override fun setSelectionMenuConfig(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: ReadableMap?,
   ) {
-    if (view == null) return
-    view.contextMenu.selectionMenuConfig =
+    val input = view?.input ?: return
+    input.contextMenu.selectionMenuConfig =
       if (value == null) {
         InputSelectionMenuConfig()
       } else {
@@ -286,11 +301,11 @@ class EnrichedMarkdownTextInputManager :
 
   @ReactProp(name = "formatMenuConfig")
   override fun setFormatMenuConfig(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: ReadableMap?,
   ) {
-    if (view == null) return
-    view.contextMenu.formatMenuConfig =
+    val input = view?.input ?: return
+    input.contextMenu.formatMenuConfig =
       if (value == null) {
         FormatMenuConfig()
       } else {
@@ -313,10 +328,10 @@ class EnrichedMarkdownTextInputManager :
 
   @ReactProp(name = "linkRegex")
   override fun setLinkRegex(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: ReadableMap?,
   ) {
-    if (view == null) return
+    val input = view?.input ?: return
     val config =
       if (value != null) {
         LinkRegexConfig(
@@ -329,24 +344,24 @@ class EnrichedMarkdownTextInputManager :
       } else {
         LinkRegexConfig("", caseInsensitive = false, dotAll = false, isDisabled = false, isDefault = true)
       }
-    view.setLinkRegex(config)
+    input.setLinkRegex(config)
   }
 
   @ReactProp(name = "mentionIndicators")
   override fun setMentionIndicators(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: ReadableArray?,
   ) {
     val indicators =
       (0 until (value?.size() ?: 0))
         .mapNotNull { value?.getString(it) }
         .filter { it.isNotEmpty() }
-    view?.setMentionIndicators(indicators)
+    view?.input?.setMentionIndicators(indicators)
   }
 
   @ReactProp(name = "writingDirection")
   override fun setWritingDirection(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     value: String?,
   ) {
     // No-op on Android — EditText resolves direction per paragraph via
@@ -354,114 +369,118 @@ class EnrichedMarkdownTextInputManager :
   }
 
   override fun updateProperties(
-    view: EnrichedMarkdownTextInputView,
+    view: EnrichedMarkdownTextInputScrollView,
     props: ReactStylesDiffMap,
   ) {
+    // Apply border/background to the container (the visible frame), not the scrolling editor.
     BorderPropsApplicator.apply(view, props)
     super.updateProperties(view, props)
   }
 
   override fun setPadding(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     left: Int,
     top: Int,
     right: Int,
     bottom: Int,
   ) {
     super.setPadding(view, left, top, right, bottom)
-    view?.setPadding(left, top, right, bottom)
+    // Route React `padding` through the same path as contentInset so the auto-grow measure accounts
+    // for it (plain setPadding would leave the measured height short by the vertical padding).
+    view?.input?.setReactPadding(left, top, right, bottom)
   }
 
   // Commands
 
-  override fun focus(view: EnrichedMarkdownTextInputView?) {
-    view?.requestFocusProgrammatically()
+  override fun focus(view: EnrichedMarkdownTextInputScrollView?) {
+    view?.input?.requestFocusProgrammatically()
   }
 
-  override fun blur(view: EnrichedMarkdownTextInputView?) {
-    view?.clearFocus()
+  override fun blur(view: EnrichedMarkdownTextInputScrollView?) {
+    view?.input?.clearFocus()
   }
 
   override fun setValue(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     markdown: String?,
   ) {
     if (markdown != null) {
-      view?.setValueFromJS(markdown)
+      view?.input?.setValueFromJS(markdown)
     }
   }
 
   override fun setSelection(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     start: Int,
     end: Int,
   ) {
-    val length = view?.text?.length ?: 0
+    val input = view?.input ?: return
+    val length = input.text?.length ?: 0
     val clampedStart = start.coerceIn(0, length)
     val clampedEnd = end.coerceIn(0, length)
-    view?.setSelection(clampedStart, clampedEnd)
+    input.setSelection(clampedStart, clampedEnd)
   }
 
-  override fun toggleBold(view: EnrichedMarkdownTextInputView?) {
-    view?.toggleInlineStyle(StyleType.BOLD)
+  override fun toggleBold(view: EnrichedMarkdownTextInputScrollView?) {
+    view?.input?.toggleInlineStyle(StyleType.BOLD)
   }
 
-  override fun toggleItalic(view: EnrichedMarkdownTextInputView?) {
-    view?.toggleInlineStyle(StyleType.ITALIC)
+  override fun toggleItalic(view: EnrichedMarkdownTextInputScrollView?) {
+    view?.input?.toggleInlineStyle(StyleType.ITALIC)
   }
 
-  override fun toggleUnderline(view: EnrichedMarkdownTextInputView?) {
-    view?.toggleInlineStyle(StyleType.UNDERLINE)
+  override fun toggleUnderline(view: EnrichedMarkdownTextInputScrollView?) {
+    view?.input?.toggleInlineStyle(StyleType.UNDERLINE)
   }
 
-  override fun toggleStrikethrough(view: EnrichedMarkdownTextInputView?) {
-    view?.toggleInlineStyle(StyleType.STRIKETHROUGH)
+  override fun toggleStrikethrough(view: EnrichedMarkdownTextInputScrollView?) {
+    view?.input?.toggleInlineStyle(StyleType.STRIKETHROUGH)
   }
 
-  override fun toggleSpoiler(view: EnrichedMarkdownTextInputView?) {
-    view?.toggleInlineStyle(StyleType.SPOILER)
+  override fun toggleSpoiler(view: EnrichedMarkdownTextInputScrollView?) {
+    view?.input?.toggleInlineStyle(StyleType.SPOILER)
   }
 
   override fun setLink(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     url: String?,
   ) {
     if (url != null) {
-      view?.setLinkForSelection(url)
+      view?.input?.setLinkForSelection(url)
     }
   }
 
   override fun insertLink(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     text: String?,
     url: String?,
   ) {
     if (url != null) {
-      view?.insertLinkAtCursor(text ?: url, url)
+      view?.input?.insertLinkAtCursor(text ?: url, url)
     }
   }
 
   override fun insertMention(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     displayText: String?,
     url: String?,
   ) {
     if (displayText != null && url != null) {
-      view?.insertMention(displayText, url)
+      view?.input?.insertMention(displayText, url)
     }
   }
 
   override fun startMention(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     indicator: String?,
   ) {
     if (indicator != null) {
-      view?.startMention(indicator)
+      view?.input?.startMention(indicator)
     }
   }
 
-  override fun removeLink(view: EnrichedMarkdownTextInputView?) {
-    view?.removeLinkAtCursor()
+  override fun removeLink(view: EnrichedMarkdownTextInputScrollView?) {
+    view?.input?.removeLinkAtCursor()
   }
 
   override fun copyToClipboard(view: EnrichedMarkdownTextInputView?) {
@@ -469,17 +488,17 @@ class EnrichedMarkdownTextInputManager :
   }
 
   override fun requestMarkdown(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     requestId: Int,
   ) {
-    view?.eventEmitter?.emitRequestMarkdownResult(requestId)
+    view?.input?.eventEmitter?.emitRequestMarkdownResult(requestId)
   }
 
   override fun requestCaretRect(
-    view: EnrichedMarkdownTextInputView?,
+    view: EnrichedMarkdownTextInputScrollView?,
     requestId: Int,
   ) {
-    view?.eventEmitter?.emitRequestCaretRectResult(requestId)
+    view?.input?.eventEmitter?.emitRequestCaretRectResult(requestId)
   }
 
   companion object {

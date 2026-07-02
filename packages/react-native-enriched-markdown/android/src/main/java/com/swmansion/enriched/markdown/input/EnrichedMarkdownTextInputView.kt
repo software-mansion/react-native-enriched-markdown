@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.Build
 import android.text.Editable
 import android.text.InputType
@@ -18,6 +19,7 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.widget.AppCompatEditText
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.ReactConstants
 import com.facebook.react.uimanager.BackgroundStyleApplicator
 import com.facebook.react.uimanager.PixelUtil
@@ -69,9 +71,18 @@ class EnrichedMarkdownTextInputView(
 
   var emitMarkdown = false
   var autoFocusRequested = false
+
+  // Set when autoFocus places the caret at the end; tells the container to scroll the caret into view
+  // as the viewport settles (content measure, keyboard resize), until the user takes over by touching.
+  var pendingCaretScroll = false
   var stateWrapper: StateWrapper? = null
   val layoutManager = InputLayoutManager(this)
   private var pendingAutoFocusKeyboard = false
+
+  // Internal padding mirroring iOS textContainerInset, in px (left, top, right, bottom). The measure
+  // adds it back into the auto-grow height so the text keeps the cushion without clipping.
+  var contentInsetPx = Rect()
+    private set
 
   private var typefaceDirty = false
   private var fontFamilyValue: String? = null
@@ -109,7 +120,8 @@ class EnrichedMarkdownTextInputView(
   private fun prepareComponent() {
     isSingleLine = false
     isHorizontalScrollBarEnabled = false
-    isVerticalScrollBarEnabled = true
+    // The editor never scrolls itself; the container owns the scrollbar.
+    isVerticalScrollBarEnabled = false
     inputType = InputType.TYPE_CLASS_TEXT or
       InputType.TYPE_TEXT_FLAG_MULTI_LINE or
       InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or
@@ -136,6 +148,30 @@ class EnrichedMarkdownTextInputView(
           eventEmitter.emitBlur()
         }
       }
+  }
+
+  // iOS uses UITextView.textContainerInset; on Android it's editor padding. The editor doesn't scroll
+  // (the container does), so the cushion is scrolled content and never clips.
+  fun setContentInsetFromProps(value: ReadableMap?) {
+    fun px(key: String): Int = if (value?.hasKey(key) == true) PixelUtil.toPixelFromDIP(value.getDouble(key).toFloat()).toInt() else 0
+    applyEditorInset(Rect(px("left"), px("top"), px("right"), px("bottom")))
+  }
+
+  // React `padding` style, applied like contentInset so the auto-grow measure accounts for it.
+  // contentInset and padding write the same editor padding, so setting both is last-writer-wins.
+  fun setReactPadding(
+    left: Int,
+    top: Int,
+    right: Int,
+    bottom: Int,
+  ) {
+    applyEditorInset(Rect(left, top, right, bottom))
+  }
+
+  private fun applyEditorInset(inset: Rect) {
+    contentInsetPx = inset
+    setPadding(inset.left, inset.top, inset.right, inset.bottom)
+    layoutManager.invalidateLayout()
   }
 
   override fun onAttachedToWindow() {
@@ -180,6 +216,8 @@ class EnrichedMarkdownTextInputView(
     when (ev.action) {
       MotionEvent.ACTION_DOWN -> {
         detectScrollMovement = true
+        // The user takes over scrolling/positioning; stop the autoFocus caret-reveal.
+        pendingCaretScroll = false
         parent?.requestDisallowInterceptTouchEvent(true)
       }
 
@@ -258,7 +296,6 @@ class EnrichedMarkdownTextInputView(
         detectorPipeline.processTextChange(editable, currentText, editStart, insertedLength)
       }
 
-      forceScrollToSelection()
       eventEmitter.emitChangeText()
       if (emitMarkdown) eventEmitter.emitChangeMarkdown()
       updateActiveMention()
@@ -335,35 +372,20 @@ class EnrichedMarkdownTextInputView(
 
   private fun applyFormattingAndEmit() {
     applyFormatting()
-    forceScrollToSelection()
     if (emitMarkdown) eventEmitter.emitChangeMarkdown()
     eventEmitter.emitState()
   }
 
-  private fun forceScrollToSelection() {
+  // The editor never scrolls itself; ask the scroll container to bring the caret line into view. Used
+  // after autoFocus places the caret at the end so a long pre-filled value reveals the end, not the top.
+  fun scrollContainerToCaret() {
     val textLayout = layout ?: return
-    val cursorOffset = selectionStart
-    if (cursorOffset <= 0) return
-
-    val selectedLineIndex = textLayout.getLineForOffset(cursorOffset)
-    val selectedLineTop = textLayout.getLineTop(selectedLineIndex)
-    val selectedLineBottom = textLayout.getLineBottom(selectedLineIndex)
-    val visibleTextHeight = height - paddingTop - paddingBottom
-    if (visibleTextHeight <= 0) return
-
-    val visibleTop = scrollY
-    val visibleBottom = scrollY + visibleTextHeight
-    var targetScrollY = scrollY
-
-    if (selectedLineTop < visibleTop) {
-      targetScrollY = selectedLineTop
-    } else if (selectedLineBottom > visibleBottom) {
-      targetScrollY = selectedLineBottom - visibleTextHeight
-    }
-
-    val maxScrollY = (textLayout.height - visibleTextHeight).coerceAtLeast(0)
-    targetScrollY = targetScrollY.coerceIn(0, maxScrollY)
-    scrollTo(scrollX, targetScrollY)
+    val line = textLayout.getLineForOffset(selectionStart.coerceAtLeast(0))
+    val top = paddingTop + textLayout.getLineTop(line)
+    // Include the bottom inset so revealing the end shows the cushion below the last line (clamped to
+    // the scroll range, so a caret on a middle line just keeps a little breathing room).
+    val bottom = paddingTop + textLayout.getLineBottom(line) + paddingBottom
+    requestRectangleOnScreen(Rect(0, top, width, bottom), true)
   }
 
   fun toggleInlineStyle(styleType: StyleType) {
@@ -590,7 +612,6 @@ class EnrichedMarkdownTextInputView(
         setSelection(text?.length ?: 0)
       }
       applyFormatting()
-      forceScrollToSelection()
       layoutManager.invalidateLayout()
       lastProcessedText = text?.toString() ?: ""
     } finally {
@@ -685,6 +706,10 @@ class EnrichedMarkdownTextInputView(
         requestFocus()
         setSelection(text?.length ?: 0)
         showAutoFocusKeyboardIfPending()
+        // Reveal the caret (now at the end) once the container has measured the content; onSizeChanged
+        // re-runs it as the keyboard resizes the viewport, until the user touches to take over.
+        pendingCaretScroll = true
+        post { scrollContainerToCaret() }
       }
     }
   }

@@ -14,7 +14,7 @@ class InputLayoutManager(
     val text = view.text
     val paint = view.paint
 
-    val needUpdate = InputMeasurementStore.store(view.id, text, paint)
+    val needUpdate = InputMeasurementStore.store(view.id, text, paint, view.contentInsetPx)
     if (!needUpdate) return
 
     val state = Arguments.createMap()

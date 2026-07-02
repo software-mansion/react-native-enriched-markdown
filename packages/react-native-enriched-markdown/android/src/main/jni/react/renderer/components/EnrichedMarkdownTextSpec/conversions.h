@@ -37,6 +37,7 @@ inline folly::dynamic toDynamic(const EnrichedMarkdownTextInputProps &props) {
   serializedProps["fontWeight"] = props.fontWeight;
   serializedProps["fontFamily"] = props.fontFamily;
   serializedProps["lineHeight"] = props.lineHeight;
+  serializedProps["contentInset"] = toDynamic(props.contentInset);
 
   return serializedProps;
 }
