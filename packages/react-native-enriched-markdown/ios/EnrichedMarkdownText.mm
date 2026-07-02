@@ -629,7 +629,8 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 
 - (void)prepareForRecycle
 {
-  _props = std::make_shared<const EnrichedMarkdownTextProps>();
+  const auto resetProps = std::make_shared<const EnrichedMarkdownTextProps>();
+  _props = resetProps;
   [_renderCoordinator invalidate];
 
   [_fadeAnimator cancel];
@@ -639,10 +640,25 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
   _forceHeightUpdateOnNextRender = NO;
   _cachedMarkdown = nil;
   _renderedMarkdown = nil;
+  _config = nil;
+  _md4cFlags = [ENRMMd4cFlags defaultFlags];
+  _md4cFlags.underline = resetProps->md4cFlags.underline;
+  _md4cFlags.superscript = resetProps->md4cFlags.superscript;
+  _md4cFlags.subscript = resetProps->md4cFlags.subscript;
+  _md4cFlags.latexMath = resetProps->md4cFlags.latexMath;
+  _md4cFlags.highlight = resetProps->md4cFlags.highlight;
+  _maxFontSizeMultiplier = 0;
+  _lastElementMarginBottom = 0;
+  _allowTrailingMargin = NO;
+  _renderedStyleFingerprint = 0;
+  _pendingStyleFingerprint = 0;
+  _contextMenuItemTexts = nil;
+  _contextMenuItemIcons = nil;
   _accessibilityElements = nil;
   _accessibilityInfo = nil;
   _accessibilityNeedsRebuild = NO;
   [_spoilerManager removeAllOverlays];
+  _spoilerManager = nil;
   if (_textView != nil) {
     ENRMSetAttributedText(_textView, [[NSAttributedString alloc] initWithString:@""]);
     _textView.hidden = YES;
