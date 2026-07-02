@@ -1,4 +1,5 @@
 #import "ENRMInputFormatter.h"
+#import "ENRMBlockHandler.h"
 #import "ENRMBoldStyleHandler.h"
 #import "ENRMItalicStyleHandler.h"
 #import "ENRMLinkStyleHandler.h"
@@ -81,6 +82,7 @@
 
 @implementation ENRMInputFormatter {
   NSDictionary<NSNumber *, id<ENRMStyleHandler>> *_styleHandlers;
+  NSDictionary<NSNumber *, id<ENRMBlockHandler>> *_blockHandlers;
 }
 
 - (instancetype)init
@@ -99,6 +101,16 @@
       map[@(handler.styleType)] = handler;
     }
     _styleHandlers = [map copy];
+
+    // Block handlers are registered here as concrete block types are added.
+    // Empty in PR1: with no handler registered, every paragraph stays a plain
+    // paragraph and the block pipeline is a no-op.
+    NSArray<id<ENRMBlockHandler>> *blockHandlers = @[];
+    NSMutableDictionary<NSNumber *, id<ENRMBlockHandler>> *blockMap = [NSMutableDictionary dictionary];
+    for (id<ENRMBlockHandler> handler in blockHandlers) {
+      blockMap[@(handler.blockType)] = handler;
+    }
+    _blockHandlers = [blockMap copy];
   }
   return self;
 }
@@ -106,6 +118,16 @@
 - (nullable id<ENRMStyleHandler>)handlerForStyleType:(ENRMInputStyleType)type
 {
   return _styleHandlers[@(type)];
+}
+
+- (nullable id<ENRMBlockHandler>)handlerForBlockType:(ENRMInputBlockType)type
+{
+  return _blockHandlers[@(type)];
+}
+
+- (NSArray<id<ENRMBlockHandler>> *)allBlockHandlers
+{
+  return _blockHandlers.allValues;
 }
 
 - (void)applyFormattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
@@ -185,6 +207,46 @@
     [layoutManager invalidateLayoutForCharacterRange:fullTextRange actualCharacterRange:NULL];
     [layoutManager ensureLayoutForCharacterRange:fullTextRange];
   }
+
+  ENRMSetNeedsDisplay(textView);
+}
+
+- (void)applyBlockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+              toTextView:(ENRMPlatformTextView *)textView
+                   style:(ENRMInputFormatterStyle *)style
+{
+  if (blockRanges.count == 0) {
+    return;
+  }
+
+  NSTextStorage *textStorage = textView.textStorage;
+  NSUInteger textLength = textStorage.length;
+  if (textLength == 0) {
+    return;
+  }
+
+  [textStorage beginEditing];
+
+  for (ENRMBlockRange *blockRange in blockRanges) {
+    if (blockRange.range.length == 0 || NSMaxRange(blockRange.range) > textLength) {
+      continue;
+    }
+
+    id<ENRMBlockHandler> handler = _blockHandlers[@(blockRange.type)];
+    if (!handler) {
+      continue;
+    }
+
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    NSMutableDictionary<NSAttributedStringKey, id> *attributes = [NSMutableDictionary dictionary];
+
+    [handler applyAttributesToParagraphStyle:paragraphStyle attributes:attributes blockRange:blockRange style:style];
+
+    attributes[NSParagraphStyleAttributeName] = paragraphStyle;
+    [textStorage addAttributes:attributes range:blockRange.range];
+  }
+
+  [textStorage endEditing];
 
   ENRMSetNeedsDisplay(textView);
 }
