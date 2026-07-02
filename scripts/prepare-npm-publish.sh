@@ -19,11 +19,18 @@ case "$mode" in
     rm -rf cpp
     mkdir -p cpp
     cp -R "$CORE_CPP/." cpp/
+
+    cp "$REPO_ROOT/README.md" README.md
+    cp "$REPO_ROOT/LICENSE" LICENSE
+    cp -R "$REPO_ROOT/docs" docs
     ;;
   postpack)
     cd "$RN_PKG"
     rm -rf cpp
     ln -s ../core/cpp cpp
+
+    rm -f README.md LICENSE
+    rm -rf docs
     ;;
   *)
     echo "usage: $0 prepack|postpack" >&2

@@ -24,7 +24,8 @@
     "!**/__fixtures__",
     "!**/__mocks__",
     "!**/.*",
-    "app.plugin.js"
+    "app.plugin.js",
+    "docs"
   ],
   "scripts": {
     "build:wasm": "bash ../core/cpp/wasm/build.sh",
