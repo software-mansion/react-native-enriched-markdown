@@ -1938,7 +1938,7 @@ PODS:
     - React-utils (= 0.86.0)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.86.0)
-  - ReactNativeEnrichedMarkdown (0.7.1):
+  - ReactNativeEnrichedMarkdown (0.7.2):
     - EnrichedMarkdownCore
     - hermes-engine
     - RCTRequired
@@ -2634,7 +2634,7 @@ SPEC CHECKSUMS:
   ReactCodegen: cd296de5e1c422deebafff34134d1721b5c29704
   ReactCommon: d5c1bb4427bf51c443de5926aac332c89ddd9363
   ReactNativeDependencies: fa0a54b3f5319ae0e3b9aff32bfee7a424b88e66
-  ReactNativeEnrichedMarkdown: 40ed053295d181a3f1f74106f96247c03e3362d1
+  ReactNativeEnrichedMarkdown: 19e936a11df8f82d438a63211f56f3e92b2e665e
   RNCAsyncStorage: 7d913885caaae13f5fb62dd0bd04c674ea8bf97b
   RNDateTimePicker: afe0288e6c7855994f7f2617b7b2c05799fea7f3
   RNGestureHandler: 7b07d9192bc65c6883fb37fdecc05dc6b61c814f
