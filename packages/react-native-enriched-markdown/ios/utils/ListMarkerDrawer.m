@@ -8,6 +8,7 @@
 extern NSString *const ListDepthAttribute;
 extern NSString *const ListTypeAttribute;
 extern NSString *const ListItemNumberAttribute;
+extern NSString *const ListItemMarkerStartAttribute;
 extern NSString *const TaskItemAttribute;
 extern NSString *const TaskCheckedAttribute;
 
@@ -48,6 +49,8 @@ extern NSString *const TaskCheckedAttribute;
                                  NSDictionary *attrs = [storage attributesAtIndex:charRange.location
                                                                    effectiveRange:NULL];
                                  if (!attrs[ListDepthAttribute])
+                                   return;
+                                 if (![attrs[ListItemMarkerStartAttribute] boolValue])
                                    return;
 
                                  // 2. Identify the start of the paragraph

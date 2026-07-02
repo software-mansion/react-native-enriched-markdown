@@ -19,6 +19,7 @@ class TaskListSpan(
   styleCache: SpanStyleCache,
   val taskIndex: Int,
   val isChecked: Boolean,
+  drawsMarker: Boolean = true,
 ) : BaseListSpan(
     depth = depth,
     context = context,
@@ -32,6 +33,7 @@ class TaskListSpan(
       ),
     marginLeft = listStyle.marginLeft,
     gapWidth = listStyle.gapWidth,
+    drawsMarker = drawsMarker,
   ) {
   private val checkboxSize = taskStyle.checkboxSize
   private val markerColumnWidth = listStyle.effectiveMarkerWidth(checkboxSize)

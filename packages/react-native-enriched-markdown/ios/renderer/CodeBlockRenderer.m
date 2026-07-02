@@ -11,6 +11,13 @@
 
 - (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
 {
+  // In tight lists md4c emits raw Text siblings without paragraph wrappers,
+  // so the preceding content may not terminate with a newline.
+  if (output.length > 0 && ![output.string hasSuffix:@"\n"]) {
+    [output appendAttributedString:kNewlineAttributedString];
+  }
+
+  id blockStyleSnapshot = [context snapshotBlockStyle];
   [context setBlockStyle:BlockTypeCodeBlock font:[_config codeBlockFont] color:[_config codeBlockColor] headingLevel:0];
 
   CGFloat padding = [_config codeBlockPadding];
@@ -34,7 +41,7 @@
   @try {
     [_rendererFactory renderChildrenOfNode:node into:output context:context];
   } @finally {
-    [context clearBlockStyle];
+    [context restoreBlockStyle:blockStyleSnapshot];
   }
 
   NSUInteger contentEnd = output.length;

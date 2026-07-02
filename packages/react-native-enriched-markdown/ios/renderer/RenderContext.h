@@ -79,6 +79,9 @@ typedef NS_ENUM(NSInteger, ListType) { ListTypeUnordered, ListTypeOrdered };
 - (NSDictionary *)getTextAttributes;
 - (void)clearBlockStyle;
 
+- (id)snapshotBlockStyle;
+- (void)restoreBlockStyle:(id)snapshot;
+
 /**
  * Checks if colors should be preserved based on existing attributes.
  * Returns YES if the text is inside a link or inline code, which means

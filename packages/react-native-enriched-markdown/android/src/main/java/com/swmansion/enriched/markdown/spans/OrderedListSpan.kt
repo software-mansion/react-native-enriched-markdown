@@ -18,6 +18,7 @@ class OrderedListSpan(
   depth: Int,
   context: Context,
   styleCache: SpanStyleCache,
+  drawsMarker: Boolean = true,
 ) : BaseListSpan(
     depth = depth,
     context = context,
@@ -31,6 +32,7 @@ class OrderedListSpan(
       ),
     marginLeft = listStyle.marginLeft,
     gapWidth = listStyle.gapWidth,
+    drawsMarker = drawsMarker,
   ) {
   companion object {
     private val sharedMarkerPaint = TextPaint().apply { isAntiAlias = true }
