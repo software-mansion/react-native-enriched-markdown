@@ -313,6 +313,20 @@ using namespace facebook::react;
     _textView.scrollEnabled = newViewProps.scrollEnabled;
   }
 
+#if !TARGET_OS_OSX
+  if (newViewProps.contentInset.top != oldViewProps.contentInset.top ||
+      newViewProps.contentInset.bottom != oldViewProps.contentInset.bottom ||
+      newViewProps.contentInset.left != oldViewProps.contentInset.left ||
+      newViewProps.contentInset.right != oldViewProps.contentInset.right) {
+    // textContainerInset, not scroll contentInset: the cushion must survive while typing, which an
+    // overscroll inset wouldn't (the caret auto-scroll never reaches it).
+    _textView.textContainerInset = UIEdgeInsetsMake(newViewProps.contentInset.top,
+                                                    newViewProps.contentInset.left,
+                                                    newViewProps.contentInset.bottom,
+                                                    newViewProps.contentInset.right);
+  }
+#endif
+
   if (newViewProps.autoCapitalize != oldViewProps.autoCapitalize) {
     NSString *value = [NSString stringWithUTF8String:newViewProps.autoCapitalize.c_str()];
     _textView.autocapitalizationType = ENRMAutocapitalizationTypeFromString(value);
@@ -474,6 +488,12 @@ using namespace facebook::react;
   dispatch_async(dispatch_get_main_queue(), ^{
     NSUInteger textLength = self->_textView.textStorage.length;
     if (textLength == 0) {
+      return;
+    }
+    // A scrolling text view lays out and sizes itself natively; forcing a whole-text relayout a
+    // runloop after the caret auto-scroll shifts the content under the scrolled view and stutters.
+    // Only the auto-grow (non-scrolling) path needs the manual relayout and content size below.
+    if (self->_textView.scrollEnabled) {
       return;
     }
     NSRange wholeRange = NSMakeRange(0, textLength);

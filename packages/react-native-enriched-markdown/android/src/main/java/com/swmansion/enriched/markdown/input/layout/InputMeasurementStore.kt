@@ -1,6 +1,7 @@
 package com.swmansion.enriched.markdown.input.layout
 
 import android.content.Context
+import android.graphics.Rect
 import android.os.Build
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -23,6 +24,7 @@ object InputMeasurementStore {
     val cachedSize: Long,
     val text: CharSequence?,
     val paintParams: PaintParams,
+    val inset: Rect,
   )
 
   private val data = ConcurrentHashMap<Int, MeasurementParams>()
@@ -31,14 +33,15 @@ object InputMeasurementStore {
     id: Int,
     text: CharSequence?,
     paint: TextPaint,
+    inset: Rect,
   ): Boolean {
     val cachedWidth = data[id]?.cachedWidth ?: 0f
     val cachedSize = data[id]?.cachedSize ?: 0L
 
-    val size = measure(cachedWidth, text, paint)
+    val size = measure(cachedWidth, text, paint, inset)
     val paintParams = PaintParams(paint.typeface, paint.textSize)
 
-    data[id] = MeasurementParams(cachedWidth, size, text, paintParams)
+    data[id] = MeasurementParams(cachedWidth, size, text, paintParams, inset)
     return size != cachedSize
   }
 
@@ -55,6 +58,10 @@ object InputMeasurementStore {
     props: ReadableMap?,
   ): Long {
     val size = getMeasureByIdInternal(context, id, width, props)
+    // EXACTLY = fixed frame: fill it and let the container scroll the editor, not collapse to content.
+    if (heightMode === YogaMeasureMode.EXACTLY) {
+      return YogaMeasureOutput.make(YogaMeasureOutput.getWidth(size), PixelUtil.toDIPFromPixel(height))
+    }
     if (heightMode !== YogaMeasureMode.AT_MOST) {
       return size
     }
@@ -84,8 +91,8 @@ object InputMeasurementStore {
         textSize = value.paintParams.fontSize
       }
 
-    val size = measure(width, value.text, paint)
-    data[id] = MeasurementParams(width, size, value.text, value.paintParams)
+    val size = measure(width, value.text, paint, value.inset)
+    data[id] = MeasurementParams(width, size, value.text, value.paintParams, value.inset)
     return size
   }
 
@@ -110,16 +117,26 @@ object InputMeasurementStore {
         isAntiAlias = true
       }
 
-    return measure(width, text, paint)
+    return measure(width, text, paint, insetFromProps(props))
+  }
+
+  private fun insetFromProps(props: ReadableMap?): Rect {
+    val inset = props?.getMap("contentInset") ?: return Rect()
+
+    fun px(key: String): Int = if (inset.hasKey(key)) PixelUtil.toPixelFromDIP(inset.getDouble(key).toFloat()).toInt() else 0
+    return Rect(px("left"), px("top"), px("right"), px("bottom"))
   }
 
   private fun measure(
     maxWidth: Float,
     text: CharSequence?,
     paint: TextPaint,
+    inset: Rect,
   ): Long {
     val content = text ?: ""
-    val widthPx = maxWidth.toInt().coerceAtLeast(0)
+    // The text wraps inside the horizontal inset and the vertical inset is added back below, so the
+    // reported height matches the padded EditText exactly and nothing clips.
+    val widthPx = (maxWidth.toInt() - inset.left - inset.right).coerceAtLeast(0)
 
     val builder =
       StaticLayout.Builder
@@ -136,7 +153,7 @@ object InputMeasurementStore {
     }
 
     val staticLayout = builder.build()
-    val heightInDip = PixelUtil.toDIPFromPixel(staticLayout.height.toFloat())
+    val heightInDip = PixelUtil.toDIPFromPixel((staticLayout.height + inset.top + inset.bottom).toFloat())
     val widthInDip = PixelUtil.toDIPFromPixel(maxWidth)
     return YogaMeasureOutput.make(widthInDip, heightInDip)
   }
