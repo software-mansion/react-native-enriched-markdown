@@ -68,6 +68,20 @@ Pod::Spec.new do |s|
           sed -i '' -E '/^(framework )?module RaTeXFFI /,/^\}/d' "$MODULEMAP"
         SCRIPT
         execution_position: :before_compile
+      },
+      {
+        name: 'Dedupe RaTeX XCFramework Signature',
+        script: <<~'SCRIPT',
+          # Xcode 26 generates a .signature file for each signed XCFramework.
+          # When the RaTeX XCFramework is consumed via spm_dependency inside a
+          # CocoaPods target, both the SPM product and the pod target produce a
+          # copy. During archive assembly Xcode copies all signatures into a flat
+          # Signatures/ directory, and the second copy collides with the first.
+          # Removing the pod-target copy prevents the collision. This is a no-op
+          # on older Xcode versions or simulator builds where the file is absent.
+          rm -f "${CONFIGURATION_BUILD_DIR}/RaTeX.xcframework-ios.signature"
+        SCRIPT
+        execution_position: :after_compile
       }
     ]
   end
