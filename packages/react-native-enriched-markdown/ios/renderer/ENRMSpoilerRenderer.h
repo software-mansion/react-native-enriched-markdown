@@ -1,5 +1,5 @@
 #pragma once
 #import "BaseRenderer.h"
 
-@interface ENRMSpoilerRenderer : BaseRenderer <NodeRenderer>
+@interface ENRMSpoilerRenderer : BaseRenderer
 @end

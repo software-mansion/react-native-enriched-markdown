@@ -1,5 +1,5 @@
 #pragma once
 #import "BaseRenderer.h"
 
-@interface SubscriptRenderer : BaseRenderer <NodeRenderer>
+@interface SubscriptRenderer : BaseRenderer
 @end

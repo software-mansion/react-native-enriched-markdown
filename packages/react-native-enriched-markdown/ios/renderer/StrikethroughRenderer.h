@@ -1,5 +1,5 @@
 #pragma once
 #import "BaseRenderer.h"
 
-@interface StrikethroughRenderer : BaseRenderer <NodeRenderer>
+@interface StrikethroughRenderer : BaseRenderer
 @end

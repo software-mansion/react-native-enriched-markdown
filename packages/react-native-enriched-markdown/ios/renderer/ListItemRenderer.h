@@ -9,5 +9,5 @@ extern NSString *const TaskItemAttribute;
 extern NSString *const TaskCheckedAttribute;
 extern NSString *const TaskIndexAttribute;
 
-@interface ListItemRenderer : BaseRenderer <NodeRenderer>
+@interface ListItemRenderer : BaseRenderer
 @end

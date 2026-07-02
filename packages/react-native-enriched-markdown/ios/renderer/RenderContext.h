@@ -79,8 +79,13 @@ typedef NS_ENUM(NSInteger, ListType) { ListTypeUnordered, ListTypeOrdered };
 - (NSDictionary *)getTextAttributes;
 - (void)clearBlockStyle;
 
-- (id)snapshotBlockStyle;
-- (void)restoreBlockStyle:(id)snapshot;
+/**
+ * Captures/restores the scoped context state: block style, block type, heading level,
+ * blockquote/list depths, list type and list item counter. Accumulators (range
+ * registries, taskItemCount) are excluded on purpose — they must survive restores.
+ */
+- (id)snapshotScope;
+- (void)restoreScope:(id)snapshot;
 
 /**
  * Checks if colors should be preserved based on existing attributes.

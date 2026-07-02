@@ -3,7 +3,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface ENRMImageRenderer : BaseRenderer <NodeRenderer>
+@interface ENRMImageRenderer : BaseRenderer
 @end
 
 NS_ASSUME_NONNULL_END

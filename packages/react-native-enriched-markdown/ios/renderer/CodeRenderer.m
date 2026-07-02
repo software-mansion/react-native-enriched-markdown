@@ -10,7 +10,9 @@
 
 @implementation CodeRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
 {
 
   BlockStyle *blockStyle = [context getBlockStyle];

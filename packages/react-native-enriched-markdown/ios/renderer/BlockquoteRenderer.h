@@ -2,5 +2,5 @@
 #import "MarkdownASTNode.h"
 #import "RenderContext.h"
 
-@interface BlockquoteRenderer : BaseRenderer <NodeRenderer>
+@interface BlockquoteRenderer : BaseRenderer
 @end

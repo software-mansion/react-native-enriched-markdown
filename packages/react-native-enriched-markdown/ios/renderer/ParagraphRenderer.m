@@ -7,7 +7,14 @@
 
 @implementation ParagraphRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (id)takeContextSnapshot:(RenderContext *)context
+{
+  return [context snapshotScope];
+}
+
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
 {
   // Only set block style if a parent element (e.g. List, Blockquote) hasn't already established one
   BOOL isTopLevel = (context.currentBlockType == BlockTypeNone);
@@ -33,13 +40,7 @@
     start += offset;
   }
 
-  @try {
-    [_rendererFactory renderChildrenOfNode:node into:output context:context];
-  } @finally {
-    if (isTopLevel) {
-      [context clearBlockStyle];
-    }
-  }
+  [_rendererFactory renderChildrenOfNode:node into:output context:context];
 
   if (output.length <= start)
     return;

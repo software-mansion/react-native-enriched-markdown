@@ -3,7 +3,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface CodeRenderer : BaseRenderer <NodeRenderer>
+@interface CodeRenderer : BaseRenderer
 @end
 
 NS_ASSUME_NONNULL_END

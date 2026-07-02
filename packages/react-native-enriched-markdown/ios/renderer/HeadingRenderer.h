@@ -2,5 +2,5 @@
 #import "MarkdownASTNode.h"
 #import "RenderContext.h"
 
-@interface HeadingRenderer : BaseRenderer <NodeRenderer>
+@interface HeadingRenderer : BaseRenderer
 @end

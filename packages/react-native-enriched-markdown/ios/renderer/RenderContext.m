@@ -6,7 +6,7 @@
 @implementation BlockStyle
 @end
 
-@interface ENRMBlockStyleFrame : NSObject
+@interface ENRMScopeFrame : NSObject
 @property (nonatomic, assign) BlockType blockType;
 @property (nonatomic, assign) NSInteger headingLevel;
 @property (nonatomic, assign) CGFloat fontSize;
@@ -15,9 +15,13 @@
 @property (nonatomic, strong) RCTUIColor *color;
 @property (nonatomic, strong) UIFont *cachedFont;
 @property (nonatomic, strong) NSDictionary *cachedTextAttributes;
+@property (nonatomic, assign) NSInteger blockquoteDepth;
+@property (nonatomic, assign) NSInteger listDepth;
+@property (nonatomic, assign) ListType listType;
+@property (nonatomic, assign) NSInteger listItemNumber;
 @end
 
-@implementation ENRMBlockStyleFrame
+@implementation ENRMScopeFrame
 @end
 
 @implementation RenderContext {
@@ -249,9 +253,9 @@
   _currentBlockStyle.cachedTextAttributes = nil;
 }
 
-- (id)snapshotBlockStyle
+- (id)snapshotScope
 {
-  ENRMBlockStyleFrame *frame = [[ENRMBlockStyleFrame alloc] init];
+  ENRMScopeFrame *frame = [[ENRMScopeFrame alloc] init];
   frame.blockType = _currentBlockType;
   frame.headingLevel = _currentHeadingLevel;
   frame.fontSize = _currentBlockStyle.fontSize;
@@ -260,12 +264,16 @@
   frame.color = _currentBlockStyle.color;
   frame.cachedFont = _currentBlockStyle.cachedFont;
   frame.cachedTextAttributes = _currentBlockStyle.cachedTextAttributes;
+  frame.blockquoteDepth = _blockquoteDepth;
+  frame.listDepth = _listDepth;
+  frame.listType = _listType;
+  frame.listItemNumber = _listItemNumber;
   return frame;
 }
 
-- (void)restoreBlockStyle:(id)snapshot
+- (void)restoreScope:(id)snapshot
 {
-  ENRMBlockStyleFrame *frame = snapshot;
+  ENRMScopeFrame *frame = snapshot;
   _currentBlockType = frame.blockType;
   _currentHeadingLevel = frame.headingLevel;
   _currentBlockStyle.fontSize = frame.fontSize;
@@ -274,6 +282,10 @@
   _currentBlockStyle.color = frame.color;
   _currentBlockStyle.cachedFont = frame.cachedFont;
   _currentBlockStyle.cachedTextAttributes = frame.cachedTextAttributes;
+  _blockquoteDepth = frame.blockquoteDepth;
+  _listDepth = frame.listDepth;
+  _listType = frame.listType;
+  _listItemNumber = frame.listItemNumber;
 }
 
 #pragma mark - Reset

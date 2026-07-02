@@ -9,7 +9,9 @@
 
 #pragma mark - Rendering
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
 {
   NSUInteger start = output.length;
 

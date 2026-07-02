@@ -9,7 +9,14 @@
 
 @implementation CodeBlockRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (id)takeContextSnapshot:(RenderContext *)context
+{
+  return [context snapshotScope];
+}
+
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
 {
   // In tight lists md4c emits raw Text siblings without paragraph wrappers,
   // so the preceding content may not terminate with a newline.
@@ -17,7 +24,6 @@
     [output appendAttributedString:kNewlineAttributedString];
   }
 
-  id blockStyleSnapshot = [context snapshotBlockStyle];
   [context setBlockStyle:BlockTypeCodeBlock font:[_config codeBlockFont] color:[_config codeBlockColor] headingLevel:0];
 
   CGFloat padding = [_config codeBlockPadding];
@@ -38,11 +44,7 @@
   }
 
   NSUInteger contentStart = output.length;
-  @try {
-    [_rendererFactory renderChildrenOfNode:node into:output context:context];
-  } @finally {
-    [context restoreBlockStyle:blockStyleSnapshot];
-  }
+  [_rendererFactory renderChildrenOfNode:node into:output context:context];
 
   NSUInteger contentEnd = output.length;
   if (contentEnd <= contentStart)
