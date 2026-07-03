@@ -43,16 +43,21 @@ struct MeasurementCacheKey {
   size_t styleFingerprint;
   CGFloat fontScale;
   MarkdownFlavor flavor;
+  std::string lineBreakStrategyIOS;
+  std::string writingDirection;
+  std::string spoilerOverlay;
 
   bool operator==(const MeasurementCacheKey &other) const
   {
     return std::tie(markdown, maxWidth, allowTrailingMargin, allowFontScaling, maxFontSizeMultiplier,
                     md4cFlagsUnderline, md4cFlagsSuperscript, md4cFlagsSubscript, md4cFlagsHighlight,
-                    md4cFlagsLatexMath, styleFingerprint, fontScale, flavor) ==
+                    md4cFlagsLatexMath, styleFingerprint, fontScale, flavor, lineBreakStrategyIOS, writingDirection,
+                    spoilerOverlay) ==
            std::tie(other.markdown, other.maxWidth, other.allowTrailingMargin, other.allowFontScaling,
                     other.maxFontSizeMultiplier, other.md4cFlagsUnderline, other.md4cFlagsSuperscript,
                     other.md4cFlagsSubscript, other.md4cFlagsHighlight, other.md4cFlagsLatexMath,
-                    other.styleFingerprint, other.fontScale, other.flavor);
+                    other.styleFingerprint, other.fontScale, other.flavor, other.lineBreakStrategyIOS,
+                    other.writingDirection, other.spoilerOverlay);
   }
 };
 
@@ -73,6 +78,9 @@ struct MeasurementCacheKeyHash {
     HashUtils::hash_one(h, key.styleFingerprint);
     HashUtils::hash_one(h, key.fontScale);
     HashUtils::hash_one(h, static_cast<uint8_t>(key.flavor));
+    HashUtils::hash_one(h, key.lineBreakStrategyIOS);
+    HashUtils::hash_one(h, key.writingDirection);
+    HashUtils::hash_one(h, key.spoilerOverlay);
     return h;
   }
 };
@@ -154,6 +162,9 @@ inline MeasurementCacheKey buildMeasurementCacheKey(const PropsType &props, CGFl
       .styleFingerprint = computeStyleFingerprint(props.markdownStyle),
       .fontScale = fontScale,
       .flavor = flavor,
+      .lineBreakStrategyIOS = props.lineBreakStrategyIOS,
+      .writingDirection = props.writingDirection,
+      .spoilerOverlay = props.spoilerOverlay,
   };
 }
 
