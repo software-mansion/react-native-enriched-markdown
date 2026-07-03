@@ -3,9 +3,11 @@
 #include "MeasurementCache.h"
 #import <Foundation/Foundation.h>
 #import <React/RCTUtils.h>
+#include <TargetConditionals.h>
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <mutex>
 #include <react/renderer/core/LayoutConstraints.h>
 #include <react/utils/ManagedObjectWrapper.h>
 
