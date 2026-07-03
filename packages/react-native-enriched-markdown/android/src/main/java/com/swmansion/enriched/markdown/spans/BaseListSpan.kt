@@ -64,6 +64,20 @@ abstract class BaseListSpan(
     // but only the line at the span start should get a bullet/number.
     if (text is Spanned && text.getSpanStart(this) != start) return
 
+    drawMarkerAt(canvas, paint, x, dir, top, baseline, bottom, layout, start)
+  }
+
+  fun drawMarkerAt(
+    canvas: Canvas,
+    paint: Paint,
+    x: Int,
+    dir: Int,
+    top: Int,
+    baseline: Int,
+    bottom: Int,
+    layout: Layout?,
+    start: Int,
+  ) {
     val originalStyle = paint.style
     val originalColor = paint.color
     drawMarker(canvas, paint, x, dir, top, baseline, bottom, layout, start)

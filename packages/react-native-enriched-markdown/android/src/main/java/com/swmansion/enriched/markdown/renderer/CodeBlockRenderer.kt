@@ -48,7 +48,7 @@ class CodeBlockRenderer(
 
     // Apply background, borders, and horizontal padding to content only
     builder.setSpan(
-      CodeBlockSpan(style, factory.context, factory.styleCache),
+      CodeBlockSpan(style, factory.context, factory.styleCache, context.accumulatedIndent),
       contentStart,
       end,
       SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE,

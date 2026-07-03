@@ -6,6 +6,7 @@ import android.text.style.StrikethroughSpan
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.spans.BaseListSpan
 import com.swmansion.enriched.markdown.spans.CodeBlockSpan
+import com.swmansion.enriched.markdown.spans.ListMarkerAnchorSpan
 import com.swmansion.enriched.markdown.spans.OrderedListSpan
 import com.swmansion.enriched.markdown.spans.TaskListSpan
 import com.swmansion.enriched.markdown.spans.UnorderedListSpan
@@ -34,17 +35,8 @@ class ListItemRenderer(
 
     val taskIndex = if (isTask) styleContext.taskItemCount++ else -1
 
-    factory.renderChildren(node, builder, onLinkPress, onLinkLongPress)
-
-    if (builder.length == start || builder.substring(start).isBlank()) return
-
-    if (builder.last() != '\n') {
-      builder.append("\n")
-    }
-
     val depth = styleContext.listDepth - 1
     val listStyle = config.style.listStyle
-    val itemEnd = builder.length
 
     fun makeSpan(drawsMarker: Boolean): BaseListSpan =
       if (isTask) {
@@ -72,6 +64,34 @@ class ListItemRenderer(
         }
       }
 
+    val markerSpan = makeSpan(drawsMarker = true)
+
+    val prevIndent = styleContext.accumulatedIndent
+    styleContext.accumulatedIndent = prevIndent + markerSpan.getLeadingMargin(false)
+    try {
+      factory.renderChildren(node, builder, onLinkPress, onLinkLongPress)
+    } finally {
+      styleContext.accumulatedIndent = prevIndent
+    }
+
+    if (builder.length == start || builder.substring(start).isBlank()) return
+
+    if (builder.last() != '\n') {
+      builder.append("\n")
+    }
+
+    val itemEnd = builder.length
+
+    // Anchor the marker on the first content character so items that open with
+    // a code block or nested sublist still get their marker.
+    var anchor = start
+    while (anchor < itemEnd && builder[anchor].isWhitespace()) anchor++
+    if (anchor == itemEnd) anchor = start
+
+    val plainAnchor =
+      builder.getSpans(anchor, anchor + 1, CodeBlockSpan::class.java).isEmpty() &&
+        builder.getSpans(anchor, anchor + 1, BaseListSpan::class.java).none { it.depth > depth }
+
     val codeBlockRanges =
       builder
         .getSpans(start, itemEnd, CodeBlockSpan::class.java)
@@ -83,13 +103,27 @@ class ListItemRenderer(
     var isFirstSegment = true
     for ((cbStart, cbEnd) in codeBlockRanges) {
       if (pos < cbStart) {
-        builder.setSpan(makeSpan(drawsMarker = isFirstSegment), pos, cbStart, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
+        builder.setSpan(
+          if (isFirstSegment && plainAnchor) markerSpan else makeSpan(drawsMarker = false),
+          pos,
+          cbStart,
+          SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE,
+        )
         isFirstSegment = false
       }
       pos = maxOf(pos, cbEnd)
     }
     if (pos < itemEnd) {
-      builder.setSpan(makeSpan(drawsMarker = isFirstSegment), pos, itemEnd, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
+      builder.setSpan(
+        if (isFirstSegment && plainAnchor) markerSpan else makeSpan(drawsMarker = false),
+        pos,
+        itemEnd,
+        SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE,
+      )
+    }
+
+    if (!plainAnchor) {
+      builder.setSpan(ListMarkerAnchorSpan(markerSpan), anchor, anchor + 1, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
     }
 
     if (isTask && isChecked) {
@@ -110,10 +144,10 @@ class ListItemRenderer(
     if (checkedTextColor == 0 && !strikethrough) return
 
     val excludedRanges =
-      builder
-        .getSpans(itemStart, itemEnd, BaseListSpan::class.java)
-        .filter { it.depth > itemDepth }
-        .map { builder.getSpanStart(it) to builder.getSpanEnd(it) }
+      (
+        builder.getSpans(itemStart, itemEnd, BaseListSpan::class.java).filter { it.depth > itemDepth } +
+          builder.getSpans(itemStart, itemEnd, CodeBlockSpan::class.java).toList()
+      ).map { builder.getSpanStart(it) to builder.getSpanEnd(it) }
         .sortedBy { it.first }
 
     var currentPos = itemStart

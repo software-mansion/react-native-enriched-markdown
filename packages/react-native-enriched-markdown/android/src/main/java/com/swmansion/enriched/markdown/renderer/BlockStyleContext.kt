@@ -42,6 +42,7 @@ class BlockStyleContext {
   var listType: ListType? = null
   var listItemNumber = 0
   var taskItemCount = 0
+  var accumulatedIndent = 0
 
   private val orderedListItemNumbers = ArrayDeque<Int>()
 
@@ -147,6 +148,7 @@ class BlockStyleContext {
     listType = null
     listItemNumber = 0
     taskItemCount = 0
+    accumulatedIndent = 0
     orderedListItemNumbers.clear()
   }
 }
