@@ -36,6 +36,7 @@ static inline CGFloat ENRMFontScaleForMeasurement(bool allowFontScaling)
     }
     cachedScale.store(scale, std::memory_order_relaxed);
 
+#if !TARGET_OS_OSX
     dispatch_async(dispatch_get_main_queue(), ^{
       [[NSNotificationCenter defaultCenter]
           addObserverForName:UIContentSizeCategoryDidChangeNotification
@@ -45,6 +46,7 @@ static inline CGFloat ENRMFontScaleForMeasurement(bool allowFontScaling)
                     cachedScale.store(RCTFontSizeMultiplier(), std::memory_order_relaxed);
                   }];
     });
+#endif
   });
 
   return cachedScale.load(std::memory_order_relaxed);
