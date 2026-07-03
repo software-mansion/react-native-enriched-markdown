@@ -250,12 +250,11 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
     return inlineMarkdown;
   }
 
-  // Plain-text character offset at the start of each line.
   NSMutableArray<NSNumber *> *lineStartOffsets = [NSMutableArray arrayWithCapacity:plainLines.count];
   NSUInteger runningOffset = 0;
   for (NSString *line in plainLines) {
     [lineStartOffsets addObject:@(runningOffset)];
-    runningOffset += line.length + 1; // +1 for the '\n' separator
+    runningOffset += line.length + 1;
   }
 
   for (ENRMBlockRange *blockRange in blockRanges) {
@@ -270,8 +269,6 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
     for (NSUInteger lineIndex = 0; lineIndex < plainLines.count; lineIndex++) {
       NSUInteger lineStart = lineStartOffsets[lineIndex].unsignedIntegerValue;
       NSUInteger lineEnd = lineStart + plainLines[lineIndex].length;
-      // A block claims a line if their ranges intersect (block ranges are
-      // line-scoped, so this covers single- and multi-line blocks).
       if (lineEnd >= blockStart && lineStart < blockEnd) {
         markdownLines[lineIndex] = [prefix stringByAppendingString:markdownLines[lineIndex]];
       }

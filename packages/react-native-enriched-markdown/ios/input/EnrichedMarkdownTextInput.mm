@@ -878,8 +878,6 @@ using namespace facebook::react;
                      ranges:(NSArray<ENRMFormattingRange *> *)ranges
                 blockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
 {
-  // The provider runs synchronously inside the serializer call, so capturing
-  // the formatter directly is safe — no escaping closure, no retain cycle.
   ENRMInputFormatter *formatter = _formatter;
   return [ENRMMarkdownSerializer serializePlainText:text
                                              ranges:ranges

@@ -254,8 +254,11 @@
       continue;
     }
 
-    // Seed from the paragraph style already on the text (e.g. writing
-    // direction, base spacing) instead of stomping it with a fresh style.
+    // Seed from the paragraph style at the block's location. This only matters
+    // for newly claimed paragraphs that carry a base style — for re-claimed
+    // paragraphs the reset pass above just cleared the attribute, so this reads
+    // the default. That's fine: handlers set absolute values, and
+    // applyWritingDirection re-derives direction after this pass.
     NSParagraphStyle *existingStyle = [textStorage attribute:NSParagraphStyleAttributeName
                                                      atIndex:blockRange.range.location
                                               effectiveRange:NULL];

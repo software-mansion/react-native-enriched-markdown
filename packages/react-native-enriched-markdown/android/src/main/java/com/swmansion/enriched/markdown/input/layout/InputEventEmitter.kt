@@ -185,9 +185,6 @@ class InputEventEmitter(
 
   private fun serializeToMarkdown(): String {
     val plainText = view.text?.toString() ?: ""
-    // Each block resolves its markdown line prefix through its registered handler.
-    // With no block handlers registered the provider returns "" for every block
-    // and output equals the inline-only serialization.
     return MarkdownSerializer.serialize(
       plainText,
       view.allFormattingRangesForSerialization(),

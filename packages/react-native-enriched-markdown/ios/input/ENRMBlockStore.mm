@@ -1,4 +1,5 @@
 #import "ENRMBlockStore.h"
+#import "ENRMRangeEditAdjustment.h"
 
 static NSUInteger sortedInsertionIndex(NSArray<ENRMBlockRange *> *ranges, NSUInteger location)
 {
@@ -15,31 +16,6 @@ static void removeIndexesInReverse(NSMutableArray *array, NSMutableIndexSet *ind
 {
   [indexes enumerateIndexesWithOptions:NSEnumerationReverse
                             usingBlock:^(NSUInteger idx, BOOL *stop) { [array removeObjectAtIndex:idx]; }];
-}
-
-typedef NS_ENUM(NSInteger, EditOverlap) {
-  EditOverlapBeforeEdit,
-  EditOverlapAfterEdit,
-  EditOverlapFullyDeleted,
-  EditOverlapDeletedInside,
-  EditOverlapClippedEnd,
-  EditOverlapClippedStart,
-};
-
-static EditOverlap classifyOverlap(NSUInteger rangeStart, NSUInteger rangeEnd, NSUInteger editLocation,
-                                   NSUInteger deleteEnd)
-{
-  if (rangeEnd <= editLocation)
-    return EditOverlapBeforeEdit;
-  if (rangeStart >= deleteEnd)
-    return EditOverlapAfterEdit;
-  if (rangeStart >= editLocation && rangeEnd <= deleteEnd)
-    return EditOverlapFullyDeleted;
-  if (rangeStart < editLocation && rangeEnd > deleteEnd)
-    return EditOverlapDeletedInside;
-  if (rangeStart < editLocation && rangeEnd <= deleteEnd)
-    return EditOverlapClippedEnd;
-  return EditOverlapClippedStart;
 }
 
 /// Expands a selection to cover whole paragraphs (line-scoped block boundaries).
@@ -154,66 +130,14 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   if (deletedLength == 0 && insertedLength == 0)
     return;
 
-  NSUInteger deleteEnd = editLocation + deletedLength;
   NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
 
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
     ENRMBlockRange *blockRange = _ranges[idx];
-    NSUInteger rangeStart = blockRange.range.location;
-    NSUInteger rangeEnd = NSMaxRange(blockRange.range);
-
-    if (deletedLength > 0) {
-      EditOverlap overlap = classifyOverlap(rangeStart, rangeEnd, editLocation, deleteEnd);
-
-      switch (overlap) {
-        case EditOverlapBeforeEdit:
-          break;
-
-        case EditOverlapAfterEdit:
-          blockRange.range = NSMakeRange(rangeStart - deletedLength + insertedLength, blockRange.range.length);
-          break;
-
-        case EditOverlapFullyDeleted:
-          [indexesToRemove addIndex:idx];
-          break;
-
-        case EditOverlapDeletedInside: {
-          NSUInteger newLength = blockRange.range.length - deletedLength + insertedLength;
-          blockRange.range = NSMakeRange(rangeStart, newLength);
-          break;
-        }
-
-        case EditOverlapClippedEnd: {
-          NSUInteger newEnd = editLocation + insertedLength;
-          NSUInteger newLength = newEnd > rangeStart ? newEnd - rangeStart : 0;
-          blockRange.range = NSMakeRange(rangeStart, newLength);
-          if (newLength == 0) {
-            [indexesToRemove addIndex:idx];
-          }
-          break;
-        }
-
-        case EditOverlapClippedStart: {
-          NSUInteger charsClipped = deleteEnd - rangeStart;
-          NSUInteger newStart = editLocation + insertedLength;
-          NSUInteger newLength = blockRange.range.length - charsClipped;
-          blockRange.range = NSMakeRange(newStart, newLength);
-          if (newLength == 0) {
-            [indexesToRemove addIndex:idx];
-          }
-          break;
-        }
-      }
-    } else {
-      // Insert-only. Insertion at exactly rangeStart shifts the block right
-      // (typed characters stay outside it) — same convention as
-      // ENRMFormattingStore. A concrete block handler re-normalizes its line
-      // bounds on the edit pass, so a leading insert rejoins the block there.
-      if (rangeStart >= editLocation) {
-        blockRange.range = NSMakeRange(rangeStart + insertedLength, blockRange.range.length);
-      } else if (editLocation < rangeEnd) {
-        blockRange.range = NSMakeRange(rangeStart, blockRange.range.length + insertedLength);
-      }
+    ENRMAdjustedRange adjusted = ENRMAdjustRangeForEdit(blockRange.range, editLocation, deletedLength, insertedLength);
+    blockRange.range = adjusted.range;
+    if (adjusted.shouldRemove) {
+      [indexesToRemove addIndex:idx];
     }
   }
 

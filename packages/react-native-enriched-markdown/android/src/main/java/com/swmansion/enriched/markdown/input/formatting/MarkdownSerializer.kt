@@ -40,12 +40,11 @@ object MarkdownSerializer {
       return inlineMarkdown
     }
 
-    // Plain-text character offset at the start of each line.
     val lineStartOffsets = IntArray(plainLines.size)
     var runningOffset = 0
     for (i in plainLines.indices) {
       lineStartOffsets[i] = runningOffset
-      runningOffset += plainLines[i].length + 1 // +1 for the '\n' separator
+      runningOffset += plainLines[i].length + 1
     }
 
     for (blockRange in blockRanges) {
@@ -55,8 +54,6 @@ object MarkdownSerializer {
       for (lineIndex in plainLines.indices) {
         val lineStart = lineStartOffsets[lineIndex]
         val lineEnd = lineStart + plainLines[lineIndex].length
-        // A block claims a line if their ranges intersect (block ranges are
-        // line-scoped, so this covers single- and multi-line blocks).
         if (lineEnd >= blockRange.start && lineStart < blockRange.end) {
           markdownLines[lineIndex] = prefix + markdownLines[lineIndex]
         }
