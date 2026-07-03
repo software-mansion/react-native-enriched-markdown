@@ -458,6 +458,90 @@ void promoteDisplayMathFromParagraphs(MarkdownASTNode &root) {
   }
 }
 
+bool isBlockNode(const MarkdownASTNode &node) {
+  switch (node.type) {
+    case NodeType::Document:
+    case NodeType::Paragraph:
+    case NodeType::Heading:
+    case NodeType::Blockquote:
+    case NodeType::UnorderedList:
+    case NodeType::OrderedList:
+    case NodeType::ListItem:
+    case NodeType::CodeBlock:
+    case NodeType::ThematicBreak:
+    case NodeType::Table:
+    case NodeType::TableHead:
+    case NodeType::TableBody:
+    case NodeType::TableRow:
+    case NodeType::TableHeaderCell:
+    case NodeType::TableCell:
+      return true;
+    default:
+      return false;
+  }
+}
+
+// md4c omits Paragraph wrappers around the inline content of tight list items.
+// Wrap each run of consecutive inline children of a ListItem in a synthetic
+// Paragraph (marked "tight") so renderers only ever see block children.
+void wrapListItemInlineRuns(MarkdownASTNode &node) {
+  for (auto &child : node.children) {
+    wrapListItemInlineRuns(*child);
+  }
+
+  if (node.type != NodeType::ListItem)
+    return;
+
+  bool hasInlineChild = false;
+  for (auto &child : node.children) {
+    if (!isBlockNode(*child)) {
+      hasInlineChild = true;
+      break;
+    }
+  }
+  if (!hasInlineChild)
+    return;
+
+  std::vector<std::shared_ptr<MarkdownASTNode>> newChildren;
+  newChildren.reserve(node.children.size());
+  std::vector<std::shared_ptr<MarkdownASTNode>> run;
+
+  auto flushRun = [&]() {
+    if (run.empty())
+      return;
+    bool hasContent = false;
+    for (auto &n : run) {
+      if (!isSeparatorNode(*n)) {
+        hasContent = true;
+        break;
+      }
+    }
+    if (hasContent) {
+      auto paragraph = std::make_shared<MarkdownASTNode>(NodeType::Paragraph);
+      paragraph->setAttribute("tight", "true");
+      paragraph->children = std::move(run);
+      newChildren.push_back(std::move(paragraph));
+    } else {
+      // Whitespace-only run between blocks — keep as-is, a paragraph would add spacing.
+      for (auto &n : run) {
+        newChildren.push_back(std::move(n));
+      }
+    }
+    run.clear();
+  };
+
+  for (auto &child : node.children) {
+    if (isBlockNode(*child)) {
+      flushRun();
+      newChildren.push_back(std::move(child));
+    } else {
+      run.push_back(std::move(child));
+    }
+  }
+  flushRun();
+  node.children = std::move(newChildren);
+}
+
 } // anonymous namespace
 
 MD4CParser::MD4CParser() : impl_(std::make_unique<Impl>()) {}
@@ -522,6 +606,7 @@ std::shared_ptr<MarkdownASTNode> MD4CParser::parse(const std::string &markdown, 
 
   if (impl_->root) {
     promoteDisplayMathFromParagraphs(*impl_->root);
+    wrapListItemInlineRuns(*impl_->root);
   }
 
   return impl_->root ? impl_->root : std::make_shared<MarkdownASTNode>(NodeType::Document);
