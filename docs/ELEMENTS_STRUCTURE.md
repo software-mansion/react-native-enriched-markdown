@@ -60,6 +60,22 @@ Markdown elements in `react-native-enriched-markdown` are organized into block a
 2. Second item
 ```
 
+### Lists with Block Content Example
+
+List items can contain block elements — fenced code blocks, nested lists, and multiple paragraphs:
+
+````markdown
+1. Install via npm:
+
+   ```
+   npm install
+   ```
+
+2. Verify the connection.
+````
+
+Code blocks indent to the item's content column, and the marker is drawn next to the first line even when a code block or nested list is the item's first child.
+
 ### Nested Blockquotes Example
 
 ```markdown

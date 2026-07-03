@@ -315,6 +315,9 @@ function App() {
 | `borderWidth` | `number` | Border width |
 | `padding` | `number` | Inner padding |
 
+> [!NOTE]
+> Inside list items, code blocks (background included) indent to the item's content column.
+
 ### Inline Code-specific
 
 | Property | Type | Description |
