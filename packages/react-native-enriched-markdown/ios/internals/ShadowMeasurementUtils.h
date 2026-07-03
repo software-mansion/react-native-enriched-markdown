@@ -16,7 +16,7 @@ namespace facebook::react {
 // synchronously joins the layout queue from main. A synchronous
 // layout flush from main would deadlock.
 
-static inline CGFloat ENRMFontScaleForMeasurement(bool allowFontScaling)
+inline CGFloat ENRMFontScaleForMeasurement(bool allowFontScaling)
 {
   if (!allowFontScaling) {
     return 1.0;
