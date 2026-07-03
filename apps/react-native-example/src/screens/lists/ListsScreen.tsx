@@ -35,6 +35,28 @@ const ORDERED_LIST_WITH_CODE_BLOCKS_TIGHT = `1. Install via npm:
    \`\`\`
 That's it - you're ready to query your portfolios.`;
 
+const CODE_BLOCK_FIRST_ITEMS = `1. \`\`\`
+   npm install
+   \`\`\`
+2. \`\`\`
+   gh auth login
+   \`\`\`
+
+- \`\`\`
+  echo bullet
+  \`\`\``;
+
+const SUBLIST_FIRST_ITEM = `1.
+   - alpha
+   - beta
+2. gamma`;
+
+const CHECKED_TASK_WITH_CODE_BLOCK = `- [x] setup complete
+  \`\`\`
+  npm i
+  \`\`\`
+- [ ] still pending`;
+
 const SIMPLE_ORDERED_LIST = `1. First item
 2. Second item
 3. Third item`;
@@ -54,6 +76,21 @@ const EXAMPLES = [
     key: 'ordered-list-with-code-tight',
     title: 'Ordered list with fenced code blocks — TIGHT',
     markdown: ORDERED_LIST_WITH_CODE_BLOCKS_TIGHT,
+  },
+  {
+    key: 'code-block-first-items',
+    title: 'Items starting with a code block',
+    markdown: CODE_BLOCK_FIRST_ITEMS,
+  },
+  {
+    key: 'sublist-first-item',
+    title: 'Item starting with a nested sublist',
+    markdown: SUBLIST_FIRST_ITEM,
+  },
+  {
+    key: 'checked-task-with-code-block',
+    title: 'Checked task containing a code block',
+    markdown: CHECKED_TASK_WITH_CODE_BLOCK,
   },
   {
     key: 'simple-ordered-list',
