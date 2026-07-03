@@ -238,12 +238,15 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
   NSMutableArray<NSString *> *markdownLines = [[inlineMarkdown componentsSeparatedByString:@"\n"] mutableCopy];
 
   // Inline delimiters never cross a newline, so the line partition is preserved.
-  // If this ever breaks, prefixes would land on the wrong lines — fail loudly
-  // rather than silently emitting unprefixed (or misprefixed) markdown.
+  // If this ever breaks, prefixes would land on the wrong lines. Contract on
+  // both platforms: assert in debug, log and fall back to inline-only output in
+  // release — a library must not crash the host app over lost block prefixes.
   NSCAssert(plainLines.count == markdownLines.count,
             @"Block serialization line-count invariant violated: plain=%lu markdown=%lu",
             (unsigned long)plainLines.count, (unsigned long)markdownLines.count);
   if (plainLines.count != markdownLines.count) {
+    NSLog(@"[EnrichedMarkdown] Block serialization line-count invariant violated: plain=%lu markdown=%lu",
+          (unsigned long)plainLines.count, (unsigned long)markdownLines.count);
     return inlineMarkdown;
   }
 

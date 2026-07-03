@@ -51,16 +51,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable id<ENRMStyleHandler>)handlerForStyleType:(ENRMInputStyleType)type;
 - (nullable id<ENRMBlockHandler>)handlerForBlockType:(ENRMInputBlockType)type;
 
-/// All registered block handlers, for callers that need to interrogate every
-/// handler (e.g. the parser asking which block a md4c type maps to).
-- (NSArray<id<ENRMBlockHandler>> *)allBlockHandlers;
-
 - (void)applyFormattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
                    toTextView:(ENRMPlatformTextView *)textView
                         style:(ENRMInputFormatterStyle *)style;
 
-/// Applies paragraph-level attributes for each block range via its handler.
-/// With no handlers registered (PR1) this is a no-op.
+/// Applies paragraph-level attributes for each block range via its handler,
+/// after first stripping the attributes applied on the previous pass (so
+/// removed blocks don't leave stale paragraph styling behind). With no
+/// handlers registered (PR1) this is a no-op.
 - (void)applyBlockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
               toTextView:(ENRMPlatformTextView *)textView
                    style:(ENRMInputFormatterStyle *)style;

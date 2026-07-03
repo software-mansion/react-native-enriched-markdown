@@ -125,11 +125,6 @@
   return _blockHandlers[@(type)];
 }
 
-- (NSArray<id<ENRMBlockHandler>> *)allBlockHandlers
-{
-  return _blockHandlers.allValues;
-}
-
 - (void)applyFormattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
                    toTextView:(ENRMPlatformTextView *)textView
                         style:(ENRMInputFormatterStyle *)style
@@ -215,7 +210,7 @@
               toTextView:(ENRMPlatformTextView *)textView
                    style:(ENRMInputFormatterStyle *)style
 {
-  if (blockRanges.count == 0) {
+  if (_blockHandlers.count == 0) {
     return;
   }
 
@@ -227,6 +222,28 @@
 
   [textStorage beginEditing];
 
+  // Reset pass: strip everything the previous block pass applied — paragraphs
+  // are found via the ENRMBlockTypeAttributeName marker — so a removed or moved
+  // block doesn't leave stale paragraph styling behind. Character-level
+  // attributes (fonts, colors) are already reset by the inline pass, which runs
+  // first. This runs even with zero current ranges: deleting the last block
+  // must still clear its styling.
+  NSMutableArray<NSValue *> *previouslyClaimedRanges = [NSMutableArray array];
+  [textStorage enumerateAttribute:ENRMBlockTypeAttributeName
+                          inRange:NSMakeRange(0, textLength)
+                          options:0
+                       usingBlock:^(id value, NSRange range, BOOL *stop) {
+                         if (value != nil) {
+                           [previouslyClaimedRanges addObject:[NSValue valueWithRange:range]];
+                         }
+                       }];
+  for (NSValue *rangeValue in previouslyClaimedRanges) {
+    NSRange range = rangeValue.rangeValue;
+    [textStorage removeAttribute:ENRMBlockTypeAttributeName range:range];
+    [textStorage removeAttribute:ENRMBlockLevelAttributeName range:range];
+    [textStorage removeAttribute:NSParagraphStyleAttributeName range:range];
+  }
+
   for (ENRMBlockRange *blockRange in blockRanges) {
     if (blockRange.range.length == 0 || NSMaxRange(blockRange.range) > textLength) {
       continue;
@@ -237,12 +254,20 @@
       continue;
     }
 
-    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    // Seed from the paragraph style already on the text (e.g. writing
+    // direction, base spacing) instead of stomping it with a fresh style.
+    NSParagraphStyle *existingStyle = [textStorage attribute:NSParagraphStyleAttributeName
+                                                     atIndex:blockRange.range.location
+                                              effectiveRange:NULL];
+    NSMutableParagraphStyle *paragraphStyle =
+        existingStyle ? [existingStyle mutableCopy] : [[NSMutableParagraphStyle alloc] init];
     NSMutableDictionary<NSAttributedStringKey, id> *attributes = [NSMutableDictionary dictionary];
 
     [handler applyAttributesToParagraphStyle:paragraphStyle attributes:attributes blockRange:blockRange style:style];
 
     attributes[NSParagraphStyleAttributeName] = paragraphStyle;
+    attributes[ENRMBlockTypeAttributeName] = @(blockRange.type);
+    attributes[ENRMBlockLevelAttributeName] = @(blockRange.level);
     [textStorage addAttributes:attributes range:blockRange.range];
   }
 

@@ -43,16 +43,16 @@ static EditOverlap classifyOverlap(NSUInteger rangeStart, NSUInteger rangeEnd, N
 }
 
 /// Expands a selection to cover whole paragraphs (line-scoped block boundaries).
+/// Clamps unconditionally so out-of-bounds input can't reach
+/// paragraphRangeForRange: (which raises on an invalid range).
 static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
 {
   if (text.length == 0) {
     return NSMakeRange(0, 0);
   }
-  NSRange clamped = NSIntersectionRange(range, NSMakeRange(0, text.length));
-  if (clamped.length == 0 && range.location <= text.length) {
-    clamped.location = MIN(range.location, text.length);
-  }
-  return [text paragraphRangeForRange:clamped];
+  NSUInteger location = MIN(range.location, text.length);
+  NSUInteger length = MIN(range.length, text.length - location);
+  return [text paragraphRangeForRange:NSMakeRange(location, length)];
 }
 
 @implementation ENRMBlockStore {
@@ -72,6 +72,10 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   return [_ranges copy];
 }
 
+// Incoming ranges are trusted to be non-overlapping and line-scoped — the
+// parser owns that invariant (md4c block structure never overlaps at the same
+// nesting level, and nested containers are not yet mapped). Revisit enforcement
+// here if a container block type (list, blockquote) is added.
 - (void)setRanges:(NSArray<ENRMBlockRange *> *)ranges
 {
   _ranges = [[ranges sortedArrayUsingComparator:^NSComparisonResult(ENRMBlockRange *first, ENRMBlockRange *second) {
@@ -201,6 +205,10 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
         }
       }
     } else {
+      // Insert-only. Insertion at exactly rangeStart shifts the block right
+      // (typed characters stay outside it) — same convention as
+      // ENRMFormattingStore. A concrete block handler re-normalizes its line
+      // bounds on the edit pass, so a leading insert rejoins the block there.
       if (rangeStart >= editLocation) {
         blockRange.range = NSMakeRange(rangeStart + insertedLength, blockRange.range.length);
       } else if (editLocation < rangeEnd) {

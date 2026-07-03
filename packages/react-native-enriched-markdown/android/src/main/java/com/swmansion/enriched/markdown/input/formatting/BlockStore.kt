@@ -15,6 +15,12 @@ class BlockStore {
 
   val allRanges: List<BlockRange> get() = Collections.unmodifiableList(ranges)
 
+  /**
+   * Incoming ranges are trusted to be non-overlapping and line-scoped — the
+   * parser owns that invariant (md4c block structure never overlaps at the same
+   * nesting level, and nested containers are not yet mapped). Revisit
+   * enforcement here if a container block type (list, blockquote) is added.
+   */
   fun setRanges(newRanges: List<BlockRange>) {
     ranges.clear()
     ranges.addAll(newRanges.sortedBy { it.start })
@@ -108,6 +114,10 @@ class BlockStore {
           }
         }
       } else {
+        // Insert-only. Insertion at exactly range.start shifts the block right
+        // (typed characters stay outside it) — same convention as
+        // [FormattingStore]. A concrete block handler re-normalizes its line
+        // bounds on the edit pass, so a leading insert rejoins the block there.
         when {
           range.start >= editLocation -> {
             range.start += insertedLength

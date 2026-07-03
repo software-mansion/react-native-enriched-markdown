@@ -1,8 +1,5 @@
 #import "ENRMBlockRange.h"
 
-NSAttributedStringKey const ENRMBlockTypeAttributeName = @"ENRMBlockType";
-NSAttributedStringKey const ENRMBlockLevelAttributeName = @"ENRMBlockLevel";
-
 @implementation ENRMBlockRange
 
 + (instancetype)rangeWithType:(ENRMInputBlockType)type range:(NSRange)range
