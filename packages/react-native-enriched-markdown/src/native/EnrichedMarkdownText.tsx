@@ -292,7 +292,6 @@ export const EnrichedMarkdownText = ({
       textBreakStrategy,
       lineBreakStrategyIOS,
       writingDirection,
-      ...rest,
     }),
     [
       markdown,
@@ -319,15 +318,14 @@ export const EnrichedMarkdownText = ({
       textBreakStrategy,
       lineBreakStrategyIOS,
       writingDirection,
-      rest,
     ]
   );
 
   if (flavor === 'github') {
-    return <EnrichedMarkdownNativeComponent {...sharedProps} />;
+    return <EnrichedMarkdownNativeComponent {...sharedProps} {...rest} />;
   }
 
-  return <EnrichedMarkdownTextNativeComponent {...sharedProps} />;
+  return <EnrichedMarkdownTextNativeComponent {...sharedProps} {...rest} />;
 };
 
 export default EnrichedMarkdownText;
