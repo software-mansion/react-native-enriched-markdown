@@ -75,6 +75,35 @@ class BlockStore {
   }
 
   /**
+   * Re-normalizes every stored range back to the whole-line bounds of the line
+   * containing its start. Call after [adjustForEdit] once [text] is final:
+   * [adjustForEdit] deliberately leaves characters inserted at a range's start
+   * or end outside the range (matching [FormattingStore]'s convention), and a
+   * newline typed inside a range leaves it spanning two lines. Re-snapping to
+   * line bounds re-absorbs edge-typed characters, clips a split range to its
+   * first line (the text after the caret becomes a plain paragraph), and drops
+   * blocks that a line-join landed on an earlier block's line (first wins).
+   * Idempotent: ranges already line-scoped are untouched.
+   */
+  fun normalizeToLineBounds(text: CharSequence) {
+    if (ranges.isEmpty()) return
+
+    var previousEnd = -1
+    val iterator = ranges.listIterator()
+    while (iterator.hasNext()) {
+      val range = iterator.next()
+      val (lineStart, lineEnd) = paragraphBounds(range.start, range.start, text)
+      if (lineEnd <= lineStart || lineStart <= previousEnd) {
+        iterator.remove()
+        continue
+      }
+      range.start = lineStart
+      range.end = lineEnd
+      previousEnd = lineEnd
+    }
+  }
+
+  /**
    * Drops any stored block overlapping `[start, end)` so a replacement can be
    * inserted cleanly. Blocks are line-scoped and never partially overlap, so a
    * touched block is removed wholesale.

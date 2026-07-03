@@ -253,8 +253,12 @@ class EnrichedMarkdownTextInputView(
     try {
       formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
       blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
+      // Blocks are line-scoped: snap ranges back to whole-line bounds so
+      // characters typed at a line's edges rejoin the block and a newline
+      // split clips the block to its first line.
+      text?.let { blockStore.normalizeToLineBounds(it) }
       applyPendingStyles(editStart, insertedLength)
-      applyFormatting()
+      applyFormattingScopedToEdit(editStart, insertedLength)
 
       val editable = text
       if (editable != null) {
@@ -335,6 +339,33 @@ class EnrichedMarkdownTextInputView(
     val editable = text ?: return
     formatter.applyFormatting(editable, formattingStore.allRanges)
     formatter.applyBlockFormatting(editable, blockStore.allRanges)
+  }
+
+  /**
+   * Re-applies inline formatting across the document, but re-normalizes block spans
+   * only on the paragraph(s) touched by an edit at `[editStart, editStart + insertedLength)`.
+   * Heading sizing is paragraph-scoped, so re-stamping only the edited line keeps
+   * per-keystroke work bounded instead of re-spanning the whole document.
+   */
+  private fun applyFormattingScopedToEdit(
+    editStart: Int,
+    insertedLength: Int,
+  ) {
+    val editable = text ?: return
+    formatter.applyFormatting(editable, formattingStore.allRanges)
+
+    val length = editable.length
+    val rawStart = editStart.coerceIn(0, length)
+    val rawEnd = (editStart + insertedLength).coerceIn(rawStart, length)
+
+    // Expand the edit span to whole-line bounds: a heading span covers its line, so
+    // re-stamping must cover every line the edit touched, edge-to-edge.
+    var lineStart = rawStart
+    while (lineStart > 0 && editable[lineStart - 1] != '\n') lineStart--
+    var lineEnd = rawEnd
+    while (lineEnd < length && editable[lineEnd] != '\n') lineEnd++
+
+    formatter.applyBlockFormatting(editable, blockStore.allRanges, lineStart, lineEnd)
   }
 
   private fun applyFormattingAndEmit() {

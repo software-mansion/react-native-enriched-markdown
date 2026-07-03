@@ -604,6 +604,10 @@ using namespace facebook::react;
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
   [_blockStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
+  // Blocks are line-scoped: snap ranges back to whole-line bounds so characters
+  // inserted at a line's edges rejoin the block and a newline split clips the
+  // block to its first line.
+  [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
 
   for (ENRMFormattingRange *range in ranges) {
     NSRange shifted = NSMakeRange(range.range.location + editLocation, range.range.length);
@@ -1498,6 +1502,10 @@ using namespace facebook::react;
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
   [_blockStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
+  // Blocks are line-scoped: snap ranges back to whole-line bounds so characters
+  // inserted at a line's edges rejoin the block and a newline split clips the
+  // block to its first line.
+  [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
 
   if (insertedLength > 0) {
     NSRange insertedRange = NSMakeRange(editLocation, insertedLength);

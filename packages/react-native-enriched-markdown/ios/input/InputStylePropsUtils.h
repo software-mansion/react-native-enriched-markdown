@@ -140,5 +140,38 @@ BOOL applyInputStyleProps(ENRMInputFormatterStyle *style, const InputProps &newP
     changed = YES;
   }
 
+// Headings h1..h6 share an identical struct shape (fontSize / fontWeight /
+// color). Read each level into the formatter style's per-level heading config.
+#define ENRM_APPLY_HEADING_PROPS(levelNumber, headingKey)                                                              \
+  do {                                                                                                                 \
+    if (newProps.markdownStyle.headingKey.fontSize != oldProps.markdownStyle.headingKey.fontSize) {                    \
+      [style setHeadingFontSize:newProps.markdownStyle.headingKey.fontSize forLevel:levelNumber];                      \
+      changed = YES;                                                                                                   \
+    }                                                                                                                  \
+    if (newProps.markdownStyle.headingKey.fontWeight != oldProps.markdownStyle.headingKey.fontWeight) {                \
+      NSString *weight = newProps.markdownStyle.headingKey.fontWeight.empty()                                          \
+                             ? nil                                                                                     \
+                             : [NSString stringWithUTF8String:newProps.markdownStyle.headingKey.fontWeight.c_str()];   \
+      [style setHeadingFontWeight:weight forLevel:levelNumber];                                                        \
+      changed = YES;                                                                                                   \
+    }                                                                                                                  \
+    if (newProps.markdownStyle.headingKey.color != oldProps.markdownStyle.headingKey.color) {                          \
+      RCTUIColor *color = isColorMeaningful(newProps.markdownStyle.headingKey.color)                                   \
+                              ? RCTUIColorFromSharedColor(newProps.markdownStyle.headingKey.color)                     \
+                              : nil;                                                                                   \
+      [style setHeadingColor:color forLevel:levelNumber];                                                              \
+      changed = YES;                                                                                                   \
+    }                                                                                                                  \
+  } while (0)
+
+  ENRM_APPLY_HEADING_PROPS(1, h1);
+  ENRM_APPLY_HEADING_PROPS(2, h2);
+  ENRM_APPLY_HEADING_PROPS(3, h3);
+  ENRM_APPLY_HEADING_PROPS(4, h4);
+  ENRM_APPLY_HEADING_PROPS(5, h5);
+  ENRM_APPLY_HEADING_PROPS(6, h6);
+
+#undef ENRM_APPLY_HEADING_PROPS
+
   return changed;
 }

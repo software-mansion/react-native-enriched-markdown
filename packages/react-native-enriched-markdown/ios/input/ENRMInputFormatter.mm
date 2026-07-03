@@ -1,19 +1,29 @@
 #import "ENRMInputFormatter.h"
 #import "ENRMBlockHandler.h"
 #import "ENRMBoldStyleHandler.h"
+#import "ENRMHeadingBlockHandler.h"
 #import "ENRMItalicStyleHandler.h"
 #import "ENRMLinkStyleHandler.h"
 #import "ENRMSpoilerStyleHandler.h"
 #import "ENRMStrikethroughStyleHandler.h"
 #import "ENRMStyleHandler.h"
 #import "ENRMUnderlineStyleHandler.h"
+#import "FontUtils.h"
 
 @implementation ENRMInputLinkVariantStyle
 @end
 
+/// Default font-size multipliers applied to the base font when a heading level
+/// has no explicit fontSize prop. Indexed by level 1-6 (index 0 unused).
+static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0.67};
+
 @implementation ENRMInputFormatterStyle {
   NSMutableDictionary<NSNumber *, UIFont *> *_fontCache;
   UIFont *_lastBaseFont;
+  // Per-level heading config, indexed 1-6. 0 size means "derive from base font".
+  CGFloat _headingFontSizes[7];
+  NSString *_headingFontWeights[7];
+  RCTUIColor *_headingColors[7];
 }
 
 - (instancetype)init
@@ -23,6 +33,11 @@
     _baseTextColor = [RCTUIColor labelColor];
     _linkVariants = @[];
     _fontCache = [NSMutableDictionary dictionary];
+    for (NSInteger level = 0; level <= 6; level++) {
+      _headingFontSizes[level] = 0.0;
+      _headingFontWeights[level] = nil;
+      _headingColors[level] = nil;
+    }
   }
   return self;
 }
@@ -40,7 +55,61 @@
   copy.linkVariants = [_linkVariants copy];
   copy.spoilerColor = _spoilerColor;
   copy.spoilerBackgroundColor = _spoilerBackgroundColor;
+  for (NSInteger level = 1; level <= 6; level++) {
+    [copy setHeadingFontSize:_headingFontSizes[level] forLevel:level];
+    [copy setHeadingFontWeight:_headingFontWeights[level] forLevel:level];
+    [copy setHeadingColor:_headingColors[level] forLevel:level];
+  }
   return copy;
+}
+
+- (BOOL)isValidHeadingLevel:(NSInteger)level
+{
+  return level >= 1 && level <= 6;
+}
+
+- (void)setHeadingFontSize:(CGFloat)fontSize forLevel:(NSInteger)level
+{
+  if ([self isValidHeadingLevel:level]) {
+    _headingFontSizes[level] = fontSize;
+  }
+}
+
+- (void)setHeadingFontWeight:(NSString *)fontWeight forLevel:(NSInteger)level
+{
+  if ([self isValidHeadingLevel:level]) {
+    _headingFontWeights[level] = [fontWeight copy];
+  }
+}
+
+- (void)setHeadingColor:(RCTUIColor *)color forLevel:(NSInteger)level
+{
+  if ([self isValidHeadingLevel:level]) {
+    _headingColors[level] = color;
+  }
+}
+
+- (RCTUIColor *)headingColorForLevel:(NSInteger)level
+{
+  return [self isValidHeadingLevel:level] ? _headingColors[level] : nil;
+}
+
+- (UIFont *)headingFontForLevel:(NSInteger)level
+{
+  if (![self isValidHeadingLevel:level]) {
+    return _baseFont;
+  }
+
+  CGFloat size = _headingFontSizes[level];
+  if (size <= 0.0) {
+    size = _baseFont.pointSize * kDefaultHeadingScale[level];
+  }
+
+  NSString *weightString = _headingFontWeights[level];
+  if (weightString.length > 0) {
+    return [UIFont systemFontOfSize:size weight:ENRMFontWeightFromString(weightString)];
+  }
+  return [_baseFont fontWithSize:size];
 }
 
 - (void)invalidateCacheIfNeeded
@@ -103,12 +172,14 @@
     _styleHandlers = [map copy];
 
     // Block handlers are registered here as concrete block types are added.
-    // Empty in PR1: with no handler registered, every paragraph stays a plain
-    // paragraph and the block pipeline is a no-op.
-    NSArray<id<ENRMBlockHandler>> *blockHandlers = @[];
+    // A handler instance maps to one ENRMInputBlockType, but a single
+    // ENRMHeadingBlockHandler serves all six heading levels (it dispatches on
+    // blockRange.level), so the same instance is registered under all six
+    // heading keys.
+    ENRMHeadingBlockHandler *headingHandler = [[ENRMHeadingBlockHandler alloc] init];
     NSMutableDictionary<NSNumber *, id<ENRMBlockHandler>> *blockMap = [NSMutableDictionary dictionary];
-    for (id<ENRMBlockHandler> handler in blockHandlers) {
-      blockMap[@(handler.blockType)] = handler;
+    for (NSInteger level = 1; level <= 6; level++) {
+      blockMap[@(ENRMBlockTypeForHeadingLevel(level))] = headingHandler;
     }
     _blockHandlers = [blockMap copy];
   }
@@ -271,12 +342,54 @@
     attributes[NSParagraphStyleAttributeName] = paragraphStyle;
     attributes[ENRMBlockTypeAttributeName] = @(blockRange.type);
     attributes[ENRMBlockLevelAttributeName] = @(blockRange.level);
+
+    // Font composition: applyFormattingRanges: (inline pass) ran first and set a
+    // per-run font carrying the bold/italic traits of each character. A block
+    // that wants to change the font *size* (a heading) supplies a target font in
+    // `attributes` but must not clobber those inline traits. So instead of
+    // overwriting NSFontAttributeName wholesale, merge the block font's size onto
+    // each existing run while preserving that run's symbolic traits — a bold word
+    // inside an H1 stays bold AND large. Non-font attributes (color, paragraph
+    // style) apply uniformly over the block range.
+    UIFont *blockFont = attributes[NSFontAttributeName];
+    if (blockFont) {
+      [attributes removeObjectForKey:NSFontAttributeName];
+      [self mergeFontSize:blockFont overRange:blockRange.range inTextStorage:textStorage];
+    }
+
     [textStorage addAttributes:attributes range:blockRange.range];
   }
 
   [textStorage endEditing];
 
   ENRMSetNeedsDisplay(textView);
+}
+
+/// Applies `blockFont` over `range` while preserving the symbolic traits already
+/// present on each existing font run (set by the inline formatting pass). The
+/// resulting font takes its size and descriptor from `blockFont` but unions in
+/// the run's traits, so inline bold/italic survives the block's size change.
+- (void)mergeFontSize:(UIFont *)blockFont overRange:(NSRange)range inTextStorage:(NSTextStorage *)textStorage
+{
+  UIFontDescriptorSymbolicTraits blockTraits = blockFont.fontDescriptor.symbolicTraits;
+
+  [textStorage enumerateAttribute:NSFontAttributeName
+                          inRange:range
+                          options:0
+                       usingBlock:^(UIFont *_Nullable runFont, NSRange runRange, BOOL *_Nonnull stop) {
+                         UIFontDescriptorSymbolicTraits runTraits = runFont ? runFont.fontDescriptor.symbolicTraits : 0;
+                         UIFontDescriptorSymbolicTraits mergedTraits = blockTraits | runTraits;
+
+                         UIFont *resolved = blockFont;
+                         if (mergedTraits != blockTraits) {
+                           UIFontDescriptor *descriptor =
+                               [blockFont.fontDescriptor fontDescriptorWithSymbolicTraits:mergedTraits];
+                           if (descriptor) {
+                             resolved = [UIFont fontWithDescriptor:descriptor size:0];
+                           }
+                         }
+                         [textStorage addAttribute:NSFontAttributeName value:resolved range:runRange];
+                       }];
 }
 
 @end

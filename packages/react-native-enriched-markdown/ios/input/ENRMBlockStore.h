@@ -35,6 +35,18 @@ NS_ASSUME_NONNULL_BEGIN
                   deletedLength:(NSUInteger)deletedLength
                  insertedLength:(NSUInteger)insertedLength;
 
+/// Re-normalizes every stored range back to the whole-line bounds of the line
+/// containing its start (excluding the line terminator). Call after
+/// adjustForEditAtLocation: once `text` is final: the edit adjustment
+/// deliberately leaves characters inserted at a range's start or end outside
+/// the range (matching ENRMFormattingStore's convention), and a newline typed
+/// inside a range leaves it spanning two lines. Re-snapping to line bounds
+/// re-absorbs edge-typed characters, clips a split range to its first line
+/// (the text after the caret becomes a plain paragraph), and drops blocks
+/// that a line-join landed on an earlier block's line (first wins).
+/// Idempotent: ranges already line-scoped are untouched.
+- (void)normalizeToLineBoundsInText:(NSString *)text;
+
 @end
 
 NS_ASSUME_NONNULL_END
