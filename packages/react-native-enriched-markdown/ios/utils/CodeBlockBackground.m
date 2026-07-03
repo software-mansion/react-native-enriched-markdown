@@ -53,9 +53,14 @@
   if (CGRectIsEmpty(blockRect))
     return;
 
-  blockRect.origin.x = origin.x;
+  NSNumber *indentAttr = [layoutManager.textStorage attribute:CodeBlockIndentAttributeName
+                                                      atIndex:range.location
+                                               effectiveRange:NULL];
+  CGFloat indent = [indentAttr doubleValue];
+
+  blockRect.origin.x = origin.x + indent;
   blockRect.origin.y += origin.y;
-  blockRect.size.width = textContainer.size.width;
+  blockRect.size.width = textContainer.size.width - indent;
 
   // We extend the background specifically to cover the bottom padding spacer,
   // excluding any additional marginBottom applied via measurement.

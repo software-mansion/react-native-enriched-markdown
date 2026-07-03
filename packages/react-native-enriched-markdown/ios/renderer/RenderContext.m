@@ -19,6 +19,7 @@
 @property (nonatomic, assign) NSInteger listDepth;
 @property (nonatomic, assign) ListType listType;
 @property (nonatomic, assign) NSInteger listItemNumber;
+@property (nonatomic, assign) CGFloat accumulatedIndent;
 @end
 
 @implementation ENRMScopeFrame
@@ -268,6 +269,7 @@
   frame.listDepth = _listDepth;
   frame.listType = _listType;
   frame.listItemNumber = _listItemNumber;
+  frame.accumulatedIndent = _accumulatedIndent;
   return frame;
 }
 
@@ -286,6 +288,7 @@
   _listDepth = frame.listDepth;
   _listType = frame.listType;
   _listItemNumber = frame.listItemNumber;
+  _accumulatedIndent = frame.accumulatedIndent;
 }
 
 #pragma mark - Reset
@@ -309,6 +312,7 @@
   _listDepth = 0;
   _listType = ListTypeUnordered;
   _listItemNumber = 0;
+  _accumulatedIndent = 0;
   _taskItemCount = 0;
 
   // Revert shared style object to baseline defaults

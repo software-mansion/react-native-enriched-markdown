@@ -15,6 +15,9 @@ NSString *const TaskItemAttribute = @"TaskItem";
 NSString *const TaskCheckedAttribute = @"TaskChecked";
 NSString *const TaskIndexAttribute = @"TaskIndex";
 
+@implementation ENRMListMarkerDescriptor
+@end
+
 @interface ListItemRenderer ()
 - (void)applyCheckedDecorationsTo:(NSMutableAttributedString *)output
                             range:(NSRange)range
@@ -42,10 +45,25 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
     context.taskItemCount++;
   }
 
+  // currentDepth - 1 handles the horizontal offset for nested lists
+  const NSInteger nestingLevel = currentDepth - 1;
+  const CGFloat baseMarkerWidth = isTask                                  ? [_config effectiveListMarginLeftForTask]
+                                  : (context.listType == ListTypeOrdered) ? [_config effectiveListMarginLeftForNumber]
+                                                                          : [_config effectiveListMarginLeftForBullet];
+
+  const CGFloat totalIndent =
+      baseMarkerWidth + [_config effectiveListGapWidth] + (nestingLevel * [_config listStyleMarginLeft]);
+
   const NSUInteger startLocation = output.length;
 
-  // Render the actual content of the list item (text, bolding, etc.)
-  [_rendererFactory renderChildrenOfNode:node into:output context:context];
+  // Manual save/restore — a scope snapshot would also roll back the listItemNumber increment
+  const CGFloat prevIndent = context.accumulatedIndent;
+  context.accumulatedIndent = totalIndent;
+  @try {
+    [_rendererFactory renderChildrenOfNode:node into:output context:context];
+  } @finally {
+    context.accumulatedIndent = prevIndent;
+  }
 
   // Ensure every list item ends with a newline to prevent paragraph merging
   if (output.length > startLocation && ![output.string hasSuffix:@"\n"]) {
@@ -61,15 +79,6 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
                         position:currentPosition
                            depth:currentDepth
                        isOrdered:(context.listType == ListTypeOrdered)];
-
-  // currentDepth - 1 handles the horizontal offset for nested lists
-  const NSInteger nestingLevel = currentDepth - 1;
-  const CGFloat baseMarkerWidth = isTask                                  ? [_config effectiveListMarginLeftForTask]
-                                  : (context.listType == ListTypeOrdered) ? [_config effectiveListMarginLeftForNumber]
-                                                                          : [_config effectiveListMarginLeftForBullet];
-
-  const CGFloat totalIndent =
-      baseMarkerWidth + [_config effectiveListGapWidth] + (nestingLevel * [_config listStyleMarginLeft]);
 
   const CGFloat lineHeightConfig = [_config listStyleLineHeight];
 
@@ -139,7 +148,30 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
     applyStyleToRange(NSMakeRange(pos, itemEnd - pos));
   }
 
-  [output addAttribute:ListItemMarkerStartAttribute value:@YES range:NSMakeRange(startLocation, 1)];
+  ENRMListMarkerDescriptor *marker = [[ENRMListMarkerDescriptor alloc] init];
+  marker.isTask = isTask;
+  marker.isChecked = isChecked;
+  marker.listType = context.listType;
+  marker.number = currentPosition;
+  marker.depth = nestingLevel;
+  marker.indent = totalIndent;
+
+  // Anchor on the first content character so items that open with a code block
+  // or nested sublist still get their marker; fall back to startLocation for
+  // whitespace-only items.
+  NSUInteger anchorLocation = startLocation;
+  NSString *string = output.string;
+  for (NSUInteger i = startLocation; i < itemEnd; i++) {
+    if ([string characterAtIndex:i] != '\n') {
+      anchorLocation = i;
+      break;
+    }
+  }
+
+  NSArray *existingMarkers = [output attribute:ListItemMarkerStartAttribute atIndex:anchorLocation effectiveRange:NULL];
+  NSArray *markers =
+      [existingMarkers isKindOfClass:[NSArray class]] ? [existingMarkers arrayByAddingObject:marker] : @[ marker ];
+  [output addAttribute:ListItemMarkerStartAttribute value:markers range:NSMakeRange(anchorLocation, 1)];
 
   if (isTask && isChecked) {
     [self applyCheckedDecorationsTo:output range:itemRange nestingLevel:nestingLevel];

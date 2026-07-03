@@ -16,6 +16,13 @@
                      into:(NSMutableAttributedString *)output
                   context:(RenderContext *)context
 {
+  // Synthetic wrapper around tight list item inlines (see wrapListItemInlineRuns
+  // in MD4CParser) — render transparently, the list owns spacing and layout.
+  if ([node.attributes[@"tight"] boolValue]) {
+    [_rendererFactory renderChildrenOfNode:node into:output context:context];
+    return;
+  }
+
   // Only set block style if a parent element (e.g. List, Blockquote) hasn't already established one
   BOOL isTopLevel = (context.currentBlockType == BlockTypeNone);
 
