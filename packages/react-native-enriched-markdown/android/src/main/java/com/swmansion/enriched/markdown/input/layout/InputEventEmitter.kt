@@ -185,7 +185,13 @@ class InputEventEmitter(
 
   private fun serializeToMarkdown(): String {
     val plainText = view.text?.toString() ?: ""
-    return MarkdownSerializer.serialize(plainText, view.allFormattingRangesForSerialization())
+    return MarkdownSerializer.serialize(
+      plainText,
+      view.allFormattingRangesForSerialization(),
+      view.blockStore.allRanges,
+    ) { blockRange ->
+      view.formatter.handlerForBlock(blockRange.type)?.markdownLinePrefix(blockRange) ?: ""
+    }
   }
 
   private fun surfaceId(): Int {

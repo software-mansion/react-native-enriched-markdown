@@ -1,11 +1,13 @@
 #pragma once
 
+#import "ENRMBlockRange.h"
 #import "ENRMFormattingRange.h"
 #import "ENRMUIKit.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol ENRMStyleHandler;
+@protocol ENRMBlockHandler;
 
 @interface ENRMInputLinkVariantStyle : NSObject
 
@@ -47,10 +49,19 @@ NS_ASSUME_NONNULL_BEGIN
 @interface ENRMInputFormatter : NSObject
 
 - (nullable id<ENRMStyleHandler>)handlerForStyleType:(ENRMInputStyleType)type;
+- (nullable id<ENRMBlockHandler>)handlerForBlockType:(ENRMInputBlockType)type;
 
 - (void)applyFormattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
                    toTextView:(ENRMPlatformTextView *)textView
                         style:(ENRMInputFormatterStyle *)style;
+
+/// Applies paragraph-level attributes for each block range via its handler,
+/// after first stripping the attributes applied on the previous pass (so
+/// removed blocks don't leave stale paragraph styling behind). With no
+/// handlers registered (PR1) this is a no-op.
+- (void)applyBlockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+              toTextView:(ENRMPlatformTextView *)textView
+                   style:(ENRMInputFormatterStyle *)style;
 
 @end
 

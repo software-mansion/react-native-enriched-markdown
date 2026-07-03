@@ -2,9 +2,12 @@ package com.swmansion.enriched.markdown.input.formatting
 
 import android.text.Spannable
 import android.text.style.CharacterStyle
+import com.swmansion.enriched.markdown.input.model.BlockRange
+import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
 import com.swmansion.enriched.markdown.input.model.StyleType
+import com.swmansion.enriched.markdown.input.styles.BlockHandler
 import com.swmansion.enriched.markdown.input.styles.BoldStyleHandler
 import com.swmansion.enriched.markdown.input.styles.ItalicStyleHandler
 import com.swmansion.enriched.markdown.input.styles.LinkStyleHandler
@@ -29,6 +32,15 @@ class InputFormatter {
       StyleType.LINK to LinkStyleHandler(),
       StyleType.SPOILER to SpoilerStyleHandler(),
     )
+
+  /**
+   * Block handlers are registered here as concrete block types are added. Empty
+   * in PR1: with no handler registered, every paragraph stays a plain paragraph
+   * and the block pipeline is a no-op.
+   */
+  val blockHandlers: Map<BlockType, BlockHandler> = emptyMap()
+
+  fun handlerForBlock(type: BlockType): BlockHandler? = blockHandlers[type]
 
   private var style: InputFormatterStyle? = null
 
@@ -104,6 +116,39 @@ class InputFormatter {
             Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
           )
         }
+      }
+    }
+  }
+
+  /**
+   * Applies each block range's paragraph-scoped spans via its handler, after the
+   * inline pass. Mirrors [applyFormatting]: removes the block spans we previously
+   * set (identified by the registered handlers' [BlockHandler.spanClasses]) and
+   * re-applies from the current ranges. With no handlers registered (PR1) both
+   * the cleanup and the apply loops are no-ops, so block formatting is inert.
+   */
+  fun applyBlockFormatting(
+    spannable: Spannable,
+    blockRanges: List<BlockRange>,
+  ) {
+    val currentStyle = style ?: return
+    if (blockHandlers.isEmpty()) return
+
+    val blockSpanClasses = blockHandlers.values.flatMap { it.spanClasses() }.toSet()
+
+    val existingBlockSpans =
+      spannable
+        .getSpans(0, spannable.length, Any::class.java)
+        .filter { span -> span is MarkdownSpan && blockSpanClasses.any { it.isInstance(span) } }
+    for (span in existingBlockSpans) {
+      spannable.removeSpan(span)
+    }
+
+    for (range in blockRanges) {
+      if (range.start >= range.end || range.start < 0 || range.end > spannable.length) continue
+      val handler = blockHandlers[range.type] ?: continue
+      for (span in handler.createSpans(range, currentStyle)) {
+        spannable.setSpan(span, range.start, range.end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
       }
     }
   }

@@ -8,6 +8,7 @@
 @interface ENRMParseResult ()
 @property (nonatomic, strong, readwrite) NSString *plainText;
 @property (nonatomic, strong, readwrite) NSArray<ENRMFormattingRange *> *formattingRanges;
+@property (nonatomic, strong, readwrite) NSArray<ENRMBlockRange *> *blockRanges;
 @end
 
 @implementation ENRMParseResult
@@ -40,6 +41,41 @@ static bool isSupportedSpan(MD_SPANTYPE md4cType, ENRMInputStyleType &outStyleTy
   return false;
 }
 
+// Block-type mapping mirrors kSupportedSpans for the inline pipeline. A block
+// handler extends recognition by adding its md4c block here (e.g. a heading
+// handler adds {MD_BLOCK_H, ENRMInputBlockTypeHeading} and reads the level from
+// MD_BLOCK_H_DETAIL in resolveBlockLevel below). MD_BLOCK_P maps to the implicit
+// Paragraph default and produces no stored block range.
+struct BlockTypeMapping {
+  MD_BLOCKTYPE md4cType;
+  ENRMInputBlockType blockType;
+};
+
+static const BlockTypeMapping kSupportedBlocks[] = {
+    {MD_BLOCK_P, ENRMInputBlockTypeParagraph},
+};
+static const size_t kSupportedBlockCount = sizeof(kSupportedBlocks) / sizeof(kSupportedBlocks[0]);
+
+static bool isSupportedBlock(MD_BLOCKTYPE md4cType, ENRMInputBlockType &outBlockType)
+{
+  for (size_t index = 0; index < kSupportedBlockCount; index++) {
+    if (kSupportedBlocks[index].md4cType == md4cType) {
+      outBlockType = kSupportedBlocks[index].blockType;
+      return true;
+    }
+  }
+  return false;
+}
+
+// Per-block integer payload (heading level, list depth). md4c exposes this in
+// the block's MD_BLOCK_*_DETAIL struct. PR1 has no leveled block, so this
+// returns 0; a heading handler's block adds a case reading
+// MD_BLOCK_H_DETAIL.level.
+static NSInteger resolveBlockLevel(MD_BLOCKTYPE, void *)
+{
+  return 0;
+}
+
 struct InlineSpanInfo {
   ENRMInputStyleType type;
   size_t openingDelimiterByteOffset;
@@ -48,12 +84,21 @@ struct InlineSpanInfo {
   std::string linkURL;
 };
 
+struct BlockInfo {
+  ENRMInputBlockType type;
+  NSInteger level;
+  size_t contentStartByteOffset = kByteOffsetUnset;
+  size_t contentEndByteOffset = kByteOffsetUnset;
+};
+
 struct ParseContext {
   const char *buffer;
   size_t bufferLength;
   size_t originalLength;
   std::vector<InlineSpanInfo> openStack;
   std::vector<InlineSpanInfo> resolved;
+  std::vector<BlockInfo> openBlockStack;
+  std::vector<BlockInfo> resolvedBlocks;
   size_t lastTextEnd = 0;
 };
 
@@ -114,25 +159,40 @@ static size_t closingDelimiterEndByte(const InlineSpanInfo &span, const char *ut
   return position + kClosingDelimiterByteLength[span.type];
 }
 
-// TODO: onEnterBlock/onLeaveBlock are no-ops, so lastTextEnd never advances
-// past inter-block whitespace. This causes onEnterSpan to set
-// openingDelimiterByteOffset to a position that includes \n\n (or other
-// block-separator characters) in the syntax range. The newline-stripping
-// workaround in parseToPlainTextAndRanges only handles \n/\r — it won't
-// catch block-level syntax like list markers, blockquote '>', or heading '#'
-// if those elements are added in the future.
-//
-// A proper fix would advance lastTextEnd here (or retroactively adjust
-// openingDelimiterByteOffset for spans opened since the last block
-// transition). md4c's enter_block doesn't provide a byte offset, so this
-// likely requires tracking a "new block" flag and correcting span offsets
-// in onText when the first text inside a new block arrives.
-static int onEnterBlock(MD_BLOCKTYPE, void *, void *)
+// Block tracking. md4c's enter_block gives no byte offset, so a block's content
+// range is bounded by the text spans it encloses: onText records the first/last
+// text offset into the currently open block(s). On leave_block the block is
+// resolved with whatever text range it accumulated; empty blocks (no text) are
+// discarded later when building results.
+static int onEnterBlock(MD_BLOCKTYPE blockType, void *detail, void *userdata)
 {
+  ENRMInputBlockType mappedType;
+  if (!isSupportedBlock(blockType, mappedType)) {
+    return 0;
+  }
+
+  auto *context = static_cast<ParseContext *>(userdata);
+  BlockInfo blockInfo;
+  blockInfo.type = mappedType;
+  blockInfo.level = resolveBlockLevel(blockType, detail);
+  context->openBlockStack.push_back(blockInfo);
   return 0;
 }
-static int onLeaveBlock(MD_BLOCKTYPE, void *, void *)
+
+static int onLeaveBlock(MD_BLOCKTYPE blockType, void *, void *userdata)
 {
+  ENRMInputBlockType mappedType;
+  if (!isSupportedBlock(blockType, mappedType)) {
+    return 0;
+  }
+
+  auto *context = static_cast<ParseContext *>(userdata);
+  if (context->openBlockStack.empty()) {
+    return 0;
+  }
+
+  context->resolvedBlocks.push_back(context->openBlockStack.back());
+  context->openBlockStack.pop_back();
   return 0;
 }
 
@@ -187,10 +247,9 @@ static int onText(MD_TEXTTYPE, const MD_CHAR *text, MD_SIZE size, void *userdata
   // (e.g. MD_TEXT_SOFTBR, MD_TEXT_BR use a string literal "\n").
   // Pointer arithmetic against context->buffer would underflow, corrupting offsets.
   //
-  // TODO: Skipping out-of-buffer tokens means lastTextEnd doesn't advance past
-  // newlines. Fine for inline spans, but if block-level input formatting is
-  // added later, openingDelimiterByteOffset will include newline chars in the
-  // syntax range. See the related TODO above onEnterBlock.
+  // Skipping out-of-buffer tokens means lastTextEnd doesn't advance past
+  // synthetic newlines. Inline-span offsets stay correct because spans never
+  // straddle a synthetic break; block offsets are derived from real text below.
   bool insideBuffer = (text >= context->buffer && text < context->buffer + context->bufferLength);
   if (!insideBuffer) {
     return 0;
@@ -204,6 +263,12 @@ static int onText(MD_TEXTTYPE, const MD_CHAR *text, MD_SIZE size, void *userdata
       openSpan.contentStartByteOffset = textStart;
     }
     openSpan.contentEndByteOffset = textEnd;
+  }
+  for (auto &openBlock : context->openBlockStack) {
+    if (openBlock.contentStartByteOffset == kByteOffsetUnset) {
+      openBlock.contentStartByteOffset = textStart;
+    }
+    openBlock.contentEndByteOffset = textEnd;
   }
   context->lastTextEnd = textEnd;
   return 0;
@@ -235,23 +300,12 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   return md_parse(completedUTF8, (MD_SIZE)completedLength, &parser, &context) == 0;
 }
 
-} // namespace
-
-@implementation ENRMInputParser
-
-- (NSArray<ENRMInputStyledRange *> *)parse:(NSString *)markdown
+// Builds inline styled ranges (raw-markdown UTF-16 coords) from a completed
+// parse. Split out so parseToPlainTextAndRanges: can derive inline and block
+// ranges from ONE md4c run instead of parsing twice.
+static NSArray<ENRMInputStyledRange *> *styledRangesFromContext(const ParseContext &context,
+                                                                const std::vector<NSUInteger> &byteMap)
 {
-  if (markdown.length == 0) {
-    return @[];
-  }
-
-  ParseContext context;
-  if (!runMd4cParse(markdown, context)) {
-    return @[];
-  }
-
-  auto byteMap = buildByteToUTF16Map(context.buffer, context.bufferLength);
-
   NSMutableArray<ENRMInputStyledRange *> *results = [NSMutableArray arrayWithCapacity:context.resolved.size()];
 
   for (const auto &spanInfo : context.resolved) {
@@ -299,6 +353,58 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   return results;
 }
 
+// Builds block-level ranges (raw-markdown UTF-16 coords) from the same
+// completed parse, mirroring styledRangesFromContext for inline spans.
+// Paragraph blocks (the implicit default) are omitted — only blocks a handler
+// claims are returned. In PR1 only MD_BLOCK_P is mapped, so this returns @[];
+// a heading handler's block type lights it up.
+static NSArray<ENRMBlockRange *> *blockRangesFromContext(const ParseContext &context,
+                                                         const std::vector<NSUInteger> &byteMap)
+{
+  NSMutableArray<ENRMBlockRange *> *results = [NSMutableArray arrayWithCapacity:context.resolvedBlocks.size()];
+
+  for (const auto &blockInfo : context.resolvedBlocks) {
+    if (blockInfo.type == ENRMInputBlockTypeParagraph) {
+      continue;
+    }
+    if (blockInfo.contentStartByteOffset == kByteOffsetUnset || blockInfo.contentEndByteOffset == kByteOffsetUnset ||
+        blockInfo.contentStartByteOffset > context.originalLength) {
+      continue;
+    }
+
+    NSUInteger contentStart = mapByteOffset(byteMap, blockInfo.contentStartByteOffset, context.bufferLength);
+    NSUInteger contentEnd = mapByteOffset(byteMap, blockInfo.contentEndByteOffset, context.bufferLength);
+    if (contentEnd <= contentStart) {
+      continue;
+    }
+
+    [results addObject:[ENRMBlockRange rangeWithType:blockInfo.type
+                                               range:NSMakeRange(contentStart, contentEnd - contentStart)
+                                               level:blockInfo.level]];
+  }
+
+  return results;
+}
+
+} // namespace
+
+@implementation ENRMInputParser
+
+- (NSArray<ENRMInputStyledRange *> *)parse:(NSString *)markdown
+{
+  if (markdown.length == 0) {
+    return @[];
+  }
+
+  ParseContext context;
+  if (!runMd4cParse(markdown, context)) {
+    return @[];
+  }
+
+  auto byteMap = buildByteToUTF16Map(context.buffer, context.bufferLength);
+  return styledRangesFromContext(context, byteMap);
+}
+
 - (ENRMParseResult *)parseToPlainTextAndRanges:(NSString *)markdown
 {
   ENRMParseResult *parseResult = [[ENRMParseResult alloc] init];
@@ -306,10 +412,20 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   if (markdown.length == 0) {
     parseResult.plainText = @"";
     parseResult.formattingRanges = @[];
+    parseResult.blockRanges = @[];
     return parseResult;
   }
 
-  NSArray<ENRMInputStyledRange *> *styledRanges = [self parse:markdown];
+  // One md4c run feeds both pipelines: inline styled ranges and block ranges
+  // are derived from the same ParseContext.
+  ParseContext context;
+  NSArray<ENRMInputStyledRange *> *styledRanges = @[];
+  NSArray<ENRMBlockRange *> *rawBlockRanges = @[];
+  if (runMd4cParse(markdown, context)) {
+    auto byteMap = buildByteToUTF16Map(context.buffer, context.bufferLength);
+    styledRanges = styledRangesFromContext(context, byteMap);
+    rawBlockRanges = blockRangesFromContext(context, byteMap);
+  }
 
   NSUInteger rawLength = markdown.length;
 
@@ -329,7 +445,7 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
   }
 
   // Strip \n/\r from syntax ranges — newlines are structural content, not
-  // markdown syntax (included due to no-op onEnterBlock/onLeaveBlock).
+  // markdown syntax, and must survive into the plain text.
   NSMutableIndexSet *newlineIndexes = [NSMutableIndexSet indexSet];
   [syntaxIndexes enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
     if (index < rawLength) {
@@ -394,8 +510,29 @@ static bool runMd4cParse(NSString *markdown, ParseContext &context)
     [formattingRanges addObject:formattingRange];
   }
 
+  // Map block ranges (raw-markdown coords) onto plain-text coords. Empty in PR1
+  // since blockRangesFromContext emits no Paragraph ranges; the path is ready
+  // for a handler-claimed block type.
+  NSMutableArray<ENRMBlockRange *> *blockRanges = [NSMutableArray arrayWithCapacity:rawBlockRanges.count];
+  for (ENRMBlockRange *rawBlock in rawBlockRanges) {
+    NSUInteger contentStart = rawBlock.range.location;
+    NSUInteger contentEnd = NSMaxRange(rawBlock.range);
+    if (contentStart > rawLength || contentEnd > rawLength)
+      continue;
+
+    NSUInteger plainStart = rawToPlainMap[contentStart];
+    NSUInteger plainEnd = rawToPlainMap[contentEnd];
+    if (plainEnd <= plainStart)
+      continue;
+
+    [blockRanges addObject:[ENRMBlockRange rangeWithType:rawBlock.type
+                                                   range:NSMakeRange(plainStart, plainEnd - plainStart)
+                                                   level:rawBlock.level]];
+  }
+
   parseResult.plainText = plainText;
   parseResult.formattingRanges = formattingRanges;
+  parseResult.blockRanges = blockRanges;
   return parseResult;
 }
 

@@ -219,4 +219,63 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
   return markdown;
 }
 
++ (NSString *)serializePlainText:(NSString *)text
+                          ranges:(NSArray<ENRMFormattingRange *> *)ranges
+                     blockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+             blockPrefixProvider:(NSString *_Nullable (^_Nullable)(ENRMBlockRange *blockRange))prefixProvider
+{
+  NSString *inlineMarkdown = [self serializePlainText:text ranges:ranges];
+
+  if (blockRanges.count == 0 || prefixProvider == nil) {
+    return inlineMarkdown;
+  }
+
+  // Block prefixes attach per line. Inline serialization only inserts inline
+  // delimiters (never newlines), so the serialized output has the same line
+  // count as the plain text — we map a block's plain-text range to line indices
+  // and prefix the corresponding serialized lines.
+  NSArray<NSString *> *plainLines = [text componentsSeparatedByString:@"\n"];
+  NSMutableArray<NSString *> *markdownLines = [[inlineMarkdown componentsSeparatedByString:@"\n"] mutableCopy];
+
+  // Inline delimiters never cross a newline, so the line partition is preserved.
+  // If this ever breaks, prefixes would land on the wrong lines. Contract on
+  // both platforms: assert in debug, log and fall back to inline-only output in
+  // release — a library must not crash the host app over lost block prefixes.
+  NSCAssert(plainLines.count == markdownLines.count,
+            @"Block serialization line-count invariant violated: plain=%lu markdown=%lu",
+            (unsigned long)plainLines.count, (unsigned long)markdownLines.count);
+  if (plainLines.count != markdownLines.count) {
+    NSLog(@"[EnrichedMarkdown] Block serialization line-count invariant violated: plain=%lu markdown=%lu",
+          (unsigned long)plainLines.count, (unsigned long)markdownLines.count);
+    return inlineMarkdown;
+  }
+
+  NSMutableArray<NSNumber *> *lineStartOffsets = [NSMutableArray arrayWithCapacity:plainLines.count];
+  NSUInteger runningOffset = 0;
+  for (NSString *line in plainLines) {
+    [lineStartOffsets addObject:@(runningOffset)];
+    runningOffset += line.length + 1;
+  }
+
+  for (ENRMBlockRange *blockRange in blockRanges) {
+    NSString *prefix = prefixProvider(blockRange);
+    if (prefix.length == 0) {
+      continue;
+    }
+
+    NSUInteger blockStart = blockRange.range.location;
+    NSUInteger blockEnd = NSMaxRange(blockRange.range);
+
+    for (NSUInteger lineIndex = 0; lineIndex < plainLines.count; lineIndex++) {
+      NSUInteger lineStart = lineStartOffsets[lineIndex].unsignedIntegerValue;
+      NSUInteger lineEnd = lineStart + plainLines[lineIndex].length;
+      if (lineEnd >= blockStart && lineStart < blockEnd) {
+        markdownLines[lineIndex] = [prefix stringByAppendingString:markdownLines[lineIndex]];
+      }
+    }
+  }
+
+  return [markdownLines componentsJoinedByString:@"\n"];
+}
+
 @end

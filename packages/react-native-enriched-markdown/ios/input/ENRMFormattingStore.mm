@@ -1,4 +1,5 @@
 #import "ENRMFormattingStore.h"
+#import "ENRMRangeEditAdjustment.h"
 
 static NSUInteger sortedInsertionIndex(NSArray<ENRMFormattingRange *> *ranges, NSUInteger location)
 {
@@ -15,31 +16,6 @@ static void removeIndexesInReverse(NSMutableArray *array, NSMutableIndexSet *ind
 {
   [indexes enumerateIndexesWithOptions:NSEnumerationReverse
                             usingBlock:^(NSUInteger idx, BOOL *stop) { [array removeObjectAtIndex:idx]; }];
-}
-
-typedef NS_ENUM(NSInteger, EditOverlap) {
-  EditOverlapBeforeEdit,
-  EditOverlapAfterEdit,
-  EditOverlapFullyDeleted,
-  EditOverlapDeletedInside,
-  EditOverlapClippedEnd,
-  EditOverlapClippedStart,
-};
-
-static EditOverlap classifyOverlap(NSUInteger rangeStart, NSUInteger rangeEnd, NSUInteger editLocation,
-                                   NSUInteger deleteEnd)
-{
-  if (rangeEnd <= editLocation)
-    return EditOverlapBeforeEdit;
-  if (rangeStart >= deleteEnd)
-    return EditOverlapAfterEdit;
-  if (rangeStart >= editLocation && rangeEnd <= deleteEnd)
-    return EditOverlapFullyDeleted;
-  if (rangeStart < editLocation && rangeEnd > deleteEnd)
-    return EditOverlapDeletedInside;
-  if (rangeStart < editLocation && rangeEnd <= deleteEnd)
-    return EditOverlapClippedEnd;
-  return EditOverlapClippedStart;
 }
 
 @implementation ENRMFormattingStore {
@@ -232,67 +208,15 @@ static EditOverlap classifyOverlap(NSUInteger rangeStart, NSUInteger rangeEnd, N
   if (deletedLength == 0 && insertedLength == 0)
     return;
 
-  NSUInteger deleteEnd = editLocation + deletedLength;
   NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
 
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
     ENRMFormattingRange *formattingRange = _ranges[idx];
-    NSUInteger rangeStart = formattingRange.range.location;
-    NSUInteger rangeEnd = NSMaxRange(formattingRange.range);
-
-    if (deletedLength > 0) {
-      EditOverlap overlap = classifyOverlap(rangeStart, rangeEnd, editLocation, deleteEnd);
-
-      switch (overlap) {
-        case EditOverlapBeforeEdit:
-          break;
-
-        case EditOverlapAfterEdit:
-          formattingRange.range =
-              NSMakeRange(rangeStart - deletedLength + insertedLength, formattingRange.range.length);
-          break;
-
-        case EditOverlapFullyDeleted:
-          [indexesToRemove addIndex:idx];
-          break;
-
-        case EditOverlapDeletedInside: {
-          NSUInteger newLength = formattingRange.range.length - deletedLength + insertedLength;
-          formattingRange.range = NSMakeRange(rangeStart, newLength);
-          break;
-        }
-
-        case EditOverlapClippedEnd: {
-          NSUInteger newEnd = editLocation + insertedLength;
-          NSUInteger newLength = newEnd > rangeStart ? newEnd - rangeStart : 0;
-          formattingRange.range = NSMakeRange(rangeStart, newLength);
-          if (newLength == 0) {
-            [indexesToRemove addIndex:idx];
-          }
-          break;
-        }
-
-        case EditOverlapClippedStart: {
-          NSUInteger charsClipped = deleteEnd - rangeStart;
-          NSUInteger newStart = editLocation + insertedLength;
-          NSUInteger newLength = formattingRange.range.length - charsClipped;
-          formattingRange.range = NSMakeRange(newStart, newLength);
-          if (newLength == 0) {
-            [indexesToRemove addIndex:idx];
-          }
-          break;
-        }
-      }
-    } else {
-      if (rangeStart >= editLocation) {
-        // Insertion at or before the range start: shift right.
-        // _pendingStyles handles whether the inserted text inherits the style.
-        formattingRange.range = NSMakeRange(rangeStart + insertedLength, formattingRange.range.length);
-      } else if (editLocation < rangeEnd) {
-        formattingRange.range = NSMakeRange(rangeStart, formattingRange.range.length + insertedLength);
-      }
-      // Typing at rangeEnd does not expand — pending styles control
-      // whether new text at the boundary inherits the style.
+    ENRMAdjustedRange adjusted =
+        ENRMAdjustRangeForEdit(formattingRange.range, editLocation, deletedLength, insertedLength);
+    formattingRange.range = adjusted.range;
+    if (adjusted.shouldRemove) {
+      [indexesToRemove addIndex:idx];
     }
   }
 

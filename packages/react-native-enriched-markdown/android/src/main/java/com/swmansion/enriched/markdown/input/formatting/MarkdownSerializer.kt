@@ -1,9 +1,68 @@
 package com.swmansion.enriched.markdown.input.formatting
 
+import android.util.Log
+import com.swmansion.enriched.markdown.input.model.BlockRange
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.StyleType
 
 object MarkdownSerializer {
+  private const val TAG = "MarkdownSerializer"
+
+  /**
+   * Block-aware serialization: serializes inline styles exactly as the inline-only
+   * overload, then prepends each line's block prefix. [blockPrefixProvider] is
+   * asked, per block range, for the markdown line marker (e.g. `"# "`, `"- "`);
+   * returning `""` leaves the line unprefixed. With empty [blockRanges] the output
+   * is identical to the inline-only overload.
+   */
+  fun serialize(
+    text: String,
+    ranges: List<FormattingRange>,
+    blockRanges: List<BlockRange>,
+    blockPrefixProvider: (BlockRange) -> String,
+  ): String {
+    val inlineMarkdown = serialize(text, ranges)
+    if (blockRanges.isEmpty()) return inlineMarkdown
+
+    // Block prefixes attach per line. Inline serialization only inserts inline
+    // delimiters (never newlines), so the serialized output has the same line
+    // count as the plain text — we map a block's plain-text range to line indices
+    // and prefix the corresponding serialized lines.
+    val plainLines = text.split("\n")
+    val markdownLines = inlineMarkdown.split("\n").toMutableList()
+
+    // Inline delimiters never cross a newline, so the line partition is preserved.
+    // If this ever breaks, prefixes would land on the wrong lines. Contract on
+    // both platforms: log and fall back to inline-only output — a library must
+    // not crash the host app over lost block prefixes.
+    if (plainLines.size != markdownLines.size) {
+      Log.e(TAG, "Block serialization line-count invariant violated: plain=${plainLines.size} markdown=${markdownLines.size}")
+      return inlineMarkdown
+    }
+
+    val lineStartOffsets = IntArray(plainLines.size)
+    var runningOffset = 0
+    for (i in plainLines.indices) {
+      lineStartOffsets[i] = runningOffset
+      runningOffset += plainLines[i].length + 1
+    }
+
+    for (blockRange in blockRanges) {
+      val prefix = blockPrefixProvider(blockRange)
+      if (prefix.isEmpty()) continue
+
+      for (lineIndex in plainLines.indices) {
+        val lineStart = lineStartOffsets[lineIndex]
+        val lineEnd = lineStart + plainLines[lineIndex].length
+        if (lineEnd >= blockRange.start && lineStart < blockRange.end) {
+          markdownLines[lineIndex] = prefix + markdownLines[lineIndex]
+        }
+      }
+    }
+
+    return markdownLines.joinToString("\n")
+  }
+
   fun serialize(
     text: String,
     ranges: List<FormattingRange>,
