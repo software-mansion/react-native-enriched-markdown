@@ -1,0 +1,27 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - block
+  - advanced
+  - list
+  - text
+---
+# checks a list item whose first child is a nested sublist — both the outer
+# and inner markers must be drawn on the shared first line, at their own gutters.
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        1.
+           - alpha
+           - beta
+        2. gamma
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'list_sublist_first_combo_display'
