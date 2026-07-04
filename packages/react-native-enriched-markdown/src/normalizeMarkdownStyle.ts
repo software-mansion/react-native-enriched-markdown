@@ -8,6 +8,10 @@ import type {
 } from './types/MarkdownStyleInternal';
 import { isStyleEqual, normalizeColor, mergeSubStyle } from './styleUtils';
 import { normalizeLinkVariantEntries } from './linkVariantUtils';
+import {
+  DEFAULT_HEADING_FONT_WEIGHT,
+  HEADING_DEFAULTS,
+} from './headingDefaults';
 
 const getSystemFont = (): string =>
   Platform.select({
@@ -26,7 +30,6 @@ const getMonospaceFont = (): string =>
   })!;
 
 const defaultTextColor = normalizeColor('#1F2937')!;
-const defaultHeadingColor = normalizeColor('#111827')!;
 
 // Explicit type annotation needed: Object.freeze breaks contextual typing, so
 // TypeScript widens literal 'auto' to `string` instead of `BlockTextAlign`.
@@ -38,7 +41,7 @@ const baseHeader: {
   textAlign: BlockTextAlign;
 } = {
   fontFamily: getSystemFont(),
-  fontWeight: '',
+  fontWeight: DEFAULT_HEADING_FONT_WEIGHT,
   marginTop: 0,
   marginBottom: 8,
   textAlign: 'auto',
@@ -57,38 +60,38 @@ const DEFAULT_NORMALIZED_STYLE = Object.freeze({
   },
   h1: {
     ...baseHeader,
-    fontSize: 30,
-    color: defaultHeadingColor,
+    fontSize: HEADING_DEFAULTS.h1.fontSize,
+    color: normalizeColor(HEADING_DEFAULTS.h1.color)!,
     lineHeight: Platform.select({ ios: 36, android: 38, default: 38 })!,
   },
   h2: {
     ...baseHeader,
-    fontSize: 24,
-    color: defaultHeadingColor,
+    fontSize: HEADING_DEFAULTS.h2.fontSize,
+    color: normalizeColor(HEADING_DEFAULTS.h2.color)!,
     lineHeight: Platform.select({ ios: 30, android: 32, default: 32 })!,
   },
   h3: {
     ...baseHeader,
-    fontSize: 20,
-    color: defaultHeadingColor,
+    fontSize: HEADING_DEFAULTS.h3.fontSize,
+    color: normalizeColor(HEADING_DEFAULTS.h3.color)!,
     lineHeight: Platform.select({ ios: 26, android: 28, default: 28 })!,
   },
   h4: {
     ...baseHeader,
-    fontSize: 18,
-    color: defaultHeadingColor,
+    fontSize: HEADING_DEFAULTS.h4.fontSize,
+    color: normalizeColor(HEADING_DEFAULTS.h4.color)!,
     lineHeight: Platform.select({ ios: 24, android: 26, default: 26 })!,
   },
   h5: {
     ...baseHeader,
-    fontSize: 16,
-    color: normalizeColor('#374151')!,
+    fontSize: HEADING_DEFAULTS.h5.fontSize,
+    color: normalizeColor(HEADING_DEFAULTS.h5.color)!,
     lineHeight: Platform.select({ ios: 22, android: 24, default: 24 })!,
   },
   h6: {
     ...baseHeader,
-    fontSize: 14,
-    color: normalizeColor('#4B5563')!,
+    fontSize: HEADING_DEFAULTS.h6.fontSize,
+    color: normalizeColor(HEADING_DEFAULTS.h6.color)!,
     lineHeight: Platform.select({ ios: 20, android: 22, default: 22 })!,
   },
   blockquote: {

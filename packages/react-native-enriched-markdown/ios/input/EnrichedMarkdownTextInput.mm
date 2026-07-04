@@ -77,6 +77,7 @@ using namespace facebook::react;
 
   struct {
     BOOL bold, italic, underline, strikethrough, spoiler, link, initialized;
+    NSInteger headingLevel;
   } _prevState;
 
   std::optional<CGRect> _prevCaretRect;
@@ -605,6 +606,7 @@ using namespace facebook::react;
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
   [_blockStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
+  [self pruneOrphanedHeadingBlocks];
   [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
 
   for (ENRMFormattingRange *range in ranges) {
@@ -834,6 +836,123 @@ using namespace facebook::react;
   [self applyFormatting];
   [self syncTypingAttributesWithPendingStyles];
   [self emitFormattingChanged];
+}
+
+- (void)toggleHeading:(NSInteger)level
+{
+  if (level < 1 || level > 6) {
+    return;
+  }
+  [self toggleBlockType:ENRMBlockTypeForHeadingLevel(level) level:level];
+}
+
+/// Block counterpart to toggleInlineStyle:: sets the block on the paragraph(s)
+/// the selection touches, or clears it back to a plain paragraph when already
+/// active. Syncs typing attributes so the toggled line renders immediately.
+- (void)toggleBlockType:(ENRMInputBlockType)type level:(NSInteger)level
+{
+  NSString *text = ENRMGetPlainText(_textView);
+  NSRange paragraphRange = [text paragraphRangeForRange:_textView.selectedRange];
+
+  // Match by line start, not containment: an empty heading line carries a
+  // zero-length anchor that a containment check would miss.
+  ENRMBlockRange *current = nil;
+  for (ENRMBlockRange *blockRange in _blockStore.allRanges) {
+    if (blockRange.range.location == paragraphRange.location) {
+      current = blockRange;
+      break;
+    }
+  }
+  BOOL alreadyActive = current != nil && current.type == type;
+
+  if (alreadyActive) {
+    [_blockStore removeBlockInParagraphRange:paragraphRange inText:text];
+  } else if (paragraphRange.length == 0) {
+    [_blockStore setBlockType:type level:level forParagraphRange:paragraphRange inText:text];
+  } else {
+    // Blocks are single-paragraph: set one range per paragraph the selection
+    // touches, not one range spanning them all — otherwise the next edit's
+    // line normalization would clip the block to its first line.
+    [text
+        enumerateSubstringsInRange:paragraphRange
+                           options:NSStringEnumerationByParagraphs | NSStringEnumerationSubstringNotRequired
+                        usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+                          [self->_blockStore setBlockType:type
+                                                    level:level
+                                        forParagraphRange:substringRange
+                                                   inText:text];
+                        }];
+  }
+
+  [self applyFormatting];
+  [self syncTypingAttributesWithCursorBlock];
+  [self emitFormattingChanged];
+}
+
+/// Heading level (1-6, or 0) of the caret's paragraph, matched by line start so
+/// line-end carets and empty-line anchors register (mirrors inline isActive).
+- (NSInteger)headingLevelForCursorParagraph
+{
+  NSString *text = _textView.textStorage.string;
+  NSRange paragraph = [text paragraphRangeForRange:_textView.selectedRange];
+  for (ENRMBlockRange *block in _blockStore.allRanges) {
+    NSInteger level = ENRMHeadingLevelForBlockType(block.type);
+    if (level > 0 && block.range.location == paragraph.location) {
+      return level;
+    }
+  }
+  return 0;
+}
+
+/// Syncs typing attributes so text typed at the caret on a block-styled line
+/// (e.g. a heading) adopts that block's font rather than the base font. Inline
+/// pending traits (bold/italic) are unioned on top, matching the inline pass.
+- (void)syncTypingAttributesWithCursorBlock
+{
+  UIFontDescriptorSymbolicTraits traits = 0;
+  if ([_pendingStyles containsObject:@(ENRMInputStyleTypeStrong)]) {
+    traits |= UIFontDescriptorTraitBold;
+  }
+  if ([_pendingStyles containsObject:@(ENRMInputStyleTypeEmphasis)]) {
+    traits |= UIFontDescriptorTraitItalic;
+  }
+
+  NSInteger headingLevel = [self headingLevelForCursorParagraph];
+
+  UIFont *font;
+  if (headingLevel >= 1 && headingLevel <= 6) {
+    UIFont *headingFont = [_formatterStyle headingFontForLevel:headingLevel];
+    UIFontDescriptorSymbolicTraits merged = headingFont.fontDescriptor.symbolicTraits | traits;
+    UIFontDescriptor *descriptor = [headingFont.fontDescriptor fontDescriptorWithSymbolicTraits:merged];
+    font = descriptor ? [UIFont fontWithDescriptor:descriptor size:0] : headingFont;
+  } else {
+    font = [_formatterStyle fontForTraits:traits];
+  }
+
+  NSMutableDictionary *attrs = [_textView.typingAttributes mutableCopy];
+  attrs[NSFontAttributeName] = font;
+  RCTUIColor *headingColor = headingLevel >= 1 ? [_formatterStyle headingColorForLevel:headingLevel] : nil;
+  attrs[NSForegroundColorAttributeName] = headingColor ?: _formatterStyle.baseTextColor;
+  _textView.typingAttributes = attrs;
+}
+
+/// Reverts to a plain paragraph any heading no longer anchored at a line start
+/// (e.g. Backspace merged its line into the previous one). Must run BEFORE
+/// normalizeToLineBoundsInText: so a merged range is judged on its unsnapped
+/// anchor and can't grow over the line it merged into. Mirrors Android.
+- (void)pruneOrphanedHeadingBlocks
+{
+  NSString *text = _textView.textStorage.string;
+  for (ENRMBlockRange *block in _blockStore.allRanges) {
+    if (ENRMHeadingLevelForBlockType(block.type) == 0) {
+      continue;
+    }
+    NSUInteger anchor = MIN(block.range.location, text.length);
+    BOOL atLineStart = [text paragraphRangeForRange:NSMakeRange(anchor, 0)].location == anchor;
+    if (!atLineStart) {
+      [_blockStore removeBlockInParagraphRange:NSMakeRange(anchor, 0) inText:text];
+    }
+  }
 }
 
 - (void)setLink:(NSString *)url
@@ -1319,9 +1438,11 @@ using namespace facebook::react;
   BOOL spoilerActive = [self isEffectiveStyleActive:ENRMInputStyleTypeSpoiler atPosition:cursor];
   BOOL linkActive = [self isEffectiveStyleActive:ENRMInputStyleTypeLink atPosition:cursor];
 
+  NSInteger headingLevel = [self headingLevelForCursorParagraph];
+
   if (_prevState.initialized && _prevState.bold == boldActive && _prevState.italic == italicActive &&
       _prevState.underline == underlineActive && _prevState.strikethrough == strikethroughActive &&
-      _prevState.spoiler == spoilerActive && _prevState.link == linkActive) {
+      _prevState.spoiler == spoilerActive && _prevState.link == linkActive && _prevState.headingLevel == headingLevel) {
     return;
   }
 
@@ -1331,6 +1452,7 @@ using namespace facebook::react;
   _prevState.strikethrough = strikethroughActive;
   _prevState.spoiler = spoilerActive;
   _prevState.link = linkActive;
+  _prevState.headingLevel = headingLevel;
   _prevState.initialized = YES;
 
   emitter->onChangeState({
@@ -1340,6 +1462,7 @@ using namespace facebook::react;
       .strikethrough = {.isActive = strikethroughActive},
       .spoiler = {.isActive = spoilerActive},
       .link = {.isActive = linkActive},
+      .heading = {.level = static_cast<int>(headingLevel)},
   });
 }
 
@@ -1526,6 +1649,7 @@ using namespace facebook::react;
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
   [_blockStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
+  [self pruneOrphanedHeadingBlocks];
   [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
 
   if (insertedLength > 0) {
@@ -1565,7 +1689,13 @@ using namespace facebook::react;
 
 #if !TARGET_OS_OSX
   if (newLength == 0) {
-    [self resetBaseTypingAttributes];
+    // Keep typing heading-sized when a heading anchor survives the emptied
+    // document; otherwise revert to the base font.
+    if ([self headingLevelForCursorParagraph] > 0) {
+      [self syncTypingAttributesWithCursorBlock];
+    } else {
+      [self resetBaseTypingAttributes];
+    }
   }
 #endif
 
@@ -1628,10 +1758,16 @@ using namespace facebook::react;
       NSString *paragraphText = [text substringWithRange:paragraphRange];
       BOOL isEmpty = paragraphText.length == 0 || [paragraphText isEqualToString:@"\n"];
       if (isEmpty) {
-        NSMutableDictionary *attrs = [NSMutableDictionary dictionary];
-        attrs[NSFontAttributeName] = _formatterStyle.baseFont;
-        attrs[NSForegroundColorAttributeName] = _formatterStyle.baseTextColor;
-        _textView.typingAttributes = attrs;
+        // An empty heading line keeps its zero-length anchor — stay
+        // heading-sized; otherwise reset to the base font.
+        if ([self headingLevelForCursorParagraph] > 0) {
+          [self syncTypingAttributesWithCursorBlock];
+        } else {
+          NSMutableDictionary *attrs = [NSMutableDictionary dictionary];
+          attrs[NSFontAttributeName] = _formatterStyle.baseFont;
+          attrs[NSForegroundColorAttributeName] = _formatterStyle.baseTextColor;
+          _textView.typingAttributes = attrs;
+        }
       }
     }
   }

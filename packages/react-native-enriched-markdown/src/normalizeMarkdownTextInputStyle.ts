@@ -6,6 +6,11 @@ import type {
 } from './EnrichedMarkdownTextInput';
 import { normalizeLinkVariantEntries } from './linkVariantUtils';
 import { normalizeColor } from './styleUtils';
+import {
+  DEFAULT_HEADING_FONT_WEIGHT,
+  HEADING_DEFAULTS,
+  type HeadingLevelKey,
+} from './headingDefaults';
 
 interface LinkVariantEntryInternal {
   pattern: string;
@@ -19,8 +24,6 @@ interface HeadingStyleInternal {
   fontWeight: string;
   color: ColorValue;
 }
-
-type HeadingLevelKey = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 interface MarkdownTextInputStyleInternal {
   strong: {
@@ -52,26 +55,13 @@ const DEFAULT_LINK_BG_COLOR = 'transparent';
 const DEFAULT_SPOILER_COLOR = '#374151';
 const DEFAULT_SPOILER_BG_COLOR = '#E5E7EB';
 
-// Heading defaults mirror the readonly renderer (normalizeMarkdownStyle) so
-// sizing is consistent across read and edit views. fontWeight '' inherits the
-// base font weight, matching the readonly headers.
-const HEADING_DEFAULTS: Record<
-  HeadingLevelKey,
-  { fontSize: number; fontWeight: string; color: string }
-> = {
-  h1: { fontSize: 30, fontWeight: '', color: '#111827' },
-  h2: { fontSize: 24, fontWeight: '', color: '#111827' },
-  h3: { fontSize: 20, fontWeight: '', color: '#111827' },
-  h4: { fontSize: 18, fontWeight: '', color: '#111827' },
-  h5: { fontSize: 16, fontWeight: '', color: '#374151' },
-  h6: { fontSize: 14, fontWeight: '', color: '#4B5563' },
-};
-
+// Defaults shared with the read-only renderer via headingDefaults; consumers
+// override per level via markdownStyle h1..h6.
 const defaultHeadingInternal = (key: HeadingLevelKey): HeadingStyleInternal => {
   const d = HEADING_DEFAULTS[key];
   return {
     fontSize: d.fontSize,
-    fontWeight: d.fontWeight,
+    fontWeight: DEFAULT_HEADING_FONT_WEIGHT,
     color: processColor(d.color)!,
   };
 };

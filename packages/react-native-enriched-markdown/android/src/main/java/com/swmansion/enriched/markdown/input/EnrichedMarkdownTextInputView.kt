@@ -36,6 +36,8 @@ import com.swmansion.enriched.markdown.input.formatting.InputFormatter
 import com.swmansion.enriched.markdown.input.formatting.InputParser
 import com.swmansion.enriched.markdown.input.layout.InputEventEmitter
 import com.swmansion.enriched.markdown.input.layout.InputLayoutManager
+import com.swmansion.enriched.markdown.input.model.BlockRange
+import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
 import com.swmansion.enriched.markdown.input.model.StyleType
@@ -253,6 +255,7 @@ class EnrichedMarkdownTextInputView(
     try {
       formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
       blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
+      pruneOrphanedHeadingAnchors()
       text?.let { blockStore.normalizeToLineBounds(it) }
       applyPendingStyles(editStart, insertedLength)
       applyFormattingScopedToEdit(editStart, insertedLength)
@@ -330,6 +333,32 @@ class EnrichedMarkdownTextInputView(
     for (style in pendingStyleRemovals) {
       formattingStore.removeType(style, rangeStart, rangeEnd)
     }
+  }
+
+  /**
+   * Drops heading ranges no longer anchored at a line start (e.g. Backspace merged
+   * their line into the previous one). Must run BEFORE [BlockStore.normalizeToLineBounds]
+   * so a merged range is judged on its unsnapped anchor and can't grow over the line
+   * it merged into.
+   */
+  private fun pruneOrphanedHeadingAnchors() {
+    val editable = text ?: return
+    val orphans =
+      blockStore.allRanges.filter { range ->
+        range.type in BlockType.HEADINGS && !isAtLineStart(editable, range.start)
+      }
+    for (orphan in orphans) {
+      blockStore.removeBlock(orphan.start, orphan.start, editable)
+    }
+  }
+
+  /** True when [pos] is the first character of a line (document start or just after a line break). */
+  private fun isAtLineStart(
+    editable: CharSequence,
+    pos: Int,
+  ): Boolean {
+    if (pos < 0 || pos > editable.length) return false
+    return pos == 0 || editable[pos - 1].isLineBreak()
   }
 
   fun applyFormatting() {
@@ -453,6 +482,65 @@ class EnrichedMarkdownTextInputView(
     if (content.isNullOrEmpty()) return
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
     clipboard.setPrimaryClip(ClipData.newPlainText(null, content))
+  }
+
+  /** Toggles a heading (H1-H6) on the cursor's paragraph(s); the active level toggles back to a paragraph. */
+  fun toggleHeading(level: Int) {
+    val blockType = BlockType.forHeadingLevel(level) ?: return
+    toggleBlockType(blockType, level)
+  }
+
+  /**
+   * Block counterpart to [toggleInlineStyle]: sets [type] on the paragraph(s) the
+   * selection touches, or clears it back to a plain paragraph when already active.
+   */
+  private fun toggleBlockType(
+    type: BlockType,
+    level: Int,
+  ) {
+    val editable = text ?: return
+
+    val selStart = selectionStart.coerceIn(0, editable.length)
+    val selEnd = selectionEnd.coerceIn(selStart, editable.length)
+
+    val existing = blockOnParagraphAt(selStart)
+    val isActive = existing != null && existing.type == type && existing.level == level
+
+    if (isActive) {
+      blockStore.removeBlock(selStart, selEnd, editable)
+    } else {
+      // Blocks are single-paragraph: set one range per line the selection
+      // touches, not one range spanning them all — otherwise the next edit's
+      // line normalization would clip the block to its first line.
+      var lineStart = selStart
+      while (lineStart > 0 && !editable[lineStart - 1].isLineBreak()) lineStart--
+      while (lineStart <= selEnd) {
+        var lineEnd = lineStart
+        while (lineEnd < editable.length && !editable[lineEnd].isLineBreak()) lineEnd++
+        blockStore.setBlock(type, level, lineStart, lineEnd, editable)
+        lineStart = lineEnd + 1
+      }
+    }
+
+    applyFormattingAndEmit()
+  }
+
+  /**
+   * The block owning [pos]'s paragraph, or null. Matched by line start, not
+   * containment, so line-end carets and zero-length heading anchors register.
+   */
+  private fun blockOnParagraphAt(pos: Int): BlockRange? {
+    val editable = text ?: return null
+    val cursor = pos.coerceIn(0, editable.length)
+    var lineStart = cursor
+    while (lineStart > 0 && !editable[lineStart - 1].isLineBreak()) lineStart--
+    return blockStore.allRanges.firstOrNull { it.start == lineStart }
+  }
+
+  /** Heading level (1-6) of the cursor's paragraph, or 0 when it is a plain paragraph. */
+  fun headingLevelAtCursor(): Int {
+    val block = blockOnParagraphAt(selectionStart) ?: return 0
+    return if (block.type in BlockType.HEADINGS) block.level else 0
   }
 
   fun setLinkForSelection(url: String) {

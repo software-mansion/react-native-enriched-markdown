@@ -26,6 +26,7 @@ class InputEventEmitter(
   private val view: EnrichedMarkdownTextInputView,
 ) {
   private var prevState: Map<StyleType, Boolean> = emptyMap()
+  private var prevHeadingLevel: Int = 0
   private var prevCaretRect: CaretRect? = null
 
   fun emitChangeText() {
@@ -50,9 +51,11 @@ class InputEventEmitter(
       StyleType.entries.associateWith { style ->
         isStyleEffectivelyActive(style, pos)
       }
+    val headingLevel = view.headingLevelAtCursor()
 
-    if (current == prevState) return
+    if (current == prevState && headingLevel == prevHeadingLevel) return
     prevState = current
+    prevHeadingLevel = headingLevel
 
     dispatch(
       OnChangeStateEvent(
@@ -64,6 +67,7 @@ class InputEventEmitter(
         current[StyleType.STRIKETHROUGH] ?: false,
         current[StyleType.SPOILER] ?: false,
         current[StyleType.LINK] ?: false,
+        headingLevel,
       ),
     )
   }

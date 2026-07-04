@@ -51,9 +51,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// Resolved foreground color for a heading level, or nil to inherit baseTextColor.
 - (nullable RCTUIColor *)headingColorForLevel:(NSInteger)level;
 
-/// Font for a heading level, built over the base font at the configured size and
-/// weight (falling back to a default scale when unset). Does not carry inline
-/// traits — those are merged on top in the formatter's font pass.
+/// Font for a heading level, built over the base font at the configured per-level
+/// size and weight (from markdownStyle h1..h6). Does not carry inline traits —
+/// those are merged on top in the formatter's font pass.
 - (UIFont *)headingFontForLevel:(NSInteger)level;
 
 - (UIFont *)fontForTraits:(UIFontDescriptorSymbolicTraits)traits;

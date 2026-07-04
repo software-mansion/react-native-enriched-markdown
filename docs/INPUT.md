@@ -66,6 +66,25 @@ Each call toggles the style within the current text selection. They are being to
 
 Styles are also available through the built-in native format bar that appears on text selection, and through the system context menu.
 
+## Headings
+
+Supported heading levels: H1–H6.
+
+Headings are block-level: a heading applies to the whole paragraph the cursor (or selection) touches, unlike [inline styles](#inline-styles) which apply to a character range. Toggle a heading by calling `toggleHeading(level)` on the component ref with a level from `1` to `6`:
+
+```tsx
+<Button title="H1" onPress={() => ref.current?.toggleHeading(1)} />
+```
+
+Calling `toggleHeading` with the level already applied to the cursor's paragraph turns the heading back into a regular paragraph. The cursor's current heading level is reported through the [`onChangeState`](API_REFERENCE.md#onchangestate) payload as `heading.level` (`0` when the paragraph is not a heading), so you can highlight the active level in your toolbar.
+
+Behavior notes:
+
+- An emptied heading line stays a heading until you toggle it off, so characters you type next continue at the heading size.
+- Pressing Enter at the end of a heading starts a regular paragraph on the next line (headings do not continue like list items).
+
+Heading font sizes, weights, and colors are configurable per level — see [Customizing Styles](#customizing-enrichedmarkdowntextinput--styles).
+
 ## Links
 
 Links are a piece of text with a URL attributed to it. They can be managed by calling methods on the input ref:
@@ -219,6 +238,7 @@ See [RTL Support](RTL.md) for the full per-element behavior on the rendered outp
     strong: { color: '#1D4ED8' },
     em: { color: '#7C3AED' },
     link: { color: '#2563EB', underline: true },
+    h1: { fontSize: 28, fontWeight: 'bold', color: '#111827' },
   }}
 />
 ```
@@ -231,3 +251,4 @@ Available style properties:
 - `link.underline` — whether links are underlined (defaults to `true`).
 - `spoiler.color` — text color for spoiler text.
 - `spoiler.backgroundColor` — background color for spoiler text.
+- `h1`–`h6` — per-level heading styling, each accepting `fontSize`, `fontWeight`, and `color`. Defaults match the read-only `EnrichedMarkdownText` renderer (sizes `30/24/20/18/16/14`, bold) so headings look the same in the editor and a rendered preview. Omitted levels (or fields) fall back to those defaults.

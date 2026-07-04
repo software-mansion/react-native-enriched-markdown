@@ -565,6 +565,7 @@ Style configuration for formatted text in the input.
 - `linkVariants` — per-URL-pattern style overrides. Each key is a regex tested against the link URL. See [Mentions — Link Variants](MENTIONS.md#link-variants-mention-styling).
 - `spoiler.color` — text color for spoiler text.
 - `spoiler.backgroundColor` — background color for spoiler text.
+- `h1`–`h6` — per-level heading styling, each accepting `fontSize`, `fontWeight`, and `color`. Defaults match the read-only renderer (sizes `30/24/20/18/16/14`, bold).
 
 ### `mentionIndicators`
 
@@ -610,7 +611,7 @@ Fires when the text selection changes.
 
 ### `onChangeState`
 
-Fires when the active style state changes. The payload provides a nested object for each style with an `isActive` property.
+Fires when the active style state changes. The payload provides a nested object for each inline style with an `isActive` property, plus the cursor paragraph's `heading.level`.
 
 | Type                              | Default Value | Platform |
 | --------------------------------- | ------------- | -------- |
@@ -626,6 +627,8 @@ interface StyleState {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
+  // Heading level of the cursor's paragraph: 0 = none, 1-6 = H1-H6.
+  heading: { level: number };
 }
 ```
 
@@ -914,6 +917,10 @@ Toggles strikethrough on the current selection or cursor.
 ### `toggleSpoiler()`
 
 Toggles spoiler on the current selection or cursor.
+
+### `toggleHeading(level: number)`
+
+Toggles a heading of the given level (`1`–`6`) on the cursor's paragraph. Calling it with the level already applied turns the paragraph back into regular text. Unlike the inline `toggle*` methods, this operates on the whole paragraph, not a character range.
 
 ### `setLink(url: string)`
 

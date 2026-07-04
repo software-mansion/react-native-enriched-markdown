@@ -73,6 +73,8 @@ export interface OnChangeStateEvent {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
+  // Heading level of the cursor's paragraph: 0 = none (paragraph), 1-6 = H1-H6.
+  heading: { level: CodegenTypes.Int32 };
 }
 
 export interface OnRequestMarkdownResultEvent {
@@ -306,6 +308,10 @@ interface NativeCommands {
   toggleUnderline: (viewRef: React.ElementRef<ComponentType>) => void;
   toggleStrikethrough: (viewRef: React.ElementRef<ComponentType>) => void;
   toggleSpoiler: (viewRef: React.ElementRef<ComponentType>) => void;
+  toggleHeading: (
+    viewRef: React.ElementRef<ComponentType>,
+    level: CodegenTypes.Int32
+  ) => void;
   setLink: (viewRef: React.ElementRef<ComponentType>, url: string) => void;
   insertLink: (
     viewRef: React.ElementRef<ComponentType>,
@@ -344,6 +350,7 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'toggleUnderline',
     'toggleStrikethrough',
     'toggleSpoiler',
+    'toggleHeading',
     'setLink',
     'insertLink',
     'insertMention',

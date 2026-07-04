@@ -46,7 +46,9 @@ class BlockStore {
   ) {
     val (start, end) = paragraphBounds(paragraphStart, paragraphEnd, text)
     removeBlocksOverlapping(start, end)
-    if (end <= start) return
+    // A heading on an empty line is kept as a zero-length anchor (see adjustForEdit);
+    // other blocks need real content, so an empty line yields no block.
+    if (end < start || (end == start && type !in BlockType.HEADINGS)) return
 
     val block = BlockRange(type, start, end, level)
     ranges.add(sortedInsertionIndex(start), block)
@@ -65,19 +67,65 @@ class BlockStore {
     removeBlocksOverlapping(start, end)
   }
 
-  /** Shifts/clips block ranges to follow a text edit. See [RangeEditAdjustment]. */
+  /**
+   * Shifts/clips block ranges to follow a text edit (see [RangeEditAdjustment]),
+   * with heading persistence layered on top: a heading deleted exactly to its
+   * end collapses to a zero-length anchor at the edit location (its line
+   * survives), and existing anchors shift/keep/drop with their line. The view's
+   * prune/normalize pass reconciles anchors against the final text.
+   */
   fun adjustForEdit(
     editLocation: Int,
     deletedLength: Int,
     insertedLength: Int,
   ) {
+    if (deletedLength == 0 && insertedLength == 0) return
+
+    val deleteEnd = editLocation + deletedLength
+    val delta = insertedLength - deletedLength
+
+    val anchors = ranges.filter { it.length == 0 && it.type in BlockType.HEADINGS }
+    ranges.removeAll { it.length == 0 }
+
+    // At most one range can end exactly at deleteEnd, so this restores at most
+    // one collapsed heading.
+    val collapsed =
+      ranges.firstOrNull {
+        it.type in BlockType.HEADINGS && it.start >= editLocation && it.end == deleteEnd
+      }
+
     RangeEditAdjustment.adjustForEdit(ranges, editLocation, deletedLength, insertedLength)
+
+    for (anchor in anchors) {
+      when {
+        anchor.start <= editLocation -> { /* keeps its position */ }
+
+        anchor.start >= deleteEnd -> {
+          anchor.start += delta
+          anchor.end = anchor.start
+        }
+
+        else -> {
+          continue // the anchor's line was deleted
+        }
+      }
+      ranges.add(sortedInsertionIndex(anchor.start), anchor)
+    }
+
+    if (collapsed != null) {
+      ranges.add(
+        sortedInsertionIndex(editLocation),
+        BlockRange(collapsed.type, editLocation, editLocation, collapsed.level),
+      )
+    }
   }
 
   /**
    * Snaps every stored range to the line bounds of its start position.
    * Absorbs edge-typed chars, clips split ranges to first line, drops
-   * duplicates. Call after [adjustForEdit] once [text] is final. Idempotent.
+   * duplicates. On an empty line a heading persists as a zero-length anchor;
+   * any other collapsed range is dropped. Call after [adjustForEdit] once
+   * [text] is final. Idempotent.
    */
   fun normalizeToLineBounds(text: CharSequence) {
     if (ranges.isEmpty()) return
@@ -87,7 +135,8 @@ class BlockStore {
     while (iterator.hasNext()) {
       val range = iterator.next()
       val (lineStart, lineEnd) = paragraphBounds(range.start, range.start, text)
-      if (lineEnd <= lineStart || lineStart <= previousEnd) {
+      val isEmptyLine = lineEnd == lineStart
+      if ((isEmptyLine && range.type !in BlockType.HEADINGS) || lineStart <= previousEnd) {
         iterator.remove()
         continue
       }
@@ -98,15 +147,15 @@ class BlockStore {
   }
 
   /**
-   * Drops any stored block overlapping `[start, end)` so a replacement can be
-   * inserted cleanly. Blocks are line-scoped and never partially overlap, so a
-   * touched block is removed wholesale.
+   * Drops any stored block overlapping `[start, end)`. Blocks never partially
+   * overlap, so a touched block is removed wholesale; a zero-length anchor is
+   * dropped when it sits within the bounds (so toggle-off clears an empty line).
    */
   private fun removeBlocksOverlapping(
     start: Int,
     end: Int,
   ) {
-    ranges.removeAll { it.end > start && it.start < end }
+    ranges.removeAll { (it.end > start && it.start < end) || (it.length == 0 && it.start in start..end) }
   }
 
   /** Expands a selection to cover whole lines (line-scoped block boundaries). */

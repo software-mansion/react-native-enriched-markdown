@@ -422,6 +422,13 @@ class EnrichedMarkdownTextInputManager :
     view?.toggleInlineStyle(StyleType.SPOILER)
   }
 
+  override fun toggleHeading(
+    view: EnrichedMarkdownTextInputView?,
+    level: Int,
+  ) {
+    view?.toggleHeading(level)
+  }
+
   override fun setLink(
     view: EnrichedMarkdownTextInputView?,
     url: String?,

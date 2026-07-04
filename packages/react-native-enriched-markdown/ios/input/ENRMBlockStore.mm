@@ -91,6 +91,16 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
     ENRMBlockRange *existing = _ranges[idx];
     NSUInteger existingStart = existing.range.location;
     NSUInteger existingEnd = NSMaxRange(existing.range);
+
+    // A zero-length anchor occupies a point, so the half-open overlap test
+    // never matches it; drop one whose anchor lies within the removal bounds.
+    if (existing.range.length == 0) {
+      if (existingStart >= removeStart && existingStart <= removeEnd) {
+        [indexesToRemove addIndex:idx];
+      }
+      continue;
+    }
+
     if (existingEnd <= removeStart || existingStart >= removeEnd) {
       continue;
     }
@@ -108,7 +118,19 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   NSRange paragraphRange = paragraphBoundsForRange(range, text);
   [self removeBlocksOverlappingRange:paragraphRange];
 
-  if (paragraphRange.length == 0) {
+  // Store content-only bounds (the parser's convention): trim the line
+  // terminator that paragraphRangeForRange includes (handles \r\n as well).
+  while (paragraphRange.length > 0) {
+    unichar last = [text characterAtIndex:NSMaxRange(paragraphRange) - 1];
+    if (last != '\n' && last != '\r') {
+      break;
+    }
+    paragraphRange.length--;
+  }
+
+  // Only headings persist on an empty line (as a zero-length anchor); other
+  // block types have nothing to anchor.
+  if (paragraphRange.length == 0 && ENRMHeadingLevelForBlockType(type) == 0) {
     return;
   }
 
@@ -130,22 +152,50 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   if (deletedLength == 0 && insertedLength == 0)
     return;
 
+  NSUInteger deleteEnd = editLocation + deletedLength;
   NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
 
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
     ENRMBlockRange *blockRange = _ranges[idx];
-    ENRMAdjustedRange adjusted = ENRMAdjustRangeForEdit(blockRange.range, editLocation, deletedLength, insertedLength);
-    blockRange.range = adjusted.range;
-    if (adjusted.shouldRemove) {
-      [indexesToRemove addIndex:idx];
+    BOOL isHeading = ENRMHeadingLevelForBlockType(blockRange.type) > 0;
+
+    // Zero-length heading anchors don't follow the shared adjustment: one at
+    // the edit location stays put (normalize grows it over the typed text),
+    // one past the edit shifts with it, one inside the deletion is dropped.
+    if (blockRange.range.length == 0) {
+      if (!isHeading) {
+        [indexesToRemove addIndex:idx];
+      } else if (blockRange.range.location >= deleteEnd && blockRange.range.location > editLocation) {
+        blockRange.range = NSMakeRange(blockRange.range.location - deletedLength + insertedLength, 0);
+      } else if (blockRange.range.location > editLocation) {
+        [indexesToRemove addIndex:idx]; // anchor sat inside the deleted region
+      }
+      continue;
     }
+
+    ENRMAdjustedRange adjusted = ENRMAdjustRangeForEdit(blockRange.range, editLocation, deletedLength, insertedLength);
+    if (adjusted.shouldRemove) {
+      // A heading deleted exactly to its end collapses to a zero-length anchor
+      // (the line's newline survived, so the line stays a heading); a deletion
+      // running past its end removed the line, so drop the heading with it.
+      if (isHeading && NSMaxRange(blockRange.range) == deleteEnd && blockRange.range.location >= editLocation) {
+        blockRange.range = NSMakeRange(editLocation, 0);
+      } else {
+        [indexesToRemove addIndex:idx];
+      }
+      continue;
+    }
+    blockRange.range = adjusted.range;
   }
 
   removeIndexesInReverse(_ranges, indexesToRemove);
 
+  // Prune zero-length ranges, but keep zero-length headings: they anchor an
+  // emptied-but-still-present heading line (see the collapse rule above).
   NSMutableIndexSet *emptyIndexes = [NSMutableIndexSet indexSet];
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
-    if (_ranges[idx].range.length == 0) {
+    ENRMBlockRange *range = _ranges[idx];
+    if (range.range.length == 0 && ENRMHeadingLevelForBlockType(range.type) == 0) {
       [emptyIndexes addIndex:idx];
     }
   }
@@ -177,7 +227,10 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
       lineRange.length--;
     }
 
-    if (lineRange.length == 0 || (NSInteger)lineRange.location <= previousEnd) {
+    // Headings persist on an empty line as a zero-length anchor; other
+    // collapsed ranges are dropped.
+    BOOL isHeading = ENRMHeadingLevelForBlockType(blockRange.type) > 0;
+    if ((lineRange.length == 0 && !isHeading) || (NSInteger)lineRange.location <= previousEnd) {
       [indexesToRemove addIndex:idx];
       continue;
     }

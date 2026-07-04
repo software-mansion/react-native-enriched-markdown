@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   Text,
-  View,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   type StyleProp,
@@ -75,6 +75,8 @@ const LINK_ICON = (
   <AddLinkIcon width={ICON_SIZE} height={ICON_SIZE} color={ICON_COLOR} />
 );
 
+const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+
 export function FormattingToolbar({
   state,
   inputRef,
@@ -110,7 +112,14 @@ export function FormattingToolbar({
 
   return (
     <>
-      <View style={[styles.toolbar, style]} testID={testID}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="always"
+        style={[styles.toolbarScroll, style]}
+        contentContainerStyle={styles.toolbar}
+        testID={testID}
+      >
         {ITEMS.map(({ styleKey, action, icon }) => (
           <TouchableOpacity
             key={styleKey}
@@ -122,6 +131,19 @@ export function FormattingToolbar({
             testID={`toolbar-${styleKey}`}
           >
             {icon}
+          </TouchableOpacity>
+        ))}
+        {HEADING_LEVELS.map((level) => (
+          <TouchableOpacity
+            key={`h${level}`}
+            style={[
+              styles.toolbarButton,
+              state?.heading.level === level && styles.toolbarButtonActive,
+            ]}
+            onPress={() => inputRef.current?.toggleHeading(level)}
+            testID={`toolbar-h${level}`}
+          >
+            <Text style={styles.headingButtonText}>{`H${level}`}</Text>
           </TouchableOpacity>
         ))}
         <TouchableOpacity
@@ -144,7 +166,7 @@ export function FormattingToolbar({
             <Text style={styles.mentionButtonText}>{indicator}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
       <LinkModal
         visible={linkModalVisible}
         initialText=""
@@ -157,14 +179,18 @@ export function FormattingToolbar({
 }
 
 const styles = StyleSheet.create({
-  toolbar: {
-    flexDirection: 'row',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+  toolbarScroll: {
+    flexGrow: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
     backgroundColor: '#F9FAFB',
+  },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   toolbarButton: {
     minWidth: 34,
@@ -185,5 +211,10 @@ const styles = StyleSheet.create({
     color: ICON_COLOR,
     fontWeight: '700',
     fontSize: 15,
+  },
+  headingButtonText: {
+    color: ICON_COLOR,
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

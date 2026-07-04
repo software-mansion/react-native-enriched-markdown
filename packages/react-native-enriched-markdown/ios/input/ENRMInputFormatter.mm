@@ -13,10 +13,6 @@
 @implementation ENRMInputLinkVariantStyle
 @end
 
-/// Default font-size multipliers applied to the base font when a heading level
-/// has no explicit fontSize prop. Indexed by level 1-6 (index 0 unused).
-static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0.67};
-
 @implementation ENRMInputFormatterStyle {
   NSMutableDictionary<NSNumber *, UIFont *> *_fontCache;
   UIFont *_lastBaseFont;
@@ -110,9 +106,11 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
     return cached;
   }
 
+  // Per-level sizes always arrive from markdownStyle (h1..h6); fall back to the
+  // base size (no hardcoded scale) only if a size is ever left unset.
   CGFloat size = _headingFontSizes[level];
   if (size <= 0.0) {
-    size = _baseFont.pointSize * kDefaultHeadingScale[level];
+    size = _baseFont.pointSize;
   }
 
   NSString *weightString = _headingFontWeights[level];

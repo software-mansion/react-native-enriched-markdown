@@ -37,6 +37,7 @@ typedef struct {
 - (void)toggleStrikethrough;
 - (void)toggleSpoiler;
 - (void)toggleInlineStyle:(ENRMInputStyleType)type;
+- (void)toggleHeading:(NSInteger)level;
 - (void)showLinkPrompt;
 
 - (BOOL)isEffectiveStyleActive:(ENRMInputStyleType)type atPosition:(NSUInteger)position;

@@ -88,6 +88,8 @@ export interface StyleState {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
+  /** Heading level of the cursor's paragraph: 0 = none, 1-6 = H1-H6. */
+  heading: { level: number };
 }
 
 export interface ContextMenuItem {
@@ -121,6 +123,8 @@ export interface EnrichedMarkdownTextInputInstance {
   toggleUnderline: () => void;
   toggleStrikethrough: () => void;
   toggleSpoiler: () => void;
+  /** Toggle a heading level (1-6) on the cursor's paragraph; the same level toggles back to a paragraph. */
+  toggleHeading: (level: number) => void;
   setLink: (url: string) => void;
   insertLink: (text: string, url: string) => void;
   insertMention: (displayText: string, url: string) => void;
@@ -418,7 +422,7 @@ export const EnrichedMarkdownTextInput = ({
 
   const handleChangeState = useCallback(
     (e: NativeSyntheticEvent<OnChangeStateEvent>) => {
-      const { bold, italic, underline, strikethrough, spoiler, link } =
+      const { bold, italic, underline, strikethrough, spoiler, link, heading } =
         e.nativeEvent;
       onChangeState?.({
         bold,
@@ -427,6 +431,7 @@ export const EnrichedMarkdownTextInput = ({
         strikethrough,
         spoiler,
         link,
+        heading,
       });
     },
     [onChangeState]
@@ -506,7 +511,8 @@ export const EnrichedMarkdownTextInput = ({
       callback?.({
         text: selectedText,
         selection: { start: selectionStart, end: selectionEnd },
-        styleState,
+        // Heading is block-level — not relevant to selection-based menu actions.
+        styleState: { ...styleState, heading: { level: 0 } },
       });
     },
     []
@@ -532,6 +538,7 @@ export const EnrichedMarkdownTextInput = ({
       toggleUnderline: () => Commands.toggleUnderline(commandRef),
       toggleStrikethrough: () => Commands.toggleStrikethrough(commandRef),
       toggleSpoiler: () => Commands.toggleSpoiler(commandRef),
+      toggleHeading: (level) => Commands.toggleHeading(commandRef, level),
       setLink: (url) => Commands.setLink(commandRef, url),
       insertLink: (text, url) => Commands.insertLink(commandRef, text, url),
       insertMention: (displayText, url) =>

@@ -7,6 +7,10 @@ import type {
 } from './types/MarkdownStyleInternal';
 import { isStyleEqual, mergeSubStyle } from './styleUtils';
 import { normalizeLinkVariantEntries } from './linkVariantUtils';
+import {
+  DEFAULT_HEADING_FONT_WEIGHT,
+  HEADING_DEFAULTS,
+} from './headingDefaults';
 
 const SYSTEM_FONT =
   'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -14,7 +18,6 @@ const MONOSPACE_FONT =
   'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace';
 
 const defaultTextColor = '#1F2937';
-const defaultHeadingColor = '#111827';
 
 const baseHeader: {
   fontFamily: string;
@@ -24,7 +27,7 @@ const baseHeader: {
   textAlign: BlockTextAlign;
 } = {
   fontFamily: SYSTEM_FONT,
-  fontWeight: '',
+  fontWeight: DEFAULT_HEADING_FONT_WEIGHT,
   marginTop: 0,
   marginBottom: 8,
   textAlign: 'auto',
@@ -43,38 +46,38 @@ const DEFAULT_NORMALIZED_STYLE: MarkdownStyleInternal = Object.freeze({
   },
   h1: {
     ...baseHeader,
-    fontSize: 30,
-    color: defaultHeadingColor,
+    fontSize: HEADING_DEFAULTS.h1.fontSize,
+    color: HEADING_DEFAULTS.h1.color,
     lineHeight: 38,
   },
   h2: {
     ...baseHeader,
-    fontSize: 24,
-    color: defaultHeadingColor,
+    fontSize: HEADING_DEFAULTS.h2.fontSize,
+    color: HEADING_DEFAULTS.h2.color,
     lineHeight: 32,
   },
   h3: {
     ...baseHeader,
-    fontSize: 20,
-    color: defaultHeadingColor,
+    fontSize: HEADING_DEFAULTS.h3.fontSize,
+    color: HEADING_DEFAULTS.h3.color,
     lineHeight: 28,
   },
   h4: {
     ...baseHeader,
-    fontSize: 18,
-    color: defaultHeadingColor,
+    fontSize: HEADING_DEFAULTS.h4.fontSize,
+    color: HEADING_DEFAULTS.h4.color,
     lineHeight: 26,
   },
   h5: {
     ...baseHeader,
-    fontSize: 16,
-    color: '#374151',
+    fontSize: HEADING_DEFAULTS.h5.fontSize,
+    color: HEADING_DEFAULTS.h5.color,
     lineHeight: 24,
   },
   h6: {
     ...baseHeader,
-    fontSize: 14,
-    color: '#4B5563',
+    fontSize: HEADING_DEFAULTS.h6.fontSize,
+    color: HEADING_DEFAULTS.h6.color,
     lineHeight: 22,
   },
   blockquote: {
