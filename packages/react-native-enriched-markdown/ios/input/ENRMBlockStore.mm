@@ -154,4 +154,39 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   }
 }
 
+- (void)normalizeToLineBoundsInText:(NSString *)text
+{
+  if (_ranges.count == 0) {
+    return;
+  }
+
+  NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
+  NSInteger previousEnd = -1;
+
+  for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
+    ENRMBlockRange *blockRange = _ranges[idx];
+    NSRange lineRange = paragraphBoundsForRange(NSMakeRange(blockRange.range.location, 0), text);
+
+    // Block content ranges never cover the line terminator; paragraphRangeForRange
+    // includes it, so trim it (handles \r\n as well).
+    while (lineRange.length > 0) {
+      unichar last = [text characterAtIndex:NSMaxRange(lineRange) - 1];
+      if (last != '\n' && last != '\r') {
+        break;
+      }
+      lineRange.length--;
+    }
+
+    if (lineRange.length == 0 || (NSInteger)lineRange.location <= previousEnd) {
+      [indexesToRemove addIndex:idx];
+      continue;
+    }
+
+    blockRange.range = lineRange;
+    previousEnd = (NSInteger)NSMaxRange(lineRange);
+  }
+
+  removeIndexesInReverse(_ranges, indexesToRemove);
+}
+
 @end

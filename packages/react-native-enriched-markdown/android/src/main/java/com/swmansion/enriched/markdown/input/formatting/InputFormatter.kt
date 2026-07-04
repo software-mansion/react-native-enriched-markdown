@@ -9,6 +9,7 @@ import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
 import com.swmansion.enriched.markdown.input.model.StyleType
 import com.swmansion.enriched.markdown.input.styles.BlockHandler
 import com.swmansion.enriched.markdown.input.styles.BoldStyleHandler
+import com.swmansion.enriched.markdown.input.styles.HeadingBlockHandler
 import com.swmansion.enriched.markdown.input.styles.ItalicStyleHandler
 import com.swmansion.enriched.markdown.input.styles.LinkStyleHandler
 import com.swmansion.enriched.markdown.input.styles.SpoilerStyleHandler
@@ -34,11 +35,14 @@ class InputFormatter {
     )
 
   /**
-   * Block handlers are registered here as concrete block types are added. Empty
-   * in PR1: with no handler registered, every paragraph stays a plain paragraph
-   * and the block pipeline is a no-op.
+   * Block handlers, keyed by block type. A single [HeadingBlockHandler] serves all
+   * six heading levels — it reads the level from the [BlockRange] — so it is mapped
+   * under every `HEADING_n` key.
    */
-  val blockHandlers: Map<BlockType, BlockHandler> = emptyMap()
+  val blockHandlers: Map<BlockType, BlockHandler> =
+    HeadingBlockHandler().let { heading ->
+      BlockType.HEADINGS.associateWith { heading }
+    }
 
   fun handlerForBlock(type: BlockType): BlockHandler? = blockHandlers[type]
 
@@ -130,15 +134,32 @@ class InputFormatter {
   fun applyBlockFormatting(
     spannable: Spannable,
     blockRanges: List<BlockRange>,
+  ) = applyBlockFormatting(spannable, blockRanges, 0, spannable.length)
+
+  /**
+   * Re-stamps block spans, scoped to `[scopeStart, scopeEnd)`. Only the block spans
+   * we created that intersect the scope are removed, and only the block ranges
+   * intersecting the scope are re-applied — so an edit re-normalizes just the
+   * affected line(s) instead of the whole document on every keystroke. Pass the
+   * full document range for a wholesale re-apply (import / style change).
+   */
+  fun applyBlockFormatting(
+    spannable: Spannable,
+    blockRanges: List<BlockRange>,
+    scopeStart: Int,
+    scopeEnd: Int,
   ) {
     val currentStyle = style ?: return
     if (blockHandlers.isEmpty()) return
+
+    val start = scopeStart.coerceIn(0, spannable.length)
+    val end = scopeEnd.coerceIn(start, spannable.length)
 
     val blockSpanClasses = blockHandlers.values.flatMap { it.spanClasses() }.toSet()
 
     val existingBlockSpans =
       spannable
-        .getSpans(0, spannable.length, Any::class.java)
+        .getSpans(start, end, Any::class.java)
         .filter { span -> span is MarkdownSpan && blockSpanClasses.any { it.isInstance(span) } }
     for (span in existingBlockSpans) {
       spannable.removeSpan(span)
@@ -146,6 +167,8 @@ class InputFormatter {
 
     for (range in blockRanges) {
       if (range.start >= range.end || range.start < 0 || range.end > spannable.length) continue
+      // Skip blocks outside the scope so unaffected lines keep their existing spans.
+      if (range.end <= start || range.start >= end) continue
       val handler = blockHandlers[range.type] ?: continue
       for (span in handler.createSpans(range, currentStyle)) {
         spannable.setSpan(span, range.start, range.end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)

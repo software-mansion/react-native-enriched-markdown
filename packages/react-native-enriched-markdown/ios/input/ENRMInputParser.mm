@@ -42,10 +42,9 @@ static bool isSupportedSpan(MD_SPANTYPE md4cType, ENRMInputStyleType &outStyleTy
 }
 
 // Block-type mapping mirrors kSupportedSpans for the inline pipeline. A block
-// handler extends recognition by adding its md4c block here (e.g. a heading
-// handler adds {MD_BLOCK_H, ENRMInputBlockTypeHeading} and reads the level from
-// MD_BLOCK_H_DETAIL in resolveBlockLevel below). MD_BLOCK_P maps to the implicit
-// Paragraph default and produces no stored block range.
+// handler extends recognition by adding its md4c block here and, if leveled,
+// reading its detail in resolveBlockLevel below. MD_BLOCK_P maps to the
+// implicit Paragraph default and produces no stored block range.
 struct BlockTypeMapping {
   MD_BLOCKTYPE md4cType;
   ENRMInputBlockType blockType;
@@ -53,6 +52,10 @@ struct BlockTypeMapping {
 
 static const BlockTypeMapping kSupportedBlocks[] = {
     {MD_BLOCK_P, ENRMInputBlockTypeParagraph},
+    // MD_BLOCK_H maps to a representative heading type; onEnterBlock resolves the
+    // level (via resolveBlockLevel) and rewrites the type to the level-specific
+    // ENRMInputBlockTypeHeadingN.
+    {MD_BLOCK_H, ENRMInputBlockTypeHeading1},
 };
 static const size_t kSupportedBlockCount = sizeof(kSupportedBlocks) / sizeof(kSupportedBlocks[0]);
 
@@ -68,11 +71,13 @@ static bool isSupportedBlock(MD_BLOCKTYPE md4cType, ENRMInputBlockType &outBlock
 }
 
 // Per-block integer payload (heading level, list depth). md4c exposes this in
-// the block's MD_BLOCK_*_DETAIL struct. PR1 has no leveled block, so this
-// returns 0; a heading handler's block adds a case reading
-// MD_BLOCK_H_DETAIL.level.
-static NSInteger resolveBlockLevel(MD_BLOCKTYPE, void *)
+// the block's MD_BLOCK_*_DETAIL struct. Headings read MD_BLOCK_H_DETAIL.level
+// (1-6); other blocks have no level and return 0.
+static NSInteger resolveBlockLevel(MD_BLOCKTYPE blockType, void *detail)
 {
+  if (blockType == MD_BLOCK_H && detail) {
+    return (NSInteger)(static_cast<MD_BLOCK_H_DETAIL *>(detail)->level);
+  }
   return 0;
 }
 
@@ -173,8 +178,10 @@ static int onEnterBlock(MD_BLOCKTYPE blockType, void *detail, void *userdata)
 
   auto *context = static_cast<ParseContext *>(userdata);
   BlockInfo blockInfo;
-  blockInfo.type = mappedType;
   blockInfo.level = resolveBlockLevel(blockType, detail);
+  // Headings share one md4c block type but split into six ENRMInputBlockTypes by
+  // level; map the resolved level onto the concrete heading type.
+  blockInfo.type = (blockType == MD_BLOCK_H) ? ENRMBlockTypeForHeadingLevel(blockInfo.level) : mappedType;
   context->openBlockStack.push_back(blockInfo);
   return 0;
 }
@@ -444,6 +451,26 @@ static NSArray<ENRMBlockRange *> *blockRangesFromContext(const ParseContext &con
     }
   }
 
+  // Strip block markers (e.g. "# ") from plain text — same as inline delimiters.
+  // Without this the marker survives and the serializer doubles it ("# # ").
+  for (ENRMBlockRange *rawBlock in rawBlockRanges) {
+    NSUInteger contentStart = rawBlock.range.location;
+    if (contentStart == 0 || contentStart > rawLength) {
+      continue;
+    }
+    NSUInteger lineStart = contentStart;
+    while (lineStart > 0) {
+      unichar previous = [markdown characterAtIndex:lineStart - 1];
+      if (previous == '\n' || previous == '\r') {
+        break;
+      }
+      lineStart--;
+    }
+    if (contentStart > lineStart) {
+      [syntaxIndexes addIndexesInRange:NSMakeRange(lineStart, contentStart - lineStart)];
+    }
+  }
+
   // Strip \n/\r from syntax ranges — newlines are structural content, not
   // markdown syntax, and must survive into the plain text.
   NSMutableIndexSet *newlineIndexes = [NSMutableIndexSet indexSet];
@@ -510,9 +537,9 @@ static NSArray<ENRMBlockRange *> *blockRangesFromContext(const ParseContext &con
     [formattingRanges addObject:formattingRange];
   }
 
-  // Map block ranges (raw-markdown coords) onto plain-text coords. Empty in PR1
-  // since blockRangesFromContext emits no Paragraph ranges; the path is ready
-  // for a handler-claimed block type.
+  // Map block content ranges (raw-markdown coords) onto plain-text coords. The
+  // block's marker syntax was stripped above, so the content range maps cleanly
+  // onto the post-strip text and the block no longer covers the marker.
   NSMutableArray<ENRMBlockRange *> *blockRanges = [NSMutableArray arrayWithCapacity:rawBlockRanges.count];
   for (ENRMBlockRange *rawBlock in rawBlockRanges) {
     NSUInteger contentStart = rawBlock.range.location;

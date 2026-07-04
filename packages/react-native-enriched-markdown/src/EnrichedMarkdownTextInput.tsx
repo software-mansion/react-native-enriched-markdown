@@ -49,6 +49,12 @@ export interface LinkStyle {
   backgroundColor?: string;
 }
 
+export interface HeadingStyle {
+  fontSize?: number;
+  fontWeight?: string;
+  color?: string;
+}
+
 export interface MarkdownTextInputStyle {
   strong?: {
     color?: string;
@@ -62,6 +68,17 @@ export interface MarkdownTextInputStyle {
     color?: string;
     backgroundColor?: string;
   };
+  /**
+   * Per-level heading styling for the editor, mirroring the readonly
+   * renderer's `markdownStyle` h1..h6. Omitted levels fall back to defaults
+   * (font sizes 30/24/20/18/16/14).
+   */
+  h1?: HeadingStyle;
+  h2?: HeadingStyle;
+  h3?: HeadingStyle;
+  h4?: HeadingStyle;
+  h5?: HeadingStyle;
+  h6?: HeadingStyle;
 }
 
 export interface StyleState {

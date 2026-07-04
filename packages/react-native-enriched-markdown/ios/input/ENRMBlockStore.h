@@ -35,6 +35,12 @@ NS_ASSUME_NONNULL_BEGIN
                   deletedLength:(NSUInteger)deletedLength
                  insertedLength:(NSUInteger)insertedLength;
 
+/// Snaps every stored range to the line bounds of its start position.
+/// Absorbs edge-typed chars, clips split ranges to first line, drops
+/// duplicates. Call after adjustForEditAtLocation: once text is final.
+/// Idempotent.
+- (void)normalizeToLineBoundsInText:(NSString *)text;
+
 @end
 
 NS_ASSUME_NONNULL_END

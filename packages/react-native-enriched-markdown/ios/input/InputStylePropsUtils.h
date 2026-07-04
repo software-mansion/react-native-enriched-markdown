@@ -18,6 +18,35 @@ static inline UITextAutocapitalizationType ENRMAutocapitalizationTypeFromString(
 }
 #endif
 
+/// Headings h1..h6 share an identical struct shape (fontSize / fontWeight /
+/// color) but are distinct codegen types, hence the template.
+template <typename HeadingProps>
+static BOOL applyHeadingLevelProps(ENRMInputFormatterStyle *style, NSInteger level, const HeadingProps &newHeading,
+                                   const HeadingProps &oldHeading)
+{
+  BOOL changed = NO;
+
+  if (newHeading.fontSize != oldHeading.fontSize) {
+    [style setHeadingFontSize:newHeading.fontSize forLevel:level];
+    changed = YES;
+  }
+
+  if (newHeading.fontWeight != oldHeading.fontWeight) {
+    NSString *weight =
+        newHeading.fontWeight.empty() ? nil : [NSString stringWithUTF8String:newHeading.fontWeight.c_str()];
+    [style setHeadingFontWeight:weight forLevel:level];
+    changed = YES;
+  }
+
+  if (newHeading.color != oldHeading.color) {
+    RCTUIColor *color = isColorMeaningful(newHeading.color) ? RCTUIColorFromSharedColor(newHeading.color) : nil;
+    [style setHeadingColor:color forLevel:level];
+    changed = YES;
+  }
+
+  return changed;
+}
+
 template <typename InputProps>
 BOOL applyInputStyleProps(ENRMInputFormatterStyle *style, const InputProps &newProps, const InputProps &oldProps)
 {
@@ -139,6 +168,13 @@ BOOL applyInputStyleProps(ENRMInputFormatterStyle *style, const InputProps &newP
     style.spoilerBackgroundColor = RCTUIColorFromSharedColor(newProps.markdownStyle.spoiler.backgroundColor);
     changed = YES;
   }
+
+  changed |= applyHeadingLevelProps(style, 1, newProps.markdownStyle.h1, oldProps.markdownStyle.h1);
+  changed |= applyHeadingLevelProps(style, 2, newProps.markdownStyle.h2, oldProps.markdownStyle.h2);
+  changed |= applyHeadingLevelProps(style, 3, newProps.markdownStyle.h3, oldProps.markdownStyle.h3);
+  changed |= applyHeadingLevelProps(style, 4, newProps.markdownStyle.h4, oldProps.markdownStyle.h4);
+  changed |= applyHeadingLevelProps(style, 5, newProps.markdownStyle.h5, oldProps.markdownStyle.h5);
+  changed |= applyHeadingLevelProps(style, 6, newProps.markdownStyle.h6, oldProps.markdownStyle.h6);
 
   return changed;
 }

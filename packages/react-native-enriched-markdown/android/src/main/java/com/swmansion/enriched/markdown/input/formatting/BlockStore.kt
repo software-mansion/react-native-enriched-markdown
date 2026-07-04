@@ -75,6 +75,29 @@ class BlockStore {
   }
 
   /**
+   * Snaps every stored range to the line bounds of its start position.
+   * Absorbs edge-typed chars, clips split ranges to first line, drops
+   * duplicates. Call after [adjustForEdit] once [text] is final. Idempotent.
+   */
+  fun normalizeToLineBounds(text: CharSequence) {
+    if (ranges.isEmpty()) return
+
+    var previousEnd = -1
+    val iterator = ranges.listIterator()
+    while (iterator.hasNext()) {
+      val range = iterator.next()
+      val (lineStart, lineEnd) = paragraphBounds(range.start, range.start, text)
+      if (lineEnd <= lineStart || lineStart <= previousEnd) {
+        iterator.remove()
+        continue
+      }
+      range.start = lineStart
+      range.end = lineEnd
+      previousEnd = lineEnd
+    }
+  }
+
+  /**
    * Drops any stored block overlapping `[start, end)` so a replacement can be
    * inserted cleanly. Blocks are line-scoped and never partially overlap, so a
    * touched block is removed wholesale.

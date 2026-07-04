@@ -1,5 +1,6 @@
 import { processColor, type ColorValue } from 'react-native';
 import type {
+  HeadingStyle,
   LinkStyle,
   MarkdownTextInputStyle,
 } from './EnrichedMarkdownTextInput';
@@ -12,6 +13,14 @@ interface LinkVariantEntryInternal {
   underline: boolean;
   backgroundColor: ColorValue;
 }
+
+interface HeadingStyleInternal {
+  fontSize: number;
+  fontWeight: string;
+  color: ColorValue;
+}
+
+type HeadingLevelKey = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 interface MarkdownTextInputStyleInternal {
   strong: {
@@ -30,12 +39,42 @@ interface MarkdownTextInputStyleInternal {
     color: ColorValue;
     backgroundColor: ColorValue;
   };
+  h1: HeadingStyleInternal;
+  h2: HeadingStyleInternal;
+  h3: HeadingStyleInternal;
+  h4: HeadingStyleInternal;
+  h5: HeadingStyleInternal;
+  h6: HeadingStyleInternal;
 }
 
 const DEFAULT_LINK_COLOR = '#2563EB';
 const DEFAULT_LINK_BG_COLOR = 'transparent';
 const DEFAULT_SPOILER_COLOR = '#374151';
 const DEFAULT_SPOILER_BG_COLOR = '#E5E7EB';
+
+// Heading defaults mirror the readonly renderer (normalizeMarkdownStyle) so
+// sizing is consistent across read and edit views. fontWeight '' inherits the
+// base font weight, matching the readonly headers.
+const HEADING_DEFAULTS: Record<
+  HeadingLevelKey,
+  { fontSize: number; fontWeight: string; color: string }
+> = {
+  h1: { fontSize: 30, fontWeight: '', color: '#111827' },
+  h2: { fontSize: 24, fontWeight: '', color: '#111827' },
+  h3: { fontSize: 20, fontWeight: '', color: '#111827' },
+  h4: { fontSize: 18, fontWeight: '', color: '#111827' },
+  h5: { fontSize: 16, fontWeight: '', color: '#374151' },
+  h6: { fontSize: 14, fontWeight: '', color: '#4B5563' },
+};
+
+const defaultHeadingInternal = (key: HeadingLevelKey): HeadingStyleInternal => {
+  const d = HEADING_DEFAULTS[key];
+  return {
+    fontSize: d.fontSize,
+    fontWeight: d.fontWeight,
+    color: processColor(d.color)!,
+  };
+};
 
 const defaultInternal: MarkdownTextInputStyleInternal = Object.freeze({
   strong: {
@@ -54,7 +93,25 @@ const defaultInternal: MarkdownTextInputStyleInternal = Object.freeze({
     color: processColor(DEFAULT_SPOILER_COLOR)!,
     backgroundColor: processColor(DEFAULT_SPOILER_BG_COLOR)!,
   },
+  h1: defaultHeadingInternal('h1'),
+  h2: defaultHeadingInternal('h2'),
+  h3: defaultHeadingInternal('h3'),
+  h4: defaultHeadingInternal('h4'),
+  h5: defaultHeadingInternal('h5'),
+  h6: defaultHeadingInternal('h6'),
 });
+
+const normalizeHeadingStyle = (
+  key: HeadingLevelKey,
+  style: HeadingStyle | undefined
+): HeadingStyleInternal => {
+  const fallback = defaultInternal[key];
+  return {
+    fontSize: style?.fontSize ?? fallback.fontSize,
+    fontWeight: style?.fontWeight ?? fallback.fontWeight,
+    color: normalizeColor(style?.color) ?? fallback.color,
+  };
+};
 
 let cachedInput: MarkdownTextInputStyle | undefined;
 let cachedResult: MarkdownTextInputStyleInternal | undefined;
@@ -108,6 +165,12 @@ export const normalizeMarkdownTextInputStyle = (
         normalizeColor(style.spoiler?.backgroundColor) ??
         defaultInternal.spoiler.backgroundColor,
     },
+    h1: normalizeHeadingStyle('h1', style.h1),
+    h2: normalizeHeadingStyle('h2', style.h2),
+    h3: normalizeHeadingStyle('h3', style.h3),
+    h4: normalizeHeadingStyle('h4', style.h4),
+    h5: normalizeHeadingStyle('h5', style.h5),
+    h6: normalizeHeadingStyle('h6', style.h6),
   };
 
   cachedInput = style;

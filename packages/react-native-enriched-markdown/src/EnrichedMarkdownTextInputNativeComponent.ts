@@ -8,6 +8,12 @@ import {
 } from 'react-native';
 import type React from 'react';
 
+interface HeadingStyleInternal {
+  fontSize: CodegenTypes.Float;
+  fontWeight: string;
+  color: ColorValue;
+}
+
 interface MarkdownTextInputStyleInternal {
   strong: {
     color?: ColorValue;
@@ -32,6 +38,15 @@ interface MarkdownTextInputStyleInternal {
     color: ColorValue;
     backgroundColor: ColorValue;
   };
+  // Per-level heading styles, mirroring the readonly renderer's markdownStyle
+  // h1..h6 so heading sizing is configured consistently across read and edit
+  // views. Always provided with complete defaults via normalizeMarkdownTextInputStyle.
+  h1: HeadingStyleInternal;
+  h2: HeadingStyleInternal;
+  h3: HeadingStyleInternal;
+  h4: HeadingStyleInternal;
+  h5: HeadingStyleInternal;
+  h6: HeadingStyleInternal;
 }
 
 interface TargetedEvent {

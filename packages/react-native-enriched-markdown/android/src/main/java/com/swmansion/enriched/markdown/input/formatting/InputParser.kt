@@ -66,9 +66,9 @@ object InputParser {
     // Block-level node: record where its text content begins so we can build a
     // BlockRange on the way back out. PARAGRAPH is the implicit default and is
     // dropped below, so it produces no stored block range.
-    val blockType = nodeTypeToBlockType(node.type)
-    val blockStartPosition = plainText.length
     val blockLevel = node.getAttribute("level")?.toIntOrNull() ?: 0
+    val blockType = nodeTypeToBlockType(node.type, blockLevel)
+    val blockStartPosition = plainText.length
 
     if (node.type == NodeType.Text) {
       plainText.append(node.content)
@@ -115,13 +115,17 @@ object InputParser {
 
   /**
    * Maps a parser block node to a [BlockType], mirroring [nodeTypeToStyleType]
-   * for inline spans. A concrete block handler extends recognition by adding its
-   * node here (e.g. `NodeType.Heading -> BlockType.HEADING`). PR1 maps only the
-   * implicit PARAGRAPH, which is filtered out, so no block ranges are produced.
+   * for inline spans. A heading maps to its per-level `HEADING_n` (from the node's
+   * `level` attribute); an out-of-range level falls back to PARAGRAPH so a
+   * malformed parse degrades gracefully rather than dropping the line.
    */
-  private fun nodeTypeToBlockType(nodeType: NodeType): BlockType? =
+  private fun nodeTypeToBlockType(
+    nodeType: NodeType,
+    level: Int,
+  ): BlockType? =
     when (nodeType) {
       NodeType.Paragraph -> BlockType.PARAGRAPH
+      NodeType.Heading -> BlockType.forHeadingLevel(level) ?: BlockType.PARAGRAPH
       else -> null
     }
 

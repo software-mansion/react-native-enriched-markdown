@@ -13,7 +13,36 @@ NS_ASSUME_NONNULL_BEGIN
 /// id<ENRMBlockHandler> registered in ENRMInputFormatter.
 typedef NS_ENUM(NSInteger, ENRMInputBlockType) {
   ENRMInputBlockTypeParagraph = 0,
+  ENRMInputBlockTypeHeading1 = 1,
+  ENRMInputBlockTypeHeading2 = 2,
+  ENRMInputBlockTypeHeading3 = 3,
+  ENRMInputBlockTypeHeading4 = 4,
+  ENRMInputBlockTypeHeading5 = 5,
+  ENRMInputBlockTypeHeading6 = 6,
 };
+
+/// Maps a heading level (1-6) to its ENRMInputBlockType. Levels outside 1-6 are
+/// clamped into range. The contiguous Heading1..Heading6 enum values make this a
+/// simple offset from the Heading1 base.
+static inline ENRMInputBlockType ENRMBlockTypeForHeadingLevel(NSInteger level)
+{
+  if (level < 1) {
+    level = 1;
+  } else if (level > 6) {
+    level = 6;
+  }
+  return (ENRMInputBlockType)(ENRMInputBlockTypeHeading1 + (level - 1));
+}
+
+/// The heading level (1-6) for a heading block type, or 0 if the type is not a
+/// heading. Inverse of ENRMBlockTypeForHeadingLevel.
+static inline NSInteger ENRMHeadingLevelForBlockType(ENRMInputBlockType type)
+{
+  if (type >= ENRMInputBlockTypeHeading1 && type <= ENRMInputBlockTypeHeading6) {
+    return (NSInteger)(type - ENRMInputBlockTypeHeading1) + 1;
+  }
+  return 0;
+}
 
 /// NSAttributedString attribute carrying the ENRMInputBlockType (boxed NSNumber)
 /// of the paragraph a character belongs to. Set by ENRMInputFormatter on the
