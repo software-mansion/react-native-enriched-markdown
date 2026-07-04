@@ -455,6 +455,55 @@ class EnrichedMarkdownTextInputView(
     clipboard.setPrimaryClip(ClipData.newPlainText(null, content))
   }
 
+  // Intercepts paste when the clip was produced by copyAsMarkdown, so formatting
+  // and block ranges survive the round trip. External clips keep default handling.
+  override fun onTextContextMenuItem(id: Int): Boolean {
+    if (id == android.R.id.paste) {
+      MarkdownClipboard.markdownFromClipboard(context)?.let { markdown ->
+        pasteMarkdown(markdown)
+        return true
+      }
+    }
+    return super.onTextContextMenuItem(id)
+  }
+
+  /**
+   * Replaces the selection with parsed markdown, importing its inline formatting
+   * and block ranges (headings etc.) into the stores — mirrors iOS pasteMarkdown.
+   */
+  fun pasteMarkdown(markdown: String) {
+    val editable = text ?: return
+    val parsed = InputParser.parseToPlainTextAndRanges(markdown)
+    val selStart = selectionStart.coerceIn(0, editable.length)
+    val selEnd = selectionEnd.coerceIn(selStart, editable.length)
+
+    isProcessingTextChange = true
+    try {
+      editable.replace(selStart, selEnd, parsed.plainText)
+      formattingStore.adjustForEdit(selStart, selEnd - selStart, parsed.plainText.length)
+      blockStore.adjustForEdit(selStart, selEnd - selStart, parsed.plainText.length)
+      blockStore.normalizeToLineBounds(editable)
+
+      for (range in parsed.formattingRanges) {
+        formattingStore.addRange(
+          FormattingRange(range.type, range.start + selStart, range.end + selStart, range.url),
+        )
+      }
+      for (block in parsed.blockRanges) {
+        blockStore.setBlock(block.type, block.level, block.start + selStart, block.end + selStart, editable)
+      }
+
+      val currentText = editable.toString()
+      lastProcessedText = currentText
+      setSelection(selStart + parsed.plainText.length)
+      applyFormattingAndEmit()
+      detectorPipeline.processTextChange(editable, currentText, selStart, parsed.plainText.length)
+      eventEmitter.emitChangeText()
+    } finally {
+      isProcessingTextChange = false
+    }
+  }
+
   fun setLinkForSelection(url: String) {
     val selStart = selectionStart
     val selEnd = selectionEnd
