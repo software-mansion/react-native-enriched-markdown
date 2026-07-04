@@ -12,7 +12,7 @@ import android.content.Context
  * pasting as plain text).
  */
 object MarkdownClipboard {
-  const val MIME_TYPE = "text/vnd.swmansion.enriched-markdown"
+  const val MIME_TYPE = "text/vnd.com.swmansion.enriched-markdown"
 
   fun newMarkdownClip(markdown: String): ClipData =
     ClipData(

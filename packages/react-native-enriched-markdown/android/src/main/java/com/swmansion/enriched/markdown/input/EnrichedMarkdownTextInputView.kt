@@ -1,6 +1,5 @@
 package com.swmansion.enriched.markdown.input
 
-import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.BlendMode
@@ -34,8 +33,10 @@ import com.swmansion.enriched.markdown.input.formatting.BlockStore
 import com.swmansion.enriched.markdown.input.formatting.FormattingStore
 import com.swmansion.enriched.markdown.input.formatting.InputFormatter
 import com.swmansion.enriched.markdown.input.formatting.InputParser
+import com.swmansion.enriched.markdown.input.formatting.MarkdownSerializer
 import com.swmansion.enriched.markdown.input.layout.InputEventEmitter
 import com.swmansion.enriched.markdown.input.layout.InputLayoutManager
+import com.swmansion.enriched.markdown.input.model.BlockRange
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
 import com.swmansion.enriched.markdown.input.model.StyleType
@@ -445,18 +446,27 @@ class EnrichedMarkdownTextInputView(
     }
   }
 
-  // Copies the input's plain text to the system clipboard without disturbing
-  // the current selection. Android's system clipboard round-trip is plain text
-  // only — inline styles are not preserved for external paste targets.
+  // Copies the whole input as markdown without disturbing the current selection,
+  // tagged so paste restores formatting and block ranges — mirrors iOS, which
+  // stores markdown under its custom pasteboard type.
   fun copyToClipboard() {
     val content = text
     if (content.isNullOrEmpty()) return
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
-    clipboard.setPrimaryClip(ClipData.newPlainText(null, content))
+    val markdown =
+      MarkdownSerializer.serialize(
+        content.toString(),
+        allFormattingRangesForSerialization(),
+        blockStore.allRanges,
+      ) { blockRange ->
+        formatter.handlerForBlock(blockRange.type)?.markdownLinePrefix(blockRange) ?: ""
+      }
+    clipboard.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown))
   }
 
-  // Intercepts paste when the clip was produced by copyAsMarkdown, so formatting
-  // and block ranges survive the round trip. External clips keep default handling.
+  // Copy/cut re-tag the clip with markdown and paste restores it, so formatting
+  // and block ranges survive the round trip — mirrors iOS's copy:/cut:/paste:
+  // overrides. External clips keep default handling.
   override fun onTextContextMenuItem(id: Int): Boolean {
     if (id == android.R.id.paste) {
       MarkdownClipboard.markdownFromClipboard(context)?.let { markdown ->
@@ -464,7 +474,52 @@ class EnrichedMarkdownTextInputView(
         return true
       }
     }
+    if (id == android.R.id.copy || id == android.R.id.cut) {
+      val markdown = markdownForSelectedRange()
+      val handled = super.onTextContextMenuItem(id)
+      if (handled && markdown != null) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        clipboard?.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown))
+      }
+      return handled
+    }
     return super.onTextContextMenuItem(id)
+  }
+
+  /** Serializes the current selection (inline + block ranges) to markdown, or null if empty. */
+  fun markdownForSelectedRange(): String? {
+    val selStart = selectionStart
+    val selEnd = selectionEnd
+    if (selStart >= selEnd) return null
+
+    val fullText = text?.toString() ?: return null
+    val selectedText = fullText.substring(selStart, selEnd)
+
+    val clippedRanges = mutableListOf<FormattingRange>()
+    for (range in formattingStore.allRanges) {
+      if (range.end <= selStart || range.start >= selEnd) continue
+
+      val clippedStart = maxOf(range.start, selStart)
+      val clippedEnd = minOf(range.end, selEnd)
+      clippedRanges.add(
+        FormattingRange(range.type, clippedStart - selStart, clippedEnd - selStart, range.url),
+      )
+    }
+
+    val clippedBlockRanges = mutableListOf<BlockRange>()
+    for (blockRange in blockStore.allRanges) {
+      if (blockRange.end <= selStart || blockRange.start >= selEnd) continue
+
+      val clippedStart = maxOf(blockRange.start, selStart)
+      val clippedEnd = minOf(blockRange.end, selEnd)
+      clippedBlockRanges.add(
+        BlockRange(blockRange.type, clippedStart - selStart, clippedEnd - selStart, blockRange.level),
+      )
+    }
+
+    return MarkdownSerializer.serialize(selectedText, clippedRanges, clippedBlockRanges) { blockRange ->
+      formatter.handlerForBlock(blockRange.type)?.markdownLinePrefix(blockRange) ?: ""
+    }
   }
 
   /**
