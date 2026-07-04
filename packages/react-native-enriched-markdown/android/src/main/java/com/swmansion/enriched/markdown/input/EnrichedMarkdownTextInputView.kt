@@ -461,7 +461,7 @@ class EnrichedMarkdownTextInputView(
       ) { blockRange ->
         formatter.handlerForBlock(blockRange.type)?.markdownLinePrefix(blockRange) ?: ""
       }
-    clipboard.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown))
+    clipboard.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown, content.toString()))
   }
 
   // Copy/cut re-tag the clip with markdown and paste restores it, so formatting
@@ -475,11 +475,14 @@ class EnrichedMarkdownTextInputView(
       }
     }
     if (id == android.R.id.copy || id == android.R.id.cut) {
+      val selStart = selectionStart
+      val selEnd = selectionEnd
+      val plainText = if (selStart < selEnd) text?.substring(selStart, selEnd) else null
       val markdown = markdownForSelectedRange()
       val handled = super.onTextContextMenuItem(id)
-      if (handled && markdown != null) {
+      if (handled && markdown != null && plainText != null) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        clipboard?.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown))
+        clipboard?.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown, plainText))
       }
       return handled
     }

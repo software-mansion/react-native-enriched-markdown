@@ -170,10 +170,12 @@ class InputContextMenu(
       .show()
   }
 
+  // Explicit "Copy as Markdown": the user asked for markdown syntax, so it is
+  // also the plain-text representation external targets receive.
   fun copyAsMarkdown() {
     val markdown = view.markdownForSelectedRange() ?: return
     val clipboard = view.context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
-    clipboard.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown))
+    clipboard.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown, markdown))
   }
 
   companion object {
