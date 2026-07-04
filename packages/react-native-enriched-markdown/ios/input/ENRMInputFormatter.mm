@@ -106,8 +106,6 @@
     return cached;
   }
 
-  // Per-level sizes always arrive from markdownStyle (h1..h6); fall back to the
-  // base size (no hardcoded scale) only if a size is ever left unset.
   CGFloat size = _headingFontSizes[level];
   if (size <= 0.0) {
     size = _baseFont.pointSize;

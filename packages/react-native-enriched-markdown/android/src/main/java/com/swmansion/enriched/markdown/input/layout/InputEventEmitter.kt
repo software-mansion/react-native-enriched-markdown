@@ -173,6 +173,7 @@ class InputEventEmitter(
         isStrikethrough = isActive(StyleType.STRIKETHROUGH),
         isSpoiler = isActive(StyleType.SPOILER),
         isLink = isActive(StyleType.LINK),
+        headingLevel = view.headingLevelAtCursor(),
       ),
     )
   }

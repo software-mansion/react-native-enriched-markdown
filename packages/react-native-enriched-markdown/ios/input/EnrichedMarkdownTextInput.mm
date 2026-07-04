@@ -1462,7 +1462,7 @@ using namespace facebook::react;
       .strikethrough = {.isActive = strikethroughActive},
       .spoiler = {.isActive = spoilerActive},
       .link = {.isActive = linkActive},
-      .heading = {.level = static_cast<int>(headingLevel)},
+      .heading = {.isActive = headingLevel > 0, .level = static_cast<int>(headingLevel)},
   });
 }
 
@@ -1533,6 +1533,7 @@ using namespace facebook::react;
   BOOL strikethroughActive = isActive(ENRMInputStyleTypeStrikethrough);
   BOOL spoilerActive = isActive(ENRMInputStyleTypeSpoiler);
   BOOL linkActive = isActive(ENRMInputStyleTypeLink);
+  NSInteger headingLevel = [self headingLevelForCursorParagraph];
 
   eventEmitter->onContextMenuItemPress({
       .itemText = std::string(itemText.UTF8String),
@@ -1547,6 +1548,7 @@ using namespace facebook::react;
               .strikethrough = {.isActive = strikethroughActive},
               .spoiler = {.isActive = spoilerActive},
               .link = {.isActive = linkActive},
+              .heading = {.isActive = headingLevel > 0, .level = static_cast<int>(headingLevel)},
           },
   });
 }
@@ -1689,8 +1691,6 @@ using namespace facebook::react;
 
 #if !TARGET_OS_OSX
   if (newLength == 0) {
-    // Keep typing heading-sized when a heading anchor survives the emptied
-    // document; otherwise revert to the base font.
     if ([self headingLevelForCursorParagraph] > 0) {
       [self syncTypingAttributesWithCursorBlock];
     } else {
@@ -1758,8 +1758,6 @@ using namespace facebook::react;
       NSString *paragraphText = [text substringWithRange:paragraphRange];
       BOOL isEmpty = paragraphText.length == 0 || [paragraphText isEqualToString:@"\n"];
       if (isEmpty) {
-        // An empty heading line keeps its zero-length anchor — stay
-        // heading-sized; otherwise reset to the base font.
         if ([self headingLevelForCursorParagraph] > 0) {
           [self syncTypingAttributesWithCursorBlock];
         } else {

@@ -76,7 +76,7 @@ Headings are block-level: a heading applies to the whole paragraph the cursor (o
 <Button title="H1" onPress={() => ref.current?.toggleHeading(1)} />
 ```
 
-Calling `toggleHeading` with the level already applied to the cursor's paragraph turns the heading back into a regular paragraph. The cursor's current heading level is reported through the [`onChangeState`](API_REFERENCE.md#onchangestate) payload as `heading.level` (`0` when the paragraph is not a heading), so you can highlight the active level in your toolbar.
+Calling `toggleHeading` with the level already applied to the cursor's paragraph turns the heading back into a regular paragraph. The cursor's current heading level is reported through the [`onChangeState`](API_REFERENCE.md#onchangestate) payload as `heading: { isActive, level }` (`level` is `0` when the paragraph is not a heading), so you can highlight the active level in your toolbar.
 
 Behavior notes:
 

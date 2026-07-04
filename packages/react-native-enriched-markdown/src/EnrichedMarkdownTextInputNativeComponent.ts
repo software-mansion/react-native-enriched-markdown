@@ -73,8 +73,7 @@ export interface OnChangeStateEvent {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
-  // Heading level of the cursor's paragraph: 0 = none (paragraph), 1-6 = H1-H6.
-  heading: { level: CodegenTypes.Int32 };
+  heading: { isActive: boolean; level: CodegenTypes.Int32 };
 }
 
 export interface OnRequestMarkdownResultEvent {
@@ -164,6 +163,7 @@ export interface OnContextMenuItemPressEvent {
     strikethrough: { isActive: boolean };
     spoiler: { isActive: boolean };
     link: { isActive: boolean };
+    heading: { isActive: boolean; level: CodegenTypes.Int32 };
   };
 }
 

@@ -128,8 +128,6 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
     paragraphRange.length--;
   }
 
-  // Only headings persist on an empty line (as a zero-length anchor); other
-  // block types have nothing to anchor.
   if (paragraphRange.length == 0 && ENRMHeadingLevelForBlockType(type) == 0) {
     return;
   }
@@ -190,8 +188,6 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
 
   removeIndexesInReverse(_ranges, indexesToRemove);
 
-  // Prune zero-length ranges, but keep zero-length headings: they anchor an
-  // emptied-but-still-present heading line (see the collapse rule above).
   NSMutableIndexSet *emptyIndexes = [NSMutableIndexSet indexSet];
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
     ENRMBlockRange *range = _ranges[idx];
@@ -227,8 +223,6 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
       lineRange.length--;
     }
 
-    // Headings persist on an empty line as a zero-length anchor; other
-    // collapsed ranges are dropped.
     BOOL isHeading = ENRMHeadingLevelForBlockType(blockRange.type) > 0;
     if ((lineRange.length == 0 && !isHeading) || (NSInteger)lineRange.location <= previousEnd) {
       [indexesToRemove addIndex:idx];

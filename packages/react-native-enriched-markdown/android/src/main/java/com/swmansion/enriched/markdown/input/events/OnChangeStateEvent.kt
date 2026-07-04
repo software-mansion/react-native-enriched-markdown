@@ -45,7 +45,10 @@ class OnChangeStateEvent(
       )
       putMap(
         "heading",
-        Arguments.createMap().apply { putInt("level", headingLevel) },
+        Arguments.createMap().apply {
+          putBoolean("isActive", headingLevel > 0)
+          putInt("level", headingLevel)
+        },
       )
     }
 

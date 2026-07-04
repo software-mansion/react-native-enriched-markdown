@@ -611,7 +611,7 @@ Fires when the text selection changes.
 
 ### `onChangeState`
 
-Fires when the active style state changes. The payload provides a nested object for each inline style with an `isActive` property, plus the cursor paragraph's `heading.level`.
+Fires when the active style state changes. The payload provides a nested object for each style with an `isActive` property; `heading` additionally carries the cursor paragraph's `level` (`0` when it is not a heading).
 
 | Type                              | Default Value | Platform |
 | --------------------------------- | ------------- | -------- |
@@ -628,7 +628,7 @@ interface StyleState {
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
   // Heading level of the cursor's paragraph: 0 = none, 1-6 = H1-H6.
-  heading: { level: number };
+  heading: { isActive: boolean; level: number };
 }
 ```
 
