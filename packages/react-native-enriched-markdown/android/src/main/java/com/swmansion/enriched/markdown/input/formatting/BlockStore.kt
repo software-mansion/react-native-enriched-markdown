@@ -75,15 +75,9 @@ class BlockStore {
   }
 
   /**
-   * Re-normalizes every stored range back to the whole-line bounds of the line
-   * containing its start. Call after [adjustForEdit] once [text] is final:
-   * [adjustForEdit] deliberately leaves characters inserted at a range's start
-   * or end outside the range (matching [FormattingStore]'s convention), and a
-   * newline typed inside a range leaves it spanning two lines. Re-snapping to
-   * line bounds re-absorbs edge-typed characters, clips a split range to its
-   * first line (the text after the caret becomes a plain paragraph), and drops
-   * blocks that a line-join landed on an earlier block's line (first wins).
-   * Idempotent: ranges already line-scoped are untouched.
+   * Snaps every stored range to the line bounds of its start position.
+   * Absorbs edge-typed chars, clips split ranges to first line, drops
+   * duplicates. Call after [adjustForEdit] once [text] is final. Idempotent.
    */
   fun normalizeToLineBounds(text: CharSequence) {
     if (ranges.isEmpty()) return

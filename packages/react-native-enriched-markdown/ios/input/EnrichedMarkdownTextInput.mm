@@ -48,6 +48,7 @@ using namespace facebook::react;
 #endif
 - (void)setupTextView;
 - (void)applyFormatting;
+- (void)applyFormattingScopedToEditAtLocation:(NSUInteger)editLocation insertedLength:(NSUInteger)insertedLength;
 - (void)toggleInlineStyle:(ENRMInputStyleType)styleType;
 - (void)resetBaseTypingAttributes;
 @end
@@ -604,9 +605,6 @@ using namespace facebook::react;
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
   [_blockStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
-  // Blocks are line-scoped: snap ranges back to whole-line bounds so characters
-  // inserted at a line's edges rejoin the block and a newline split clips the
-  // block to its first line.
   [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
 
   for (ENRMFormattingRange *range in ranges) {
@@ -654,6 +652,29 @@ using namespace facebook::react;
 
 - (void)applyFormatting
 {
+  [self applyFormattingScopedToRange:NSMakeRange(0, ENRMGetPlainText(_textView).length)];
+}
+
+/// Per-keystroke variant: re-applies inline and block attributes only on the
+/// line(s) touched by the edit, mirroring Android's applyFormattingScopedToEdit.
+- (void)applyFormattingScopedToEditAtLocation:(NSUInteger)editLocation insertedLength:(NSUInteger)insertedLength
+{
+  NSString *plainText = ENRMGetPlainText(_textView);
+  NSUInteger textLength = plainText.length;
+  if (textLength == 0) {
+    [self applyFormatting];
+    return;
+  }
+
+  NSUInteger rawStart = MIN(editLocation, textLength);
+  NSUInteger rawEnd = MIN(editLocation + insertedLength, textLength);
+  rawEnd = MAX(rawEnd, rawStart);
+  NSRange scope = [plainText lineRangeForRange:NSMakeRange(rawStart, rawEnd - rawStart)];
+  [self applyFormattingScopedToRange:scope];
+}
+
+- (void)applyFormattingScopedToRange:(NSRange)scope
+{
   if (_isApplyingFormatting) {
     return;
   }
@@ -664,8 +685,11 @@ using namespace facebook::react;
 
   NSRange savedSelection = _textView.selectedRange;
 
-  [_formatter applyFormattingRanges:_formattingStore.allRanges toTextView:_textView style:_formatterStyle];
-  [_formatter applyBlockRanges:_blockStore.allRanges toTextView:_textView style:_formatterStyle];
+  [_formatter applyFormattingRanges:_formattingStore.allRanges
+                         toTextView:_textView
+                              style:_formatterStyle
+                      scopedToRange:scope];
+  [_formatter applyBlockRanges:_blockStore.allRanges toTextView:_textView style:_formatterStyle scopedToRange:scope];
   [_detectorPipeline refreshAllStyling];
   [self applyWritingDirection];
 
@@ -1502,9 +1526,6 @@ using namespace facebook::react;
 
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
   [_blockStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
-  // Blocks are line-scoped: snap ranges back to whole-line bounds so characters
-  // inserted at a line's edges rejoin the block and a newline split clips the
-  // block to its first line.
   [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
 
   if (insertedLength > 0) {
@@ -1548,7 +1569,7 @@ using namespace facebook::react;
   }
 #endif
 
-  [self applyFormatting];
+  [self applyFormattingScopedToEditAtLocation:editLocation insertedLength:insertedLength];
 
   NSUInteger clampedEditLocation = MIN(editLocation, newLength);
   NSUInteger clampedInsertedLength = MIN(insertedLength, newLength - clampedEditLocation);

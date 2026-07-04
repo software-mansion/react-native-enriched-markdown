@@ -24,6 +24,7 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
   CGFloat _headingFontSizes[7];
   NSString *_headingFontWeights[7];
   RCTUIColor *_headingColors[7];
+  UIFont *_headingFontCache[7];
 }
 
 - (instancetype)init
@@ -72,6 +73,7 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
 {
   if ([self isValidHeadingLevel:level]) {
     _headingFontSizes[level] = fontSize;
+    _headingFontCache[level] = nil;
   }
 }
 
@@ -79,6 +81,7 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
 {
   if ([self isValidHeadingLevel:level]) {
     _headingFontWeights[level] = [fontWeight copy];
+    _headingFontCache[level] = nil;
   }
 }
 
@@ -100,22 +103,37 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
     return _baseFont;
   }
 
+  [self invalidateCacheIfNeeded];
+
+  UIFont *cached = _headingFontCache[level];
+  if (cached) {
+    return cached;
+  }
+
   CGFloat size = _headingFontSizes[level];
   if (size <= 0.0) {
     size = _baseFont.pointSize * kDefaultHeadingScale[level];
   }
 
   NSString *weightString = _headingFontWeights[level];
-  if (weightString.length > 0) {
-    return [UIFont systemFontOfSize:size weight:ENRMFontWeightFromString(weightString)];
+  UIFont *font = weightString.length > 0 ? [UIFont systemFontOfSize:size weight:ENRMFontWeightFromString(weightString)]
+                                         : [_baseFont fontWithSize:size];
+  _headingFontCache[level] = font;
+  return font;
+}
+
+- (void)clearHeadingFontCache
+{
+  for (NSInteger level = 0; level <= 6; level++) {
+    _headingFontCache[level] = nil;
   }
-  return [_baseFont fontWithSize:size];
 }
 
 - (void)invalidateCacheIfNeeded
 {
   if (_lastBaseFont != _baseFont) {
     [_fontCache removeAllObjects];
+    [self clearHeadingFontCache];
     _lastBaseFont = _baseFont;
   }
 }
@@ -123,6 +141,7 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
 - (void)invalidateFontCache
 {
   [_fontCache removeAllObjects];
+  [self clearHeadingFontCache];
   _lastBaseFont = nil;
 }
 
@@ -171,11 +190,6 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
     }
     _styleHandlers = [map copy];
 
-    // Block handlers are registered here as concrete block types are added.
-    // A handler instance maps to one ENRMInputBlockType, but a single
-    // ENRMHeadingBlockHandler serves all six heading levels (it dispatches on
-    // blockRange.level), so the same instance is registered under all six
-    // heading keys.
     ENRMHeadingBlockHandler *headingHandler = [[ENRMHeadingBlockHandler alloc] init];
     NSMutableDictionary<NSNumber *, id<ENRMBlockHandler>> *blockMap = [NSMutableDictionary dictionary];
     for (NSInteger level = 1; level <= 6; level++) {
@@ -200,6 +214,17 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
                    toTextView:(ENRMPlatformTextView *)textView
                         style:(ENRMInputFormatterStyle *)style
 {
+  [self applyFormattingRanges:ranges
+                   toTextView:textView
+                        style:style
+                scopedToRange:NSMakeRange(0, textView.textStorage.length)];
+}
+
+- (void)applyFormattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
+                   toTextView:(ENRMPlatformTextView *)textView
+                        style:(ENRMInputFormatterStyle *)style
+                scopedToRange:(NSRange)scope
+{
   NSTextStorage *textStorage = textView.textStorage;
   NSUInteger textLength = textStorage.length;
 
@@ -207,18 +232,24 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
     return;
   }
 
-  NSRange fullTextRange = NSMakeRange(0, textLength);
+  NSUInteger scopeStart = MIN(scope.location, textLength);
+  NSUInteger scopeEnd = MIN(NSMaxRange(scope), textLength);
+  if (scopeEnd <= scopeStart) {
+    return;
+  }
+  NSRange scopeRange = NSMakeRange(scopeStart, scopeEnd - scopeStart);
+  NSUInteger scopeLength = scopeRange.length;
 
   [textStorage beginEditing];
 
-  [textStorage addAttribute:NSFontAttributeName value:style.baseFont range:fullTextRange];
-  [textStorage addAttribute:NSForegroundColorAttributeName value:style.baseTextColor range:fullTextRange];
-  [textStorage removeAttribute:NSUnderlineStyleAttributeName range:fullTextRange];
-  [textStorage removeAttribute:NSStrikethroughStyleAttributeName range:fullTextRange];
-  [textStorage removeAttribute:NSBackgroundColorAttributeName range:fullTextRange];
+  [textStorage addAttribute:NSFontAttributeName value:style.baseFont range:scopeRange];
+  [textStorage addAttribute:NSForegroundColorAttributeName value:style.baseTextColor range:scopeRange];
+  [textStorage removeAttribute:NSUnderlineStyleAttributeName range:scopeRange];
+  [textStorage removeAttribute:NSStrikethroughStyleAttributeName range:scopeRange];
+  [textStorage removeAttribute:NSBackgroundColorAttributeName range:scopeRange];
 
   UIFontDescriptorSymbolicTraits *traitMap =
-      (UIFontDescriptorSymbolicTraits *)calloc(textLength, sizeof(UIFontDescriptorSymbolicTraits));
+      (UIFontDescriptorSymbolicTraits *)calloc(scopeLength, sizeof(UIFontDescriptorSymbolicTraits));
   if (!traitMap) {
     [textStorage endEditing];
     return;
@@ -229,6 +260,13 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
       continue;
     }
 
+    // Ranges straddling the scope boundary are clipped: attributes are
+    // per-character and the out-of-scope part is untouched by the reset above.
+    NSRange clipped = NSIntersectionRange(formattingRange.range, scopeRange);
+    if (clipped.length == 0) {
+      continue;
+    }
+
     id<ENRMStyleHandler> handler = _styleHandlers[@(formattingRange.type)];
     if (!handler) {
       continue;
@@ -236,31 +274,30 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
 
     UIFontDescriptorSymbolicTraits traits = [handler fontTraits];
     if (traits != 0) {
-      NSUInteger start = formattingRange.range.location;
-      NSUInteger end = NSMaxRange(formattingRange.range);
+      NSUInteger start = clipped.location;
+      NSUInteger end = NSMaxRange(clipped);
       for (NSUInteger i = start; i < end; i++) {
-        traitMap[i] |= traits;
+        traitMap[i - scopeStart] |= traits;
       }
     }
 
-    [handler applyNonFontAttributesToTextStorage:textStorage
-                                           range:formattingRange.range
-                                 formattingRange:formattingRange
-                                           style:style];
+    [handler applyNonFontAttributesToTextStorage:textStorage range:clipped formattingRange:formattingRange style:style];
   }
 
   NSUInteger runStart = 0;
   UIFontDescriptorSymbolicTraits currentTraits = traitMap[0];
 
-  for (NSUInteger i = 1; i <= textLength; i++) {
-    UIFontDescriptorSymbolicTraits nextTraits = (i < textLength) ? traitMap[i] : ~currentTraits;
+  for (NSUInteger i = 1; i <= scopeLength; i++) {
+    UIFontDescriptorSymbolicTraits nextTraits = (i < scopeLength) ? traitMap[i] : ~currentTraits;
     if (nextTraits != currentTraits) {
       if (currentTraits != 0) {
         UIFont *font = [style fontForTraits:currentTraits];
-        [textStorage addAttribute:NSFontAttributeName value:font range:NSMakeRange(runStart, i - runStart)];
+        [textStorage addAttribute:NSFontAttributeName
+                            value:font
+                            range:NSMakeRange(scopeStart + runStart, i - runStart)];
       }
       runStart = i;
-      currentTraits = (i < textLength) ? traitMap[i] : 0;
+      currentTraits = (i < scopeLength) ? traitMap[i] : 0;
     }
   }
 
@@ -270,8 +307,8 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
 
   NSLayoutManager *layoutManager = textStorage.layoutManagers.firstObject;
   if (layoutManager) {
-    [layoutManager invalidateLayoutForCharacterRange:fullTextRange actualCharacterRange:NULL];
-    [layoutManager ensureLayoutForCharacterRange:fullTextRange];
+    [layoutManager invalidateLayoutForCharacterRange:scopeRange actualCharacterRange:NULL];
+    [layoutManager ensureLayoutForCharacterRange:scopeRange];
   }
 
   ENRMSetNeedsDisplay(textView);
@@ -280,6 +317,17 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
 - (void)applyBlockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
               toTextView:(ENRMPlatformTextView *)textView
                    style:(ENRMInputFormatterStyle *)style
+{
+  [self applyBlockRanges:blockRanges
+              toTextView:textView
+                   style:style
+           scopedToRange:NSMakeRange(0, textView.textStorage.length)];
+}
+
+- (void)applyBlockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
+              toTextView:(ENRMPlatformTextView *)textView
+                   style:(ENRMInputFormatterStyle *)style
+           scopedToRange:(NSRange)scope
 {
   if (_blockHandlers.count == 0) {
     return;
@@ -291,6 +339,13 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
     return;
   }
 
+  NSUInteger scopeStart = MIN(scope.location, textLength);
+  NSUInteger scopeEnd = MIN(NSMaxRange(scope), textLength);
+  if (scopeEnd <= scopeStart) {
+    return;
+  }
+  NSRange scopeRange = NSMakeRange(scopeStart, scopeEnd - scopeStart);
+
   [textStorage beginEditing];
 
   // Reset pass: strip everything the previous block pass applied — paragraphs
@@ -301,7 +356,7 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
   // must still clear its styling.
   NSMutableArray<NSValue *> *previouslyClaimedRanges = [NSMutableArray array];
   [textStorage enumerateAttribute:ENRMBlockTypeAttributeName
-                          inRange:NSMakeRange(0, textLength)
+                          inRange:scopeRange
                           options:0
                        usingBlock:^(id value, NSRange range, BOOL *stop) {
                          if (value != nil) {
@@ -317,6 +372,12 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
 
   for (ENRMBlockRange *blockRange in blockRanges) {
     if (blockRange.range.length == 0 || NSMaxRange(blockRange.range) > textLength) {
+      continue;
+    }
+
+    // Blocks are line-scoped and the scope covers whole lines, so a block
+    // either lies fully inside the scope or fully outside it.
+    if (NSIntersectionRange(blockRange.range, scopeRange).length == 0) {
       continue;
     }
 
@@ -343,14 +404,7 @@ static const CGFloat kDefaultHeadingScale[] = {0.0, 2.0, 1.5, 1.17, 1.0, 0.83, 0
     attributes[ENRMBlockTypeAttributeName] = @(blockRange.type);
     attributes[ENRMBlockLevelAttributeName] = @(blockRange.level);
 
-    // Font composition: applyFormattingRanges: (inline pass) ran first and set a
-    // per-run font carrying the bold/italic traits of each character. A block
-    // that wants to change the font *size* (a heading) supplies a target font in
-    // `attributes` but must not clobber those inline traits. So instead of
-    // overwriting NSFontAttributeName wholesale, merge the block font's size onto
-    // each existing run while preserving that run's symbolic traits — a bold word
-    // inside an H1 stays bold AND large. Non-font attributes (color, paragraph
-    // style) apply uniformly over the block range.
+    // Merge block font size onto each run, preserving inline bold/italic traits.
     UIFont *blockFont = attributes[NSFontAttributeName];
     if (blockFont) {
       [attributes removeObjectForKey:NSFontAttributeName];

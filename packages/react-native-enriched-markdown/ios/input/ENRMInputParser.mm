@@ -451,12 +451,8 @@ static NSArray<ENRMBlockRange *> *blockRangesFromContext(const ParseContext &con
     }
   }
 
-  // Block-level syntax (e.g. a heading's "# " line prefix) is structural markup,
-  // not content, and must be stripped from plain text exactly like inline
-  // delimiters — otherwise the marker survives into the editor AND the
-  // block-aware serializer re-prepends it, producing a doubled "# # ". A block's
-  // content range starts at its first text char; the marker is everything from
-  // the line start up to that char (handles "#"*level plus one-or-more spaces).
+  // Strip block markers (e.g. "# ") from plain text — same as inline delimiters.
+  // Without this the marker survives and the serializer doubles it ("# # ").
   for (ENRMBlockRange *rawBlock in rawBlockRanges) {
     NSUInteger contentStart = rawBlock.range.location;
     if (contentStart == 0 || contentStart > rawLength) {

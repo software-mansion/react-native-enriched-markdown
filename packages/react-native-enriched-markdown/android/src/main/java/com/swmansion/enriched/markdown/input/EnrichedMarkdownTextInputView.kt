@@ -253,9 +253,6 @@ class EnrichedMarkdownTextInputView(
     try {
       formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
       blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
-      // Blocks are line-scoped: snap ranges back to whole-line bounds so
-      // characters typed at a line's edges rejoin the block and a newline
-      // split clips the block to its first line.
       text?.let { blockStore.normalizeToLineBounds(it) }
       applyPendingStyles(editStart, insertedLength)
       applyFormattingScopedToEdit(editStart, insertedLength)

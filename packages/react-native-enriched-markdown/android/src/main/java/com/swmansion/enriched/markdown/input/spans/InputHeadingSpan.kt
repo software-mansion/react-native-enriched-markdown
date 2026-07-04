@@ -9,15 +9,9 @@ import com.swmansion.enriched.markdown.input.formatting.MarkdownSpan
 import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
 
 /**
- * Sizes (and optionally weights/colors) a heading line in the editor per the
- * configured per-level [InputFormatterStyle.headingStyle]. Mirrors the readonly
- * renderer's `HeadingSpan` so edit and read views size headings identically.
- *
- * It is a [MetricAffectingSpan] that only adjusts the paint's text size, weight
- * and color — it never replaces the typeface family. The current bold/italic
- * style bits already set by inline spans are preserved through [BOLD_ITALIC_MASK],
- * so a bold word inside an H1 stays both big AND bold. Tagged [MarkdownSpan] so the
- * formatter cleans up only the heading spans it created, leaving inline spans intact.
+ * Sizes and optionally weights/colors a heading line per [InputFormatterStyle.headingStyle].
+ * Preserves inline bold/italic via [BOLD_ITALIC_MASK] so emphasis composes with heading weight.
+ * Tagged [MarkdownSpan] for formatter cleanup.
  */
 class InputHeadingSpan(
   val level: Int,
