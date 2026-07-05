@@ -2,6 +2,7 @@ package com.swmansion.enriched.markdown.input.formatting
 
 import android.util.Log
 import com.swmansion.enriched.markdown.input.model.BlockRange
+import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.StyleType
 
@@ -58,11 +59,16 @@ object MarkdownSerializer {
       if (prefix.isEmpty()) continue
 
       val isZeroLength = blockRange.length == 0
+      val isListItem = blockRange.type == BlockType.UNORDERED_LIST_ITEM
       for (lineIndex in plainLines.indices) {
         val lineStart = lineStartOffsets[lineIndex]
         val lineEnd = lineStart + plainLines[lineIndex].length
         val overlaps = if (isZeroLength) lineStart == blockRange.start else lineEnd >= blockRange.start && lineStart < blockRange.end
         if (overlaps) {
+          // A marker-only list line ("- " with no content) re-parses as a setext
+          // underline for the previous line; emit an empty list line bare. An
+          // empty "# " heading is valid ATX and keeps its prefix.
+          if (isListItem && plainLines[lineIndex].replace(ZWSP, "").isEmpty()) continue
           markdownLines[lineIndex] = prefix + markdownLines[lineIndex]
         }
       }

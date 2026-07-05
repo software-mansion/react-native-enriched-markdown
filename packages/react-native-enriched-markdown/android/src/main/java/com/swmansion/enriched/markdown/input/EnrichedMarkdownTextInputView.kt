@@ -668,6 +668,7 @@ class EnrichedMarkdownTextInputView(
     } else {
       setListBlockOnLines(0)
     }
+    blockStore.normalizeToLineBounds(editable)
     applyFormattingAndEmit()
     syncEmptyListAnchor()
   }
@@ -697,6 +698,7 @@ class EnrichedMarkdownTextInputView(
         blockStore.setBlock(BlockType.UNORDERED_LIST_ITEM, newDepth, ls, le, editable)
       }
     }
+    blockStore.normalizeToLineBounds(editable)
     applyFormattingAndEmit()
     syncEmptyListAnchor()
   }
@@ -972,6 +974,7 @@ class EnrichedMarkdownTextInputView(
       }
     }
 
+    blockStore.normalizeToLineBounds(editable)
     applyFormattingAndEmit()
     syncCursorSizeWithBlock()
   }

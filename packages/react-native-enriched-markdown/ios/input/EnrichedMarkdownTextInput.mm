@@ -924,6 +924,7 @@ using namespace facebook::react;
                         }];
   }
 
+  [_blockStore normalizeToLineBoundsInText:text];
   [self applyFormatting];
   [self syncTypingAttributesWithCursorBlock];
   if (alreadyActive) {
@@ -981,6 +982,7 @@ using namespace facebook::react;
           forParagraphRange:paragraphRange
                      inText:text];
 
+  [_blockStore normalizeToLineBoundsInText:text];
   [self applyFormatting];
   [self syncTypingAttributesWithCursorBlock];
   [self updateEmptyBulletMarker];

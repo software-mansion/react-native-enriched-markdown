@@ -123,6 +123,8 @@ class BlockStore {
    * Absorbs edge-typed chars, clips split ranges to first line, drops
    * duplicates. On an empty line an anchored block (heading, list item)
    * persists as a zero-length anchor; any other collapsed range is dropped.
+   * List depths are clamped so an item nests at most one level under the
+   * previous adjacent item (CommonMark cannot represent orphan nesting).
    * Call after [adjustForEdit] once [text] is final. Idempotent.
    */
   fun normalizeToLineBounds(text: CharSequence) {
@@ -141,6 +143,20 @@ class BlockStore {
       range.start = lineStart
       range.end = lineEnd
       previousEnd = lineEnd
+    }
+
+    clampListDepths()
+  }
+
+  private fun clampListDepths() {
+    var prevListEnd = -2
+    var prevListDepth = -1
+    for (range in ranges) {
+      if (range.type != BlockType.UNORDERED_LIST_ITEM) continue
+      val maxDepth = if (range.start == prevListEnd + 1) prevListDepth + 1 else 0
+      if (range.level > maxDepth) range.level = maxDepth
+      prevListEnd = range.end
+      prevListDepth = range.level
     }
   }
 

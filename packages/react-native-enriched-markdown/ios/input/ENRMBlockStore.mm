@@ -196,6 +196,24 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   }
 
   ENRMRemoveIndexesInReverse(_ranges, indexesToRemove);
+  [self clampListDepths];
+}
+
+- (void)clampListDepths
+{
+  NSInteger prevListEnd = -2;
+  NSInteger prevListDepth = -1;
+  for (ENRMBlockRange *blockRange in _ranges) {
+    if (blockRange.type != ENRMInputBlockTypeUnorderedListItem) {
+      continue;
+    }
+    NSInteger maxDepth = ((NSInteger)blockRange.range.location == prevListEnd + 1) ? prevListDepth + 1 : 0;
+    if (blockRange.level > maxDepth) {
+      blockRange.level = maxDepth;
+    }
+    prevListEnd = (NSInteger)NSMaxRange(blockRange.range);
+    prevListDepth = blockRange.level;
+  }
 }
 
 @end
