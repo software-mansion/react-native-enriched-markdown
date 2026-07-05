@@ -8,12 +8,17 @@ import com.swmansion.enriched.markdown.input.model.StyleType
 object MarkdownSerializer {
   private const val TAG = "MarkdownSerializer"
 
+  // Zero-width space used by the editor to anchor an empty bullet line; it is an
+  // internal editing aid and must never appear in serialized markdown.
+  private const val ZWSP = "\u200B"
+
   /**
    * Block-aware serialization: serializes inline styles exactly as the inline-only
    * overload, then prepends each line's block prefix. [blockPrefixProvider] is
    * asked, per block range, for the markdown line marker (e.g. `"# "`, `"- "`);
    * returning `""` leaves the line unprefixed. With empty [blockRanges] the output
-   * is identical to the inline-only overload.
+   * is identical to the inline-only overload. Any ZWSP empty-line anchor is stripped
+   * so an empty bullet still serializes to a bare `"- "` rather than `"- ​"`.
    */
   fun serialize(
     text: String,
@@ -22,7 +27,7 @@ object MarkdownSerializer {
     blockPrefixProvider: (BlockRange) -> String,
   ): String {
     val inlineMarkdown = serialize(text, ranges)
-    if (blockRanges.isEmpty()) return inlineMarkdown
+    if (blockRanges.isEmpty()) return inlineMarkdown.replace(ZWSP, "")
 
     // Block prefixes attach per line. Inline serialization only inserts inline
     // delimiters (never newlines), so the serialized output has the same line
@@ -37,14 +42,15 @@ object MarkdownSerializer {
     // not crash the host app over lost block prefixes.
     if (plainLines.size != markdownLines.size) {
       Log.e(TAG, "Block serialization line-count invariant violated: plain=${plainLines.size} markdown=${markdownLines.size}")
-      return inlineMarkdown
+      return inlineMarkdown.replace(ZWSP, "")
     }
 
+    // Plain-text character offset at the start of each line.
     val lineStartOffsets = IntArray(plainLines.size)
     var runningOffset = 0
     for (i in plainLines.indices) {
       lineStartOffsets[i] = runningOffset
-      runningOffset += plainLines[i].length + 1
+      runningOffset += plainLines[i].length + 1 // +1 for the '\n' separator
     }
 
     for (blockRange in blockRanges) {
@@ -62,7 +68,7 @@ object MarkdownSerializer {
       }
     }
 
-    return markdownLines.joinToString("\n")
+    return markdownLines.joinToString("\n").replace(ZWSP, "")
   }
 
   fun serialize(

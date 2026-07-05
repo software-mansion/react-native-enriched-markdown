@@ -27,6 +27,7 @@ class InputEventEmitter(
 ) {
   private var prevState: Map<StyleType, Boolean> = emptyMap()
   private var prevHeadingLevel: Int = 0
+  private var prevUnorderedList: Pair<Boolean, Int> = false to 0
   private var prevCaretRect: CaretRect? = null
 
   fun emitChangeText() {
@@ -52,10 +53,12 @@ class InputEventEmitter(
         isStyleEffectivelyActive(style, pos)
       }
     val headingLevel = view.headingLevelAtCursor()
+    val unorderedList = view.unorderedListStateAtCursor()
 
-    if (current == prevState && headingLevel == prevHeadingLevel) return
+    if (current == prevState && headingLevel == prevHeadingLevel && unorderedList == prevUnorderedList) return
     prevState = current
     prevHeadingLevel = headingLevel
+    prevUnorderedList = unorderedList
 
     dispatch(
       OnChangeStateEvent(
@@ -68,6 +71,8 @@ class InputEventEmitter(
         current[StyleType.SPOILER] ?: false,
         current[StyleType.LINK] ?: false,
         headingLevel,
+        unorderedList.first,
+        unorderedList.second,
       ),
     )
   }
@@ -159,6 +164,7 @@ class InputEventEmitter(
         isStyleEffectivelyActive(type, selectionStart)
       }
 
+    val contextMenuListState = view.unorderedListStateAtCursor()
     dispatch(
       OnContextMenuItemPressEvent(
         surfaceId(),
@@ -174,6 +180,8 @@ class InputEventEmitter(
         isSpoiler = isActive(StyleType.SPOILER),
         isLink = isActive(StyleType.LINK),
         headingLevel = view.headingLevelAtCursor(),
+        isUnorderedList = contextMenuListState.first,
+        unorderedListDepth = contextMenuListState.second,
       ),
     )
   }
@@ -190,6 +198,9 @@ class InputEventEmitter(
 
   private fun serializeToMarkdown(): String {
     val plainText = view.text?.toString() ?: ""
+    // Each block resolves its markdown line prefix through its registered handler.
+    // With no block handlers registered the provider returns "" for every block
+    // and output equals the inline-only serialization.
     return MarkdownSerializer.serialize(
       plainText,
       view.allFormattingRangesForSerialization(),

@@ -19,7 +19,20 @@ typedef NS_ENUM(NSInteger, ENRMInputBlockType) {
   ENRMInputBlockTypeHeading4 = 4,
   ENRMInputBlockTypeHeading5 = 5,
   ENRMInputBlockTypeHeading6 = 6,
+  ENRMInputBlockTypeUnorderedListItem = 7,
 };
+
+/// Maximum bullet-list nesting depth (0-based). Depth is carried as the block's
+/// level payload (ENRMBlockRange.level), clamped into [0, kENRMMaxListDepth].
+static const NSInteger kENRMMaxListDepth = 5;
+
+/// Bullet-list layout metrics (points). Shared by the list block handler (which
+/// reserves the head-indent column via the paragraph style) and the layout
+/// manager (which draws the marker glyph into that column). Text for a list item
+/// at depth d starts at (d + 1) * kENRMListIndentPerDepth from the leading edge;
+/// the marker is centered kENRMListBulletGap before the text.
+static const CGFloat kENRMListIndentPerDepth = 18.0;
+static const CGFloat kENRMListBulletGap = 9.0;
 
 /// Maps a heading level (1-6) to its ENRMInputBlockType. Levels outside 1-6 are
 /// clamped into range. The contiguous Heading1..Heading6 enum values make this a
@@ -42,6 +55,15 @@ static inline NSInteger ENRMHeadingLevelForBlockType(ENRMInputBlockType type)
     return (NSInteger)(type - ENRMInputBlockTypeHeading1) + 1;
   }
   return 0;
+}
+
+/// Whether an emptied line of this type keeps a zero-length anchor (an emptied
+/// heading stays a heading, an emptied bullet keeps its marker) instead of
+/// reverting to a plain paragraph.
+static inline BOOL ENRMBlockTypePersistsWhenEmpty(ENRMInputBlockType type)
+{
+  return (type >= ENRMInputBlockTypeHeading1 && type <= ENRMInputBlockTypeHeading6) ||
+         type == ENRMInputBlockTypeUnorderedListItem;
 }
 
 /// NSAttributedString attribute carrying the ENRMInputBlockType (boxed NSNumber)

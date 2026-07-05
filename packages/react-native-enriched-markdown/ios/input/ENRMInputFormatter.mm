@@ -8,6 +8,7 @@
 #import "ENRMStrikethroughStyleHandler.h"
 #import "ENRMStyleHandler.h"
 #import "ENRMUnderlineStyleHandler.h"
+#import "ENRMUnorderedListBlockHandler.h"
 #import "FontUtils.h"
 
 @implementation ENRMInputLinkVariantStyle
@@ -52,6 +53,7 @@
   copy.linkVariants = [_linkVariants copy];
   copy.spoilerColor = _spoilerColor;
   copy.spoilerBackgroundColor = _spoilerBackgroundColor;
+  copy.listItemSpacing = _listItemSpacing;
   for (NSInteger level = 1; level <= 6; level++) {
     [copy setHeadingFontSize:_headingFontSizes[level] forLevel:level];
     [copy setHeadingFontWeight:_headingFontWeights[level] forLevel:level];
@@ -191,6 +193,7 @@
     for (NSInteger level = 1; level <= 6; level++) {
       blockMap[@(ENRMBlockTypeForHeadingLevel(level))] = headingHandler;
     }
+    blockMap[@(ENRMInputBlockTypeUnorderedListItem)] = [[ENRMUnorderedListBlockHandler alloc] init];
     _blockHandlers = [blockMap copy];
   }
   return self;

@@ -254,7 +254,7 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
   NSUInteger runningOffset = 0;
   for (NSString *line in plainLines) {
     [lineStartOffsets addObject:@(runningOffset)];
-    runningOffset += line.length + 1;
+    runningOffset += line.length + 1; // +1 for the '\n' separator
   }
 
   for (ENRMBlockRange *blockRange in blockRanges) {

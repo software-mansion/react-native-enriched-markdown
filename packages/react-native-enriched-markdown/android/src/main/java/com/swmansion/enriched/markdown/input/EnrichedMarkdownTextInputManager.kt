@@ -120,7 +120,7 @@ class EnrichedMarkdownTextInputManager :
     view: EnrichedMarkdownTextInputView?,
     value: String?,
   ) {
-    view?.hint = value
+    view?.setUserHint(value)
   }
 
   @ReactProp(name = "placeholderTextColor", customType = "Color")
@@ -198,11 +198,18 @@ class EnrichedMarkdownTextInputManager :
     if (view == null || value == null) return
 
     val style = MarkdownStyleParser.parse(value)
-    view.setAutoLinkStyle(style)
-    val changed = view.formatter.updateStyle(style)
+    val changed = view.setMarkdownStyleFromProps(style)
     if (changed) {
       view.applyFormatting()
     }
+  }
+
+  @ReactProp(name = "listItemSpacing", defaultInt = 0)
+  override fun setListItemSpacing(
+    view: EnrichedMarkdownTextInputView?,
+    value: Int,
+  ) {
+    view?.setListItemSpacingFromProps(value.toFloat())
   }
 
   @ReactProp(name = "color", customType = "Color")
@@ -427,6 +434,18 @@ class EnrichedMarkdownTextInputManager :
     level: Int,
   ) {
     view?.toggleHeading(level)
+  }
+
+  override fun toggleUnorderedList(view: EnrichedMarkdownTextInputView?) {
+    view?.toggleUnorderedList()
+  }
+
+  override fun indentList(view: EnrichedMarkdownTextInputView?) {
+    view?.indentList()
+  }
+
+  override fun outdentList(view: EnrichedMarkdownTextInputView?) {
+    view?.outdentList()
   }
 
   override fun setLink(

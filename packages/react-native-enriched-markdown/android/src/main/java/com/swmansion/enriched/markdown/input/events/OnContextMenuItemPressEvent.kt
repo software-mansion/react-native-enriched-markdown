@@ -18,6 +18,8 @@ class OnContextMenuItemPressEvent(
   private val isSpoiler: Boolean,
   private val isLink: Boolean,
   private val headingLevel: Int,
+  private val isUnorderedList: Boolean,
+  private val unorderedListDepth: Int,
 ) : Event<OnContextMenuItemPressEvent>(surfaceId, viewId) {
   override fun getEventName(): String = EVENT_NAME
 
@@ -43,6 +45,13 @@ class OnContextMenuItemPressEvent(
             Arguments.createMap().apply {
               putBoolean("isActive", headingLevel > 0)
               putInt("level", headingLevel)
+            },
+          )
+          putMap(
+            "unorderedList",
+            Arguments.createMap().apply {
+              putBoolean("isActive", isUnorderedList)
+              putInt("depth", unorderedListDepth)
             },
           )
         },

@@ -97,6 +97,7 @@ export interface StyleState {
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
   heading: { isActive: boolean; level: HeadingLevel };
+  unorderedList: { isActive: boolean; depth: number };
 }
 
 export interface ContextMenuItem {
@@ -131,6 +132,9 @@ export interface EnrichedMarkdownTextInputInstance {
   toggleStrikethrough: () => void;
   toggleSpoiler: () => void;
   toggleHeading: (level: HeadingLevel) => void;
+  toggleUnorderedList: () => void;
+  indentList: () => void;
+  outdentList: () => void;
   setLink: (url: string) => void;
   insertLink: (text: string, url: string) => void;
   insertMention: (displayText: string, url: string) => void;
@@ -242,6 +246,12 @@ export interface EnrichedMarkdownTextInputProps extends Omit<
    * @platform ios
    */
   writingDirection?: 'auto' | 'ltr' | 'rtl' | 'first-strong';
+  /**
+   * Vertical spacing (points) above each bullet list item so items read as
+   * separate rows. iOS uses `paragraphSpacingBefore`; Android a `LineHeightSpan`.
+   * @default 0
+   */
+  listItemSpacing?: number;
 }
 
 type PendingRequest<T> = {
@@ -289,6 +299,7 @@ export const EnrichedMarkdownTextInput = ({
   formatMenuConfig,
   linkRegex: _linkRegex,
   writingDirection = 'first-strong',
+  listItemSpacing = 0,
   ...rest
 }: EnrichedMarkdownTextInputProps) => {
   const nativeRef = useRef<NativeRef | null>(null);
@@ -428,8 +439,16 @@ export const EnrichedMarkdownTextInput = ({
 
   const handleChangeState = useCallback(
     (e: NativeSyntheticEvent<OnChangeStateEvent>) => {
-      const { bold, italic, underline, strikethrough, spoiler, link, heading } =
-        e.nativeEvent;
+      const {
+        bold,
+        italic,
+        underline,
+        strikethrough,
+        spoiler,
+        link,
+        heading,
+        unorderedList,
+      } = e.nativeEvent;
       onChangeState?.({
         bold,
         italic,
@@ -438,6 +457,7 @@ export const EnrichedMarkdownTextInput = ({
         spoiler,
         link,
         heading: { ...heading, level: toHeadingLevel(heading.level) },
+        unorderedList,
       });
     },
     [onChangeState]
@@ -550,6 +570,9 @@ export const EnrichedMarkdownTextInput = ({
       toggleStrikethrough: () => Commands.toggleStrikethrough(commandRef),
       toggleSpoiler: () => Commands.toggleSpoiler(commandRef),
       toggleHeading: (level) => Commands.toggleHeading(commandRef, level),
+      toggleUnorderedList: () => Commands.toggleUnorderedList(commandRef),
+      indentList: () => Commands.indentList(commandRef),
+      outdentList: () => Commands.outdentList(commandRef),
       setLink: (url) => Commands.setLink(commandRef, url),
       insertLink: (text, url) => Commands.insertLink(commandRef, text, url),
       insertMention: (displayText, url) =>
@@ -590,6 +613,7 @@ export const EnrichedMarkdownTextInput = ({
       multiline={multiline}
       cursorColor={cursorColor}
       selectionColor={selectionColor}
+      listItemSpacing={listItemSpacing}
       isOnChangeMarkdownSet={onChangeMarkdown !== undefined}
       onChangeText={handleChangeText as NativeProps['onChangeText']}
       onChangeMarkdown={handleChangeMarkdown as NativeProps['onChangeMarkdown']}

@@ -11,6 +11,10 @@ data class InputFormatterStyle(
   val spoilerBackgroundColor: Int,
   /** Per-level heading styling, indexed 0..5 for H1..H6. Always length 6. */
   val headings: List<InputHeadingStyle>,
+  /** Display density (px per dp) so block handlers can build density-correct spans without a Context. */
+  val displayDensity: Float = 1f,
+  /** Extra vertical spacing (px) above each bullet item, from the `listItemSpacing` prop. */
+  val listItemSpacingPx: Int = 0,
 ) {
   /**
    * Resolves the heading style for an H-level (1-6), clamping out-of-range levels

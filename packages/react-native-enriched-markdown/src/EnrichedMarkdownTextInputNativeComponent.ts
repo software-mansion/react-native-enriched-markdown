@@ -74,6 +74,7 @@ export interface OnChangeStateEvent {
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
   heading: { isActive: boolean; level: CodegenTypes.Int32 };
+  unorderedList: { isActive: boolean; depth: CodegenTypes.Int32 };
 }
 
 export interface OnRequestMarkdownResultEvent {
@@ -164,6 +165,7 @@ export interface OnContextMenuItemPressEvent {
     spoiler: { isActive: boolean };
     link: { isActive: boolean };
     heading: { isActive: boolean; level: CodegenTypes.Int32 };
+    unorderedList: { isActive: boolean; depth: CodegenTypes.Int32 };
   };
 }
 
@@ -272,6 +274,14 @@ export interface NativeProps extends ViewProps {
    */
   writingDirection?: CodegenTypes.WithDefault<string, 'first-strong'>;
 
+  /**
+   * Vertical spacing (points) added above each bullet list item so items read as
+   * separate rows. iOS applies it via paragraphSpacingBefore; Android via a
+   * LineHeightSpan.
+   * @default 0
+   */
+  listItemSpacing?: CodegenTypes.WithDefault<CodegenTypes.Int32, 0>;
+
   // Events
   onChangeText?: CodegenTypes.DirectEventHandler<OnChangeTextEvent>;
   onChangeMarkdown?: CodegenTypes.DirectEventHandler<OnChangeMarkdownEvent>;
@@ -312,6 +322,9 @@ interface NativeCommands {
     viewRef: React.ElementRef<ComponentType>,
     level: CodegenTypes.Int32
   ) => void;
+  toggleUnorderedList: (viewRef: React.ElementRef<ComponentType>) => void;
+  indentList: (viewRef: React.ElementRef<ComponentType>) => void;
+  outdentList: (viewRef: React.ElementRef<ComponentType>) => void;
   setLink: (viewRef: React.ElementRef<ComponentType>, url: string) => void;
   insertLink: (
     viewRef: React.ElementRef<ComponentType>,
@@ -351,6 +364,9 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'toggleStrikethrough',
     'toggleSpoiler',
     'toggleHeading',
+    'toggleUnorderedList',
+    'indentList',
+    'outdentList',
     'setLink',
     'insertLink',
     'insertMention',

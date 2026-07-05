@@ -41,6 +41,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) RCTUIColor *spoilerColor;
 @property (nonatomic, strong, nullable) RCTUIColor *spoilerBackgroundColor;
 
+/// Vertical spacing (points) added above each list item via the paragraph
+/// style's paragraphSpacingBefore, so bullets read as separate rows. Configured
+/// from the `listItemSpacing` prop; defaults to 0 (items pack tightly).
+@property (nonatomic, assign) CGFloat listItemSpacing;
+
 /// Per-level heading config, indexed by level 1-6. A nil/0 entry means the level
 /// uses a built-in default derived from the base font. Configured from the
 /// `markdownStyle.h1..h6` props.

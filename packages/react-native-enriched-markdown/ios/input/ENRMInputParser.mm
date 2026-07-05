@@ -105,6 +105,11 @@ struct ParseContext {
   std::vector<BlockInfo> openBlockStack;
   std::vector<BlockInfo> resolvedBlocks;
   size_t lastTextEnd = 0;
+  // Unordered-list nesting depth: incremented on each MD_BLOCK_UL we enter,
+  // decremented on leave. A list item's paragraph (MD_BLOCK_P with listDepth > 0)
+  // becomes an UnorderedListItem block at depth listDepth-1. md4c carries no
+  // per-item depth, so it's derived from how many UL ancestors are open.
+  NSInteger listDepth = 0;
 };
 
 static std::vector<NSUInteger> buildByteToUTF16Map(const char *utf8, size_t byteLength)
@@ -171,12 +176,31 @@ static size_t closingDelimiterEndByte(const InlineSpanInfo &span, const char *ut
 // discarded later when building results.
 static int onEnterBlock(MD_BLOCKTYPE blockType, void *detail, void *userdata)
 {
+  auto *context = static_cast<ParseContext *>(userdata);
+
+  // Bullet-list nesting is tracked by depth, not stored as its own block: the
+  // container UL only bumps the counter that its items read.
+  if (blockType == MD_BLOCK_UL) {
+    context->listDepth++;
+    return 0;
+  }
+
+  // Tag the item itself, not its inner paragraph: md4c emits MD_BLOCK_P inside
+  // items only for *loose* lists, so a tight list has no paragraph to tag. The
+  // item's range is clipped back to its own first line when building results.
+  if (blockType == MD_BLOCK_LI) {
+    BlockInfo blockInfo;
+    blockInfo.type = ENRMInputBlockTypeUnorderedListItem;
+    blockInfo.level = context->listDepth > 0 ? context->listDepth - 1 : 0;
+    context->openBlockStack.push_back(blockInfo);
+    return 0;
+  }
+
   ENRMInputBlockType mappedType;
   if (!isSupportedBlock(blockType, mappedType)) {
     return 0;
   }
 
-  auto *context = static_cast<ParseContext *>(userdata);
   BlockInfo blockInfo;
   blockInfo.level = resolveBlockLevel(blockType, detail);
   // Headings share one md4c block type but split into six ENRMInputBlockTypes by
@@ -188,12 +212,30 @@ static int onEnterBlock(MD_BLOCKTYPE blockType, void *detail, void *userdata)
 
 static int onLeaveBlock(MD_BLOCKTYPE blockType, void *, void *userdata)
 {
+  auto *context = static_cast<ParseContext *>(userdata);
+
+  if (blockType == MD_BLOCK_UL) {
+    if (context->listDepth > 0) {
+      context->listDepth--;
+    }
+    return 0;
+  }
+
+  // List items are tagged in onEnterBlock (not via isSupportedBlock); resolve
+  // them here the same way as supported blocks.
+  if (blockType == MD_BLOCK_LI) {
+    if (!context->openBlockStack.empty()) {
+      context->resolvedBlocks.push_back(context->openBlockStack.back());
+      context->openBlockStack.pop_back();
+    }
+    return 0;
+  }
+
   ENRMInputBlockType mappedType;
   if (!isSupportedBlock(blockType, mappedType)) {
     return 0;
   }
 
-  auto *context = static_cast<ParseContext *>(userdata);
   if (context->openBlockStack.empty()) {
     return 0;
   }
@@ -363,10 +405,9 @@ static NSArray<ENRMInputStyledRange *> *styledRangesFromContext(const ParseConte
 // Builds block-level ranges (raw-markdown UTF-16 coords) from the same
 // completed parse, mirroring styledRangesFromContext for inline spans.
 // Paragraph blocks (the implicit default) are omitted — only blocks a handler
-// claims are returned. In PR1 only MD_BLOCK_P is mapped, so this returns @[];
-// a heading handler's block type lights it up.
+// claims are returned.
 static NSArray<ENRMBlockRange *> *blockRangesFromContext(const ParseContext &context,
-                                                         const std::vector<NSUInteger> &byteMap)
+                                                         const std::vector<NSUInteger> &byteMap, NSString *markdown)
 {
   NSMutableArray<ENRMBlockRange *> *results = [NSMutableArray arrayWithCapacity:context.resolvedBlocks.size()];
 
@@ -383,6 +424,22 @@ static NSArray<ENRMBlockRange *> *blockRangesFromContext(const ParseContext &con
     NSUInteger contentEnd = mapByteOffset(byteMap, blockInfo.contentEndByteOffset, context.bufferLength);
     if (contentEnd <= contentStart) {
       continue;
+    }
+
+    // A list item accumulates all text in its subtree, so a parent item's range
+    // runs through its nested sublist. Clip each item to its own first line so
+    // nested items keep their own (deeper) depth rather than being overwritten
+    // by the parent's range. Input list items are single-line.
+    if (blockInfo.type == ENRMInputBlockTypeUnorderedListItem && contentEnd <= markdown.length) {
+      NSRange newline = [markdown rangeOfString:@"\n"
+                                        options:0
+                                          range:NSMakeRange(contentStart, contentEnd - contentStart)];
+      if (newline.location != NSNotFound) {
+        contentEnd = newline.location;
+      }
+      if (contentEnd <= contentStart) {
+        continue;
+      }
     }
 
     [results addObject:[ENRMBlockRange rangeWithType:blockInfo.type
@@ -431,7 +488,7 @@ static NSArray<ENRMBlockRange *> *blockRangesFromContext(const ParseContext &con
   if (runMd4cParse(markdown, context)) {
     auto byteMap = buildByteToUTF16Map(context.buffer, context.bufferLength);
     styledRanges = styledRangesFromContext(context, byteMap);
-    rawBlockRanges = blockRangesFromContext(context, byteMap);
+    rawBlockRanges = blockRangesFromContext(context, byteMap, markdown);
   }
 
   NSUInteger rawLength = markdown.length;

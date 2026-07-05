@@ -7,6 +7,7 @@ import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
 import com.swmansion.enriched.markdown.input.model.StyleType
+import com.swmansion.enriched.markdown.input.spans.InputListItemSpacingSpan
 import com.swmansion.enriched.markdown.input.styles.BlockHandler
 import com.swmansion.enriched.markdown.input.styles.BoldStyleHandler
 import com.swmansion.enriched.markdown.input.styles.HeadingBlockHandler
@@ -16,6 +17,7 @@ import com.swmansion.enriched.markdown.input.styles.SpoilerStyleHandler
 import com.swmansion.enriched.markdown.input.styles.StrikethroughStyleHandler
 import com.swmansion.enriched.markdown.input.styles.StyleHandler
 import com.swmansion.enriched.markdown.input.styles.UnderlineStyleHandler
+import com.swmansion.enriched.markdown.input.styles.UnorderedListBlockHandler
 
 /**
  * Marker interface so we only remove spans we created, leaving
@@ -37,11 +39,14 @@ class InputFormatter {
   /**
    * Block handlers, keyed by block type. A single [HeadingBlockHandler] serves all
    * six heading levels — it reads the level from the [BlockRange] — so it is mapped
-   * under every `HEADING_n` key.
+   * under every `HEADING_n` key. One [UnorderedListBlockHandler] serves every list
+   * depth (depth lives on the range), so it is mapped under the single list key.
    */
   val blockHandlers: Map<BlockType, BlockHandler> =
-    HeadingBlockHandler().let { heading ->
-      BlockType.HEADINGS.associateWith { heading }
+    buildMap {
+      val heading = HeadingBlockHandler()
+      for (type in BlockType.HEADINGS) put(type, heading)
+      put(BlockType.UNORDERED_LIST_ITEM, UnorderedListBlockHandler())
     }
 
   fun handlerForBlock(type: BlockType): BlockHandler? = blockHandlers[type]
@@ -170,23 +175,32 @@ class InputFormatter {
     }
 
     for (range in blockRanges) {
-      val isHeadingAnchor = range.length == 0 && range.type in BlockType.HEADINGS
-      if (!isHeadingAnchor && (range.start >= range.end || range.start < 0 || range.end > spannable.length)) continue
-      if (isHeadingAnchor && (range.start < 0 || range.start > spannable.length)) continue
-      if (isHeadingAnchor) {
+      val isAnchor = range.length == 0 && range.type in BlockType.ANCHORED
+      if (!isAnchor && (range.start >= range.end || range.start < 0 || range.end > spannable.length)) continue
+      if (isAnchor && (range.start < 0 || range.start > spannable.length)) continue
+      if (isAnchor) {
         if (range.start < start || range.start > end) continue
       } else if (range.end <= start || range.start >= end) {
         continue
       }
       val handler = blockHandlers[range.type] ?: continue
 
-      // Extend a zero-length heading anchor to cover the next character (usually
-      // '\n') so the Layout gives the empty line heading metrics. At the very end
-      // of text the span stays zero-length; the view-level paint override handles
+      // Extend a zero-length anchor to cover the next character (usually '\n') so
+      // the Layout gives the empty line the block's metrics. At the very end of
+      // text the span stays zero-length; the view-level paint override handles
       // cursor height for that edge case.
-      val spanEnd = if (isHeadingAnchor && range.start < spannable.length) range.start + 1 else range.end
-      val flags = if (isHeadingAnchor) Spannable.SPAN_INCLUSIVE_INCLUSIVE else Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+      val anchorEnd = if (isAnchor && range.start < spannable.length) range.start + 1 else range.end
+      val flags = if (isAnchor) Spannable.SPAN_INCLUSIVE_INCLUSIVE else Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
       for (span in handler.createSpans(range, currentStyle)) {
+        // A LineHeightSpan (list-item spacing) must cover only the item's first
+        // character so it spaces just the first visual line, not wrapped lines.
+        val spanEnd =
+          if (span is InputListItemSpacingSpan) {
+            (range.start + 1).coerceAtMost(range.end).coerceAtMost(spannable.length)
+          } else {
+            anchorEnd
+          }
+        if (span is InputListItemSpacingSpan && spanEnd <= range.start) continue
         spannable.setSpan(span, range.start, spanEnd, flags)
       }
     }
