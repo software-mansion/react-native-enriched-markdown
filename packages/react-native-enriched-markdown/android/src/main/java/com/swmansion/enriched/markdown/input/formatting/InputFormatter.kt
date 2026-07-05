@@ -54,6 +54,8 @@ class InputFormatter {
     return true
   }
 
+  fun resolveHeadingFontSizePx(level: Int): Float? = style?.headingStyle(level)?.fontSizePx
+
   fun applyFormatting(
     spannable: Spannable,
     ranges: List<FormattingRange>,
@@ -166,22 +168,24 @@ class InputFormatter {
     }
 
     for (range in blockRanges) {
-      // A zero-length heading anchor must still size its empty line, so it is
-      // stamped INCLUSIVE_INCLUSIVE over its anchor point.
       val isHeadingAnchor = range.length == 0 && range.type in BlockType.HEADINGS
       if (!isHeadingAnchor && (range.start >= range.end || range.start < 0 || range.end > spannable.length)) continue
       if (isHeadingAnchor && (range.start < 0 || range.start > spannable.length)) continue
-      // Skip blocks outside the scope; an anchor sits on a boundary, so it is
-      // in-scope when its point falls within [start, end] inclusive.
       if (isHeadingAnchor) {
         if (range.start < start || range.start > end) continue
       } else if (range.end <= start || range.start >= end) {
         continue
       }
       val handler = blockHandlers[range.type] ?: continue
+
+      // Extend a zero-length heading anchor to cover the next character (usually
+      // '\n') so the Layout gives the empty line heading metrics. At the very end
+      // of text the span stays zero-length; the view-level paint override handles
+      // cursor height for that edge case.
+      val spanEnd = if (isHeadingAnchor && range.start < spannable.length) range.start + 1 else range.end
       val flags = if (isHeadingAnchor) Spannable.SPAN_INCLUSIVE_INCLUSIVE else Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
       for (span in handler.createSpans(range, currentStyle)) {
-        spannable.setSpan(span, range.start, range.end, flags)
+        spannable.setSpan(span, range.start, spanEnd, flags)
       }
     }
   }
