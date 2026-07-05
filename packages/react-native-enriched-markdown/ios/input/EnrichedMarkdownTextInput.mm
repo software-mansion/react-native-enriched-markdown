@@ -79,6 +79,10 @@ using namespace facebook::react;
   struct {
     BOOL bold, italic, underline, strikethrough, spoiler, link, initialized;
     NSInteger headingLevel;
+    BOOL unorderedList;
+    NSInteger unorderedListDepth;
+    BOOL orderedList;
+    NSInteger orderedListDepth;
   } _prevState;
 
   // Block type/level of the line being edited, captured before a text change so
@@ -1821,9 +1825,19 @@ using namespace facebook::react;
 
   NSInteger headingLevel = [self headingLevelForCursorParagraph];
 
+  NSInteger listDepth = 0;
+  ENRMBlockRange *emitListBlock = [self listBlockForCursorParagraph];
+  BOOL unorderedListActive = emitListBlock != nil && emitListBlock.type == ENRMInputBlockTypeUnorderedListItem;
+  BOOL orderedListActive = emitListBlock != nil && emitListBlock.type == ENRMInputBlockTypeOrderedListItem;
+  if (emitListBlock != nil) {
+    listDepth = emitListBlock.level;
+  }
+
   if (_prevState.initialized && _prevState.bold == boldActive && _prevState.italic == italicActive &&
       _prevState.underline == underlineActive && _prevState.strikethrough == strikethroughActive &&
-      _prevState.spoiler == spoilerActive && _prevState.link == linkActive && _prevState.headingLevel == headingLevel) {
+      _prevState.spoiler == spoilerActive && _prevState.link == linkActive && _prevState.headingLevel == headingLevel &&
+      _prevState.unorderedList == unorderedListActive && _prevState.unorderedListDepth == listDepth &&
+      _prevState.orderedList == orderedListActive && _prevState.orderedListDepth == listDepth) {
     return;
   }
 
@@ -1834,6 +1848,10 @@ using namespace facebook::react;
   _prevState.spoiler = spoilerActive;
   _prevState.link = linkActive;
   _prevState.headingLevel = headingLevel;
+  _prevState.unorderedList = unorderedListActive;
+  _prevState.unorderedListDepth = listDepth;
+  _prevState.orderedList = orderedListActive;
+  _prevState.orderedListDepth = listDepth;
   _prevState.initialized = YES;
 
   emitter->onChangeState({
@@ -1844,6 +1862,9 @@ using namespace facebook::react;
       .spoiler = {.isActive = spoilerActive},
       .link = {.isActive = linkActive},
       .heading = {.isActive = headingLevel > 0, .level = static_cast<int>(headingLevel)},
+      .unorderedList = {.isActive = unorderedListActive,
+                        .depth = static_cast<int>(unorderedListActive ? listDepth : 0)},
+      .orderedList = {.isActive = orderedListActive, .depth = static_cast<int>(orderedListActive ? listDepth : 0)},
   });
 }
 
@@ -1915,6 +1936,13 @@ using namespace facebook::react;
   BOOL spoilerActive = isActive(ENRMInputStyleTypeSpoiler);
   BOOL linkActive = isActive(ENRMInputStyleTypeLink);
   NSInteger headingLevel = [self headingLevelForCursorParagraph];
+  NSInteger listDepth = 0;
+  ENRMBlockRange *emitListBlock = [self listBlockForCursorParagraph];
+  BOOL unorderedListActive = emitListBlock != nil && emitListBlock.type == ENRMInputBlockTypeUnorderedListItem;
+  BOOL orderedListActive = emitListBlock != nil && emitListBlock.type == ENRMInputBlockTypeOrderedListItem;
+  if (emitListBlock != nil) {
+    listDepth = emitListBlock.level;
+  }
 
   eventEmitter->onContextMenuItemPress({
       .itemText = std::string(itemText.UTF8String),
@@ -1930,6 +1958,10 @@ using namespace facebook::react;
               .spoiler = {.isActive = spoilerActive},
               .link = {.isActive = linkActive},
               .heading = {.isActive = headingLevel > 0, .level = static_cast<int>(headingLevel)},
+              .unorderedList = {.isActive = unorderedListActive,
+                                .depth = static_cast<int>(unorderedListActive ? listDepth : 0)},
+              .orderedList = {.isActive = orderedListActive,
+                              .depth = static_cast<int>(orderedListActive ? listDepth : 0)},
           },
   });
 }

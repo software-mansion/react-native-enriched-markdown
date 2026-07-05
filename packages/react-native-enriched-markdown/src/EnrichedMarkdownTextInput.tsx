@@ -97,6 +97,8 @@ export interface StyleState {
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
   heading: { isActive: boolean; level: HeadingLevel };
+  unorderedList: { isActive: boolean; depth: number };
+  orderedList: { isActive: boolean; depth: number };
 }
 
 export interface ContextMenuItem {
@@ -439,8 +441,17 @@ export const EnrichedMarkdownTextInput = ({
 
   const handleChangeState = useCallback(
     (e: NativeSyntheticEvent<OnChangeStateEvent>) => {
-      const { bold, italic, underline, strikethrough, spoiler, link, heading } =
-        e.nativeEvent;
+      const {
+        bold,
+        italic,
+        underline,
+        strikethrough,
+        spoiler,
+        link,
+        heading,
+        unorderedList,
+        orderedList,
+      } = e.nativeEvent;
       onChangeState?.({
         bold,
         italic,
@@ -449,6 +460,8 @@ export const EnrichedMarkdownTextInput = ({
         spoiler,
         link,
         heading: { ...heading, level: toHeadingLevel(heading.level) },
+        unorderedList,
+        orderedList,
       });
     },
     [onChangeState]

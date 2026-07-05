@@ -74,6 +74,8 @@ export interface OnChangeStateEvent {
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
   heading: { isActive: boolean; level: CodegenTypes.Int32 };
+  unorderedList: { isActive: boolean; depth: CodegenTypes.Int32 };
+  orderedList: { isActive: boolean; depth: CodegenTypes.Int32 };
 }
 
 export interface OnRequestMarkdownResultEvent {
@@ -164,6 +166,8 @@ export interface OnContextMenuItemPressEvent {
     spoiler: { isActive: boolean };
     link: { isActive: boolean };
     heading: { isActive: boolean; level: CodegenTypes.Int32 };
+    unorderedList: { isActive: boolean; depth: CodegenTypes.Int32 };
+    orderedList: { isActive: boolean; depth: CodegenTypes.Int32 };
   };
 }
 
