@@ -849,6 +849,13 @@ class EnrichedMarkdownTextInputView(
         pasteMarkdown(markdown)
         return true
       }
+      // External plain text is treated as markdown so pasted syntax ("- ", "#",
+      // "**") formats instead of landing literal; syntax-free text is unchanged.
+      // "Paste as plain text" (pasteAsPlainText) keeps the literal default.
+      plainTextFromClipboard()?.let { plainText ->
+        pasteMarkdown(plainText)
+        return true
+      }
     }
     if (id == android.R.id.copy || id == android.R.id.cut) {
       val selStart = selectionStart
@@ -899,6 +906,12 @@ class EnrichedMarkdownTextInputView(
     return MarkdownSerializer.serialize(selectedText, clippedRanges, clippedBlockRanges) { blockRange ->
       formatter.handlerForBlock(blockRange.type)?.markdownLinePrefix(blockRange) ?: ""
     }
+  }
+
+  private fun plainTextFromClipboard(): String? {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return null
+    val item = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0) ?: return null
+    return item.coerceToText(context)?.toString()?.takeIf { it.isNotEmpty() }
   }
 
   /**

@@ -50,8 +50,12 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
     return;
   }
 
+  // External plain text is treated as markdown so pasted syntax ("- ", "#",
+  // "**") formats instead of landing literal; syntax-free text is unchanged.
   NSString *plainText = pasteboard.string;
-  if (plainText.length > 0) {
+  if (plainText.length > 0 && self.markdownTextInput != nil) {
+    [self.markdownTextInput pasteMarkdown:plainText];
+  } else if (plainText.length > 0) {
     [self replaceRange:self.selectedTextRange withText:plainText];
   }
 }
@@ -159,8 +163,12 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
     return;
   }
 
+  // External plain text is treated as markdown so pasted syntax ("- ", "#",
+  // "**") formats instead of landing literal; syntax-free text is unchanged.
   NSString *plainText = [pasteboard stringForType:NSPasteboardTypeString];
-  if (plainText.length > 0) {
+  if (plainText.length > 0 && self.markdownTextInput != nil) {
+    [self.markdownTextInput pasteMarkdown:plainText];
+  } else if (plainText.length > 0) {
     [self insertText:plainText replacementRange:self.selectedRange];
   }
 }
