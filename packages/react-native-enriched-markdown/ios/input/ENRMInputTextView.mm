@@ -1,9 +1,8 @@
 #import "ENRMInputTextView.h"
+#import "ENRMInputLayoutManager.h"
+#import "EnrichedMarkdownTextInput+Internal.h"
 #import "EnrichedMarkdownTextInput.h"
 #import "PasteboardUtils.h"
-#if TARGET_OS_OSX
-#import "EnrichedMarkdownTextInput+Internal.h"
-#endif
 
 NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.markdown";
 
@@ -51,8 +50,12 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
     return;
   }
 
+  // External plain text is treated as markdown so pasted syntax ("- ", "#",
+  // "**") formats instead of landing literal; syntax-free text is unchanged.
   NSString *plainText = pasteboard.string;
-  if (plainText.length > 0) {
+  if (plainText.length > 0 && self.markdownTextInput != nil) {
+    [self.markdownTextInput pasteMarkdown:plainText];
+  } else if (plainText.length > 0) {
     [self replaceRange:self.selectedTextRange withText:plainText];
   }
 }
@@ -73,6 +76,51 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
   [super layoutSubviews];
   if (self.markdownTextInput != nil) {
     [self.markdownTextInput scheduleRelayoutIfNeeded];
+  }
+}
+
+- (void)deleteBackward
+{
+  // Backspace at the very start of the document doesn't fire the text-change
+  // delegate (nothing precedes the caret), so removing/outdenting the first
+  // line's list marker has to be handled here.
+  if (self.markdownTextInput != nil && [self.markdownTextInput handleBackspaceAtDocumentStart]) {
+    return;
+  }
+  [super deleteBackward];
+}
+
+/// Hardware-keyboard Tab / Shift+Tab indent and outdent the current list item.
+/// UIKeyCommand only fires for an attached keyboard; on-screen Tab/Backspace go
+/// through the text-change delegate (see handleListKeyForReplacementRange:).
+- (NSArray<UIKeyCommand *> *)keyCommands
+{
+  return @[
+    [UIKeyCommand keyCommandWithInput:@"\t" modifierFlags:0 action:@selector(enrmIndentList:)],
+    [UIKeyCommand keyCommandWithInput:@"\t" modifierFlags:UIKeyModifierShift action:@selector(enrmOutdentList:)],
+  ];
+}
+
+- (void)enrmIndentList:(UIKeyCommand *)command
+{
+  [self.markdownTextInput indentList];
+}
+
+- (void)enrmOutdentList:(UIKeyCommand *)command
+{
+  [self.markdownTextInput outdentList];
+}
+
+- (void)drawRect:(CGRect)rect
+{
+  [super drawRect:rect];
+  // A wholly empty editor has no glyphs, so the layout manager's
+  // drawGlyphsForGlyphRange: never runs — draw the just-toggled list marker here.
+  if (self.text.length == 0) {
+    NSLayoutManager *layoutManager = self.layoutManager;
+    if ([layoutManager isKindOfClass:[ENRMInputLayoutManager class]]) {
+      [(ENRMInputLayoutManager *)layoutManager drawEmptyEditorBulletWithInset:self.textContainerInset];
+    }
   }
 }
 
@@ -115,8 +163,12 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
     return;
   }
 
+  // External plain text is treated as markdown so pasted syntax ("- ", "#",
+  // "**") formats instead of landing literal; syntax-free text is unchanged.
   NSString *plainText = [pasteboard stringForType:NSPasteboardTypeString];
-  if (plainText.length > 0) {
+  if (plainText.length > 0 && self.markdownTextInput != nil) {
+    [self.markdownTextInput pasteMarkdown:plainText];
+  } else if (plainText.length > 0) {
     [self insertText:plainText replacementRange:self.selectedRange];
   }
 }

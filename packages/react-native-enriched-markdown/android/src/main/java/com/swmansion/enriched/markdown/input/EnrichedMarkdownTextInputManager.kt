@@ -120,7 +120,7 @@ class EnrichedMarkdownTextInputManager :
     view: EnrichedMarkdownTextInputView?,
     value: String?,
   ) {
-    view?.hint = value
+    view?.setUserHint(value)
   }
 
   @ReactProp(name = "placeholderTextColor", customType = "Color")
@@ -434,6 +434,22 @@ class EnrichedMarkdownTextInputManager :
     level: Int,
   ) {
     view?.toggleHeading(level)
+  }
+
+  override fun toggleUnorderedList(view: EnrichedMarkdownTextInputView?) {
+    view?.toggleUnorderedList()
+  }
+
+  override fun toggleOrderedList(view: EnrichedMarkdownTextInputView?) {
+    view?.toggleOrderedList()
+  }
+
+  override fun indentList(view: EnrichedMarkdownTextInputView?) {
+    view?.indentList()
+  }
+
+  override fun outdentList(view: EnrichedMarkdownTextInputView?) {
+    view?.outdentList()
   }
 
   override fun setLink(

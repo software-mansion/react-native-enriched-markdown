@@ -8,6 +8,11 @@
   return ENRMInputBlockTypeOrderedListItem;
 }
 
+- (BOOL)continuesOnNewline
+{
+  return YES;
+}
+
 - (void)applyAttributesToParagraphStyle:(NSMutableParagraphStyle *)paragraphStyle
                              attributes:(NSMutableDictionary<NSAttributedStringKey, id> *)attributes
                              blockRange:(ENRMBlockRange *)blockRange
