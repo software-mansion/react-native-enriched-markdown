@@ -44,6 +44,13 @@ static inline NSInteger ENRMHeadingLevelForBlockType(ENRMInputBlockType type)
   return 0;
 }
 
+/// Whether an emptied line of this type keeps a zero-length anchor (an emptied
+/// heading stays a heading) instead of reverting to a plain paragraph.
+static inline BOOL ENRMBlockTypePersistsWhenEmpty(ENRMInputBlockType type)
+{
+  return type >= ENRMInputBlockTypeHeading1 && type <= ENRMInputBlockTypeHeading6;
+}
+
 /// NSAttributedString attribute carrying the ENRMInputBlockType (boxed NSNumber)
 /// of the paragraph a character belongs to. Set by ENRMInputFormatter on the
 /// paragraphs a block claims; the next block pass uses it to find and strip the

@@ -94,7 +94,7 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
 
   paragraphRange = ENRMTrimLineTerminators(paragraphRange, text);
 
-  if (paragraphRange.length == 0 && ENRMHeadingLevelForBlockType(type) == 0) {
+  if (paragraphRange.length == 0 && !ENRMBlockTypePersistsWhenEmpty(type)) {
     return;
   }
 
@@ -122,13 +122,13 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
 
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
     ENRMBlockRange *blockRange = _ranges[idx];
-    BOOL isHeading = ENRMHeadingLevelForBlockType(blockRange.type) > 0;
+    BOOL persists = ENRMBlockTypePersistsWhenEmpty(blockRange.type);
 
-    // Zero-length heading anchors don't follow the shared adjustment: one at
-    // the edit location stays put (normalize grows it over the typed text),
-    // one past the edit shifts with it, one inside the deletion is dropped.
+    // Zero-length anchors don't follow the shared adjustment: one at the edit
+    // location stays put (normalize grows it over the typed text), one past
+    // the edit shifts with it, one inside the deletion is dropped.
     if (blockRange.range.length == 0) {
-      if (!isHeading) {
+      if (!persists) {
         [indexesToRemove addIndex:idx];
       } else if (blockRange.range.location >= deleteEnd && blockRange.range.location > editLocation) {
         blockRange.range = NSMakeRange(blockRange.range.location - deletedLength + insertedLength, 0);
@@ -140,10 +140,10 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
 
     ENRMAdjustedRange adjusted = ENRMAdjustRangeForEdit(blockRange.range, editLocation, deletedLength, insertedLength);
     if (adjusted.shouldRemove) {
-      // A heading deleted exactly to its end collapses to a zero-length anchor
-      // (the line's newline survived, so the line stays a heading); a deletion
-      // running past its end removed the line, so drop the heading with it.
-      if (isHeading && NSMaxRange(blockRange.range) == deleteEnd && blockRange.range.location >= editLocation) {
+      // A persisting block deleted exactly to its end collapses to a zero-length
+      // anchor (the line's newline survived, so the line stays the block); a
+      // deletion running past its end removed the line, so drop the block with it.
+      if (persists && NSMaxRange(blockRange.range) == deleteEnd && blockRange.range.location >= editLocation) {
         blockRange.range = NSMakeRange(editLocation, 0);
       } else {
         [indexesToRemove addIndex:idx];
@@ -155,10 +155,12 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
 
   ENRMRemoveIndexesInReverse(_ranges, indexesToRemove);
 
+  // Prune zero-length ranges, but keep zero-length persisting blocks: they anchor
+  // an emptied-but-still-present heading/bullet line (see the collapse rule above).
   NSMutableIndexSet *emptyIndexes = [NSMutableIndexSet indexSet];
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
     ENRMBlockRange *range = _ranges[idx];
-    if (range.range.length == 0 && ENRMHeadingLevelForBlockType(range.type) == 0) {
+    if (range.range.length == 0 && !ENRMBlockTypePersistsWhenEmpty(range.type)) {
       [emptyIndexes addIndex:idx];
     }
   }
@@ -182,8 +184,9 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
 
     lineRange = ENRMTrimLineTerminators(lineRange, text);
 
-    BOOL isHeading = ENRMHeadingLevelForBlockType(blockRange.type) > 0;
-    if ((lineRange.length == 0 && !isHeading) || (NSInteger)lineRange.location <= previousEnd) {
+    BOOL emptyLine = lineRange.length == 0;
+    if ((emptyLine && !ENRMBlockTypePersistsWhenEmpty(blockRange.type)) ||
+        (NSInteger)lineRange.location <= previousEnd) {
       [indexesToRemove addIndex:idx];
       continue;
     }

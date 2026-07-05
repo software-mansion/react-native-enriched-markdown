@@ -170,22 +170,22 @@ class InputFormatter {
     }
 
     for (range in blockRanges) {
-      val isHeadingAnchor = range.length == 0 && range.type in BlockType.HEADINGS
-      if (!isHeadingAnchor && (range.start >= range.end || range.start < 0 || range.end > spannable.length)) continue
-      if (isHeadingAnchor && (range.start < 0 || range.start > spannable.length)) continue
-      if (isHeadingAnchor) {
+      val isAnchor = range.length == 0 && range.type in BlockType.ANCHORED
+      if (!isAnchor && (range.start >= range.end || range.start < 0 || range.end > spannable.length)) continue
+      if (isAnchor && (range.start < 0 || range.start > spannable.length)) continue
+      if (isAnchor) {
         if (range.start < start || range.start > end) continue
       } else if (range.end <= start || range.start >= end) {
         continue
       }
       val handler = blockHandlers[range.type] ?: continue
 
-      // Extend a zero-length heading anchor to cover the next character (usually
-      // '\n') so the Layout gives the empty line heading metrics. At the very end
-      // of text the span stays zero-length; the view-level paint override handles
+      // Extend a zero-length anchor to cover the next character (usually '\n') so
+      // the Layout gives the empty line the block's metrics. At the very end of
+      // text the span stays zero-length; the view-level paint override handles
       // cursor height for that edge case.
-      val spanEnd = if (isHeadingAnchor && range.start < spannable.length) range.start + 1 else range.end
-      val flags = if (isHeadingAnchor) Spannable.SPAN_INCLUSIVE_INCLUSIVE else Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+      val spanEnd = if (isAnchor && range.start < spannable.length) range.start + 1 else range.end
+      val flags = if (isAnchor) Spannable.SPAN_INCLUSIVE_INCLUSIVE else Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
       for (span in handler.createSpans(range, currentStyle)) {
         spannable.setSpan(span, range.start, spanEnd, flags)
       }

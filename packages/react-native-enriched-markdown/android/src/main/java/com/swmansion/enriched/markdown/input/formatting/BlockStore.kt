@@ -44,9 +44,9 @@ class BlockStore {
   ) {
     val (start, end) = paragraphBounds(paragraphStart, paragraphEnd, text)
     removeBlocksOverlapping(start, end)
-    // A heading on an empty line is kept as a zero-length anchor (see adjustForEdit);
-    // other blocks need real content, so an empty line yields no block.
-    if (end < start || (end == start && type !in BlockType.HEADINGS)) return
+    // An anchored block on an empty line is kept as a zero-length anchor (see
+    // adjustForEdit); other blocks need real content.
+    if (end < start || (end == start && type !in BlockType.ANCHORED)) return
 
     val block = BlockRange(type, start, end, level)
     ranges.add(sortedInsertionIndex(ranges, start), block)
@@ -67,10 +67,10 @@ class BlockStore {
 
   /**
    * Shifts/clips block ranges to follow a text edit (see [RangeEditAdjustment]),
-   * with heading persistence layered on top: a heading deleted exactly to its
-   * end collapses to a zero-length anchor at the edit location (its line
-   * survives), and existing anchors shift/keep/drop with their line. The view's
-   * prune/normalize pass reconciles anchors against the final text.
+   * with anchored-block persistence layered on top: a block
+   * deleted exactly to its end collapses to a zero-length anchor at the edit
+   * location (its line survives), and existing anchors shift/keep/drop with their
+   * line. The view's prune/normalize pass reconciles anchors against the final text.
    */
   fun adjustForEdit(
     editLocation: Int,
@@ -82,14 +82,14 @@ class BlockStore {
     val deleteEnd = editLocation + deletedLength
     val delta = insertedLength - deletedLength
 
-    val anchors = ranges.filter { it.length == 0 && it.type in BlockType.HEADINGS }
+    val anchors = ranges.filter { it.length == 0 && it.type in BlockType.ANCHORED }
     ranges.removeAll { it.length == 0 }
 
     // At most one range can end exactly at deleteEnd, so this restores at most
-    // one collapsed heading.
+    // one collapsed block.
     val collapsed =
       ranges.firstOrNull {
-        it.type in BlockType.HEADINGS && it.start >= editLocation && it.end == deleteEnd
+        it.type in BlockType.ANCHORED && it.start >= editLocation && it.end == deleteEnd
       }
 
     RangeEditAdjustment.adjustForEdit(ranges, editLocation, deletedLength, insertedLength)
@@ -121,9 +121,9 @@ class BlockStore {
   /**
    * Snaps every stored range to the line bounds of its start position.
    * Absorbs edge-typed chars, clips split ranges to first line, drops
-   * duplicates. On an empty line a heading persists as a zero-length anchor;
-   * any other collapsed range is dropped. Call after [adjustForEdit] once
-   * [text] is final. Idempotent.
+   * duplicates. On an empty line an anchored block (heading) persists as a
+   * zero-length anchor; any other collapsed range is dropped. Call after
+   * [adjustForEdit] once [text] is final. Idempotent.
    */
   fun normalizeToLineBounds(text: CharSequence) {
     if (ranges.isEmpty()) return
@@ -134,7 +134,7 @@ class BlockStore {
       val range = iterator.next()
       val (lineStart, lineEnd) = paragraphBounds(range.start, range.start, text)
       val isEmptyLine = lineEnd == lineStart
-      if ((isEmptyLine && range.type !in BlockType.HEADINGS) || lineStart <= previousEnd) {
+      if ((isEmptyLine && range.type !in BlockType.ANCHORED) || lineStart <= previousEnd) {
         iterator.remove()
         continue
       }
