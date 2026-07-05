@@ -2,6 +2,7 @@ package com.swmansion.enriched.markdown.input.formatting
 
 import com.swmansion.enriched.markdown.input.model.BlockRange
 import com.swmansion.enriched.markdown.input.model.BlockType
+import com.swmansion.enriched.markdown.input.model.MAX_LIST_DEPTH
 import java.util.Collections
 
 /**
@@ -24,6 +25,7 @@ class BlockStore {
   fun setRanges(newRanges: List<BlockRange>) {
     ranges.clear()
     ranges.addAll(newRanges.sortedBy { it.start })
+    recomputeListMetadata()
   }
 
   fun clearAll() {
@@ -44,8 +46,8 @@ class BlockStore {
   ) {
     val (start, end) = paragraphBounds(paragraphStart, paragraphEnd, text)
     removeBlocksOverlapping(start, end)
-    // An anchored block on an empty line is kept as a zero-length anchor (see
-    // adjustForEdit); other blocks need real content.
+    // An anchored block (heading, list item) on an empty line is kept as a zero-length
+    // anchor (see adjustForEdit); other blocks need real content.
     if (end < start || (end == start && type !in BlockType.ANCHORED)) return
 
     val block = BlockRange(type, start, end, level)
@@ -67,7 +69,7 @@ class BlockStore {
 
   /**
    * Shifts/clips block ranges to follow a text edit (see [RangeEditAdjustment]),
-   * with anchored-block persistence layered on top: a block
+   * with anchored-block (heading / list item) persistence layered on top: a block
    * deleted exactly to its end collapses to a zero-length anchor at the edit
    * location (its line survives), and existing anchors shift/keep/drop with their
    * line. The view's prune/normalize pass reconciles anchors against the final text.
@@ -121,9 +123,11 @@ class BlockStore {
   /**
    * Snaps every stored range to the line bounds of its start position.
    * Absorbs edge-typed chars, clips split ranges to first line, drops
-   * duplicates. On an empty line an anchored block (heading) persists as a
-   * zero-length anchor; any other collapsed range is dropped. Call after
-   * [adjustForEdit] once [text] is final. Idempotent.
+   * duplicates. On an empty line an anchored block (heading, list item)
+   * persists as a zero-length anchor; any other collapsed range is dropped.
+   * List depths are clamped so an item nests at most one level under the
+   * previous adjacent item (CommonMark cannot represent orphan nesting).
+   * Call after [adjustForEdit] once [text] is final. Idempotent.
    */
   fun normalizeToLineBounds(text: CharSequence) {
     if (ranges.isEmpty()) return
@@ -141,6 +145,46 @@ class BlockStore {
       range.start = lineStart
       range.end = lineEnd
       previousEnd = lineEnd
+    }
+
+    recomputeListMetadata()
+  }
+
+  /**
+   * Clamps list depths to valid ancestry (an item nests at most one level under
+   * the previous adjacent list item — CommonMark cannot represent orphan nesting)
+   * and renumbers ordered items among their adjacent same-depth, same-type run.
+   */
+  private fun recomputeListMetadata() {
+    var prevEnd = -2
+    var prevDepth = -1
+    val counters = IntArray(MAX_LIST_DEPTH + 2)
+    val counterTypes = arrayOfNulls<BlockType>(MAX_LIST_DEPTH + 2)
+    for (range in ranges) {
+      if (range.type !in BlockType.LIST_ITEMS) {
+        prevDepth = -1
+        continue
+      }
+      val adjacent = prevDepth >= 0 && range.start == prevEnd + 1
+      if (!adjacent) {
+        counters.fill(0)
+        counterTypes.fill(null)
+      }
+      val maxDepth = if (adjacent) prevDepth + 1 else 0
+      if (range.level > maxDepth) range.level = maxDepth
+      val depth = range.level
+      for (i in depth + 1..MAX_LIST_DEPTH + 1) {
+        counters[i] = 0
+        counterTypes[i] = null
+      }
+      if (counterTypes[depth] != range.type) {
+        counters[depth] = 0
+        counterTypes[depth] = range.type
+      }
+      counters[depth]++
+      range.ordinal = counters[depth]
+      prevEnd = range.end
+      prevDepth = range.level
     }
   }
 

@@ -169,6 +169,11 @@ BOOL applyInputStyleProps(ENRMInputFormatterStyle *style, const InputProps &newP
     changed = YES;
   }
 
+  if (newProps.listItemSpacing != oldProps.listItemSpacing) {
+    style.listItemSpacing = newProps.listItemSpacing;
+    changed = YES;
+  }
+
   changed |= applyHeadingLevelProps(style, 1, newProps.markdownStyle.h1, oldProps.markdownStyle.h1);
   changed |= applyHeadingLevelProps(style, 2, newProps.markdownStyle.h2, oldProps.markdownStyle.h2);
   changed |= applyHeadingLevelProps(style, 3, newProps.markdownStyle.h3, oldProps.markdownStyle.h3);

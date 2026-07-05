@@ -101,6 +101,8 @@ class EnrichedMarkdownTextInputView(
   private var headingOverrideBaseSizePx: Float? = null
   private var savedHintTextColors: ColorStateList? = null
 
+  private var listItemSpacingPx = 0
+
   init {
     setupDetectorPipeline()
     prepareComponent()
@@ -843,6 +845,35 @@ class EnrichedMarkdownTextInputView(
 
   fun setAutoLinkStyle(style: InputFormatterStyle) {
     autoLinkDetector.style = style
+  }
+
+  // The markdownStyle prop, kept so density + listItemSpacing (sourced outside the
+  // prop) can be folded into the formatter style whenever any of them changes.
+  private var baseStyle: InputFormatterStyle? = null
+
+  /**
+   * Applies the parsed `markdownStyle`, folding in the display density and the current
+   * `listItemSpacing` so block handlers can build density-correct, spacing-aware spans.
+   * Returns true if the effective style changed (caller re-applies formatting).
+   */
+  fun setMarkdownStyleFromProps(style: InputFormatterStyle): Boolean {
+    baseStyle = style
+    setAutoLinkStyle(style)
+    return applyComposedStyle()
+  }
+
+  private fun applyComposedStyle(): Boolean {
+    val base = baseStyle ?: return false
+    val composed = base.copy(displayDensity = resources.displayMetrics.density, listItemSpacingPx = listItemSpacingPx)
+    return formatter.updateStyle(composed)
+  }
+
+  /** Sets the vertical spacing (dp) above each list item, re-stamping list spans. */
+  fun setListItemSpacingFromProps(spacingDp: Float) {
+    val px = if (spacingDp > 0f) PixelUtil.toPixelFromDIP(spacingDp).toInt() else 0
+    if (px == listItemSpacingPx) return
+    listItemSpacingPx = px
+    if (applyComposedStyle()) applyFormatting()
   }
 
   fun allFormattingRangesForSerialization(): List<FormattingRange> {

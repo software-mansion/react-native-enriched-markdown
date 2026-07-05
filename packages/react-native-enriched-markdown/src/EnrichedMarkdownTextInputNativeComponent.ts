@@ -272,6 +272,14 @@ export interface NativeProps extends ViewProps {
    */
   writingDirection?: CodegenTypes.WithDefault<string, 'first-strong'>;
 
+  /**
+   * Vertical spacing (points) added above each bullet list item so items read as
+   * separate rows. iOS applies it via paragraphSpacingBefore; Android via a
+   * LineHeightSpan.
+   * @default 0
+   */
+  listItemSpacing?: CodegenTypes.WithDefault<CodegenTypes.Int32, 0>;
+
   // Events
   onChangeText?: CodegenTypes.DirectEventHandler<OnChangeTextEvent>;
   onChangeMarkdown?: CodegenTypes.DirectEventHandler<OnChangeMarkdownEvent>;

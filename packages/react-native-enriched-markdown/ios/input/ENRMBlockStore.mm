@@ -45,6 +45,7 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
       return NSOrderedDescending;
     return NSOrderedSame;
   }] mutableCopy];
+  [self recomputeListMetadata];
 }
 
 - (void)clearAll
@@ -196,6 +197,49 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   }
 
   ENRMRemoveIndexesInReverse(_ranges, indexesToRemove);
+  [self recomputeListMetadata];
+}
+
+/// Clamps list depths to valid ancestry (an item nests at most one level under
+/// the previous adjacent list item — CommonMark cannot represent orphan nesting)
+/// and renumbers ordered items among their adjacent same-depth, same-type run.
+- (void)recomputeListMetadata
+{
+  NSInteger prevEnd = -2;
+  NSInteger prevDepth = -1;
+  NSInteger counters[kENRMMaxListDepth + 2];
+  ENRMInputBlockType counterTypes[kENRMMaxListDepth + 2];
+  memset(counters, 0, sizeof(counters));
+  memset(counterTypes, 0, sizeof(counterTypes));
+
+  for (ENRMBlockRange *blockRange in _ranges) {
+    if (!ENRMBlockTypeIsListItem(blockRange.type)) {
+      prevDepth = -1;
+      continue;
+    }
+    BOOL adjacent = prevDepth >= 0 && (NSInteger)blockRange.range.location == prevEnd + 1;
+    if (!adjacent) {
+      memset(counters, 0, sizeof(counters));
+      memset(counterTypes, 0, sizeof(counterTypes));
+    }
+    NSInteger maxDepth = adjacent ? prevDepth + 1 : 0;
+    if (blockRange.level > maxDepth) {
+      blockRange.level = maxDepth;
+    }
+    NSInteger depth = blockRange.level;
+    for (NSInteger i = depth + 1; i <= kENRMMaxListDepth + 1; i++) {
+      counters[i] = 0;
+      counterTypes[i] = (ENRMInputBlockType)0;
+    }
+    if (counterTypes[depth] != blockRange.type) {
+      counters[depth] = 0;
+      counterTypes[depth] = blockRange.type;
+    }
+    counters[depth]++;
+    blockRange.ordinal = counters[depth];
+    prevEnd = (NSInteger)NSMaxRange(blockRange.range);
+    prevDepth = blockRange.level;
+  }
 }
 
 @end
