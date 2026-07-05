@@ -49,6 +49,14 @@ export interface LinkStyle {
   backgroundColor?: string;
 }
 
+export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+
+const VALID_HEADING_LEVELS = new Set<number>([1, 2, 3, 4, 5, 6]);
+
+function toHeadingLevel(n: number): HeadingLevel {
+  return (VALID_HEADING_LEVELS.has(n) ? n : 1) as HeadingLevel;
+}
+
 export interface HeadingStyle {
   fontSize?: number;
   fontWeight?: string;
@@ -88,7 +96,7 @@ export interface StyleState {
   strikethrough: { isActive: boolean };
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
-  heading: { isActive: boolean; level: number };
+  heading: { isActive: boolean; level: HeadingLevel };
 }
 
 export interface ContextMenuItem {
@@ -122,7 +130,7 @@ export interface EnrichedMarkdownTextInputInstance {
   toggleUnderline: () => void;
   toggleStrikethrough: () => void;
   toggleSpoiler: () => void;
-  toggleHeading: (level: number) => void;
+  toggleHeading: (level: HeadingLevel) => void;
   setLink: (url: string) => void;
   insertLink: (text: string, url: string) => void;
   insertMention: (displayText: string, url: string) => void;
@@ -429,7 +437,7 @@ export const EnrichedMarkdownTextInput = ({
         strikethrough,
         spoiler,
         link,
-        heading,
+        heading: { ...heading, level: toHeadingLevel(heading.level) },
       });
     },
     [onChangeState]
@@ -509,7 +517,13 @@ export const EnrichedMarkdownTextInput = ({
       callback?.({
         text: selectedText,
         selection: { start: selectionStart, end: selectionEnd },
-        styleState,
+        styleState: {
+          ...styleState,
+          heading: {
+            ...styleState.heading,
+            level: toHeadingLevel(styleState.heading.level),
+          },
+        },
       });
     },
     []

@@ -138,7 +138,9 @@ export function FormattingToolbar({
             key={`h${level}`}
             style={[
               styles.toolbarButton,
-              state?.heading.level === level && styles.toolbarButtonActive,
+              state?.heading.isActive &&
+                state.heading.level === level &&
+                styles.toolbarButtonActive,
             ]}
             onPress={() => inputRef.current?.toggleHeading(level)}
             testID={`toolbar-h${level}`}

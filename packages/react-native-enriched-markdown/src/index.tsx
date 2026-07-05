@@ -36,4 +36,6 @@ export type {
   OnChangeMentionEvent,
   OnEndMentionEvent,
   CaretRect,
+  HeadingLevel,
+  HeadingStyle,
 } from './EnrichedMarkdownTextInput';
