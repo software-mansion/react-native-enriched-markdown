@@ -2,6 +2,7 @@ package com.swmansion.enriched.markdown.input
 
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
 import android.graphics.Color
@@ -96,6 +97,9 @@ class EnrichedMarkdownTextInputView(
   private var activeMentionStart = -1
   private var activeMentionEnd = -1
   private var activeMentionText = ""
+
+  private var headingOverrideBaseSizePx: Float? = null
+  private var savedHintTextColors: ColorStateList? = null
 
   init {
     setupDetectorPipeline()
@@ -263,6 +267,7 @@ class EnrichedMarkdownTextInputView(
       }
 
       forceScrollToSelection()
+      syncCursorSizeWithBlock()
       eventEmitter.emitChangeText()
       if (emitMarkdown) eventEmitter.emitChangeMarkdown()
       updateActiveMention()
@@ -641,6 +646,7 @@ class EnrichedMarkdownTextInputView(
     }
 
     applyFormattingAndEmit()
+    syncCursorSizeWithBlock()
   }
 
   /**
@@ -659,6 +665,35 @@ class EnrichedMarkdownTextInputView(
   fun headingLevelAtCursor(): Int {
     val block = blockOnParagraphAt(selectionStart) ?: return 0
     return if (block.type in BlockType.HEADINGS) block.level else 0
+  }
+
+  /**
+   * On empty text with a heading block, overrides text size to the heading's
+   * font size so the cursor matches heading height. Hides the hint while
+   * active. Cleared automatically when text is typed or heading is toggled off.
+   */
+  private fun syncCursorSizeWithBlock() {
+    val editable = text ?: return
+    val block = blockOnParagraphAt(selectionStart)
+
+    if (block != null && block.type in BlockType.HEADINGS && editable.isEmpty()) {
+      val headingSizePx = formatter.resolveHeadingFontSizePx(block.level) ?: return
+      if (headingOverrideBaseSizePx == null) {
+        headingOverrideBaseSizePx = paint.textSize
+        savedHintTextColors = hintTextColors
+      }
+      if (paint.textSize != headingSizePx) {
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, headingSizePx)
+        setHintTextColor(Color.TRANSPARENT)
+      }
+    } else {
+      headingOverrideBaseSizePx?.let { baseSizePx ->
+        setTextSize(TypedValue.COMPLEX_UNIT_PX, baseSizePx)
+        headingOverrideBaseSizePx = null
+        savedHintTextColors?.let { setHintTextColor(it) }
+        savedHintTextColors = null
+      }
+    }
   }
 
   fun setLinkForSelection(url: String) {
