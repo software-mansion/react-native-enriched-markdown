@@ -17,6 +17,18 @@ tags:
     id: focus-button
 - waitForAnimationToEnd
 
+# The list buttons sit past H1-H6 in the horizontally scrolling toolbar and are
+# offscreen on phone-width viewports; swipe the toolbar left to reveal them.
+- swipe:
+    from:
+      id: toolbar-bold
+    direction: LEFT
+- swipe:
+    from:
+      id: toolbar-h2
+    direction: LEFT
+- waitForAnimationToEnd
+
 - tapOn:
     id: toolbar-unordered-list
 - waitForAnimationToEnd
