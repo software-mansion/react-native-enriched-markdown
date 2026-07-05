@@ -597,6 +597,7 @@ using namespace facebook::react;
 - (void)replaceTextInRange:(NSRange)selection
                   withText:(NSString *)text
           formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
+               blockRanges:(NSArray<ENRMBlockRange *> *)blockRanges
 {
   NSUInteger editLocation = selection.location;
 
@@ -604,17 +605,23 @@ using namespace facebook::react;
   ENRMReplaceTextInRange(_textView, text, selection);
   _isApplyingFormatting = NO;
 
+  NSString *plainText = ENRMGetPlainText(_textView);
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
   [_blockStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
   [self pruneOrphanedHeadingBlocks];
-  [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
+  [_blockStore normalizeToLineBoundsInText:plainText];
 
   for (ENRMFormattingRange *range in ranges) {
     NSRange shifted = NSMakeRange(range.range.location + editLocation, range.range.length);
     [_formattingStore addRange:[ENRMFormattingRange rangeWithType:range.type range:shifted url:range.url]];
   }
 
-  _lastTextLength = ENRMGetPlainText(_textView).length;
+  for (ENRMBlockRange *block in blockRanges) {
+    NSRange shifted = NSMakeRange(block.range.location + editLocation, block.range.length);
+    [_blockStore setBlockType:block.type level:block.level forParagraphRange:shifted inText:plainText];
+  }
+
+  _lastTextLength = plainText.length;
   _lastSelectedRange = _textView.selectedRange;
 
   [self applyFormatting];
@@ -630,6 +637,13 @@ using namespace facebook::react;
   [self scheduleRelayoutIfNeeded];
 }
 
+- (void)replaceTextInRange:(NSRange)selection
+                  withText:(NSString *)text
+          formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
+{
+  [self replaceTextInRange:selection withText:text formattingRanges:ranges blockRanges:@[]];
+}
+
 - (void)replaceSelectedTextWith:(NSString *)text formattingRanges:(NSArray<ENRMFormattingRange *> *)ranges
 {
   [self replaceTextInRange:_textView.selectedRange withText:text formattingRanges:ranges];
@@ -639,7 +653,10 @@ using namespace facebook::react;
 {
   ENRMInputParser *parser = [[ENRMInputParser alloc] init];
   ENRMParseResult *parsed = [parser parseToPlainTextAndRanges:markdown];
-  [self replaceSelectedTextWith:parsed.plainText formattingRanges:parsed.formattingRanges];
+  [self replaceTextInRange:_textView.selectedRange
+                  withText:parsed.plainText
+          formattingRanges:parsed.formattingRanges
+               blockRanges:parsed.blockRanges];
 }
 
 #pragma mark - Formatting
@@ -1123,7 +1140,9 @@ using namespace facebook::react;
   if (plainText.length == 0) {
     return;
   }
-  NSString *markdown = [ENRMMarkdownSerializer serializePlainText:plainText ranges:[self allRangesIncludingTransient]];
+  NSString *markdown = [self serializeText:plainText
+                                    ranges:[self allRangesIncludingTransient]
+                               blockRanges:_blockStore.allRanges];
   NSMutableDictionary *items = [NSMutableDictionary dictionary];
   items[kUTIPlainText] = plainText;
   if (markdown.length > 0) {

@@ -10,8 +10,7 @@ import android.view.MenuItem
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import com.swmansion.enriched.markdown.input.EnrichedMarkdownTextInputView
-import com.swmansion.enriched.markdown.input.formatting.MarkdownSerializer
-import com.swmansion.enriched.markdown.input.model.FormattingRange
+import com.swmansion.enriched.markdown.input.MarkdownClipboard
 import com.swmansion.enriched.markdown.input.model.StyleType
 
 data class InputSelectionMenuConfig(
@@ -171,32 +170,12 @@ class InputContextMenu(
       .show()
   }
 
-  private fun markdownForSelectedRange(): String? {
-    val selStart = view.selectionStart
-    val selEnd = view.selectionEnd
-    if (selStart >= selEnd) return null
-
-    val fullText = view.text?.toString() ?: return null
-    val selectedText = fullText.substring(selStart, selEnd)
-
-    val clippedRanges = mutableListOf<FormattingRange>()
-    for (range in view.formattingStore.allRanges) {
-      if (range.end <= selStart || range.start >= selEnd) continue
-
-      val clippedStart = maxOf(range.start, selStart)
-      val clippedEnd = minOf(range.end, selEnd)
-      clippedRanges.add(
-        FormattingRange(range.type, clippedStart - selStart, clippedEnd - selStart, range.url),
-      )
-    }
-
-    return MarkdownSerializer.serialize(selectedText, clippedRanges)
-  }
-
+  // Explicit "Copy as Markdown": the user asked for markdown syntax, so it is
+  // also the plain-text representation external targets receive.
   fun copyAsMarkdown() {
-    val markdown = markdownForSelectedRange() ?: return
+    val markdown = view.markdownForSelectedRange() ?: return
     val clipboard = view.context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
-    clipboard.setPrimaryClip(ClipData.newPlainText("Markdown", markdown))
+    clipboard.setPrimaryClip(MarkdownClipboard.newMarkdownClip(markdown, markdown))
   }
 
   companion object {
