@@ -1252,7 +1252,7 @@ using namespace facebook::react;
   [_pendingStyles removeAllObjects];
   [_pendingStyleRemovals removeAllObjects];
   [self rebuildPendingStylesFromContext];
-  [self syncTypingAttributesWithPendingStyles];
+  [self syncTypingAttributesWithCursorBlock];
 }
 
 - (void)rebuildPendingStylesFromContext
