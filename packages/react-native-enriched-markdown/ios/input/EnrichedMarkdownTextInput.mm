@@ -1242,7 +1242,7 @@ using namespace facebook::react;
 - (void)resetPendingStylesForSelectionChange
 {
   // Skip system-driven selection adjustments (e.g., predictive text) that fire
-  // immediately after a text edit.
+  // immediately after a text edit (PR #406).
   static const CFTimeInterval kPostEditGracePeriod = 0.1;
   BOOL isPostEditAdjustment =
       (_lastTextChangeTime > 0 && (CACurrentMediaTime() - _lastTextChangeTime) < kPostEditGracePeriod);
@@ -1719,6 +1719,14 @@ using namespace facebook::react;
 #endif
 
   [self applyFormattingScopedToEditAtLocation:editLocation insertedLength:insertedLength];
+
+  // Sync typing attributes after every edit. The selection-change callback
+  // is either suppressed (_isTextChanging) or guarded by the grace period,
+  // so it won't reliably sync after Enter from a heading line. This call
+  // is idempotent and cheap — on same-line edits it's a no-op in practice.
+  if (_textView.selectedRange.length == 0) {
+    [self syncTypingAttributesWithCursorBlock];
+  }
 
   NSUInteger clampedEditLocation = MIN(editLocation, newLength);
   NSUInteger clampedInsertedLength = MIN(insertedLength, newLength - clampedEditLocation);
