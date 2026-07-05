@@ -62,10 +62,12 @@ class InputFormatter {
   ) {
     val currentStyle = style ?: return
 
+    val blockSpanClasses = blockHandlers.values.flatMap { it.spanClasses() }.toSet()
     val existingSpans =
       spannable
         .getSpans(0, spannable.length, CharacterStyle::class.java)
         .filterIsInstance<MarkdownSpan>()
+        .filter { span -> blockSpanClasses.none { it.isInstance(span) } }
     val linkSpanClasses = handlers[StyleType.LINK]?.spanClasses().orEmpty().toSet()
     val existingLinkSpans = existingSpans.filter { span -> linkSpanClasses.any { it.isInstance(span) } }
     for (span in existingLinkSpans) {
