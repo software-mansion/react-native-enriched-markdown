@@ -1,0 +1,45 @@
+appId: swmansion.enriched.markdown.example
+# ios-only until an Android golden is captured on the CI AVD (Pixel9-API36):
+# run `yarn test:e2e:android:update-screenshots` for this flow and drop the tag.
+tags:
+  - input
+  - smoke
+  - block
+  - header
+  - ios-only
+---
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+# Seed the editor with mixed block content (H1 + paragraph + H2).
+- tapOn:
+    id: set-markdown-button
+- tapOn:
+    id: set-markdown-input
+- inputText: "# Title"
+- pressKey: Enter
+- inputText: "Body **bold**"
+- pressKey: Enter
+- inputText: "## Sub"
+- tapOn:
+    id: set-markdown-confirm
+
+# Copy the whole input as markdown (tagged clip), then paste it back at the end.
+- tapOn:
+    id: copy-to-clipboard-button
+- tapOn: "OK"
+- tapOn:
+    id: editor-container
+- longPressOn:
+    id: editor-container
+- tapOn: "Paste"
+
+- tapOn:
+    id: blur-button
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'paste_markdown_input'
