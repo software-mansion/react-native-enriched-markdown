@@ -991,21 +991,21 @@ using namespace facebook::react;
 {
   [_formattingStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
   [_blockStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
-  [self pruneOrphanedHeadingBlocks];
+  [self pruneOrphanedBlockAnchors];
   NSString *plainText = ENRMGetPlainText(_textView);
   [_blockStore normalizeToLineBoundsInText:plainText];
   return plainText;
 }
 
-/// Reverts to a plain paragraph any heading no longer anchored at a line start
-/// (e.g. Backspace merged its line into the previous one). Must run BEFORE
+/// Reverts to a plain paragraph any anchored block no longer anchored at a line
+/// start (e.g. Backspace merged its line into the previous one). Must run BEFORE
 /// normalizeToLineBoundsInText: so a merged range is judged on its unsnapped
 /// anchor and can't grow over the line it merged into. Mirrors Android.
-- (void)pruneOrphanedHeadingBlocks
+- (void)pruneOrphanedBlockAnchors
 {
   NSString *text = _textView.textStorage.string;
   for (ENRMBlockRange *block in _blockStore.allRanges) {
-    if (ENRMHeadingLevelForBlockType(block.type) == 0) {
+    if (!ENRMBlockTypePersistsWhenEmpty(block.type)) {
       continue;
     }
     NSUInteger anchor = MIN(block.range.location, text.length);

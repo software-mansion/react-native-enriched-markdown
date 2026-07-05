@@ -337,16 +337,16 @@ class EnrichedMarkdownTextInputView(
   }
 
   /**
-   * Drops heading ranges no longer anchored at a line start (e.g. Backspace merged
+   * Drops anchored blocks no longer anchored at a line start (e.g. Backspace merged
    * their line into the previous one). Must run BEFORE [BlockStore.normalizeToLineBounds]
    * so a merged range is judged on its unsnapped anchor and can't grow over the line
    * it merged into.
    */
-  private fun pruneOrphanedHeadingAnchors() {
+  private fun pruneOrphanedAnchors() {
     val editable = text ?: return
     val orphans =
       blockStore.allRanges.filter { range ->
-        range.type in BlockType.HEADINGS && !isAtLineStart(editable, range.start)
+        range.type in BlockType.ANCHORED && !isAtLineStart(editable, range.start)
       }
     for (orphan in orphans) {
       blockStore.removeBlock(orphan.start, orphan.start, editable)
@@ -364,7 +364,7 @@ class EnrichedMarkdownTextInputView(
 
   /**
    * Adjusts both [formattingStore] and [blockStore] for a text edit, then prunes
-   * orphaned heading anchors and normalizes block ranges to line bounds. Every
+   * orphaned anchors and normalizes block ranges to line bounds. Every
    * code path that mutates the text buffer must call this so block ranges stay in
    * sync — mirrors iOS's `replaceTextInRange:withText:formattingRanges:blockRanges:`.
    */
@@ -375,7 +375,7 @@ class EnrichedMarkdownTextInputView(
   ) {
     formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
     blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
-    pruneOrphanedHeadingAnchors()
+    pruneOrphanedAnchors()
     text?.let { blockStore.normalizeToLineBounds(it) }
   }
 

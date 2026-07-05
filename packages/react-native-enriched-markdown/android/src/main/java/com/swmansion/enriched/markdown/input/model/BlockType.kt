@@ -26,6 +26,12 @@ enum class BlockType {
       listOf(HEADING_1, HEADING_2, HEADING_3, HEADING_4, HEADING_5, HEADING_6)
 
     /**
+     * Block types whose emptied line persists as a zero-length anchor (an emptied
+     * heading stays a heading) until toggled off.
+     */
+    val ANCHORED: Set<BlockType> = HEADINGS.toSet()
+
+    /**
      * Maps an H-level (1-6) to its [BlockType], or null when out of range. Used by
      * the parser to turn an AST heading node's `level` attribute into a block type.
      */
