@@ -253,10 +253,7 @@ class EnrichedMarkdownTextInputView(
 
     isProcessingTextChange = true
     try {
-      formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
-      blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
-      pruneOrphanedHeadingAnchors()
-      text?.let { blockStore.normalizeToLineBounds(it) }
+      adjustStoresForEdit(editStart, deletedLength, insertedLength)
       applyPendingStyles(editStart, insertedLength)
       applyFormattingScopedToEdit(editStart, insertedLength)
 
@@ -359,6 +356,23 @@ class EnrichedMarkdownTextInputView(
   ): Boolean {
     if (pos < 0 || pos > editable.length) return false
     return pos == 0 || editable[pos - 1].isLineBreak()
+  }
+
+  /**
+   * Adjusts both [formattingStore] and [blockStore] for a text edit, then prunes
+   * orphaned heading anchors and normalizes block ranges to line bounds. Every
+   * code path that mutates the text buffer must call this so block ranges stay in
+   * sync — mirrors iOS's `replaceTextInRange:withText:formattingRanges:blockRanges:`.
+   */
+  private fun adjustStoresForEdit(
+    editStart: Int,
+    deletedLength: Int,
+    insertedLength: Int,
+  ) {
+    formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
+    blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
+    pruneOrphanedHeadingAnchors()
+    text?.let { blockStore.normalizeToLineBounds(it) }
   }
 
   fun applyFormatting() {
@@ -566,9 +580,7 @@ class EnrichedMarkdownTextInputView(
     isProcessingTextChange = true
     try {
       editable.replace(selStart, selEnd, parsed.plainText)
-      formattingStore.adjustForEdit(selStart, selEnd - selStart, parsed.plainText.length)
-      blockStore.adjustForEdit(selStart, selEnd - selStart, parsed.plainText.length)
-      blockStore.normalizeToLineBounds(editable)
+      adjustStoresForEdit(selStart, selEnd - selStart, parsed.plainText.length)
 
       for (range in parsed.formattingRanges) {
         formattingStore.addRange(
@@ -674,7 +686,7 @@ class EnrichedMarkdownTextInputView(
     isProcessingTextChange = true
     try {
       editable.replace(selStart, selEnd, displayText)
-      formattingStore.adjustForEdit(selStart, selEnd - selStart, displayText.length)
+      adjustStoresForEdit(selStart, selEnd - selStart, displayText.length)
       autoLinkDetector.clearAutoLinkInRange(editable, selStart, linkEnd)
       formattingStore.addRange(FormattingRange(StyleType.LINK, selStart, linkEnd, sanitizeLinkUrl(url)))
       lastProcessedText = editable.toString()
@@ -706,7 +718,7 @@ class EnrichedMarkdownTextInputView(
     isProcessingTextChange = true
     try {
       editable.replace(start, end, replacement)
-      formattingStore.adjustForEdit(start, end - start, replacement.length)
+      adjustStoresForEdit(start, end - start, replacement.length)
       autoLinkDetector.clearAutoLinkInRange(editable, start, linkEnd)
       formattingStore.addRange(FormattingRange(StyleType.LINK, start, linkEnd, sanitizedUrl))
       lastProcessedText = editable.toString()
@@ -729,7 +741,7 @@ class EnrichedMarkdownTextInputView(
     isProcessingTextChange = true
     try {
       editable.replace(selStart, selEnd, indicator)
-      formattingStore.adjustForEdit(selStart, selEnd - selStart, indicator.length)
+      adjustStoresForEdit(selStart, selEnd - selStart, indicator.length)
       lastProcessedText = editable.toString()
       setSelection(selStart + indicator.length)
       applyFormattingAndEmit()
@@ -758,7 +770,7 @@ class EnrichedMarkdownTextInputView(
     isProcessingTextChange = true
     try {
       editable.delete(linkRange.start, linkRange.end)
-      formattingStore.adjustForEdit(linkRange.start, linkRange.length, 0)
+      adjustStoresForEdit(linkRange.start, linkRange.length, 0)
       lastProcessedText = editable.toString()
       setSelection(linkRange.start.coerceAtMost(editable.length))
       applyFormattingAndEmit()
