@@ -15,8 +15,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setRanges:(NSArray<ENRMBlockRange *> *)ranges;
 - (void)clearAll;
 
-- (nullable ENRMBlockRange *)blockRangeContainingPosition:(NSUInteger)position;
-
 /// Sets/replaces the block on every paragraph the given range touches, expanding
 /// to whole-line boundaries within `text`. Removes any block previously covering
 /// those paragraphs.

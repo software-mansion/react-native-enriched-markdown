@@ -68,16 +68,6 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   [_ranges removeAllObjects];
 }
 
-- (nullable ENRMBlockRange *)blockRangeContainingPosition:(NSUInteger)position
-{
-  for (ENRMBlockRange *blockRange in _ranges) {
-    if (position >= blockRange.range.location && position < NSMaxRange(blockRange.range)) {
-      return blockRange;
-    }
-  }
-  return nil;
-}
-
 /// Drops any stored block overlapping `paragraphRange` so a replacement can be
 /// inserted cleanly. Blocks are line-scoped and never partially overlap, so a
 /// touched block is removed wholesale.

@@ -30,8 +30,6 @@ class BlockStore {
     ranges.clear()
   }
 
-  fun blockRangeContaining(position: Int): BlockRange? = ranges.firstOrNull { position >= it.start && position < it.end }
-
   /**
    * Sets/replaces the block on every paragraph the given range touches, expanding
    * to whole-line boundaries within [text]. Removes any block previously covering
