@@ -265,11 +265,13 @@ static NSArray<ENRMFormattingRange *> *splitRangesAtParagraphBreaks(NSArray<ENRM
 
     NSUInteger blockStart = blockRange.range.location;
     NSUInteger blockEnd = NSMaxRange(blockRange.range);
+    BOOL isZeroLength = blockRange.range.length == 0;
 
     for (NSUInteger lineIndex = 0; lineIndex < plainLines.count; lineIndex++) {
       NSUInteger lineStart = lineStartOffsets[lineIndex].unsignedIntegerValue;
       NSUInteger lineEnd = lineStart + plainLines[lineIndex].length;
-      if (lineEnd >= blockStart && lineStart < blockEnd) {
+      BOOL overlaps = isZeroLength ? (lineStart == blockStart) : (lineEnd >= blockStart && lineStart < blockEnd);
+      if (overlaps) {
         markdownLines[lineIndex] = [prefix stringByAppendingString:markdownLines[lineIndex]];
       }
     }

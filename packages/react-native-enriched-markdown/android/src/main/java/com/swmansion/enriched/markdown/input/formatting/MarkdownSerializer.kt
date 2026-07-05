@@ -51,10 +51,12 @@ object MarkdownSerializer {
       val prefix = blockPrefixProvider(blockRange)
       if (prefix.isEmpty()) continue
 
+      val isZeroLength = blockRange.length == 0
       for (lineIndex in plainLines.indices) {
         val lineStart = lineStartOffsets[lineIndex]
         val lineEnd = lineStart + plainLines[lineIndex].length
-        if (lineEnd >= blockRange.start && lineStart < blockRange.end) {
+        val overlaps = if (isZeroLength) lineStart == blockRange.start else lineEnd >= blockRange.start && lineStart < blockRange.end
+        if (overlaps) {
           markdownLines[lineIndex] = prefix + markdownLines[lineIndex]
         }
       }

@@ -367,13 +367,23 @@
   }
 
   for (ENRMBlockRange *blockRange in blockRanges) {
-    if (blockRange.range.length == 0 || NSMaxRange(blockRange.range) > textLength) {
+    BOOL isHeadingAnchor = blockRange.range.length == 0 && ENRMHeadingLevelForBlockType(blockRange.type) > 0;
+
+    if (!isHeadingAnchor && (blockRange.range.length == 0 || NSMaxRange(blockRange.range) > textLength)) {
+      continue;
+    }
+    if (isHeadingAnchor && blockRange.range.location > textLength) {
       continue;
     }
 
-    // Blocks are line-scoped and the scope covers whole lines, so a block
-    // either lies fully inside the scope or fully outside it.
-    if (NSIntersectionRange(blockRange.range, scopeRange).length == 0) {
+    // Scope check: normal blocks are line-scoped and either fully inside or
+    // outside; a zero-length heading anchor is in-scope when its point falls
+    // within [scopeStart, scopeEnd] inclusive.
+    if (isHeadingAnchor) {
+      if (blockRange.range.location < scopeRange.location || blockRange.range.location > NSMaxRange(scopeRange)) {
+        continue;
+      }
+    } else if (NSIntersectionRange(blockRange.range, scopeRange).length == 0) {
       continue;
     }
 
@@ -382,13 +392,13 @@
       continue;
     }
 
-    // Seed from the paragraph style at the block's location. This only matters
-    // for newly claimed paragraphs that carry a base style — for re-claimed
-    // paragraphs the reset pass above just cleared the attribute, so this reads
-    // the default. That's fine: handlers set absolute values, and
-    // applyWritingDirection re-derives direction after this pass.
+    NSUInteger attrIndex = blockRange.range.location;
+    if (attrIndex >= textLength) {
+      attrIndex = textLength > 0 ? textLength - 1 : 0;
+    }
+
     NSParagraphStyle *existingStyle = [textStorage attribute:NSParagraphStyleAttributeName
-                                                     atIndex:blockRange.range.location
+                                                     atIndex:attrIndex
                                               effectiveRange:NULL];
     NSMutableParagraphStyle *paragraphStyle =
         existingStyle ? [existingStyle mutableCopy] : [[NSMutableParagraphStyle alloc] init];
@@ -400,14 +410,24 @@
     attributes[ENRMBlockTypeAttributeName] = @(blockRange.type);
     attributes[ENRMBlockLevelAttributeName] = @(blockRange.level);
 
-    // Merge block font size onto each run, preserving inline bold/italic traits.
+    // For a zero-length heading anchor on an empty line, stamp onto the line
+    // terminator so the paragraph style (heading font size) takes effect.
+    NSRange applyRange = blockRange.range;
+    if (isHeadingAnchor && applyRange.location < textLength) {
+      applyRange = NSMakeRange(applyRange.location, 1);
+    }
+
     UIFont *blockFont = attributes[NSFontAttributeName];
     if (blockFont) {
       [attributes removeObjectForKey:NSFontAttributeName];
-      [self mergeFontSize:blockFont overRange:blockRange.range inTextStorage:textStorage];
+      if (applyRange.length > 0) {
+        [self mergeFontSize:blockFont overRange:applyRange inTextStorage:textStorage];
+      }
     }
 
-    [textStorage addAttributes:attributes range:blockRange.range];
+    if (applyRange.length > 0) {
+      [textStorage addAttributes:attributes range:applyRange];
+    }
   }
 
   [textStorage endEditing];
