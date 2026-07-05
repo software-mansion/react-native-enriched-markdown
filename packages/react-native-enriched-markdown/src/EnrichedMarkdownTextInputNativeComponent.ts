@@ -320,6 +320,10 @@ interface NativeCommands {
     viewRef: React.ElementRef<ComponentType>,
     level: CodegenTypes.Int32
   ) => void;
+  toggleUnorderedList: (viewRef: React.ElementRef<ComponentType>) => void;
+  toggleOrderedList: (viewRef: React.ElementRef<ComponentType>) => void;
+  indentList: (viewRef: React.ElementRef<ComponentType>) => void;
+  outdentList: (viewRef: React.ElementRef<ComponentType>) => void;
   setLink: (viewRef: React.ElementRef<ComponentType>, url: string) => void;
   insertLink: (
     viewRef: React.ElementRef<ComponentType>,
@@ -359,6 +363,10 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
     'toggleStrikethrough',
     'toggleSpoiler',
     'toggleHeading',
+    'toggleUnorderedList',
+    'toggleOrderedList',
+    'indentList',
+    'outdentList',
     'setLink',
     'insertLink',
     'insertMention',

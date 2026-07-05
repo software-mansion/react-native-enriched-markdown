@@ -14,6 +14,8 @@ import com.swmansion.enriched.markdown.input.spans.InputListItemSpacingSpan
 class UnorderedListBlockHandler : BlockHandler {
   override val blockType: BlockType = BlockType.UNORDERED_LIST_ITEM
 
+  override val continuesOnNewline: Boolean = true
+
   override fun createSpans(
     blockRange: BlockRange,
     style: InputFormatterStyle,
