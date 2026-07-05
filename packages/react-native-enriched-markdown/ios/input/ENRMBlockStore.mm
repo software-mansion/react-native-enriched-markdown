@@ -1,22 +1,6 @@
 #import "ENRMBlockStore.h"
 #import "ENRMRangeEditAdjustment.h"
-
-static NSUInteger sortedInsertionIndex(NSArray<ENRMBlockRange *> *ranges, NSUInteger location)
-{
-  NSUInteger index = 0;
-  for (ENRMBlockRange *existing in ranges) {
-    if (existing.range.location > location)
-      break;
-    index++;
-  }
-  return index;
-}
-
-static void removeIndexesInReverse(NSMutableArray *array, NSMutableIndexSet *indexes)
-{
-  [indexes enumerateIndexesWithOptions:NSEnumerationReverse
-                            usingBlock:^(NSUInteger idx, BOOL *stop) { [array removeObjectAtIndex:idx]; }];
-}
+#import "ENRMRangeStoreUtils.h"
 
 /// Expands a selection to cover whole paragraphs (line-scoped block boundaries).
 /// Clamps unconditionally so out-of-bounds input can't reach
@@ -97,7 +81,7 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
     [indexesToRemove addIndex:idx];
   }
 
-  removeIndexesInReverse(_ranges, indexesToRemove);
+  ENRMRemoveIndexesInReverse(_ranges, indexesToRemove);
 }
 
 - (void)setBlockType:(ENRMInputBlockType)type
@@ -108,22 +92,15 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   NSRange paragraphRange = paragraphBoundsForRange(range, text);
   [self removeBlocksOverlappingRange:paragraphRange];
 
-  // Store content-only bounds (the parser's convention): trim the line
-  // terminator that paragraphRangeForRange includes (handles \r\n as well).
-  while (paragraphRange.length > 0) {
-    unichar last = [text characterAtIndex:NSMaxRange(paragraphRange) - 1];
-    if (last != '\n' && last != '\r') {
-      break;
-    }
-    paragraphRange.length--;
-  }
+  paragraphRange = ENRMTrimLineTerminators(paragraphRange, text);
 
   if (paragraphRange.length == 0 && ENRMHeadingLevelForBlockType(type) == 0) {
     return;
   }
 
   ENRMBlockRange *blockRange = [ENRMBlockRange rangeWithType:type range:paragraphRange level:level];
-  NSUInteger insertAt = sortedInsertionIndex(_ranges, blockRange.range.location);
+  NSUInteger insertAt = ENRMSortedInsertionIndex(
+      _ranges, blockRange.range.location, ^NSUInteger(id range) { return ((ENRMBlockRange *)range).range.location; });
   [_ranges insertObject:blockRange atIndex:insertAt];
 }
 
@@ -176,7 +153,7 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
     blockRange.range = adjusted.range;
   }
 
-  removeIndexesInReverse(_ranges, indexesToRemove);
+  ENRMRemoveIndexesInReverse(_ranges, indexesToRemove);
 
   NSMutableIndexSet *emptyIndexes = [NSMutableIndexSet indexSet];
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
@@ -186,7 +163,7 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
     }
   }
   if (emptyIndexes.count > 0) {
-    removeIndexesInReverse(_ranges, emptyIndexes);
+    ENRMRemoveIndexesInReverse(_ranges, emptyIndexes);
   }
 }
 
@@ -203,15 +180,7 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
     ENRMBlockRange *blockRange = _ranges[idx];
     NSRange lineRange = paragraphBoundsForRange(NSMakeRange(blockRange.range.location, 0), text);
 
-    // Block content ranges never cover the line terminator; paragraphRangeForRange
-    // includes it, so trim it (handles \r\n as well).
-    while (lineRange.length > 0) {
-      unichar last = [text characterAtIndex:NSMaxRange(lineRange) - 1];
-      if (last != '\n' && last != '\r') {
-        break;
-      }
-      lineRange.length--;
-    }
+    lineRange = ENRMTrimLineTerminators(lineRange, text);
 
     BOOL isHeading = ENRMHeadingLevelForBlockType(blockRange.type) > 0;
     if ((lineRange.length == 0 && !isHeading) || (NSInteger)lineRange.location <= previousEnd) {
@@ -223,7 +192,7 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
     previousEnd = (NSInteger)NSMaxRange(lineRange);
   }
 
-  removeIndexesInReverse(_ranges, indexesToRemove);
+  ENRMRemoveIndexesInReverse(_ranges, indexesToRemove);
 }
 
 @end

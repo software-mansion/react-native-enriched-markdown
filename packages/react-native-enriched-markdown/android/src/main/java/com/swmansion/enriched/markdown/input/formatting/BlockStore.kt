@@ -49,7 +49,7 @@ class BlockStore {
     if (end < start || (end == start && type !in BlockType.HEADINGS)) return
 
     val block = BlockRange(type, start, end, level)
-    ranges.add(sortedInsertionIndex(start), block)
+    ranges.add(sortedInsertionIndex(ranges, start), block)
   }
 
   /**
@@ -107,12 +107,12 @@ class BlockStore {
           continue // the anchor's line was deleted
         }
       }
-      ranges.add(sortedInsertionIndex(anchor.start), anchor)
+      ranges.add(sortedInsertionIndex(ranges, anchor.start), anchor)
     }
 
     if (collapsed != null) {
       ranges.add(
-        sortedInsertionIndex(editLocation),
+        sortedInsertionIndex(ranges, editLocation),
         BlockRange(collapsed.type, editLocation, editLocation, collapsed.level),
       )
     }
@@ -174,14 +174,5 @@ class BlockStore {
     while (lineEnd < text.length && text[lineEnd] != '\n') lineEnd++
 
     return lineStart to lineEnd
-  }
-
-  private fun sortedInsertionIndex(location: Int): Int {
-    var index = 0
-    for (existing in ranges) {
-      if (existing.start > location) break
-      index++
-    }
-    return index
   }
 }

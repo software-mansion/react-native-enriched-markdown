@@ -2,6 +2,18 @@ package com.swmansion.enriched.markdown.input.formatting
 
 import com.swmansion.enriched.markdown.input.model.MutableRangeBounds
 
+internal fun <T : MutableRangeBounds> sortedInsertionIndex(
+  ranges: List<T>,
+  location: Int,
+): Int {
+  var index = 0
+  for (existing in ranges) {
+    if (existing.start > location) break
+    index++
+  }
+  return index
+}
+
 /**
  * Shared shift/clip logic applied to stored ranges after a text edit. Both
  * [FormattingStore] and [BlockStore] delegate here so the overlap

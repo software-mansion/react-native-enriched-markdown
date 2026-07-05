@@ -72,7 +72,7 @@ class FormattingStore {
     }
 
     val merged = FormattingRange(newRange.type, mergedStart, mergedEnd, newRange.url)
-    val insertAt = sortedInsertionIndex(mergedStart)
+    val insertAt = sortedInsertionIndex(ranges, mergedStart)
     ranges.add(insertAt, merged)
   }
 
@@ -104,7 +104,7 @@ class FormattingStore {
 
     // Remainders are fragments of a just-removed range and cannot overlap others.
     for (remainder in remainders) {
-      val insertAt = sortedInsertionIndex(remainder.start)
+      val insertAt = sortedInsertionIndex(ranges, remainder.start)
       ranges.add(insertAt, remainder)
     }
   }
@@ -120,14 +120,5 @@ class FormattingStore {
     insertedLength: Int,
   ) {
     RangeEditAdjustment.adjustForEdit(ranges, editLocation, deletedLength, insertedLength)
-  }
-
-  private fun sortedInsertionIndex(location: Int): Int {
-    var index = 0
-    for (existing in ranges) {
-      if (existing.start > location) break
-      index++
-    }
-    return index
   }
 }

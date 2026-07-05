@@ -1,22 +1,6 @@
 #import "ENRMFormattingStore.h"
 #import "ENRMRangeEditAdjustment.h"
-
-static NSUInteger sortedInsertionIndex(NSArray<ENRMFormattingRange *> *ranges, NSUInteger location)
-{
-  NSUInteger index = 0;
-  for (ENRMFormattingRange *existing in ranges) {
-    if (existing.range.location > location)
-      break;
-    index++;
-  }
-  return index;
-}
-
-static void removeIndexesInReverse(NSMutableArray *array, NSMutableIndexSet *indexes)
-{
-  [indexes enumerateIndexesWithOptions:NSEnumerationReverse
-                            usingBlock:^(NSUInteger idx, BOOL *stop) { [array removeObjectAtIndex:idx]; }];
-}
+#import "ENRMRangeStoreUtils.h"
 
 @implementation ENRMFormattingStore {
   NSMutableArray<ENRMFormattingRange *> *_ranges;
@@ -143,13 +127,14 @@ static void removeIndexesInReverse(NSMutableArray *array, NSMutableIndexSet *ind
     }
   }
 
-  removeIndexesInReverse(_ranges, mergeIndexes);
+  ENRMRemoveIndexesInReverse(_ranges, mergeIndexes);
 
   ENRMFormattingRange *merged = [ENRMFormattingRange rangeWithType:newRange.type
                                                              range:NSMakeRange(mergedStart, mergedEnd - mergedStart)
                                                                url:newRange.url];
 
-  NSUInteger insertAt = sortedInsertionIndex(_ranges, merged.range.location);
+  NSUInteger insertAt = ENRMSortedInsertionIndex(
+      _ranges, merged.range.location, ^NSUInteger(id range) { return ((ENRMFormattingRange *)range).range.location; });
   [_ranges insertObject:merged atIndex:insertAt];
 }
 
@@ -187,11 +172,13 @@ static void removeIndexesInReverse(NSMutableArray *array, NSMutableIndexSet *ind
     }
   }
 
-  removeIndexesInReverse(_ranges, indexesToRemove);
+  ENRMRemoveIndexesInReverse(_ranges, indexesToRemove);
 
   // Remainders are fragments of a just-removed range and cannot overlap others.
   for (ENRMFormattingRange *remainder in remainders) {
-    NSUInteger insertAt = sortedInsertionIndex(_ranges, remainder.range.location);
+    NSUInteger insertAt = ENRMSortedInsertionIndex(_ranges, remainder.range.location, ^NSUInteger(id range) {
+      return ((ENRMFormattingRange *)range).range.location;
+    });
     [_ranges insertObject:remainder atIndex:insertAt];
   }
 }
@@ -220,7 +207,7 @@ static void removeIndexesInReverse(NSMutableArray *array, NSMutableIndexSet *ind
     }
   }
 
-  removeIndexesInReverse(_ranges, indexesToRemove);
+  ENRMRemoveIndexesInReverse(_ranges, indexesToRemove);
 
   NSMutableIndexSet *emptyIndexes = [NSMutableIndexSet indexSet];
   for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
@@ -229,7 +216,7 @@ static void removeIndexesInReverse(NSMutableArray *array, NSMutableIndexSet *ind
     }
   }
   if (emptyIndexes.count > 0) {
-    removeIndexesInReverse(_ranges, emptyIndexes);
+    ENRMRemoveIndexesInReverse(_ranges, emptyIndexes);
   }
 }
 
