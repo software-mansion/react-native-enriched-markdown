@@ -568,7 +568,9 @@ using namespace facebook::react;
 
 - (void)updatePlaceholderVisibility
 {
-  _placeholderLabel.hidden = (ENRMGetPlainText(_textView).length > 0);
+  BOOL hasText = ENRMGetPlainText(_textView).length > 0;
+  BOOL headingActive = [self headingLevelForCursorParagraph] > 0;
+  _placeholderLabel.hidden = hasText || headingActive;
 }
 
 #pragma mark - Markdown import
@@ -903,6 +905,7 @@ using namespace facebook::react;
 
   [self applyFormatting];
   [self syncTypingAttributesWithCursorBlock];
+  [self updatePlaceholderVisibility];
   [self emitFormattingChanged];
 }
 

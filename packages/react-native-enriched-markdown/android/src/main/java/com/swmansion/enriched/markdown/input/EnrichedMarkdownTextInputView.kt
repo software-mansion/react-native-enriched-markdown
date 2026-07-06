@@ -2,7 +2,6 @@ package com.swmansion.enriched.markdown.input
 
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
 import android.graphics.Color
@@ -99,7 +98,7 @@ class EnrichedMarkdownTextInputView(
   private var activeMentionText = ""
 
   private var headingOverrideBaseSizePx: Float? = null
-  private var savedHintTextColors: ColorStateList? = null
+  private var baseHintColor: Int? = null
 
   init {
     setupDetectorPipeline()
@@ -680,18 +679,18 @@ class EnrichedMarkdownTextInputView(
       val headingSizePx = formatter.resolveHeadingFontSizePx(block.level) ?: return
       if (headingOverrideBaseSizePx == null) {
         headingOverrideBaseSizePx = paint.textSize
-        savedHintTextColors = hintTextColors
+        baseHintColor = currentHintTextColor
+        setHintTextColor(Color.TRANSPARENT)
       }
       if (paint.textSize != headingSizePx) {
         setTextSize(TypedValue.COMPLEX_UNIT_PX, headingSizePx)
-        setHintTextColor(Color.TRANSPARENT)
       }
     } else {
       headingOverrideBaseSizePx?.let { baseSizePx ->
         setTextSize(TypedValue.COMPLEX_UNIT_PX, baseSizePx)
         headingOverrideBaseSizePx = null
-        savedHintTextColors?.let { setHintTextColor(it) }
-        savedHintTextColors = null
+        baseHintColor?.let { setHintTextColor(it) }
+        baseHintColor = null
       }
     }
   }
