@@ -22,7 +22,7 @@ abstract class BaseListSpan(
   protected val blockStyle: BlockStyle,
   protected val marginLeft: Float,
   protected val gapWidth: Float,
-  private val drawsMarker: Boolean = true,
+  internal val drawsMarker: Boolean = true,
 ) : MetricAffectingSpan(),
   LeadingMarginSpan {
   private var cachedText: CharSequence? = null

@@ -151,6 +151,7 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
   ENRMListMarkerDescriptor *marker = [[ENRMListMarkerDescriptor alloc] init];
   marker.isTask = isTask;
   marker.isChecked = isChecked;
+  marker.taskIndex = taskIndex;
   marker.listType = context.listType;
   marker.number = currentPosition;
   marker.depth = nestingLevel;

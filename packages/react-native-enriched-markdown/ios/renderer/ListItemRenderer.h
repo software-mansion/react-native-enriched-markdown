@@ -13,6 +13,7 @@ extern NSString *const TaskIndexAttribute;
 @interface ENRMListMarkerDescriptor : NSObject
 @property (nonatomic, assign) BOOL isTask;
 @property (nonatomic, assign) BOOL isChecked;
+@property (nonatomic, assign) NSInteger taskIndex;
 @property (nonatomic, assign) ListType listType;
 @property (nonatomic, assign) NSInteger number;
 @property (nonatomic, assign) NSInteger depth;

@@ -6,7 +6,6 @@ import TextScreen from './screens/text/TextScreen';
 import InputScreen from './screens/input/InputScreen';
 import StreamingMarkdownSimulator from './screens/streaming/StreamingMarkdownSimulator';
 import StorybookScreen from './screens/storybook/StorybookScreen';
-import ListsScreen from './screens/lists/ListsScreen';
 
 export default function App() {
   return (
@@ -53,11 +52,6 @@ export default function App() {
           name="Storybook"
           component={StorybookScreen}
           options={{ title: 'Storybook' }}
-        />
-        <Stack.Screen
-          name="Lists"
-          component={ListsScreen}
-          options={{ title: 'Lists' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

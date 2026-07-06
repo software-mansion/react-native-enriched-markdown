@@ -9,7 +9,7 @@ import android.text.style.LeadingMarginSpan
 // Draws a list marker on a line owned by another block (code block, nested
 // sublist) without contributing any margin of its own.
 class ListMarkerAnchorSpan(
-  private val marker: BaseListSpan,
+  internal val marker: BaseListSpan,
 ) : LeadingMarginSpan {
   override fun getLeadingMargin(first: Boolean): Int = 0
 

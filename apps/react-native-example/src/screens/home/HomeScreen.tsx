@@ -51,13 +51,6 @@ const SCREENS: ScreenItem[] = [
     testID: 'home-block-storybook',
     color: '#FF2D55',
   },
-  {
-    route: 'Lists',
-    label: 'Lists',
-    subtext: 'list rendering edge cases',
-    testID: 'home-block-lists',
-    color: '#5856D6',
-  },
 ];
 
 export default function HomeScreen({ navigation }: Props) {
