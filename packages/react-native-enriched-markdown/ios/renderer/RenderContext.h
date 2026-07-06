@@ -82,8 +82,9 @@ typedef NS_ENUM(NSInteger, ListType) { ListTypeUnordered, ListTypeOrdered };
 
 /**
  * Captures/restores the scoped context state: block style, block type, heading level,
- * blockquote/list depths, list type and list item counter. Accumulators (range
- * registries, taskItemCount) are excluded on purpose — they must survive restores.
+ * blockquote/list depths, list type, list item counter and accumulated indent.
+ * Accumulators (range registries, taskItemCount) are excluded on purpose — they
+ * must survive restores.
  */
 - (id)snapshotScope;
 - (void)restoreScope:(id)snapshot;

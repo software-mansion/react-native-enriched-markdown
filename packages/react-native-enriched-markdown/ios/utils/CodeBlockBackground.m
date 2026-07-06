@@ -58,9 +58,13 @@
                                                effectiveRange:NULL];
   CGFloat indent = [indentAttr doubleValue];
 
+  CGFloat availableWidth = textContainer.size.width - indent;
+  if (availableWidth <= 0)
+    return;
+
   blockRect.origin.x = origin.x + indent;
   blockRect.origin.y += origin.y;
-  blockRect.size.width = textContainer.size.width - indent;
+  blockRect.size.width = availableWidth;
 
   // We extend the background specifically to cover the bottom padding spacer,
   // excluding any additional marginBottom applied via measurement.

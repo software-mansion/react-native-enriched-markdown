@@ -111,6 +111,7 @@ class CodeBlockSpan(
       right.toFloat() - inset,
       bottom.toFloat() - (if (isLastLine) inset else 0f),
     )
+    if (rect.left >= rect.right) return
 
     val radius = codeBlockStyle.borderRadius
     val adjRadius = if (radius > inset) radius - inset else radius
