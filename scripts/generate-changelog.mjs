@@ -39,10 +39,17 @@ function ghGraphql(query) {
 
 const [from, to = 'HEAD'] = process.argv.slice(2);
 if (!from) {
-  console.error('usage: generate-changelog.mjs <from-tag> [to-ref]');
+  console.error('usage: ./scripts/generate-changelog.mjs <from-tag> [to-ref]');
   process.exit(1);
 }
-git('rev-parse', '--verify', '--quiet', `${from}^{commit}`);
+for (const ref of [from, to]) {
+  try {
+    git('rev-parse', '--verify', '--quiet', `${ref}^{commit}`);
+  } catch {
+    console.error(`error: '${ref}' is not a known git ref`);
+    process.exit(1);
+  }
+}
 
 const SEP = '\x1f';
 const log = git('log', '--reverse', `--format=%H${SEP}%an${SEP}%ae${SEP}%s`, `${from}..${to}`);
@@ -123,14 +130,19 @@ if (firstPrByLogin.size) {
   try {
     const cutoff = git('log', '-1', '--format=%cI', from);
     const logins = [...firstPrByLogin.keys()];
-    const fields = logins
-      .map(
-        (l, i) =>
-          `u${i}: search(query: "repo:${REPO} is:pr is:merged author:${l} merged:<${cutoff}", type: ISSUE, first: 1) { issueCount }`
-      )
-      .join(' ');
-    const data = ghGraphql(`query { ${fields} }`);
-    newContributors = logins.filter((l, i) => data.data?.[`u${i}`]?.issueCount === 0);
+    for (let i = 0; i < logins.length; i += 25) {
+      const chunk = logins.slice(i, i + 25);
+      const fields = chunk
+        .map(
+          (l, j) =>
+            `u${j}: search(query: "repo:${REPO} is:pr is:merged author:${l} merged:<${cutoff}", type: ISSUE, first: 1) { issueCount }`
+        )
+        .join(' ');
+      const data = ghGraphql(`query { ${fields} }`);
+      newContributors.push(
+        ...chunk.filter((l, j) => data.data?.[`u${j}`]?.issueCount === 0)
+      );
+    }
   } catch {
     console.error('warning: new-contributor lookup failed, skipping that section');
   }

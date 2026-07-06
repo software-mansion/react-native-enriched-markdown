@@ -4,7 +4,7 @@ Repo-level tooling, mostly for releases. Not needed for regular contribution wor
 
 ## generate-changelog.mjs
 
-Prints GitHub-release-style markdown for all commits since a tag, grouped by conventional-commit prefix (feat / fix / refactor / test / docs & chores), with PR links, author handles, and a New Contributors section.
+Prints GitHub-release-style markdown for all commits since a tag, with PR links, author handles, and a New Contributors section. Commits are grouped by conventional-commit prefix: `feat` → New Features, `fix`/`perf` → Fixes & Improvements, `refactor` → Refactors, `test` → Tests, `docs`/`chore`/`build`/`ci` → Docs & Chores, and anything else → Other Changes.
 
 ```sh
 ./scripts/generate-changelog.mjs v0.7.0 | pbcopy          # everything since v0.7.0
