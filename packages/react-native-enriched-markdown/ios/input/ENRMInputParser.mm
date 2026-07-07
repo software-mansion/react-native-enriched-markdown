@@ -2,6 +2,7 @@
 #import "ENRMFormattingRange.h"
 #import "ENRMInputRemend.h"
 #include "md4c.h"
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -104,6 +105,7 @@ struct ParseContext {
   std::vector<InlineSpanInfo> resolved;
   std::vector<BlockInfo> openBlockStack;
   std::vector<BlockInfo> resolvedBlocks;
+  std::vector<size_t> textStartOffsets;
   size_t lastTextEnd = 0;
 };
 
@@ -145,23 +147,23 @@ static inline NSUInteger mapByteOffset(const std::vector<NSUInteger> &map, size_
   return map[std::min(offset, maxOffset)];
 }
 
-static const size_t kClosingDelimiterByteLength[] = {
-    [ENRMInputStyleTypeStrong] = 2,        [ENRMInputStyleTypeEmphasis] = 1, [ENRMInputStyleTypeUnderline] = 1,
-    [ENRMInputStyleTypeStrikethrough] = 2, [ENRMInputStyleTypeSpoiler] = 2,
-};
-
-static size_t closingDelimiterEndByte(const InlineSpanInfo &span, const char *utf8, size_t bufferLength)
+static size_t closingDelimiterEndByte(const ParseContext &context, const InlineSpanInfo &span)
 {
   size_t position = span.contentEndByteOffset;
 
   if (span.type == ENRMInputStyleTypeLink) {
-    while (position < bufferLength && utf8[position] != ')') {
+    while (position < context.bufferLength && context.buffer[position] != ')') {
       position++;
     }
-    return (position < bufferLength) ? position + 1 : position;
+    return (position < context.bufferLength) ? position + 1 : position;
   }
 
-  return position + kClosingDelimiterByteLength[span.type];
+  // Closing delimiters occupy the gap between content end and the next text run
+  // (md4c never emits delimiters as text). Anchoring here — rather than adding a
+  // fixed per-type length — keeps stacked closers of co-terminating spans (e.g.
+  // "***", "**~~x~~**") from overlapping and leaking a trailing marker.
+  auto next = std::lower_bound(context.textStartOffsets.begin(), context.textStartOffsets.end(), position);
+  return (next != context.textStartOffsets.end()) ? *next : context.bufferLength;
 }
 
 // Block tracking. md4c's enter_block gives no byte offset, so a block's content
@@ -264,6 +266,7 @@ static int onText(MD_TEXTTYPE, const MD_CHAR *text, MD_SIZE size, void *userdata
 
   size_t textStart = text - context->buffer;
   size_t textEnd = textStart + size;
+  context->textStartOffsets.push_back(textStart);
 
   for (auto &openSpan : context->openStack) {
     if (openSpan.contentStartByteOffset == kByteOffsetUnset) {
@@ -335,8 +338,7 @@ static NSArray<ENRMInputStyledRange *> *styledRangesFromContext(const ParseConte
     NSUInteger openStart = mapByteOffset(byteMap, spanInfo.openingDelimiterByteOffset, context.bufferLength);
     NSRange openingRange = NSMakeRange(openStart, contentStart - openStart);
 
-    size_t closingEndByte =
-        std::min(closingDelimiterEndByte(spanInfo, context.buffer, context.bufferLength), context.bufferLength);
+    size_t closingEndByte = std::min(closingDelimiterEndByte(context, spanInfo), context.bufferLength);
     NSUInteger closingStart = mapByteOffset(byteMap, spanInfo.contentEndByteOffset, context.bufferLength);
     NSUInteger closingEnd = mapByteOffset(byteMap, closingEndByte, context.bufferLength);
     NSRange closingRange = NSMakeRange(closingStart, closingEnd - closingStart);
