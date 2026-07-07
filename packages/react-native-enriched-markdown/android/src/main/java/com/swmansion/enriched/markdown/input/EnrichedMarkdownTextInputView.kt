@@ -379,6 +379,26 @@ class EnrichedMarkdownTextInputView(
     text?.let { blockStore.normalizeToLineBounds(it) }
   }
 
+  private inline fun replaceTextInRange(
+    start: Int,
+    end: Int,
+    newText: String,
+    postAdjust: (Editable) -> Unit = {},
+  ) {
+    val editable = text ?: return
+    isProcessingTextChange = true
+    try {
+      editable.replace(start, end, newText)
+      adjustStoresForEdit(start, end - start, newText.length)
+      postAdjust(editable)
+      lastProcessedText = editable.toString()
+      applyFormattingAndEmit()
+      eventEmitter.emitChangeText()
+    } finally {
+      isProcessingTextChange = false
+    }
+  }
+
   fun applyFormatting() {
     val editable = text ?: return
     formatter.applyFormatting(editable, formattingStore.allRanges)
@@ -576,16 +596,11 @@ class EnrichedMarkdownTextInputView(
    * and block ranges (headings etc.) into the stores — mirrors iOS pasteMarkdown.
    */
   fun pasteMarkdown(markdown: String) {
-    val editable = text ?: return
     val parsed = InputParser.parseToPlainTextAndRanges(markdown)
-    val selStart = selectionStart.coerceIn(0, editable.length)
-    val selEnd = selectionEnd.coerceIn(selStart, editable.length)
+    val selStart = selectionStart.coerceIn(0, text?.length ?: 0)
+    val selEnd = selectionEnd.coerceIn(selStart, text?.length ?: 0)
 
-    isProcessingTextChange = true
-    try {
-      editable.replace(selStart, selEnd, parsed.plainText)
-      adjustStoresForEdit(selStart, selEnd - selStart, parsed.plainText.length)
-
+    replaceTextInRange(selStart, selEnd, parsed.plainText) { editable ->
       for (range in parsed.formattingRanges) {
         formattingStore.addRange(
           FormattingRange(range.type, range.start + selStart, range.end + selStart, range.url),
@@ -594,15 +609,8 @@ class EnrichedMarkdownTextInputView(
       for (block in parsed.blockRanges) {
         blockStore.setBlock(block.type, block.level, block.start + selStart, block.end + selStart, editable)
       }
-
-      val currentText = editable.toString()
-      lastProcessedText = currentText
       setSelection(selStart + parsed.plainText.length)
-      applyFormattingAndEmit()
-      detectorPipeline.processTextChange(editable, currentText, selStart, parsed.plainText.length)
-      eventEmitter.emitChangeText()
-    } finally {
-      isProcessingTextChange = false
+      detectorPipeline.processTextChange(editable, editable.toString(), selStart, parsed.plainText.length)
     }
   }
 
@@ -712,24 +720,14 @@ class EnrichedMarkdownTextInputView(
     displayText: String,
     url: String,
   ) {
-    val editable = text ?: return
     val selStart = selectionStart
     val selEnd = selectionEnd
     val linkEnd = selStart + displayText.length
 
-    isProcessingTextChange = true
-    try {
-      editable.replace(selStart, selEnd, displayText)
-      adjustStoresForEdit(selStart, selEnd - selStart, displayText.length)
+    replaceTextInRange(selStart, selEnd, displayText) { editable ->
       autoLinkDetector.clearAutoLinkInRange(editable, selStart, linkEnd)
       formattingStore.addRange(FormattingRange(StyleType.LINK, selStart, linkEnd, sanitizeLinkUrl(url)))
-      lastProcessedText = editable.toString()
-
       setSelection(linkEnd)
-      applyFormattingAndEmit()
-      eventEmitter.emitChangeText()
-    } finally {
-      isProcessingTextChange = false
     }
   }
 
@@ -749,41 +747,23 @@ class EnrichedMarkdownTextInputView(
     val replacement = if (shouldAppendSpace) "$displayText " else displayText
     val linkEnd = start + displayText.length
 
-    isProcessingTextChange = true
-    try {
-      editable.replace(start, end, replacement)
-      adjustStoresForEdit(start, end - start, replacement.length)
-      autoLinkDetector.clearAutoLinkInRange(editable, start, linkEnd)
+    replaceTextInRange(start, end, replacement) { ed ->
+      autoLinkDetector.clearAutoLinkInRange(ed, start, linkEnd)
       formattingStore.addRange(FormattingRange(StyleType.LINK, start, linkEnd, sanitizedUrl))
-      lastProcessedText = editable.toString()
-
       clearActiveMention(emit = true, indicatorOverride = indicator)
       setSelection(start + replacement.length)
-      applyFormattingAndEmit()
-      eventEmitter.emitChangeText()
-    } finally {
-      isProcessingTextChange = false
     }
   }
 
   fun startMention(indicator: String) {
     if (indicator.isEmpty() || indicator !in mentionIndicators) return
-    val editable = text ?: return
     val selStart = selectionStart
     val selEnd = selectionEnd
 
-    isProcessingTextChange = true
-    try {
-      editable.replace(selStart, selEnd, indicator)
-      adjustStoresForEdit(selStart, selEnd - selStart, indicator.length)
-      lastProcessedText = editable.toString()
+    replaceTextInRange(selStart, selEnd, indicator) {
       setSelection(selStart + indicator.length)
-      applyFormattingAndEmit()
-      eventEmitter.emitChangeText()
-      updateActiveMention()
-    } finally {
-      isProcessingTextChange = false
     }
+    updateActiveMention()
   }
 
   fun removeLinkAtCursor() {
@@ -794,25 +774,17 @@ class EnrichedMarkdownTextInputView(
   }
 
   fun deleteLinkBeforeCursor(): Boolean {
-    val editable = text ?: return false
     val cursorStart = selectionStart
     val cursorEnd = selectionEnd
     if (cursorStart != cursorEnd || cursorStart <= 0) return false
+    if (text == null) return false
 
     val linkRange = formattingStore.rangeOfType(StyleType.LINK, cursorStart - 1) ?: return false
 
-    isProcessingTextChange = true
-    try {
-      editable.delete(linkRange.start, linkRange.end)
-      adjustStoresForEdit(linkRange.start, linkRange.length, 0)
-      lastProcessedText = editable.toString()
+    replaceTextInRange(linkRange.start, linkRange.end, "") { editable ->
       setSelection(linkRange.start.coerceAtMost(editable.length))
-      applyFormattingAndEmit()
-      eventEmitter.emitChangeText()
-      clearActiveMention()
-    } finally {
-      isProcessingTextChange = false
     }
+    clearActiveMention()
     return true
   }
 

@@ -607,12 +607,9 @@ using namespace facebook::react;
   ENRMReplaceTextInRange(_textView, text, selection);
   _isApplyingFormatting = NO;
 
-  NSString *plainText = ENRMGetPlainText(_textView);
-  [_formattingStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
-  [_blockStore adjustForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
-  [self pruneOrphanedHeadingBlocks];
-  [_blockStore normalizeToLineBoundsInText:plainText];
+  [self adjustStoresForEditAtLocation:editLocation deletedLength:selection.length insertedLength:text.length];
 
+  NSString *plainText = ENRMGetPlainText(_textView);
   for (ENRMFormattingRange *range in ranges) {
     NSRange shifted = NSMakeRange(range.range.location + editLocation, range.range.length);
     [_formattingStore addRange:[ENRMFormattingRange rangeWithType:range.type range:shifted url:range.url]];
@@ -954,6 +951,16 @@ using namespace facebook::react;
   RCTUIColor *headingColor = headingLevel >= 1 ? [_formatterStyle headingColorForLevel:headingLevel] : nil;
   attrs[NSForegroundColorAttributeName] = headingColor ?: _formatterStyle.baseTextColor;
   _textView.typingAttributes = attrs;
+}
+
+- (void)adjustStoresForEditAtLocation:(NSUInteger)editLocation
+                        deletedLength:(NSUInteger)deletedLength
+                       insertedLength:(NSUInteger)insertedLength
+{
+  [_formattingStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
+  [_blockStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
+  [self pruneOrphanedHeadingBlocks];
+  [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
 }
 
 /// Reverts to a plain paragraph any heading no longer anchored at a line start
@@ -1671,10 +1678,7 @@ using namespace facebook::react;
     }
   }
 
-  [_formattingStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
-  [_blockStore adjustForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
-  [self pruneOrphanedHeadingBlocks];
-  [_blockStore normalizeToLineBoundsInText:ENRMGetPlainText(_textView)];
+  [self adjustStoresForEditAtLocation:editLocation deletedLength:deletedLength insertedLength:insertedLength];
 
   if (insertedLength > 0) {
     NSRange insertedRange = NSMakeRange(editLocation, insertedLength);
