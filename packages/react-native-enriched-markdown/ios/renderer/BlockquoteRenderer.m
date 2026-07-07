@@ -11,8 +11,19 @@ static NSString *const kNestedInfoRangeKey = @"range";
 
 @implementation BlockquoteRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (id)takeContextSnapshot:(RenderContext *)context
 {
+  return [context snapshotScope];
+}
+
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
+{
+  if (output.length > 0 && ![output.string hasSuffix:@"\n"]) {
+    [output appendAttributedString:kNewlineAttributedString];
+  }
+
   NSInteger currentDepth = context.blockquoteDepth;
   context.blockquoteDepth = currentDepth + 1;
 
@@ -22,12 +33,7 @@ static NSString *const kNestedInfoRangeKey = @"range";
             headingLevel:0];
 
   NSUInteger start = output.length;
-  @try {
-    [_rendererFactory renderChildrenOfNode:node into:output context:context];
-  } @finally {
-    [context clearBlockStyle];
-    context.blockquoteDepth = currentDepth;
-  }
+  [_rendererFactory renderChildrenOfNode:node into:output context:context];
 
   NSUInteger end = output.length;
   if (end <= start) {

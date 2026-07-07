@@ -6,6 +6,30 @@
 @implementation BlockStyle
 @end
 
+static NSArray<NSString *> *ENRMScopedKeyPaths(void)
+{
+  static NSArray<NSString *> *keyPaths;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    keyPaths = @[
+      @"currentBlockType",
+      @"currentHeadingLevel",
+      @"currentBlockStyle.fontSize",
+      @"currentBlockStyle.fontFamily",
+      @"currentBlockStyle.fontWeight",
+      @"currentBlockStyle.color",
+      @"currentBlockStyle.cachedFont",
+      @"currentBlockStyle.cachedTextAttributes",
+      @"blockquoteDepth",
+      @"listDepth",
+      @"listType",
+      @"listItemNumber",
+      @"accumulatedIndent",
+    ];
+  });
+  return keyPaths;
+}
+
 @implementation RenderContext {
   NSMutableDictionary<NSString *, UIFont *> *_fontCache;
   NSParagraphStyle *_baseSpacerTemplate;
@@ -235,6 +259,25 @@
   _currentBlockStyle.cachedTextAttributes = nil;
 }
 
+- (id)snapshotScope
+{
+  NSArray<NSString *> *keyPaths = ENRMScopedKeyPaths();
+  NSMutableDictionary *snapshot = [NSMutableDictionary dictionaryWithCapacity:keyPaths.count];
+  for (NSString *keyPath in keyPaths) {
+    snapshot[keyPath] = [self valueForKeyPath:keyPath] ?: [NSNull null];
+  }
+  return snapshot;
+}
+
+- (void)restoreScope:(id)snapshot
+{
+  NSDictionary *frame = snapshot;
+  for (NSString *keyPath in ENRMScopedKeyPaths()) {
+    id value = frame[keyPath];
+    [self setValue:(value == [NSNull null] ? nil : value) forKeyPath:keyPath];
+  }
+}
+
 #pragma mark - Reset
 
 - (void)reset
@@ -256,6 +299,7 @@
   _listDepth = 0;
   _listType = ListTypeUnordered;
   _listItemNumber = 0;
+  _accumulatedIndent = 0;
   _taskItemCount = 0;
 
   // Revert shared style object to baseline defaults

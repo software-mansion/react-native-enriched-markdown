@@ -7,6 +7,7 @@ import android.graphics.RectF
 import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.style.LeadingMarginSpan
 import android.text.style.LineBackgroundSpan
 import com.swmansion.enriched.markdown.styles.StyleConfig
 import kotlin.math.max
@@ -58,8 +59,9 @@ class CodeBackgroundSpan(
 
     // 2. Calculate coordinates
     val finalBottom = adjustBottomForMargin(text, end, bottom)
-    val startX = if (isFirst) getHorizontalOffset(text, start, end, spanStart, p) + left else left.toFloat()
-    val endX = if (isLast) getHorizontalOffset(text, start, end, spanEnd, p) + left else right.toFloat()
+    val leadingMargin = leadingMarginAt(text, start)
+    val startX = if (isFirst) getHorizontalOffset(text, start, end, spanStart, p) + left + leadingMargin else left.toFloat() + leadingMargin
+    val endX = if (isLast) getHorizontalOffset(text, start, end, spanEnd, p) + left + leadingMargin else right.toFloat()
 
     rect.set(min(startX, endX), top.toFloat(), max(startX, endX), finalBottom.toFloat())
 
@@ -162,6 +164,19 @@ class CodeBackgroundSpan(
     else -> {
       floatArrayOf(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f)
     }
+  }
+
+  private fun leadingMarginAt(
+    text: Spanned,
+    lineStart: Int,
+  ): Int {
+    if (lineStart >= text.length) return 0
+    val spans = text.getSpans(lineStart, lineStart + 1, LeadingMarginSpan::class.java)
+    var margin = 0
+    for (span in spans) {
+      margin += span.getLeadingMargin(false)
+    }
+    return margin
   }
 
   private fun adjustBottomForMargin(

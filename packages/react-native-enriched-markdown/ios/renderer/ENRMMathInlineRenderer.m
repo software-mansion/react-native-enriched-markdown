@@ -11,7 +11,9 @@
 
 @implementation ENRMMathInlineRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
 {
   NSString *latex = [self extractLatexFromNode:node];
   if (latex.length == 0) {

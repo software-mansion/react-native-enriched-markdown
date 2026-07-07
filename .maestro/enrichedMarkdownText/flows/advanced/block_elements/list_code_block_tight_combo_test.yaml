@@ -1,0 +1,37 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - block
+  - advanced
+  - list
+  - code_block
+  - text
+---
+# checks a "tight" ordered list where items and their fenced code blocks
+# are directly adjacent (no blank lines between).
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        1. Install via npm:
+           ```
+           npm install
+           ```
+        2. Authenticate with GitHub:
+           ```
+           gh auth login
+           ```
+           This opens your browser for OAuth. Once authorized, tokens are stored locally at `~/.config/gh/tokens.json`.
+        3. Verify the connection:
+           ```
+           gh repo list
+           ```
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'list_code_block_tight_combo_display'

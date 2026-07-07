@@ -10,9 +10,13 @@
 NSString *const ListDepthAttribute = @"ListDepth";
 NSString *const ListTypeAttribute = @"ListType";
 NSString *const ListItemNumberAttribute = @"ListItemNumber";
+NSString *const ListItemMarkerStartAttribute = @"ListItemMarkerStart";
 NSString *const TaskItemAttribute = @"TaskItem";
 NSString *const TaskCheckedAttribute = @"TaskChecked";
 NSString *const TaskIndexAttribute = @"TaskIndex";
+
+@implementation ENRMListMarkerDescriptor
+@end
 
 @interface ListItemRenderer ()
 - (void)applyCheckedDecorationsTo:(NSMutableAttributedString *)output
@@ -22,7 +26,9 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
 
 @implementation ListItemRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
 {
   if (!context)
     return;
@@ -39,10 +45,25 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
     context.taskItemCount++;
   }
 
+  // currentDepth - 1 handles the horizontal offset for nested lists
+  const NSInteger nestingLevel = currentDepth - 1;
+  const CGFloat baseMarkerWidth = isTask                                  ? [_config effectiveListMarginLeftForTask]
+                                  : (context.listType == ListTypeOrdered) ? [_config effectiveListMarginLeftForNumber]
+                                                                          : [_config effectiveListMarginLeftForBullet];
+
+  const CGFloat totalIndent =
+      baseMarkerWidth + [_config effectiveListGapWidth] + (nestingLevel * [_config listStyleMarginLeft]);
+
   const NSUInteger startLocation = output.length;
 
-  // Render the actual content of the list item (text, bolding, etc.)
-  [_rendererFactory renderChildrenOfNode:node into:output context:context];
+  // Manual save/restore — a scope snapshot would also roll back the listItemNumber increment
+  const CGFloat prevIndent = context.accumulatedIndent;
+  context.accumulatedIndent = totalIndent;
+  @try {
+    [_rendererFactory renderChildrenOfNode:node into:output context:context];
+  } @finally {
+    context.accumulatedIndent = prevIndent;
+  }
 
   // Ensure every list item ends with a newline to prevent paragraph merging
   if (output.length > startLocation && ![output.string hasSuffix:@"\n"]) {
@@ -59,15 +80,6 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
                            depth:currentDepth
                        isOrdered:(context.listType == ListTypeOrdered)];
 
-  // currentDepth - 1 handles the horizontal offset for nested lists
-  const NSInteger nestingLevel = currentDepth - 1;
-  const CGFloat baseMarkerWidth = isTask                                  ? [_config effectiveListMarginLeftForTask]
-                                  : (context.listType == ListTypeOrdered) ? [_config effectiveListMarginLeftForNumber]
-                                                                          : [_config effectiveListMarginLeftForBullet];
-
-  const CGFloat totalIndent =
-      baseMarkerWidth + [_config effectiveListGapWidth] + (nestingLevel * [_config listStyleMarginLeft]);
-
   const CGFloat lineHeightConfig = [_config listStyleLineHeight];
 
   // Boxing metadata for attributed string storage
@@ -83,42 +95,84 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
     metadata[TaskIndexAttribute] = @(taskIndex);
   }
 
-  // We enumerate to ensure we don't overwrite styles of nested sub-lists
-  // or code blocks that may have already been rendered inside this item.
+  // Preserve styles of nested sub-lists and code blocks by applying the list
+  // paragraph style only to the surviving gaps between them.
+  NSMutableArray<NSValue *> *skipRanges = [NSMutableArray array];
+  [output enumerateAttribute:CodeBlockAttributeName
+                     inRange:itemRange
+                     options:0
+                  usingBlock:^(id value, NSRange range, BOOL *stop) {
+                    if ([value boolValue]) {
+                      [skipRanges addObject:[NSValue valueWithRange:range]];
+                    }
+                  }];
   [output enumerateAttribute:ListDepthAttribute
                      inRange:itemRange
                      options:0
                   usingBlock:^(id depthAttr, NSRange range, BOOL *stop) {
-                    // If a segment already has a Depth attribute higher than our current level,
-                    // it belongs to a nested list and we should skip it to preserve its styling.
                     if (depthAttr && [depthAttr integerValue] > nestingLevel) {
-                      return;
+                      [skipRanges addObject:[NSValue valueWithRange:range]];
                     }
-
-                    // Skip code block ranges — CodeBlockRenderer already applied its own
-                    // paragraph style (padding, LTR indent). Overwriting would add list
-                    // markers ("2.") inside the code block.
-                    NSNumber *isCodeBlock = [output attribute:CodeBlockAttributeName
-                                                      atIndex:range.location
-                                               effectiveRange:nil];
-                    if ([isCodeBlock boolValue]) {
-                      return;
-                    }
-
-                    NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-                    style.firstLineHeadIndent = totalIndent;
-                    style.headIndent = totalIndent;
-
-                    if (lineHeightConfig > 0) {
-                      style.minimumLineHeight = lineHeightConfig;
-                      style.maximumLineHeight = lineHeightConfig;
-                    }
-
-                    NSMutableDictionary *attributesToApply = [metadata mutableCopy];
-                    attributesToApply[NSParagraphStyleAttributeName] = style;
-
-                    [output addAttributes:attributesToApply range:range];
                   }];
+  [skipRanges sortUsingComparator:^NSComparisonResult(NSValue *a, NSValue *b) {
+    NSUInteger la = [a rangeValue].location;
+    NSUInteger lb = [b rangeValue].location;
+    return la < lb ? NSOrderedAscending : (la > lb ? NSOrderedDescending : NSOrderedSame);
+  }];
+
+  void (^applyStyleToRange)(NSRange) = ^(NSRange range) {
+    if (range.length == 0)
+      return;
+    NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
+    style.firstLineHeadIndent = totalIndent;
+    style.headIndent = totalIndent;
+    if (lineHeightConfig > 0) {
+      style.minimumLineHeight = lineHeightConfig;
+      style.maximumLineHeight = lineHeightConfig;
+    }
+    NSMutableDictionary *attributesToApply = [metadata mutableCopy];
+    attributesToApply[NSParagraphStyleAttributeName] = style;
+    [output addAttributes:attributesToApply range:range];
+  };
+
+  NSUInteger pos = itemRange.location;
+  const NSUInteger itemEnd = NSMaxRange(itemRange);
+  for (NSValue *val in skipRanges) {
+    NSRange skip = [val rangeValue];
+    if (pos < skip.location) {
+      applyStyleToRange(NSMakeRange(pos, skip.location - pos));
+    }
+    pos = MAX(pos, NSMaxRange(skip));
+  }
+  if (pos < itemEnd) {
+    applyStyleToRange(NSMakeRange(pos, itemEnd - pos));
+  }
+
+  ENRMListMarkerDescriptor *marker = [[ENRMListMarkerDescriptor alloc] init];
+  marker.isTask = isTask;
+  marker.isChecked = isChecked;
+  marker.taskIndex = taskIndex;
+  marker.listType = context.listType;
+  marker.number = currentPosition;
+  marker.depth = nestingLevel;
+  marker.indent = totalIndent;
+
+  // Anchor on the first content character so items that open with a code block
+  // or nested sublist still get their marker; fall back to startLocation for
+  // whitespace-only items.
+  NSUInteger anchorLocation = startLocation;
+  NSString *string = output.string;
+  for (NSUInteger i = startLocation; i < itemEnd; i++) {
+    if ([string characterAtIndex:i] != '\n') {
+      anchorLocation = i;
+      break;
+    }
+  }
+
+  NSArray *existingMarkers = [output attribute:ListItemMarkerStartAttribute atIndex:anchorLocation effectiveRange:NULL];
+  NSArray *markers =
+      [existingMarkers isKindOfClass:[NSArray class]] ? [existingMarkers arrayByAddingObject:marker] : @[ marker ];
+  [output addAttribute:ListItemMarkerStartAttribute value:markers range:NSMakeRange(anchorLocation, 1)];
 
   if (isTask && isChecked) {
     [self applyCheckedDecorationsTo:output range:itemRange nestingLevel:nestingLevel];

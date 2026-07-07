@@ -1,0 +1,33 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - block
+  - advanced
+  - list
+  - code_block
+---
+# checks list items whose first (and only) child is a fenced code block —
+# the marker must still be drawn in the gutter next to the code block.
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        1. ```
+           npm install
+           ```
+        2. ```
+           gh auth login
+           ```
+
+        - ```
+          echo bullet
+          ```
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'list_code_block_first_combo_display'

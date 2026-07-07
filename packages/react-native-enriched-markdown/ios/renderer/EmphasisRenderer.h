@@ -1,5 +1,5 @@
 #pragma once
 #import "BaseRenderer.h"
 
-@interface EmphasisRenderer : BaseRenderer <NodeRenderer>
+@interface EmphasisRenderer : BaseRenderer
 @end

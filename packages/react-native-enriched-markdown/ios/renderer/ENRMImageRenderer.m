@@ -10,7 +10,9 @@ static const unichar kZeroWidthSpace = 0x200B;
 
 @implementation ENRMImageRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
 {
   NSString *imageURL = node.attributes[@"url"];
   if (!imageURL || imageURL.length == 0) {

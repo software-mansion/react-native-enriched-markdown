@@ -1,10 +1,10 @@
-#import "NodeRenderer.h"
+#import "BaseRenderer.h"
 
 @class RendererFactory;
 @class StyleConfig;
 @class RenderContext;
 
-@interface ListRenderer : NSObject <NodeRenderer>
+@interface ListRenderer : BaseRenderer
 
 - (instancetype)initWithRendererFactory:(RendererFactory *)rendererFactory
                                  config:(StyleConfig *)config

@@ -5,11 +5,7 @@
 #import "RenderContext.h"
 #import "StyleConfig.h"
 
-extern NSString *const ListDepthAttribute;
-extern NSString *const ListTypeAttribute;
-extern NSString *const ListItemNumberAttribute;
-extern NSString *const TaskItemAttribute;
-extern NSString *const TaskCheckedAttribute;
+extern NSString *const ListItemMarkerStartAttribute;
 
 @implementation ListMarkerDrawer {
   StyleConfig *_config;
@@ -44,13 +40,13 @@ extern NSString *const TaskCheckedAttribute;
                                  if (charRange.location == NSNotFound)
                                    return;
 
-                                 // 1. Fetch all attributes at once for efficiency
                                  NSDictionary *attrs = [storage attributesAtIndex:charRange.location
                                                                    effectiveRange:NULL];
-                                 if (!attrs[ListDepthAttribute])
+                                 NSArray *markers = attrs[ListItemMarkerStartAttribute];
+                                 if (![markers isKindOfClass:[NSArray class]] || markers.count == 0)
                                    return;
 
-                                 // 2. Identify the start of the paragraph
+                                 // Identify the start of the paragraph
                                  NSRange paraRange = [storage.string paragraphRangeForRange:charRange];
                                  if (charRange.location != paraRange.location ||
                                      [drawnParagraphs containsObject:@(paraRange.location)])
@@ -61,30 +57,28 @@ extern NSString *const TaskCheckedAttribute;
 
                                  CGPoint glyphLoc = [layoutManager locationForGlyphAtIndex:glyphRange.location];
                                  CGFloat baselineY = origin.y + rect.origin.y + glyphLoc.y;
-                                 CGFloat markerX;
-                                 if (isRTL) {
-                                   markerX = origin.x + usedRect.origin.x + usedRect.size.width + gap;
-                                 } else {
-                                   markerX = origin.x + usedRect.origin.x - gap;
-                                 }
+                                 UIFont *font = attrs[NSFontAttributeName] ?: [self defaultFont];
 
-                                 // 4. Draw marker based on type
-                                 if ([attrs[TaskItemAttribute] boolValue]) {
-                                   UIFont *font = attrs[NSFontAttributeName] ?: [self defaultFont];
-                                   BOOL checked = [attrs[TaskCheckedAttribute] boolValue];
-                                   const CGFloat size = [_config taskListCheckboxSize];
-                                   CGFloat checkboxX = isRTL ? markerX + size / 2.0 : markerX - size / 2.0;
-                                   [self drawCheckboxAtX:checkboxX
-                                                 centerY:baselineY - (font.capHeight / 2.0)
-                                                 checked:checked];
-                                 } else if ([attrs[ListTypeAttribute] integerValue] == ListTypeUnordered) {
-                                   UIFont *font = attrs[NSFontAttributeName] ?: [self defaultFont];
-                                   NSInteger depth = [attrs[ListDepthAttribute] integerValue];
-                                   [self drawBulletAtX:markerX
-                                               centerY:baselineY - (font.xHeight + font.capHeight) / 4.0
-                                                 depth:depth];
-                                 } else {
-                                   [self drawOrderedMarkerAtX:markerX attrs:attrs baselineY:baselineY isRTL:isRTL];
+                                 for (ENRMListMarkerDescriptor *marker in markers) {
+                                   CGFloat markerX = isRTL ? origin.x + container.size.width - marker.indent + gap
+                                                           : origin.x + marker.indent - gap;
+
+                                   if (marker.isTask) {
+                                     const CGFloat size = [_config taskListCheckboxSize];
+                                     CGFloat checkboxX = isRTL ? markerX + size / 2.0 : markerX - size / 2.0;
+                                     [self drawCheckboxAtX:checkboxX
+                                                   centerY:baselineY - (font.capHeight / 2.0)
+                                                   checked:marker.isChecked];
+                                   } else if (marker.listType == ListTypeUnordered) {
+                                     [self drawBulletAtX:markerX
+                                                 centerY:baselineY - (font.xHeight + font.capHeight) / 4.0
+                                                   depth:marker.depth];
+                                   } else {
+                                     [self drawOrderedMarkerAtX:markerX
+                                                         number:marker.number
+                                                      baselineY:baselineY
+                                                          isRTL:isRTL];
+                                   }
                                  }
                                }];
 }
@@ -167,17 +161,10 @@ extern NSString *const TaskCheckedAttribute;
                    y:y];
 }
 
-- (void)drawOrderedMarkerAtX:(CGFloat)boundaryX
-                       attrs:(NSDictionary *)attrs
-                   baselineY:(CGFloat)baselineY
-                       isRTL:(BOOL)isRTL
+- (void)drawOrderedMarkerAtX:(CGFloat)boundaryX number:(NSInteger)number baselineY:(CGFloat)baselineY isRTL:(BOOL)isRTL
 {
-  NSNumber *num = attrs[ListItemNumberAttribute];
-  if (!num)
-    return;
-
-  NSString *text = isRTL ? [NSString stringWithFormat:@".%ld", (long)num.integerValue]
-                         : [NSString stringWithFormat:@"%ld.", (long)num.integerValue];
+  NSString *text =
+      isRTL ? [NSString stringWithFormat:@".%ld", (long)number] : [NSString stringWithFormat:@"%ld.", (long)number];
   UIFont *font = [_config listMarkerFont] ?: [self defaultFont];
 
   NSDictionary *mAttrs = @{NSFontAttributeName : font, NSForegroundColorAttributeName : [_config listStyleMarkerColor]};

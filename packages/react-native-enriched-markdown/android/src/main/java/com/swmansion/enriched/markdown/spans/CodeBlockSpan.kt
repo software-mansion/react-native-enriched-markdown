@@ -22,6 +22,7 @@ class CodeBlockSpan(
   private val codeBlockStyle: CodeBlockStyle,
   private val context: Context,
   private val styleCache: SpanStyleCache,
+  private val leadingIndent: Int = 0,
 ) : MetricAffectingSpan(),
   LineBackgroundSpan,
   LeadingMarginSpan {
@@ -59,7 +60,7 @@ class CodeBlockSpan(
       color = codeBlockStyle.borderColor
     }
 
-  override fun getLeadingMargin(first: Boolean): Int = codeBlockStyle.padding.toInt()
+  override fun getLeadingMargin(first: Boolean): Int = codeBlockStyle.padding.toInt() + leadingIndent
 
   override fun drawLeadingMargin(
     c: Canvas?,
@@ -105,11 +106,12 @@ class CodeBlockSpan(
     val inset = codeBlockStyle.borderWidth / 2f
 
     rect.set(
-      left.toFloat() + inset,
+      left.toFloat() + leadingIndent + inset,
       top.toFloat() + (if (isFirstLine) inset else 0f),
       right.toFloat() - inset,
       bottom.toFloat() - (if (isLastLine) inset else 0f),
     )
+    if (rect.left >= rect.right) return
 
     val radius = codeBlockStyle.borderRadius
     val adjRadius = if (radius > inset) radius - inset else radius

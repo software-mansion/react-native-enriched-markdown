@@ -1,6 +1,6 @@
+#import "BaseRenderer.h"
 #import "MarkdownASTNode.h"
-#import "NodeRenderer.h"
 #import "RenderContext.h"
 
-@interface TextRenderer : NSObject <NodeRenderer>
+@interface TextRenderer : BaseRenderer
 @end

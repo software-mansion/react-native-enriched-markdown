@@ -3,5 +3,5 @@
 
 extern NSString *const HighlightAttributeName;
 
-@interface HighlightRenderer : BaseRenderer <NodeRenderer>
+@interface HighlightRenderer : BaseRenderer
 @end

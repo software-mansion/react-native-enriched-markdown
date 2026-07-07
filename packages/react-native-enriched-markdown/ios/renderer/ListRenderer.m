@@ -7,36 +7,35 @@
 #import "StyleConfig.h"
 
 @implementation ListRenderer {
-  __weak RendererFactory *_rendererFactory;
-  StyleConfig *_config;
   BOOL _isOrdered;
 }
 
 - (instancetype)initWithRendererFactory:(RendererFactory *)factory config:(StyleConfig *)config isOrdered:(BOOL)ordered
 {
-  if (self = [super init]) {
-    _rendererFactory = factory;
-    _config = config;
+  if (self = [super initWithRendererFactory:factory config:config]) {
     _isOrdered = ordered;
   }
   return self;
 }
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (id)takeContextSnapshot:(RenderContext *)context
+{
+  return [context snapshotScope];
+}
+
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
 {
   if (!context)
     return;
 
   const NSInteger prevDepth = context.listDepth;
-  const ListType prevType = context.listType;
-  const NSInteger prevNum = context.listItemNumber;
-
   const NSUInteger startLocation = output.length;
-  NSUInteger contentStart = startLocation;
 
   if (prevDepth == 0) {
     // Apply top margin for root-level list
-    contentStart += applyBlockSpacingBefore(output, startLocation, _config.listStyleMarginTop);
+    applyBlockSpacingBefore(output, startLocation, _config.listStyleMarginTop);
   } else if (output.length > 0 && ![output.string hasSuffix:@"\n"]) {
     // Ensure nested lists start on a new line
     [output appendAttributedString:kNewlineAttributedString];
@@ -51,19 +50,11 @@
                    color:_config.listStyleColor
             headingLevel:0];
 
-  @try {
-    [_rendererFactory renderChildrenOfNode:node into:output context:context];
-  } @finally {
-    context.listDepth = prevDepth;
-    context.listType = prevType;
-    context.listItemNumber = prevNum;
+  [_rendererFactory renderChildrenOfNode:node into:output context:context];
 
-    if (prevDepth == 0) {
-      [context clearBlockStyle];
-
-      // Apply bottom margin for root-level list
-      applyBlockSpacingAfter(output, _config.listStyleMarginBottom);
-    }
+  if (prevDepth == 0) {
+    // Apply bottom margin for root-level list
+    applyBlockSpacingAfter(output, _config.listStyleMarginBottom);
   }
 }
 

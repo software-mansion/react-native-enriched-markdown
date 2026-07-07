@@ -3,7 +3,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface CodeBlockRenderer : BaseRenderer <NodeRenderer>
+@interface CodeBlockRenderer : BaseRenderer
 @end
 
 NS_ASSUME_NONNULL_END

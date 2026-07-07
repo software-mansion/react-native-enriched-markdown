@@ -3,7 +3,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface ENRMMathInlineRenderer : BaseRenderer <NodeRenderer>
+@interface ENRMMathInlineRenderer : BaseRenderer
 @end
 
 NS_ASSUME_NONNULL_END

@@ -41,6 +41,7 @@ typedef NS_ENUM(NSInteger, ListType) { ListTypeUnordered, ListTypeOrdered };
 @property (nonatomic, assign) NSInteger listDepth;
 @property (nonatomic, assign) ListType listType;
 @property (nonatomic, assign) NSInteger listItemNumber;
+@property (nonatomic, assign) CGFloat accumulatedIndent;
 @property (nonatomic, assign) BOOL allowFontScaling;
 @property (nonatomic, assign) CGFloat maxFontSizeMultiplier;
 @property (nonatomic, assign) NSInteger taskItemCount;
@@ -78,6 +79,15 @@ typedef NS_ENUM(NSInteger, ListType) { ListTypeUnordered, ListTypeOrdered };
 - (BlockStyle *)getBlockStyle;
 - (NSDictionary *)getTextAttributes;
 - (void)clearBlockStyle;
+
+/**
+ * Captures/restores the scoped context state: block style, block type, heading level,
+ * blockquote/list depths, list type, list item counter and accumulated indent.
+ * Accumulators (range registries, taskItemCount) are excluded on purpose — they
+ * must survive restores.
+ */
+- (id)snapshotScope;
+- (void)restoreScope:(id)snapshot;
 
 /**
  * Checks if colors should be preserved based on existing attributes.

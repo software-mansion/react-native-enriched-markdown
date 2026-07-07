@@ -1,4 +1,4 @@
 #import "BaseRenderer.h"
 
-@interface ThematicBreakRenderer : BaseRenderer <NodeRenderer>
+@interface ThematicBreakRenderer : BaseRenderer
 @end

@@ -1,5 +1,6 @@
 #import "TaskListTapUtils.h"
 #import "ENRMUIKit.h"
+#import "LastElementUtils.h"
 #import "ListItemRenderer.h"
 #import "ParagraphStyleUtils.h"
 #import "StyleConfig.h"
@@ -171,6 +172,13 @@ BOOL updateTaskListItemCheckedState(ENRMPlatformTextView *textView, NSInteger ta
                 if (depth && [depth integerValue] > nestingLevel)
                   return;
 
+                // Skip code block ranges — preserve CodeBlockRenderer styles.
+                NSNumber *isCodeBlock = [mutableText attribute:CodeBlockAttributeName
+                                                       atIndex:segmentRange.location
+                                                effectiveRange:nil];
+                if ([isCodeBlock boolValue])
+                  return;
+
                 [mutableText addAttribute:TaskCheckedAttribute value:@(newChecked) range:segmentRange];
 
                 if (newChecked) {
@@ -194,6 +202,22 @@ BOOL updateTaskListItemCheckedState(ENRMPlatformTextView *textView, NSInteger ta
                   }
                 }
               }];
+
+  // The checkbox glyph is drawn from the marker descriptor, not from
+  // TaskCheckedAttribute — keep it in sync. Enumerated over the full text:
+  // for code-block-first items the anchor sits outside the metadata ranges.
+  [mutableText enumerateAttribute:ListItemMarkerStartAttribute
+                          inRange:NSMakeRange(0, mutableText.length)
+                          options:0
+                       usingBlock:^(NSArray *markers, NSRange range, BOOL *stop) {
+                         if (![markers isKindOfClass:[NSArray class]])
+                           return;
+                         for (ENRMListMarkerDescriptor *marker in markers) {
+                           if (marker.isTask && marker.taskIndex == targetIndex) {
+                             marker.isChecked = newChecked;
+                           }
+                         }
+                       }];
 
   ENRMSetAttributedText(textView, mutableText);
   NSLayoutManager *layoutManager = textView.layoutManager;

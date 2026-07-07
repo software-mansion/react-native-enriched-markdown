@@ -8,6 +8,8 @@ import android.text.style.StrikethroughSpan
 import android.widget.TextView
 import com.swmansion.enriched.markdown.renderer.SpanStyleCache
 import com.swmansion.enriched.markdown.spans.BaseListSpan
+import com.swmansion.enriched.markdown.spans.CodeBlockSpan
+import com.swmansion.enriched.markdown.spans.ListMarkerAnchorSpan
 import com.swmansion.enriched.markdown.spans.TaskListSpan
 import com.swmansion.enriched.markdown.styles.StyleConfig
 import com.swmansion.enriched.markdown.utils.text.span.SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE
@@ -101,51 +103,69 @@ object TaskListTapUtils {
     }
 
     val spannable = SpannableStringBuilder(text)
-    val taskSpans = spannable.getSpans(0, spannable.length, TaskListSpan::class.java)
-
-    val targetSpan = taskSpans.firstOrNull { it.taskIndex == targetIndex }
-    if (targetSpan == null) {
+    val targetSpans =
+      spannable
+        .getSpans(0, spannable.length, TaskListSpan::class.java)
+        .filter { it.taskIndex == targetIndex }
+    if (targetSpans.isEmpty()) {
       return false
     }
 
-    if (targetSpan.isChecked == newChecked) {
+    if (targetSpans.all { it.isChecked == newChecked }) {
       return true
     }
 
-    val spanStart = spannable.getSpanStart(targetSpan)
-    val spanEnd = spannable.getSpanEnd(targetSpan)
-    val itemDepth = targetSpan.depth
+    val itemDepth = targetSpans.first().depth
+    val spanStart = targetSpans.minOf { spannable.getSpanStart(it) }
+    val spanEnd = targetSpans.maxOf { spannable.getSpanEnd(it) }
 
     val styleCache = SpanStyleCache(styleConfig)
-    val newTaskSpan =
+
+    fun toggledCopy(old: TaskListSpan): TaskListSpan =
       TaskListSpan(
         taskStyle = styleConfig.taskListStyle,
         listStyle = styleConfig.listStyle,
-        depth = itemDepth,
+        depth = old.depth,
         context = textView.context,
         styleCache = styleCache,
         taskIndex = targetIndex,
         isChecked = newChecked,
+        drawsMarker = old.drawsMarker,
       )
 
-    spannable.removeSpan(targetSpan)
-    spannable.setSpan(newTaskSpan, spanStart, spanEnd, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
-
-    val verifySpans = spannable.getSpans(spanStart, spanEnd, TaskListSpan::class.java)
-    val verifySpan = verifySpans.firstOrNull { it.taskIndex == targetIndex }
-    if (verifySpan == null || verifySpan.isChecked != newChecked) {
-      return false
+    // Replace every segment of the item — spans are split around code blocks
+    for (old in targetSpans) {
+      val start = spannable.getSpanStart(old)
+      val end = spannable.getSpanEnd(old)
+      spannable.removeSpan(old)
+      spannable.setSpan(toggledCopy(old), start, end, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
     }
+
+    // The marker may be drawn by an anchor span wrapping an unattached copy
+    spannable
+      .getSpans(0, spannable.length, ListMarkerAnchorSpan::class.java)
+      .filter { (it.marker as? TaskListSpan)?.taskIndex == targetIndex }
+      .forEach { old ->
+        val start = spannable.getSpanStart(old)
+        val end = spannable.getSpanEnd(old)
+        spannable.removeSpan(old)
+        spannable.setSpan(
+          ListMarkerAnchorSpan(toggledCopy(old.marker as TaskListSpan)),
+          start,
+          end,
+          SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE,
+        )
+      }
 
     val taskStyle = styleConfig.taskListStyle
     val checkedTextColor = taskStyle.checkedTextColor
     val strikethrough = taskStyle.checkedStrikethrough
 
     val excludedRanges =
-      spannable
-        .getSpans(spanStart, spanEnd, BaseListSpan::class.java)
-        .filter { it.depth > itemDepth }
-        .map { spannable.getSpanStart(it) to spannable.getSpanEnd(it) }
+      (
+        spannable.getSpans(spanStart, spanEnd, BaseListSpan::class.java).filter { it.depth > itemDepth } +
+          spannable.getSpans(spanStart, spanEnd, CodeBlockSpan::class.java).toList()
+      ).map { spannable.getSpanStart(it) to spannable.getSpanEnd(it) }
         .sortedBy { it.first }
 
     applyDecorationsToRanges(

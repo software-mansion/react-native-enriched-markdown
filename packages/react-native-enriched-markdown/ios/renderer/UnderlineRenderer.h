@@ -1,4 +1,4 @@
 #import "BaseRenderer.h"
 
-@interface UnderlineRenderer : BaseRenderer <NodeRenderer>
+@interface UnderlineRenderer : BaseRenderer
 @end

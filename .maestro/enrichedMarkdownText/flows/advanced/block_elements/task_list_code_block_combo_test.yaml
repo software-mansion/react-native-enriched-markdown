@@ -1,0 +1,29 @@
+appId: swmansion.enriched.markdown.example
+tags:
+  - block
+  - advanced
+  - list
+  - task_list
+  - code_block
+---
+# checks a checked task item containing a fenced code block — the checked
+# text decorations (strikethrough / color) must not bleed into the code block.
+- launchApp
+
+- runFlow:
+    file: '../../../../subflows/move_to_playground.yaml'
+
+- runFlow:
+    file: '../../../subflows/set_enriched_text_value.yaml'
+    env:
+      VALUE: |
+        - [x] setup complete
+          ```
+          npm i
+          ```
+        - [ ] still pending
+
+- runFlow:
+    file: '../../../subflows/capture_or_assert_screenshot.yaml'
+    env:
+      SCREENSHOT_NAME: 'task_list_code_block_combo_display'

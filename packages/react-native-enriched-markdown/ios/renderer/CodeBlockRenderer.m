@@ -9,10 +9,24 @@
 
 @implementation CodeBlockRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (id)takeContextSnapshot:(RenderContext *)context
 {
+  return [context snapshotScope];
+}
+
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
+{
+  // In tight lists md4c emits raw Text siblings without paragraph wrappers,
+  // so the preceding content may not terminate with a newline.
+  if (output.length > 0 && ![output.string hasSuffix:@"\n"]) {
+    [output appendAttributedString:kNewlineAttributedString];
+  }
+
   [context setBlockStyle:BlockTypeCodeBlock font:[_config codeBlockFont] color:[_config codeBlockColor] headingLevel:0];
 
+  CGFloat listIndent = context.accumulatedIndent;
   CGFloat padding = [_config codeBlockPadding];
   CGFloat lineHeight = [_config codeBlockLineHeight];
   CGFloat marginTop = [_config codeBlockMarginTop];
@@ -31,11 +45,7 @@
   }
 
   NSUInteger contentStart = output.length;
-  @try {
-    [_rendererFactory renderChildrenOfNode:node into:output context:context];
-  } @finally {
-    [context clearBlockStyle];
-  }
+  [_rendererFactory renderChildrenOfNode:node into:output context:context];
 
   NSUInteger contentEnd = output.length;
   if (contentEnd <= contentStart)
@@ -60,8 +70,8 @@
   NSMutableParagraphStyle *baseStyle = [getOrCreateParagraphStyle(output, contentStart) mutableCopy];
   baseStyle.baseWritingDirection = NSWritingDirectionLeftToRight;
   baseStyle.alignment = NSTextAlignmentLeft;
-  baseStyle.firstLineHeadIndent = padding;
-  baseStyle.headIndent = padding;
+  baseStyle.firstLineHeadIndent = padding + listIndent;
+  baseStyle.headIndent = padding + listIndent;
   baseStyle.tailIndent = -padding;
   [output addAttribute:NSParagraphStyleAttributeName value:baseStyle range:contentRange];
 
@@ -80,6 +90,9 @@
   // Define the range for background rendering (includes padding, excludes margins)
   NSRange backgroundRange = NSMakeRange(blockStart, output.length - blockStart);
   [output addAttribute:CodeBlockAttributeName value:@YES range:backgroundRange];
+  if (listIndent > 0) {
+    [output addAttribute:CodeBlockIndentAttributeName value:@(listIndent) range:backgroundRange];
+  }
 
   // External Margin: Applied outside the background range
   if (marginBottom > 0) {

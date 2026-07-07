@@ -4,6 +4,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 static NSString *const CodeBlockAttributeName = @"CodeBlock";
+static NSString *const CodeBlockIndentAttributeName = @"CodeBlockIndent";
 
 /**
  * Returns YES when the last semantic block in the storage is a code block, ignoring any

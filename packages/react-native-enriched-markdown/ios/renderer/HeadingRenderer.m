@@ -21,8 +21,19 @@ static NSString *const kHeadingTypes[] = {nil,          @"heading-1", @"heading-
 
 @implementation HeadingRenderer
 
-- (void)renderNode:(MarkdownASTNode *)node into:(NSMutableAttributedString *)output context:(RenderContext *)context
+- (id)takeContextSnapshot:(RenderContext *)context
 {
+  return [context snapshotScope];
+}
+
+- (void)renderNodeContent:(MarkdownASTNode *)node
+                     into:(NSMutableAttributedString *)output
+                  context:(RenderContext *)context
+{
+  if (output.length > 0 && ![output.string hasSuffix:@"\n"]) {
+    [output appendAttributedString:kNewlineAttributedString];
+  }
+
   NSInteger level = [node.attributes[@"level"] integerValue];
   if (level < 1 || level > 6)
     level = 1;
@@ -40,11 +51,7 @@ static NSString *const kHeadingTypes[] = {nil,          @"heading-1", @"heading-
     start += offset;
   }
 
-  @try {
-    [_rendererFactory renderChildrenOfNode:node into:output context:context];
-  } @finally {
-    [context clearBlockStyle];
-  }
+  [_rendererFactory renderChildrenOfNode:node into:output context:context];
 
   NSRange range = NSMakeRange(start, output.length - start);
   if (range.length == 0)
