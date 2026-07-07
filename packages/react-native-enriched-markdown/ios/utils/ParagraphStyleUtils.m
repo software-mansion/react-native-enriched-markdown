@@ -284,7 +284,8 @@ void applyBaselineOffset(NSMutableAttributedString *output, NSRange range)
     return;
   }
 
-  __block CGFloat maximumLineHeight = 0;
+  // Math paragraphs leave maximumLineHeight at 0, so fall back to minimumLineHeight.
+  __block CGFloat targetLineHeight = 0;
   [output enumerateAttribute:NSParagraphStyleAttributeName
                      inRange:range
                      options:NSAttributedStringEnumerationLongestEffectiveRangeNotRequired
@@ -292,29 +293,41 @@ void applyBaselineOffset(NSMutableAttributedString *output, NSRange range)
                     if (!paragraphStyle) {
                       return;
                     }
-                    maximumLineHeight = MAX(paragraphStyle.maximumLineHeight, maximumLineHeight);
+                    CGFloat clamp = MAX(paragraphStyle.maximumLineHeight, paragraphStyle.minimumLineHeight);
+                    targetLineHeight = MAX(clamp, targetLineHeight);
                   }];
 
-  if (maximumLineHeight <= 0) {
+  if (targetLineHeight <= 0) {
     return;
   }
 
-  __block CGFloat maximumFontLineHeight = 0;
-  [output enumerateAttribute:NSFontAttributeName
-                     inRange:range
-                     options:NSAttributedStringEnumerationLongestEffectiveRangeNotRequired
-                  usingBlock:^(UIFont *font, __unused NSRange subrange, __unused BOOL *stop) {
-                    if (!font) {
-                      return;
-                    }
-                    maximumFontLineHeight = MAX(UIFontLineHeight(font), maximumFontLineHeight);
-                  }];
+  // Center on real text; on a math-only line center the math box instead of its font.
+  __block CGFloat textLineHeight = 0;
+  __block CGFloat mathBoxHeight = 0;
+  [output enumerateAttributesInRange:range
+                             options:0
+                          usingBlock:^(NSDictionary<NSAttributedStringKey, id> *attrs, __unused NSRange subrange,
+                                       __unused BOOL *stop) {
+#if ENRICHED_MARKDOWN_MATH
+                            id attachment = attrs[NSAttachmentAttributeName];
+                            if ([attachment isKindOfClass:[ENRMMathInlineAttachment class]]) {
+                              mathBoxHeight = MAX(((ENRMMathInlineAttachment *)attachment).boxHeight, mathBoxHeight);
+                              return;
+                            }
+#endif
+                            UIFont *font = attrs[NSFontAttributeName];
+                            if (font) {
+                              textLineHeight = MAX(UIFontLineHeight(font), textLineHeight);
+                            }
+                          }];
 
-  if (maximumFontLineHeight <= 0 || maximumLineHeight < maximumFontLineHeight) {
+  CGFloat contentLineHeight = textLineHeight > 0 ? MAX(textLineHeight, mathBoxHeight) : mathBoxHeight;
+
+  if (contentLineHeight <= 0 || targetLineHeight <= contentLineHeight) {
     return;
   }
 
-  CGFloat baseLineOffset = (maximumLineHeight - maximumFontLineHeight) / 2.0;
+  CGFloat baseLineOffset = (targetLineHeight - contentLineHeight) / 2.0;
 
   [output enumerateAttribute:NSBaselineOffsetAttributeName
                      inRange:range
