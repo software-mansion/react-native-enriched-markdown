@@ -158,8 +158,8 @@ static size_t closingDelimiterEndByte(const ParseContext &context, const InlineS
     return (position < context.bufferLength) ? position + 1 : position;
   }
 
-  // Closing delimiters occupy the gap between content end and the next text run
-  // (md4c never emits delimiters as text). Anchoring here — rather than adding a
+  // Markdown delimiter bytes occupy the gap between content end and the next emitted text run
+  // (md4c never emits syntax bytes as text). Anchoring here — rather than adding a
   // fixed per-type length — keeps stacked closers of co-terminating spans (e.g.
   // "***", "**~~x~~**") from overlapping and leaking a trailing marker.
   auto next = std::lower_bound(context.textStartOffsets.begin(), context.textStartOffsets.end(), position);
