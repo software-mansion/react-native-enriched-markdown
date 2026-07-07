@@ -596,9 +596,10 @@ class EnrichedMarkdownTextInputView(
    * and block ranges (headings etc.) into the stores — mirrors iOS pasteMarkdown.
    */
   fun pasteMarkdown(markdown: String) {
+    val editable = text ?: return
     val parsed = InputParser.parseToPlainTextAndRanges(markdown)
-    val selStart = selectionStart.coerceIn(0, text?.length ?: 0)
-    val selEnd = selectionEnd.coerceIn(selStart, text?.length ?: 0)
+    val selStart = selectionStart.coerceIn(0, editable.length)
+    val selEnd = selectionEnd.coerceIn(selStart, editable.length)
 
     replaceTextInRange(selStart, selEnd, parsed.plainText) { editable ->
       for (range in parsed.formattingRanges) {
