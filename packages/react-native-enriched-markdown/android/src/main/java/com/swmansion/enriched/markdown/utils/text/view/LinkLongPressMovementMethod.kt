@@ -22,6 +22,7 @@ class LinkLongPressMovementMethod : LinkMovementMethod() {
 
   var isLinkTouchActive: Boolean = false
     private set
+  private var isTouchWithinTextBounds: Boolean = true
 
   override fun onTouchEvent(
     widget: TextView,
@@ -35,6 +36,7 @@ class LinkLongPressMovementMethod : LinkMovementMethod() {
 
         val span = findLinkSpan(widget, buffer, event)
         isLinkTouchActive = span != null
+        isTouchWithinTextBounds = charOffsetAt(widget, event) != null
         span?.let { scheduleLongPress(widget, it) }
       }
 
@@ -67,6 +69,15 @@ class LinkLongPressMovementMethod : LinkMovementMethod() {
           Selection.removeSelection(buffer)
         }
       }
+    }
+
+    // LinkMovementMethod.onTouchEvent does its own getOffsetForHorizontal
+    // without bounds checking, so it would click the nearest link even for
+    // taps in empty space past the end of a line. Skip the super call when
+    // the ACTION_DOWN landed outside actual text content so the touch falls
+    // through to the parent (e.g. RNGH Pressable).
+    if (!isTouchWithinTextBounds) {
+      return false
     }
 
     val result = super.onTouchEvent(widget, buffer, event)
@@ -112,10 +123,28 @@ class LinkLongPressMovementMethod : LinkMovementMethod() {
     widget: TextView,
     event: MotionEvent,
   ): Int? {
-    val x = event.x.toInt() - widget.totalPaddingLeft + widget.scrollX
-    val y = event.y.toInt() - widget.totalPaddingTop + widget.scrollY
+    val x = event.x - widget.totalPaddingLeft + widget.scrollX
+    val y = event.y - widget.totalPaddingTop + widget.scrollY
     val layout = widget.layout ?: return null
-    return layout.getOffsetForHorizontal(layout.getLineForVertical(y), x.toFloat())
+
+    // getLineForVertical clamps to the first/last line for out-of-range
+    // values, so taps in vertical padding would silently map to a real
+    // line. Reject them before proceeding.
+    if (y < 0f || y > layout.height) {
+      return null
+    }
+
+    val line = layout.getLineForVertical(y.toInt())
+
+    // getOffsetForHorizontal snaps to the nearest character even when the
+    // tap is outside the actual text content (e.g. empty space after the
+    // last word on a line). Guard against that by checking the tap falls
+    // within the line's text bounds.
+    if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) {
+      return null
+    }
+
+    return layout.getOffsetForHorizontal(line, x)
   }
 
   private fun findLinkSpan(
