@@ -469,6 +469,7 @@ bool isBlockNode(const MarkdownASTNode &node) {
     case NodeType::ListItem:
     case NodeType::CodeBlock:
     case NodeType::ThematicBreak:
+    case NodeType::LatexMathDisplay:
     case NodeType::Table:
     case NodeType::TableHead:
     case NodeType::TableBody:

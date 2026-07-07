@@ -6,24 +6,29 @@
 @implementation BlockStyle
 @end
 
-@interface ENRMScopeFrame : NSObject
-@property (nonatomic, assign) BlockType blockType;
-@property (nonatomic, assign) NSInteger headingLevel;
-@property (nonatomic, assign) CGFloat fontSize;
-@property (nonatomic, strong) NSString *fontFamily;
-@property (nonatomic, strong) NSString *fontWeight;
-@property (nonatomic, strong) RCTUIColor *color;
-@property (nonatomic, strong) UIFont *cachedFont;
-@property (nonatomic, strong) NSDictionary *cachedTextAttributes;
-@property (nonatomic, assign) NSInteger blockquoteDepth;
-@property (nonatomic, assign) NSInteger listDepth;
-@property (nonatomic, assign) ListType listType;
-@property (nonatomic, assign) NSInteger listItemNumber;
-@property (nonatomic, assign) CGFloat accumulatedIndent;
-@end
-
-@implementation ENRMScopeFrame
-@end
+static NSArray<NSString *> *ENRMScopedKeyPaths(void)
+{
+  static NSArray<NSString *> *keyPaths;
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    keyPaths = @[
+      @"currentBlockType",
+      @"currentHeadingLevel",
+      @"currentBlockStyle.fontSize",
+      @"currentBlockStyle.fontFamily",
+      @"currentBlockStyle.fontWeight",
+      @"currentBlockStyle.color",
+      @"currentBlockStyle.cachedFont",
+      @"currentBlockStyle.cachedTextAttributes",
+      @"blockquoteDepth",
+      @"listDepth",
+      @"listType",
+      @"listItemNumber",
+      @"accumulatedIndent",
+    ];
+  });
+  return keyPaths;
+}
 
 @implementation RenderContext {
   NSMutableDictionary<NSString *, UIFont *> *_fontCache;
@@ -256,39 +261,21 @@
 
 - (id)snapshotScope
 {
-  ENRMScopeFrame *frame = [[ENRMScopeFrame alloc] init];
-  frame.blockType = _currentBlockType;
-  frame.headingLevel = _currentHeadingLevel;
-  frame.fontSize = _currentBlockStyle.fontSize;
-  frame.fontFamily = _currentBlockStyle.fontFamily;
-  frame.fontWeight = _currentBlockStyle.fontWeight;
-  frame.color = _currentBlockStyle.color;
-  frame.cachedFont = _currentBlockStyle.cachedFont;
-  frame.cachedTextAttributes = _currentBlockStyle.cachedTextAttributes;
-  frame.blockquoteDepth = _blockquoteDepth;
-  frame.listDepth = _listDepth;
-  frame.listType = _listType;
-  frame.listItemNumber = _listItemNumber;
-  frame.accumulatedIndent = _accumulatedIndent;
-  return frame;
+  NSArray<NSString *> *keyPaths = ENRMScopedKeyPaths();
+  NSMutableDictionary *snapshot = [NSMutableDictionary dictionaryWithCapacity:keyPaths.count];
+  for (NSString *keyPath in keyPaths) {
+    snapshot[keyPath] = [self valueForKeyPath:keyPath] ?: [NSNull null];
+  }
+  return snapshot;
 }
 
 - (void)restoreScope:(id)snapshot
 {
-  ENRMScopeFrame *frame = snapshot;
-  _currentBlockType = frame.blockType;
-  _currentHeadingLevel = frame.headingLevel;
-  _currentBlockStyle.fontSize = frame.fontSize;
-  _currentBlockStyle.fontFamily = frame.fontFamily;
-  _currentBlockStyle.fontWeight = frame.fontWeight;
-  _currentBlockStyle.color = frame.color;
-  _currentBlockStyle.cachedFont = frame.cachedFont;
-  _currentBlockStyle.cachedTextAttributes = frame.cachedTextAttributes;
-  _blockquoteDepth = frame.blockquoteDepth;
-  _listDepth = frame.listDepth;
-  _listType = frame.listType;
-  _listItemNumber = frame.listItemNumber;
-  _accumulatedIndent = frame.accumulatedIndent;
+  NSDictionary *frame = snapshot;
+  for (NSString *keyPath in ENRMScopedKeyPaths()) {
+    id value = frame[keyPath];
+    [self setValue:(value == [NSNull null] ? nil : value) forKeyPath:keyPath];
+  }
 }
 
 #pragma mark - Reset
