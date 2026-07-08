@@ -43,7 +43,16 @@
 
   context.listDepth = prevDepth + 1;
   context.listType = _isOrdered ? ListTypeOrdered : ListTypeUnordered;
-  context.listItemNumber = 0; // Reset counter for this specific list level
+  // Reset counter for this specific list level. Ordered lists honor the
+  // GFM start number ("3. foo" renders 3, 4, …) — the parser sets the
+  // attribute only when != 1; ListItemRenderer pre-increments, so the
+  // counter starts one below the first rendered number.
+  NSInteger startNumber = 1;
+  NSString *startAttr = node.attributes[@"start"];
+  if (_isOrdered && startAttr != nil) {
+    startNumber = MAX((NSInteger)0, (NSInteger)startAttr.integerValue);
+  }
+  context.listItemNumber = startNumber - 1;
 
   [context setBlockStyle:_isOrdered ? BlockTypeOrderedList : BlockTypeUnorderedList
                     font:_config.listStyleFont

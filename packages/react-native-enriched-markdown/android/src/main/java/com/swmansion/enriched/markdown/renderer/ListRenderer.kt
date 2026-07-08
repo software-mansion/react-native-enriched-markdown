@@ -22,8 +22,17 @@ class ListRenderer(
     val listStyle = config.style.listStyle
     val listType = if (isOrdered) BlockStyleContext.ListType.ORDERED else BlockStyleContext.ListType.UNORDERED
 
+    // GFM: an ordered list starts at its first item's literal number
+    // ("3. foo" renders 3, 4, …). The parser sets the attribute only when != 1.
+    val startNumber =
+      if (isOrdered) {
+        node.getAttribute("start")?.toIntOrNull()?.coerceAtLeast(0) ?: 1
+      } else {
+        1
+      }
+
     val contextManager = ListContextManager(factory.blockStyleContext)
-    val entryState = contextManager.enterList(listType, listStyle)
+    val entryState = contextManager.enterList(listType, listStyle, startNumber)
 
     // For top-level lists, insert marginTop spacer before rendering content
     if (entryState.previousDepth == 0) {
