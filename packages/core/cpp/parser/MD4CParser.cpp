@@ -117,9 +117,6 @@ public:
       case MD_BLOCK_OL: {
         auto node = std::make_shared<MarkdownASTNode>(NodeType::OrderedList);
         if (detail) {
-          // GFM: an ordered list starts at its first item's literal number
-          // ("3. foo" renders 3, 4, …). Only set when != 1 so renderers can
-          // treat the attribute's absence as the default.
           auto *ol = static_cast<MD_BLOCK_OL_DETAIL *>(detail);
           if (ol->start != 1) {
             node->setAttribute(ATTR_START, std::to_string(ol->start));
