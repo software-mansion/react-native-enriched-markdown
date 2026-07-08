@@ -303,15 +303,16 @@ void applyBaselineOffset(NSMutableAttributedString *output, NSRange range)
 
   // Center on real text; on a math-only line center the math box instead of its font.
   __block CGFloat textLineHeight = 0;
-  __block CGFloat mathBoxHeight = 0;
+#if ENRICHED_MARKDOWN_MATH
+  __block BOOL hasMath = NO;
+#endif
   [output enumerateAttributesInRange:range
                              options:0
                           usingBlock:^(NSDictionary<NSAttributedStringKey, id> *attrs, __unused NSRange subrange,
                                        __unused BOOL *stop) {
 #if ENRICHED_MARKDOWN_MATH
-                            id attachment = attrs[NSAttachmentAttributeName];
-                            if ([attachment isKindOfClass:[ENRMMathInlineAttachment class]]) {
-                              mathBoxHeight = MAX(((ENRMMathInlineAttachment *)attachment).boxHeight, mathBoxHeight);
+                            if ([attrs[NSAttachmentAttributeName] isKindOfClass:[ENRMMathInlineAttachment class]]) {
+                              hasMath = YES;
                               return;
                             }
 #endif
@@ -321,7 +322,24 @@ void applyBaselineOffset(NSMutableAttributedString *output, NSRange range)
                             }
                           }];
 
-  CGFloat contentLineHeight = textLineHeight > 0 ? MAX(textLineHeight, mathBoxHeight) : mathBoxHeight;
+  CGFloat contentLineHeight = textLineHeight;
+
+#if ENRICHED_MARKDOWN_MATH
+  // Math only grows the content height, so measure it (parsing LaTeX) only when text
+  // alone wouldn't already fill the line.
+  if (hasMath && targetLineHeight > textLineHeight) {
+    __block CGFloat mathBoxHeight = 0;
+    [output enumerateAttribute:NSAttachmentAttributeName
+                       inRange:range
+                       options:0
+                    usingBlock:^(id value, __unused NSRange subrange, __unused BOOL *stop) {
+                      if ([value isKindOfClass:[ENRMMathInlineAttachment class]]) {
+                        mathBoxHeight = MAX(((ENRMMathInlineAttachment *)value).boxHeight, mathBoxHeight);
+                      }
+                    }];
+    contentLineHeight = MAX(textLineHeight, mathBoxHeight);
+  }
+#endif
 
   if (contentLineHeight <= 0 || targetLineHeight <= contentLineHeight) {
     return;
