@@ -227,6 +227,7 @@ using namespace facebook::react;
 #if !TARGET_OS_OSX
   _placeholderLabel.adjustsFontForContentSizeCategory = YES;
   _placeholderLabel.accessibilityElementsHidden = YES;
+  _placeholderLabel.isAccessibilityElement = NO;
 #endif
 
   [self resetBaseTypingAttributes];
@@ -245,12 +246,19 @@ using namespace facebook::react;
 - (NSString *)accessibilityValue
 {
   NSString *text = ENRMGetPlainText(_textView);
-  return text.length > 0 ? text : _placeholderLabel.text;
+  if (text.length > 0) {
+    return text;
+  }
+  if (_placeholderLabel.text.length > 0) {
+    return _placeholderLabel.text;
+  }
+  return [super accessibilityValue];
 }
 
 - (BOOL)accessibilityActivate
 {
   ENRMFocusTextView(_textView);
+  [super accessibilityActivate];
   return YES;
 }
 #endif
