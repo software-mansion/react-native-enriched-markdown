@@ -29,6 +29,7 @@ export default defineConfig([
       'packages/react-native-enriched-markdown/lib/',
       // Emscripten-generated WASM glue — not human-authored
       'packages/react-native-enriched-markdown/src/web/wasm/md4c.js',
+      'docs/',
     ],
   },
 ]);
