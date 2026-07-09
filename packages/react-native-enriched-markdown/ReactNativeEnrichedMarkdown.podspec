@@ -36,7 +36,7 @@ Pod::Spec.new do |s|
   preprocessor_defs = '$(inherited) MD4C_USE_UTF8=1'
   if enable_math
     preprocessor_defs += ' ENRICHED_MARKDOWN_MATH=1'
-    if defined?(:spm_dependency)
+    if defined?(spm_dependency)
       spm_dependency(s,
         url: 'https://github.com/erweixin/RaTeX.git',
         requirement: {kind: 'upToNextMajorVersion', minimumVersion: '0.1.12'},
@@ -45,12 +45,26 @@ Pod::Spec.new do |s|
     end
   end
 
-  s.pod_target_xcconfig = {
+  pod_xcconfig = {
     'HEADER_SEARCH_PATHS' => "\"#{cpp_root}/md4c\" \"#{cpp_root}/parser\" \"$(PODS_TARGET_SRCROOT)/ios/internals\" \"$(PODS_TARGET_SRCROOT)/ios/input/internals\"",
     'GCC_PREPROCESSOR_DEFINITIONS' => preprocessor_defs,
     'CLANG_CXX_LANGUAGE_STANDARD' => 'c++17',
     'DEFINES_MODULE' => 'YES'
   }
+
+  if enable_math
+    # RaTeX's Swift wrapper is compiled from SPM source, so its RaTeX.swiftmodule
+    # is emitted only for the arch(es) the build requests. Under ONLY_ACTIVE_ARCH
+    # on Apple Silicon that is arm64 only, but universal simulator builds (archive,
+    # "Any iOS Simulator Device", Release) also compile this pod for x86_64 and then
+    # fail with "could not find module 'RaTeX' for target 'x86_64-apple-ios-simulator'".
+    # Excluding x86_64 for the simulator keeps the pod and the app target arch sets in
+    # sync. Apple Silicon only; Intel simulator builds are not supported when math is on.
+    pod_xcconfig['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'x86_64'
+    s.user_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
+  end
+
+  s.pod_target_xcconfig = pod_xcconfig
 
   if enable_math
     # React Native's spm_dependency generates a module.modulemap at
