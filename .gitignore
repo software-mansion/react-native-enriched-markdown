@@ -45,6 +45,7 @@ android.iml
 #
 apps/react-native-example/ios/Pods
 apps/react-native-macos-example/macos/Pods
+apps/react-native-example/ios/.spm.pods
 
 # Ruby
 apps/react-native-example/vendor/
