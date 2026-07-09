@@ -29,6 +29,17 @@ Pod::Spec.new do |s|
   # When math is enabled, consumers must use `use_frameworks! :linkage => :dynamic` (required for SPM interop).
   enable_math = ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] != '0'
 
+  # RaTeX is wired in through React Native's `spm_dependency` helper (SPM interop).
+  # On React Native versions that don't provide it, disable math entirely so the
+  # RaTeX-importing sources under ios/math are excluded from the build. Otherwise
+  # the failure would just move from `pod install` to a build-time
+  # "missing module 'RaTeX'" error.
+  if enable_math && !defined?(spm_dependency)
+    Pod::UI.warn '[ReactNativeEnrichedMarkdown] `spm_dependency` is unavailable in this ' \
+      'React Native version; disabling LaTeX math (RaTeX). Upgrade React Native to enable it.'
+    enable_math = false
+  end
+
   unless enable_math
     s.exclude_files = "ios/math/**/*.swift"
   end
@@ -36,13 +47,11 @@ Pod::Spec.new do |s|
   preprocessor_defs = '$(inherited) MD4C_USE_UTF8=1'
   if enable_math
     preprocessor_defs += ' ENRICHED_MARKDOWN_MATH=1'
-    if defined?(spm_dependency)
-      spm_dependency(s,
-        url: 'https://github.com/erweixin/RaTeX.git',
-        requirement: {kind: 'upToNextMajorVersion', minimumVersion: '0.1.12'},
-        products: ['RaTeX']
-      )
-    end
+    spm_dependency(s,
+      url: 'https://github.com/erweixin/RaTeX.git',
+      requirement: {kind: 'upToNextMajorVersion', minimumVersion: '0.1.12'},
+      products: ['RaTeX']
+    )
   end
 
   pod_xcconfig = {
@@ -52,16 +61,21 @@ Pod::Spec.new do |s|
     'DEFINES_MODULE' => 'YES'
   }
 
-  if enable_math
+  # Detect Apple Silicon on the host running `pod install`. `sysctl hw.optional.arm64`
+  # reports the real hardware even under a Rosetta-translated Ruby, unlike `uname -m`.
+  apple_silicon = `sysctl -n hw.optional.arm64 2>/dev/null`.strip == '1'
+
+  if enable_math && apple_silicon
     # RaTeX's Swift wrapper is compiled from SPM source, so its RaTeX.swiftmodule
     # is emitted only for the arch(es) the build requests. Under ONLY_ACTIVE_ARCH
     # on Apple Silicon that is arm64 only, but universal simulator builds (archive,
     # "Any iOS Simulator Device", Release) also compile this pod for x86_64 and then
     # fail with "could not find module 'RaTeX' for target 'x86_64-apple-ios-simulator'".
     # Excluding x86_64 for the simulator keeps the pod and the app target arch sets in
-    # sync. Apple Silicon only; Intel simulator builds are not supported when math is on.
-    pod_xcconfig['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'x86_64'
-    s.user_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
+    # sync. Guarded to Apple Silicon so Intel Macs (which build x86_64 simulator slices)
+    # are unaffected; `$(inherited)` preserves exclusions from the user project / other pods.
+    pod_xcconfig['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = '$(inherited) x86_64'
+    s.user_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => '$(inherited) x86_64' }
   end
 
   s.pod_target_xcconfig = pod_xcconfig
