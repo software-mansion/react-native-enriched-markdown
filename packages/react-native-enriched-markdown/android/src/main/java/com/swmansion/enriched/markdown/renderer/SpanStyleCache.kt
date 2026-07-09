@@ -113,7 +113,7 @@ class SpanStyleCache(
     fontFamily: String,
     style: Int,
   ): Typeface =
-    typefaceCache.getOrPut("$fontFamily|$style") {
+    typefaceCache.getOrPut("family|$fontFamily|$style") {
       val base =
         applyStyles(
           null,

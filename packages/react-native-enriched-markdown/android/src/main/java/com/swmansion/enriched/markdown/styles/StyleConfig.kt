@@ -20,7 +20,7 @@ class StyleConfig(
   maxFontSizeMultiplier: Float,
 ) {
   private val styleParser = StyleParser(context, allowFontScaling, maxFontSizeMultiplier)
-  val assetManager: AssetManager = context.assets
+  internal val assetManager: AssetManager = context.assets
   private val assets: AssetManager get() = assetManager
 
   private var paragraphStyleOverride: ParagraphStyle? = null
