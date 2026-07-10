@@ -1,6 +1,7 @@
 #import "BlockquoteRenderer.h"
 #import "BlockquoteBorder.h"
 #import "FontUtils.h"
+#import "LastElementUtils.h"
 #import "ListItemRenderer.h"
 #import "MarkdownASTNode.h"
 #import "ParagraphStyleUtils.h"
@@ -159,15 +160,26 @@ static NSString *const kNestedInfoRangeKey = @"range";
                            range:(NSRange)range
                       usingBlock:(void (^)(NSRange nonListRange))block
 {
+  // List items — and code blocks nested inside them (which carry a list-derived
+  // indent instead of ListDepthAttribute) — already bake the correct indent in.
   NSMutableArray<NSValue *> *listRanges = [NSMutableArray array];
-  [output enumerateAttribute:ListDepthAttribute
-                     inRange:range
-                     options:0
-                  usingBlock:^(id value, NSRange subRange, BOOL *stop) {
-                    if (value) {
-                      [listRanges addObject:[NSValue valueWithRange:subRange]];
-                    }
-                  }];
+  void (^collectRanges)(NSString *) = ^(NSString *attribute) {
+    [output enumerateAttribute:attribute
+                       inRange:range
+                       options:0
+                    usingBlock:^(id value, NSRange subRange, BOOL *stop) {
+                      if (value) {
+                        [listRanges addObject:[NSValue valueWithRange:subRange]];
+                      }
+                    }];
+  };
+  collectRanges(ListDepthAttribute);
+  collectRanges(CodeBlockIndentAttributeName);
+  [listRanges sortUsingComparator:^NSComparisonResult(NSValue *a, NSValue *b) {
+    NSUInteger la = [a rangeValue].location;
+    NSUInteger lb = [b rangeValue].location;
+    return la < lb ? NSOrderedAscending : (la > lb ? NSOrderedDescending : NSOrderedSame);
+  }];
 
   NSUInteger pos = range.location;
   const NSUInteger end = NSMaxRange(range);
