@@ -1938,7 +1938,7 @@ PODS:
     - React-utils (= 0.86.0)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.86.0)
-  - ReactNativeEnrichedMarkdown (0.7.3):
+  - ReactNativeEnrichedMarkdown (0.7.4):
     - EnrichedMarkdownCore
     - hermes-engine
     - RCTRequired
@@ -2559,7 +2559,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   EnrichedMarkdownCore: 33ec2bafbc265cfe76df3095fb21522440dd0a30
   FBLazyVector: b3e7ad108f0d882e30445c5527d774e3fd432f3d
-  hermes-engine: 4a0ceceb51f483aef72bfeb288e965aff6defa54
+  hermes-engine: 1622a566d44d0dd4d377a1532e3ac82be7a0443c
   RCTDeprecation: 2a74a2c57675e64419bd89078efde81f7c1de90b
   RCTRequired: 30451112e6fef4e6f31b4e7eee0845156e35e4b0
   RCTSwiftUI: 5aaf0b07e747ba749dc6acc94d8bd41eea4b570f
@@ -2634,7 +2634,7 @@ SPEC CHECKSUMS:
   ReactCodegen: cd296de5e1c422deebafff34134d1721b5c29704
   ReactCommon: d5c1bb4427bf51c443de5926aac332c89ddd9363
   ReactNativeDependencies: fa0a54b3f5319ae0e3b9aff32bfee7a424b88e66
-  ReactNativeEnrichedMarkdown: d24c9b47b2bcba8f455a1b18e61128c3de570946
+  ReactNativeEnrichedMarkdown: 1ee8a58fee138c2677bfc7481529588328f547cd
   RNCAsyncStorage: 7d913885caaae13f5fb62dd0bd04c674ea8bf97b
   RNDateTimePicker: afe0288e6c7855994f7f2617b7b2c05799fea7f3
   RNGestureHandler: 7b07d9192bc65c6883fb37fdecc05dc6b61c814f
