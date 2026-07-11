@@ -19,14 +19,21 @@
 
 @interface ENRMRaTeXCanvasView : RCTUIView
 @property (nonatomic, strong, nullable) ENRMRaTeXRenderResult *renderResult;
+// Visible-source fallback when RaTeX cannot parse the block: the original
+// `$$…$$` source, drawn wrapped, instead of an invisible zero-height bar.
+@property (nonatomic, strong, nullable) NSAttributedString *fallbackSource;
 @end
 
 @implementation ENRMRaTeXCanvasView
 
 - (void)drawRect:(CGRect)rect
 {
-  if (!_renderResult)
+  if (!_renderResult) {
+    if (_fallbackSource) {
+      [_fallbackSource drawWithRect:self.bounds options:NSStringDrawingUsesLineFragmentOrigin context:nil];
+    }
     return;
+  }
   CGContextRef ctx = UIGraphicsGetCurrentContext();
   if (!ctx)
     return;
@@ -96,6 +103,22 @@
                                                 fontSize:config.mathFontSize
                                                    color:config.mathColor];
   _mathView.renderResult = result;
+  if (!result) {
+    // RaTeX parse failure: keep the block visible — typeset the original
+    // source with its delimiters (wrapped in layoutSubviews/measureHeight)
+    // instead of collapsing into a zero-height bar.
+    CGFloat fontSize = config.mathFontSize > 0 ? config.mathFontSize : 16.0;
+    UIFont *font = [UIFont systemFontOfSize:fontSize];
+    NSString *source = [NSString stringWithFormat:@"$$%@$$", latex ?: @""];
+    _mathView.fallbackSource = [[NSAttributedString alloc]
+        initWithString:source
+            attributes:@{
+              NSFontAttributeName : font,
+              NSForegroundColorAttributeName : config.mathColor ?: [RCTUIColor blackColor],
+            }];
+  } else {
+    _mathView.fallbackSource = nil;
+  }
 
   CGFloat padding = config.mathPadding;
   _mathView.frame = CGRectMake(padding, padding, ceil(result.width), ceil(result.totalHeight));
@@ -164,6 +187,13 @@
 - (CGFloat)measureHeight:(CGFloat)maxWidth
 {
   CGFloat padding = self.config.mathPadding;
+  if (!_mathView.renderResult && _mathView.fallbackSource) {
+    CGFloat available = MAX(maxWidth - padding * 2, 1);
+    CGRect bounds = [_mathView.fallbackSource boundingRectWithSize:CGSizeMake(available, CGFLOAT_MAX)
+                                                           options:NSStringDrawingUsesLineFragmentOrigin
+                                                           context:nil];
+    return ceil(bounds.size.height) + padding * 2;
+  }
   return [self mathViewIntrinsicSize].height + padding * 2;
 }
 
@@ -186,6 +216,24 @@
   [super layoutSubviews];
 
   CGFloat padding = self.config.mathPadding;
+
+  if (!_mathView.renderResult && _mathView.fallbackSource) {
+    // Fallback source fills the available width and wraps; no horizontal scroll.
+#if !TARGET_OS_OSX
+    _scrollView.frame = self.bounds;
+    _scrollView.contentSize = self.bounds.size;
+    _scrollView.scrollEnabled = NO;
+#endif
+    _mathView.frame = CGRectMake(padding, padding, MAX(self.bounds.size.width - padding * 2, 1),
+                                 MAX(self.bounds.size.height - padding * 2, 1));
+#if !TARGET_OS_OSX
+    [_mathView setNeedsDisplay];
+#else
+    [_mathView setNeedsDisplay:YES];
+#endif
+    return;
+  }
+
   CGSize intrinsicSize = [self mathViewIntrinsicSize];
   CGFloat contentWidth = intrinsicSize.width + padding * 2;
   CGFloat contentHeight = self.bounds.size.height;

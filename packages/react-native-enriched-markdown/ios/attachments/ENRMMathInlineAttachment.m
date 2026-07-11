@@ -14,13 +14,31 @@
 
 - (void)prepareIfNeeded
 {
-  if (_renderResult)
+  if (_renderResult || _fallbackSource)
     return;
 
   RCTUIColor *color = self.mathTextColor ?: [RCTUIColor blackColor];
   ENRMRaTeXRenderResult *result = [ENRMRaTeXBridge parse:self.latex displayMode:NO fontSize:self.fontSize color:color];
-  if (!result)
+  if (!result) {
+    // RaTeX parse failure: fall back to the original source, delimiters
+    // included, in body style — the formula stays visible and copyable
+    // instead of collapsing into an invisible zero-size box.
+    CGFloat size = self.fontSize > 0 ? self.fontSize : 16.0;
+    UIFont *font = [UIFont systemFontOfSize:size];
+    NSString *source = [NSString stringWithFormat:@"$%@$", self.latex ?: @""];
+    _fallbackSource = [[NSAttributedString alloc] initWithString:source
+                                                      attributes:@{
+                                                        NSFontAttributeName : font,
+                                                        NSForegroundColorAttributeName : color,
+                                                      }];
+    CGRect bounds = [_fallbackSource boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
+                                                  options:NSStringDrawingUsesLineFragmentOrigin
+                                                  context:nil];
+    _mathAscent = font.ascender;
+    _mathDescent = -font.descender;
+    _cachedSize = CGSizeMake(ceil(bounds.size.width), ceil(_mathAscent + _mathDescent));
     return;
+  }
 
   _renderResult = result;
   _mathAscent = result.ascent;
@@ -42,7 +60,7 @@
              characterIndex:(NSUInteger)characterIndex
 {
   [self prepareIfNeeded];
-  if (!_renderResult)
+  if (!_renderResult && !_fallbackSource)
     return nil;
 
   UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat preferredFormat];
@@ -51,10 +69,16 @@
   UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:_cachedSize format:format];
 
   return [renderer imageWithActions:^(UIGraphicsImageRendererContext *rendererContext) {
-    CGContextRef ctx = rendererContext.CGContext;
-    CGContextSaveGState(ctx);
-    [_renderResult drawIn:ctx];
-    CGContextRestoreGState(ctx);
+    if (_renderResult) {
+      CGContextRef ctx = rendererContext.CGContext;
+      CGContextSaveGState(ctx);
+      [_renderResult drawIn:ctx];
+      CGContextRestoreGState(ctx);
+    } else {
+      [_fallbackSource drawWithRect:CGRectMake(0, 0, _cachedSize.width, _cachedSize.height)
+                            options:NSStringDrawingUsesLineFragmentOrigin
+                            context:nil];
+    }
   }];
 }
 
