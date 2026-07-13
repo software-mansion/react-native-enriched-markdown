@@ -7,6 +7,11 @@ Forests cover approximately **31% of the Earth's land surface**, providing habit
 
 ![Misty forest at sunrise](https://images.unsplash.com/photo-1448375240586-882707db888b?w=800)
 
+$
+\begin{foo}x\end{foo} aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+$
+
+
 ## Why Forests Matter
 
 Forests are often called the *lungs of the Earth*. They absorb **carbon dioxide** and release oxygen through photosynthesis — a process essential for all life on our planet. A single mature tree can absorb up to \`48 pounds\` of CO₂ per year.
@@ -139,6 +144,26 @@ Mathematical and scientific notation using superscripts and subscripts:
 Footnote-style references^1^ and trademark symbols like React Native^™^ can also use superscripts.
 
 Scientific prefixes: 6.022 × 10^23^ (Avogadro's number), the universe is approximately 1.38 × 10^10^ years old.
+
+---
+
+## Display Math Examples
+
+Standalone display math renders as a centered block:
+
+$$
+E = mc^2
+$$
+
+Display math surrounded by text on both sides (no blank lines) should still render as a block, with the text flowing above and below it:
+
+Energy released by fusion follows
+$$
+E = \\Delta m \\cdot c^2
+$$
+and this is why the sun shines.
+
+Inline math like $a^2 + b^2 = c^2$ and genuine mid-line display math ($$x = y$$ inside a sentence) both stay in the text flow.
 
 ---
 
