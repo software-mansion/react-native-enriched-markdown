@@ -157,7 +157,6 @@ static NSAttributedStringKey const ENRMAutomaticLinkAttributeName = @"ENRMAutoma
 
     if (!alreadyApplied) {
       [textStorage beginEditing];
-      // Clear any stale marker spanning the token before re-applying to the slice.
       [textStorage removeAttribute:ENRMAutomaticLinkAttributeName range:wordRange];
       [textStorage addAttribute:ENRMAutomaticLinkAttributeName value:matchedUrl range:matchRange];
       [self applyVisualStylingToRange:matchRange];

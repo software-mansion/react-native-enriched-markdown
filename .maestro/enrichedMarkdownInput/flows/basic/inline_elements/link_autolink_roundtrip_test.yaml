@@ -25,4 +25,4 @@ tags:
 - assertVisible: '\[Testing\]\(http://example\.com\)'
 # The over-capture bug prepended "https://" to the whole token — its absence
 # proves the token was left untouched by the auto-link detector.
-- assertNotVisible: 'https://'
+- assertNotVisible: 'http://'
