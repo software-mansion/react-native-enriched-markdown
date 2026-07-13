@@ -7,11 +7,6 @@ Forests cover approximately **31% of the Earth's land surface**, providing habit
 
 ![Misty forest at sunrise](https://images.unsplash.com/photo-1448375240586-882707db888b?w=800)
 
-$
-\begin{foo}x\end{foo} aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-$
-
-
 ## Why Forests Matter
 
 Forests are often called the *lungs of the Earth*. They absorb **carbon dioxide** and release oxygen through photosynthesis — a process essential for all life on our planet. A single mature tree can absorb up to \`48 pounds\` of CO₂ per year.
