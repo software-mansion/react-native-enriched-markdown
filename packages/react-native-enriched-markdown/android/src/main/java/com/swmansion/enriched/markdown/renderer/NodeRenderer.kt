@@ -109,7 +109,13 @@ class RendererFactory(
         try {
           val mathInlineRendererClass = Class.forName("com.swmansion.enriched.markdown.renderer.MathInlineRenderer")
           val constructor = mathInlineRendererClass.getConstructor(RendererConfig::class.java, Context::class.java)
-          put(MarkdownASTNode.NodeType.LatexMathInline, constructor.newInstance(config, context) as NodeRenderer)
+          val mathInlineRenderer = constructor.newInstance(config, context) as NodeRenderer
+          put(MarkdownASTNode.NodeType.LatexMathInline, mathInlineRenderer)
+          // Isolated display math is promoted to a block segment in the parser
+          // (see promoteDisplayMathFromParagraphs). What reaches the factory is
+          // genuinely mid-line display math (e.g. `a $$x$$ b`); render it inline
+          // rather than dropping it via the TextRenderer fallback.
+          put(MarkdownASTNode.NodeType.LatexMathDisplay, mathInlineRenderer)
         } catch (_: Exception) {
           // math not available
         }
