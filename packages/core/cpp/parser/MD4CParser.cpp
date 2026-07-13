@@ -372,6 +372,8 @@ public:
 
 namespace {
 
+using NodeList = std::vector<std::shared_ptr<MarkdownASTNode>>;
+
 bool isDisplayMathNode(const MarkdownASTNode &node) {
   return node.type == NodeType::LatexMathDisplay;
 }
@@ -431,8 +433,8 @@ splitParagraphAroundDisplayMath(const std::vector<std::shared_ptr<MarkdownASTNod
       --end;
     if (start < end) {
       auto paragraph = std::make_shared<MarkdownASTNode>(NodeType::Paragraph);
-      paragraph->children.assign(inlineRun.begin() + static_cast<ptrdiff_t>(start),
-                                 inlineRun.begin() + static_cast<ptrdiff_t>(end));
+      paragraph->children.assign(inlineRun.begin() + static_cast<NodeList::difference_type>(start),
+                                 inlineRun.begin() + static_cast<NodeList::difference_type>(end));
       result.push_back(std::move(paragraph));
     }
     inlineRun.clear();
@@ -469,7 +471,7 @@ void promoteDisplayMathFromParagraphs(MarkdownASTNode &root) {
       continue;
     }
 
-    auto position = children.erase(children.begin() + static_cast<ptrdiff_t>(i));
+    auto position = children.erase(children.begin() + static_cast<NodeList::difference_type>(i));
     children.insert(position, replacement.begin(), replacement.end());
     i += replacement.size();
   }
