@@ -23,6 +23,8 @@ tags:
 
 # The serialized markdown is shown in the "Markdown" alert.
 - assertVisible: '\[Testing\]\(http://example\.com\)'
-# The over-capture bug prepended "https://" to the whole token — its absence
-# proves the token was left untouched by the auto-link detector.
-- assertNotVisible: 'http://'
+# The over-capture bug prepended "https://" to the whole token, producing a
+# destination like "https://[Testing](http://example.com)". The correct output
+# uses the original "http://" scheme and never introduces "https://", so its
+# absence proves the token was left untouched by the auto-link detector.
+- assertNotVisible: 'https://'

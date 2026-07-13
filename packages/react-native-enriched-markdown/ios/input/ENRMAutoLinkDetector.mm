@@ -137,16 +137,12 @@ static NSAttributedStringKey const ENRMAutomaticLinkAttributeName = @"ENRMAutoma
   if (matchedUrl != nil && localMatch.location != NSNotFound) {
     NSRange matchRange = NSMakeRange(wordRange.location + localMatch.location, localMatch.length);
 
-    // A manual link overlapping the matched slice takes precedence — check the
+    // A manual link overlapping the matched slice takes precedence — test the
     // whole slice, not just its first character.
     ENRMFormattingStore *store = _formattingStore;
-    if (store != nil) {
-      for (NSUInteger position = matchRange.location; position < NSMaxRange(matchRange); position++) {
-        if ([store rangeOfType:ENRMInputStyleTypeLink containingPosition:position] != nil) {
-          [self clearAutoLinkInRange:wordRange];
-          return nil;
-        }
-      }
+    if (store != nil && [store isStyleActive:ENRMInputStyleTypeLink inRange:matchRange]) {
+      [self clearAutoLinkInRange:wordRange];
+      return nil;
     }
 
     NSRange effectiveRange;
