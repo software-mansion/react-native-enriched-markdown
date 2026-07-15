@@ -7,6 +7,11 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const BlockquoteDepthAttributeName;
 extern NSString *const BlockquoteBackgroundColorAttributeName;
 
+static inline CGFloat blockquoteIndentForDepth(NSInteger depth, CGFloat levelSpacing)
+{
+  return depth * levelSpacing;
+}
+
 @interface BlockquoteBorder : NSObject
 
 - (instancetype)initWithConfig:(StyleConfig *)config;

@@ -108,7 +108,7 @@ static NSString *const kNestedInfoRangeKey = @"range";
                  backgroundColor:(RCTUIColor *)backgroundColor
                       lineHeight:(CGFloat)lineHeight
 {
-  CGFloat totalIndent = [self calculateIndentForDepth:currentDepth levelSpacing:levelSpacing];
+  CGFloat totalIndent = blockquoteIndentForDepth(currentDepth + 1, levelSpacing);
 
   // Depth and background cover the whole range so the border renders behind list content.
   NSMutableDictionary *depthAttributes =
@@ -140,7 +140,7 @@ static NSString *const kNestedInfoRangeKey = @"range";
   for (NSDictionary *info in nestedInfo) {
     NSRange nestedRange = [info[kNestedInfoRangeKey] rangeValue];
     NSInteger nestedDepth = [info[kNestedInfoDepthKey] integerValue];
-    CGFloat indent = [self calculateIndentForDepth:nestedDepth levelSpacing:levelSpacing];
+    CGFloat indent = blockquoteIndentForDepth(nestedDepth + 1, levelSpacing);
 
     [output addAttribute:BlockquoteDepthAttributeName value:info[kNestedInfoDepthKey] range:nestedRange];
 
@@ -193,13 +193,6 @@ static NSString *const kNestedInfoRangeKey = @"range";
   if (pos < end) {
     block(NSMakeRange(pos, end - pos));
   }
-}
-
-#pragma mark - Helper Methods
-
-- (CGFloat)calculateIndentForDepth:(NSInteger)depth levelSpacing:(CGFloat)levelSpacing
-{
-  return (depth + 1) * levelSpacing;
 }
 
 @end
