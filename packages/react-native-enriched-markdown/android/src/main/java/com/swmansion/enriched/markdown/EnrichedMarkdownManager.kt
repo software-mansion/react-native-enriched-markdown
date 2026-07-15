@@ -4,7 +4,9 @@ import android.content.Context
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.module.annotations.ReactModule
+import com.facebook.react.uimanager.ReactStylesDiffMap
 import com.facebook.react.uimanager.SimpleViewManager
+import com.facebook.react.uimanager.StateWrapper
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
@@ -62,6 +64,15 @@ class EnrichedMarkdownManager :
   override fun onAfterUpdateTransaction(view: EnrichedMarkdown) {
     super.onAfterUpdateTransaction(view)
     view.commitProps()
+  }
+
+  override fun updateState(
+    view: EnrichedMarkdown,
+    props: ReactStylesDiffMap?,
+    stateWrapper: StateWrapper?,
+  ): Any? {
+    view.stateWrapper = stateWrapper
+    return super.updateState(view, props, stateWrapper)
   }
 
   override fun onDropViewInstance(view: EnrichedMarkdown) {

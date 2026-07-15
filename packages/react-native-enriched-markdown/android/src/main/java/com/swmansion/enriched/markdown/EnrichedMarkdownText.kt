@@ -11,6 +11,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.uimanager.StateWrapper
 import com.swmansion.enriched.markdown.accessibility.AccessibilityLabels
 import com.swmansion.enriched.markdown.accessibility.AccessibleMarkdownTextView
 import com.swmansion.enriched.markdown.parser.Md4cFlags
@@ -59,6 +60,10 @@ class EnrichedMarkdownText
     private var currentRenderId = 0L
 
     val layoutManager = EnrichedMarkdownTextLayoutManager(this)
+
+    // Fabric state wrapper — used to force a Yoga re-measure when content
+    // height changes after layout (e.g. a block image resolves its box height).
+    var stateWrapper: StateWrapper? = null
 
     private var contextMenuItemTexts: List<String> = emptyList()
     var onContextMenuItemPressCallback: ((itemText: String, selectedText: String, selectionStart: Int, selectionEnd: Int) -> Unit)? = null
@@ -267,6 +272,10 @@ class EnrichedMarkdownText
 
       applySelectionColors(selectionColor, selectionHandleColor)
     }
+
+    // Trailing bottom margin included in the shadow-node measurement — must be
+    // mirrored when re-storing the measurement from the display text.
+    fun trailingMarginBottomPx(): Float = if (allowTrailingMargin) renderer.getLastElementMarginBottom() else 0f
 
     fun setContextMenuItems(items: List<String>) {
       contextMenuItemTexts = items

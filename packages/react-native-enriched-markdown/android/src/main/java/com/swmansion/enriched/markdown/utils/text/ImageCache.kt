@@ -24,16 +24,18 @@ object ImageCache {
     width: Int,
     height: Int,
     borderRadius: Int,
-  ): Bitmap? = processedCache.get(processedKey(url, width, height, borderRadius))
+    resizeMode: String,
+  ): Bitmap? = processedCache.get(processedKey(url, width, height, borderRadius, resizeMode))
 
   fun putProcessed(
     url: String,
     width: Int,
     height: Int,
     borderRadius: Int,
+    resizeMode: String,
     bitmap: Bitmap,
   ) {
-    processedCache.put(processedKey(url, width, height, borderRadius), bitmap)
+    processedCache.put(processedKey(url, width, height, borderRadius, resizeMode), bitmap)
   }
 
   private fun processedKey(
@@ -41,7 +43,8 @@ object ImageCache {
     width: Int,
     height: Int,
     borderRadius: Int,
-  ): String = "${url}_w${width}_h${height}_r$borderRadius"
+    resizeMode: String,
+  ): String = "${url}_w${width}_h${height}_r${borderRadius}_m$resizeMode"
 
   private fun bitmapLruCache(maxSize: Int): LruCache<String, Bitmap> =
     object : LruCache<String, Bitmap>(maxSize) {

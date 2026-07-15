@@ -9,7 +9,9 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.uimanager.StateWrapper
 import com.swmansion.enriched.markdown.accessibility.AccessibilityLabels
 import com.swmansion.enriched.markdown.parser.Md4cFlags
 import com.swmansion.enriched.markdown.parser.Parser
@@ -61,6 +63,11 @@ class EnrichedMarkdown
     private val segmentSignatures = mutableListOf<Long>()
     private val dirtyFlags = EnumSet.noneOf(DirtyFlag::class.java)
     var streamingAnimation: Boolean = false
+
+    // Fabric state wrapper — used to force a Yoga re-measure when segment
+    // height changes after layout (e.g. a block image resolves its box height).
+    var stateWrapper: StateWrapper? = null
+    private var forceHeightRecalculationCounter = 0
 
     var tableStreamingMode: TableStreamingMode = TableStreamingMode.PROGRESSIVE
     private var renderPending: Boolean = false
@@ -564,6 +571,21 @@ class EnrichedMarkdown
       b: Int,
     ) {
       layoutSegments()
+    }
+
+    // Called by ImageSpan when a block image resolves its box height after
+    // loading. Re-stacks segments and forces a Yoga re-measure so the React
+    // container height tracks the new content height.
+    fun onImageLayoutChanged() {
+      if (width > 0) {
+        layoutSegments()
+        requestLayout()
+      }
+      MeasurementStore.invalidate(id)
+      val wrapper = stateWrapper ?: return
+      val state = Arguments.createMap()
+      state.putInt("forceHeightRecalculationCounter", ++forceHeightRecalculationCounter)
+      wrapper.updateState(state)
     }
 
     private fun layoutSegments() {
