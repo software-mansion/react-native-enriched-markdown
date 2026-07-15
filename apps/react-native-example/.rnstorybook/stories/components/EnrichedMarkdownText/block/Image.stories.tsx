@@ -21,6 +21,21 @@ const argTypes = {
     max: 400,
     step: 10,
   }),
+  maxHeight: numberControl('markdownStyle.image.maxHeight (0 = off)', {
+    min: 0,
+    max: 400,
+    step: 10,
+  }),
+  aspectRatio: numberControl('markdownStyle.image.aspectRatio (0 = off)', {
+    min: 0,
+    max: 3,
+    step: 0.1,
+  }),
+  resizeMode: {
+    options: ['contain', 'cover', 'stretch', 'center', 'none'] as const,
+    control: { type: 'select' as const },
+    description: 'markdownStyle.image.resizeMode (needs maxHeight/aspectRatio)',
+  },
   borderRadius: numberControl('markdownStyle.image.borderRadius', {
     min: 0,
     max: 24,

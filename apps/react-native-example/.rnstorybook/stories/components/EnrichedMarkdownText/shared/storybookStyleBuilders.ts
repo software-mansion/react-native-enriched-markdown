@@ -142,6 +142,11 @@ export function toImageStyle(
 ): NonNullable<MarkdownStyle['image']> {
   return {
     height: controls.height,
+    // Only forward the new sizing knobs when set, so the default story keeps
+    // the exact legacy behavior (backward-compat demo).
+    ...(controls.maxHeight > 0 ? { maxHeight: controls.maxHeight } : {}),
+    ...(controls.aspectRatio > 0 ? { aspectRatio: controls.aspectRatio } : {}),
+    resizeMode: controls.resizeMode,
     borderRadius: controls.borderRadius,
     marginTop: controls.marginTop,
     marginBottom: controls.marginBottom,

@@ -130,8 +130,18 @@ export const thematicBreakStyledDefaults: ThematicBreakStyleControls = {
   marginBottom: 24,
 };
 
+export type ImageResizeMode =
+  | 'contain'
+  | 'cover'
+  | 'stretch'
+  | 'center'
+  | 'none';
+
 export type ImageStyleControls = {
   height: number;
+  maxHeight: number;
+  aspectRatio: number;
+  resizeMode: ImageResizeMode;
   borderRadius: number;
   marginTop: number;
   marginBottom: number;
@@ -139,6 +149,9 @@ export type ImageStyleControls = {
 
 export const imageStyledDefaults: ImageStyleControls = {
   height: 200,
+  maxHeight: 0,
+  aspectRatio: 0,
+  resizeMode: 'cover',
   borderRadius: 12,
   marginTop: 8,
   marginBottom: 16,
