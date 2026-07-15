@@ -1,5 +1,7 @@
 type TextAlign = 'auto' | 'left' | 'right' | 'center' | 'justify';
 
+type ImageResizeMode = 'contain' | 'cover' | 'stretch' | 'center' | 'none';
+
 interface BaseBlockStyle {
   fontSize?: number;
   fontFamily?: string;
@@ -108,6 +110,24 @@ interface CodeStyle {
 
 interface ImageStyle {
   height?: number;
+  /**
+   * Maximum height the image is fitted into, preserving aspect ratio. When set,
+   * this replaces `height` as the primary sizing knob. Ignored when `aspectRatio`
+   * is set. Sizing precedence: `aspectRatio` > `maxHeight` > `height`.
+   */
+  maxHeight?: number;
+  /**
+   * Width / height ratio (e.g. `16 / 9`). The image fills the available width and
+   * its height is derived from this ratio, ignoring `height`/`maxHeight`.
+   * Sizing precedence: `aspectRatio` > `maxHeight` > `height`.
+   */
+  aspectRatio?: number;
+  /**
+   * How the image fills its box, analogous to React Native `resizeMode` / CSS
+   * `object-fit`. Applies independently on top of the sizing knobs above.
+   * Defaults to `'cover'`, and is a no-op unless `maxHeight` or `aspectRatio` is set.
+   */
+  resizeMode?: ImageResizeMode;
   borderRadius?: number;
   marginTop?: number;
   marginBottom?: number;

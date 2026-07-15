@@ -94,6 +94,10 @@ interface CodeStyleInternal {
 
 interface ImageStyleInternal {
   height: CodegenTypes.Float;
+  maxHeight: CodegenTypes.Float;
+  aspectRatio: CodegenTypes.Float;
+  // Nested struct fields cannot use WithDefault; default is applied in JS normalization.
+  resizeMode: string;
   borderRadius: CodegenTypes.Float;
   marginTop: CodegenTypes.Float;
   marginBottom: CodegenTypes.Float;

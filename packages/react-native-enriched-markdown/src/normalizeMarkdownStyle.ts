@@ -161,7 +161,15 @@ const DEFAULT_NORMALIZED_STYLE = Object.freeze({
     backgroundColor: normalizeColor('#FDF2F4')!,
     borderColor: normalizeColor('#F8D7DA')!,
   },
-  image: { height: 200, borderRadius: 8, marginTop: 0, marginBottom: 16 },
+  image: {
+    height: 200,
+    maxHeight: 0,
+    aspectRatio: 0,
+    resizeMode: 'cover' as const,
+    borderRadius: 8,
+    marginTop: 0,
+    marginBottom: 16,
+  },
   inlineImage: { size: 20 },
   thematicBreak: {
     color: normalizeColor('#E5E7EB')!,

@@ -6,6 +6,14 @@ export type BlockTextAlign = 'auto' | 'left' | 'right' | 'center' | 'justify';
 // Mirrors the public fontStyle values; empty string means "inherit / no override".
 export type EmphasisFontStyle = 'normal' | 'italic' | 'oblique' | '';
 
+// How a block image fills its box. Mirrors the public ImageResizeMode type.
+export type ImageResizeMode =
+  | 'contain'
+  | 'cover'
+  | 'stretch'
+  | 'center'
+  | 'none';
+
 interface BaseBlockStyleInternal {
   fontSize: number;
   fontFamily: string;
@@ -93,6 +101,10 @@ interface CodeStyleInternal {
 
 interface ImageStyleInternal {
   height: number;
+  // 0 = unset/inactive sentinel; sizing precedence aspectRatio > maxHeight > height.
+  maxHeight: number;
+  aspectRatio: number;
+  resizeMode: ImageResizeMode;
   borderRadius: number;
   marginTop: number;
   marginBottom: number;

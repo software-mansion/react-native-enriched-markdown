@@ -180,16 +180,51 @@ function thematicBreakStyle(style: MarkdownStyleInternal): CSSProperties {
   };
 }
 
+// center is scale-down-only (never upscale) → CSS `scale-down`. none shows at
+// native size. stretch distorts → `fill`.
+const RESIZE_MODE_TO_OBJECT_FIT: Record<
+  MarkdownStyleInternal['image']['resizeMode'],
+  NonNullable<CSSProperties['objectFit']>
+> = {
+  contain: 'contain',
+  cover: 'cover',
+  stretch: 'fill',
+  center: 'scale-down',
+  none: 'none',
+};
+
 function imageStyle(style: MarkdownStyleInternal): CSSProperties {
   const image = style.image;
-  return {
-    height: image.height,
+  const base: CSSProperties = {
     borderRadius: image.borderRadius,
     marginTop: image.marginTop,
     marginBottom: image.marginBottom,
     maxWidth: '100%',
     display: 'block',
   };
+
+  // aspectRatio > maxHeight > height. resizeMode only engages once a new sizing
+  // knob is set; otherwise emit today's exact CSS for backward compatibility.
+  if (image.aspectRatio > 0) {
+    return {
+      ...base,
+      width: '100%',
+      aspectRatio: image.aspectRatio,
+      objectFit: RESIZE_MODE_TO_OBJECT_FIT[image.resizeMode],
+    };
+  }
+
+  if (image.maxHeight > 0) {
+    return {
+      ...base,
+      width: '100%',
+      height: 'auto',
+      maxHeight: image.maxHeight,
+      objectFit: RESIZE_MODE_TO_OBJECT_FIT[image.resizeMode],
+    };
+  }
+
+  return { ...base, height: image.height };
 }
 
 function inlineImageStyle(style: MarkdownStyleInternal): CSSProperties {
