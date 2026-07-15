@@ -180,9 +180,6 @@ function thematicBreakStyle(style: MarkdownStyleInternal): CSSProperties {
   };
 }
 
-// center is scale-down-only (never upscale) → CSS `scale-down`. none shows at
-// native size. stretch distorts → `fill`. '' = legacy sizing, resolved to
-// 'cover' by normalization whenever maxHeight/aspectRatio is active.
 const RESIZE_MODE_TO_OBJECT_FIT: Record<
   Exclude<MarkdownStyleInternal['image']['resizeMode'], ''>,
   NonNullable<CSSProperties['objectFit']>

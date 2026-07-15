@@ -64,8 +64,7 @@ class EnrichedMarkdown
     private val dirtyFlags = EnumSet.noneOf(DirtyFlag::class.java)
     var streamingAnimation: Boolean = false
 
-    // Fabric state wrapper — used to force a Yoga re-measure when segment
-    // height changes after layout (e.g. a block image resolves its box height).
+    // used to force a Yoga re-measure when a block image resolves its box height
     var stateWrapper: StateWrapper? = null
     private var forceHeightRecalculationCounter = 0
 
@@ -573,9 +572,6 @@ class EnrichedMarkdown
       layoutSegments()
     }
 
-    // Called by ImageSpan when a block image resolves its box height after
-    // loading. Re-stacks segments and forces a Yoga re-measure so the React
-    // container height tracks the new content height.
     fun onImageLayoutChanged() {
       if (width > 0) {
         layoutSegments()

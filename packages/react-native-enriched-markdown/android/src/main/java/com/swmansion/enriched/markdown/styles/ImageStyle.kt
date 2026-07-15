@@ -4,7 +4,6 @@ import com.facebook.react.bridge.ReadableMap
 
 data class ImageStyle(
   val height: Float,
-  // 0 = unset/inactive sentinel; sizing precedence aspectRatio > maxHeight > height.
   val maxHeight: Float,
   val aspectRatio: Float,
   val resizeMode: String,
@@ -19,7 +18,6 @@ data class ImageStyle(
     ): ImageStyle {
       val height = parser.toPixelFromDIP(map.getDouble("height").toFloat())
       val maxHeight = parser.toPixelFromDIP(map.getDouble("maxHeight").toFloat())
-      // aspectRatio is a unitless width/height ratio — do not convert to pixels.
       val aspectRatio = map.getDouble("aspectRatio").toFloat()
       val resizeMode = map.getString("resizeMode") ?: ""
       val borderRadius = parser.toPixelFromDIP(map.getDouble("borderRadius").toFloat())

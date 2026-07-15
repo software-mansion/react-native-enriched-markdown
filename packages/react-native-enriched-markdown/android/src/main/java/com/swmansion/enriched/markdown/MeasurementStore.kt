@@ -105,8 +105,6 @@ object MeasurementStore {
 
     var newSize = measure(width, spannable, paint, id)
     if (trailingMarginBottomPx > 0f) {
-      // Keep parity with measureAndCache, which appends the last element's
-      // bottom margin when allowTrailingMargin is set.
       newSize =
         YogaMeasureOutput.make(
           YogaMeasureOutput.getWidth(newSize),
@@ -477,9 +475,6 @@ object MeasurementStore {
     }
   }
 
-  // Block images with maxHeight/aspectRatio derive their box height from the
-  // measure width (and, when cached, the intrinsic image size). Measurement-pass
-  // spans never get a registered view, so resolve them here before layout.
   private fun prepareImageSpansForMeasurement(
     text: CharSequence?,
     widthPx: Int,

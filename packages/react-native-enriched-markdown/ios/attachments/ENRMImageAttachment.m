@@ -103,9 +103,6 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   return self;
 }
 
-// Resolves the block-image box height for a given container width. Sizing
-// precedence: aspectRatio > maxHeight > height. Returns cachedHeight for the
-// legacy path (no new sizing knobs set), keeping existing behavior unchanged.
 - (CGFloat)resolvedBoxHeightForWidth:(CGFloat)width
 {
   if (self.cachedAspectRatio > 0 && width > 0) {
@@ -126,10 +123,8 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   return self.cachedHeight;
 }
 
-// True when resizeMode is unset ('') — the block image uses the exact legacy
-// fill-width path (backward compatibility). JS normalization resolves the mode
-// to 'cover' when maxHeight/aspectRatio is active, so legacy always implies a
-// fixed height box.
+// True when resizeMode is unset ('') - legacy always implies a fixed height box.
+
 - (BOOL)isLegacyBlockSizing
 {
   return !self.isInline && self.cachedResizeMode.length == 0;
@@ -266,8 +261,6 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
 
   CGRect drawingRect;
   if (self.isInline || legacy) {
-    // Existing behavior: inline fills the square box; block fills width preserving
-    // aspect ratio (overflow clipped by the box), centered vertically.
     CGFloat drawingWidth, drawingHeight;
     if (!self.isInline) {
       CGFloat aspectRatioScale = targetWidth / sourceWidth;
@@ -286,10 +279,6 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   RCTUIGraphicsImageRenderer *renderer = ImageRendererForSize(box);
 
   return [renderer imageWithActions:^(RCTUIGraphicsImageRendererContext *context) {
-    // The renderer canvas is exactly the box, so any overflow (cover/none/center)
-    // is clipped automatically. The explicit clip is only needed to round corners —
-    // always on the VISIBLE image region (box ∩ drawn rect), so letterboxed modes
-    // (contain/center) round the image itself rather than the empty box corners.
     if (radius > 0) {
       CGRect clipRect = CGRectIntersection(CGRectMake(0, 0, targetWidth, targetHeight), drawingRect);
       UIBezierPath *path = UIBezierPathWithRoundedRect(clipRect, radius);
@@ -299,31 +288,29 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   }];
 }
 
-// Computes the destination rect for the source within the box per resizeMode.
-// cover/center/none may exceed the box; the renderer canvas clips the overflow.
 - (CGRect)drawingRectForResizeMode:(NSString *)mode source:(CGSize)source box:(CGSize)box
 {
-  CGFloat sw = source.width, sh = source.height;
-  CGFloat bw = box.width, bh = box.height;
-
   if ([mode isEqualToString:@"stretch"]) {
-    return CGRectMake(0, 0, bw, bh);
+    return CGRectMake(0, 0, box.width, box.height);
   }
+
+  CGFloat widthScale = box.width / source.width;
+  CGFloat heightScale = box.height / source.height;
 
   CGFloat scale;
   if ([mode isEqualToString:@"contain"]) {
-    scale = MIN(bw / sw, bh / sh);
+    scale = MIN(widthScale, heightScale);
   } else if ([mode isEqualToString:@"center"]) {
-    scale = MIN(1.0, MIN(bw / sw, bh / sh)); // scale-down only, never upscale
+    scale = MIN(1.0, MIN(widthScale, heightScale));
   } else if ([mode isEqualToString:@"none"]) {
     scale = 1.0;
   } else { // cover (default)
-    scale = MAX(bw / sw, bh / sh);
+    scale = MAX(widthScale, heightScale);
   }
 
-  CGFloat dw = sw * scale;
-  CGFloat dh = sh * scale;
-  return CGRectMake((bw - dw) / 2.0, (bh - dh) / 2.0, dw, dh);
+  CGFloat drawingWidth = source.width * scale;
+  CGFloat drawingHeight = source.height * scale;
+  return CGRectMake((box.width - drawingWidth) / 2.0, (box.height - drawingHeight) / 2.0, drawingWidth, drawingHeight);
 }
 
 - (void)startDownloadingImage

@@ -46,17 +46,11 @@ class ImageSpan(
   private val aspectRatio: Float = if (isInline) 0f else styleConfig.imageStyle.aspectRatio
   private val resizeMode: String = if (isInline) "" else styleConfig.imageStyle.resizeMode
 
-  // '' = resizeMode unset — the exact legacy fill-width path is used (backward
-  // compatibility). JS normalization resolves it to 'cover' when maxHeight or
-  // aspectRatio is active, so legacy always implies a fixed height box.
+  // so legacy always implies a fixed height box.
   private val legacySizing: Boolean = resizeMode.isEmpty()
 
-  // True when the box height depends on width/intrinsic size (maxHeight or
-  // aspectRatio) and can change after measurement or image load.
   private val dynamicBoxHeight: Boolean = !isInline && (maxHeightPx > 0 || aspectRatio > 0f)
 
-  // Resolved box height for the current layout. Starts at the legacy/fallback
-  // value and is recomputed once width and (for maxHeight) intrinsic size are known.
   private var boxHeight: Int =
     when {
       isInline -> height
@@ -68,9 +62,6 @@ class ImageSpan(
   private var viewRef: WeakReference<TextView>? = null
   private var sourceDrawable: Drawable? = null
 
-  // Intrinsic source dimensions; falls back to the original bitmap cache so
-  // measurement-pass spans (which never get the async callback in time) can
-  // resolve the fitted height synchronously for already-cached images.
   private fun intrinsicImageSize(): Pair<Int, Int> {
     sourceDrawable?.let { return it.intrinsicWidth to it.intrinsicHeight }
     val cached = ImageCache.getOriginal(imageUrl) ?: return 0 to 0
@@ -78,17 +69,16 @@ class ImageSpan(
   }
 
   // Sizing precedence: aspectRatio > maxHeight > height. Returns the legacy fixed
-  // height when no new knob is set. maxHeight needs the intrinsic size (async) —
-  // falls back to the full maxHeight until the image loads.
+  // height when no new knob is set.
   private fun resolveBoxHeight(targetWidth: Int): Int {
     if (isInline) return height
     if (aspectRatio > 0f && targetWidth > 0) {
       return (targetWidth / aspectRatio).toInt().coerceAtLeast(1)
     }
     if (maxHeightPx > 0) {
-      val (iw, ih) = intrinsicImageSize()
-      if (targetWidth > 0 && iw > 0 && ih > 0) {
-        val fitted = targetWidth.toFloat() * ih / iw
+      val (intrinsicWidth, intrinsicHeight) = intrinsicImageSize()
+      if (targetWidth > 0 && intrinsicWidth > 0 && intrinsicHeight > 0) {
+        val fitted = targetWidth.toFloat() * intrinsicHeight / intrinsicWidth
         return minOf(maxHeightPx.toFloat(), fitted).toInt().coerceAtLeast(1)
       }
       return maxHeightPx
@@ -96,9 +86,6 @@ class ImageSpan(
     return height
   }
 
-  // Resolves the box height for the measurement pass, where the span has no
-  // registered view and would otherwise keep its pre-load fallback height.
-  // No-op for display spans (viewRef set) — they resolve via wrapAndAssignDrawable.
   fun prepareForMeasurement(widthPx: Int) {
     if (!dynamicBoxHeight || viewRef != null || widthPx <= 0) return
     boxHeight = resolveBoxHeight(widthPx)
@@ -194,7 +181,7 @@ class ImageSpan(
     }
     var parent = view.parent
     while (parent != null && parent !is EnrichedMarkdown) parent = parent.parent
-    (parent as? EnrichedMarkdown)?.onImageLayoutChanged()
+    parent?.onImageLayoutChanged()
   }
 
   fun registerTextView(view: TextView) {
@@ -317,21 +304,19 @@ class ImageSpan(
       val intrinsicWidth = imageDrawable.intrinsicWidth
       val intrinsicHeight = imageDrawable.intrinsicHeight
 
-      // New sizing (block + a resizeMode) needs a clip to the box so cropping
-      // modes (cover/center/none) don't spill over neighbouring lines.
+      // New sizing needs a clip to the box so cropping
+      // modes don't spill over neighbouring lines.
       val clipToBox = isBlockImage && !legacySizing
 
       val (scaledWidth, scaledHeight) =
         if (intrinsicWidth > 0 && intrinsicHeight > 0) {
           when {
             !isBlockImage -> {
-              // Inline: fit-to-bounds preserving aspect ratio.
               val scale = minOf(targetWidth.toFloat() / intrinsicWidth, targetHeight.toFloat() / intrinsicHeight)
               (intrinsicWidth * scale).toInt() to (intrinsicHeight * scale).toInt()
             }
 
             legacySizing -> {
-              // Legacy block: fill width, height scales proportionally.
               val scale = targetWidth.toFloat() / intrinsicWidth
               targetWidth to (intrinsicHeight * scale).toInt()
             }
@@ -348,10 +333,6 @@ class ImageSpan(
       val top = (targetHeight - scaledHeight) / 2
       imageDrawable.setBounds(left, top, left + scaledWidth, top + scaledHeight)
 
-      // Clip to the VISIBLE image region (box ∩ image bounds) — rounded when a
-      // border radius is set, so letterboxed modes (contain/center) round the
-      // image itself, and cropping modes (cover/none) round the box edges. The
-      // plain-rect clip is still needed for cropping modes at radius 0.
       val clipLeft = maxOf(0, left).toFloat()
       val clipTop = maxOf(0, top).toFloat()
       val clipRight = minOf(targetWidth, left + scaledWidth).toFloat()
@@ -384,27 +365,21 @@ class ImageSpan(
         }
     }
 
-    // Scaled (width, height) for the source within the box per resizeMode.
-    // cover/center/none may exceed the box; the clip crops the overflow.
     private fun resizeModeSize(
-      iw: Int,
-      ih: Int,
+      intrinsicWidth: Int,
+      intrinsicHeight: Int,
     ): Pair<Int, Int> {
-      val tw = targetWidth.toFloat()
-      val th = targetHeight.toFloat()
       if (resizeMode == "stretch") return targetWidth to targetHeight
+      val widthScale = targetWidth.toFloat() / intrinsicWidth
+      val heightScale = targetHeight.toFloat() / intrinsicHeight
       val scale =
         when (resizeMode) {
-          "contain" -> minOf(tw / iw, th / ih)
-
-          "center" -> minOf(1f, minOf(tw / iw, th / ih))
-
-          // scale-down only
+          "contain" -> minOf(widthScale, heightScale)
+          "center" -> minOf(1f, minOf(widthScale, heightScale))
           "none" -> 1f
-
-          else -> maxOf(tw / iw, th / ih) // cover (default)
+          else -> maxOf(widthScale, heightScale) // cover (default)
         }
-      return (iw * scale).toInt() to (ih * scale).toInt()
+      return (intrinsicWidth * scale).toInt() to (intrinsicHeight * scale).toInt()
     }
 
     override fun draw(canvas: Canvas) {

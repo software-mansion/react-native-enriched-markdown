@@ -4,9 +4,6 @@
 
 namespace facebook::react {
 
-// Shared by <EnrichedMarkdownText> and <EnrichedMarkdown>: the Android view
-// bumps the counter when rendered content height changes after measurement
-// (e.g. a block image resolves its box height once the bitmap loads).
 class MarkdownTextState {
 public:
   MarkdownTextState() : forceHeightRecalculationCounter_(0) {}

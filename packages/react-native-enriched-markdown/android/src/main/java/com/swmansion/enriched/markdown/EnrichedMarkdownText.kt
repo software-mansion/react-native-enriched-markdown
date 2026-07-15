@@ -61,8 +61,7 @@ class EnrichedMarkdownText
 
     val layoutManager = EnrichedMarkdownTextLayoutManager(this)
 
-    // Fabric state wrapper — used to force a Yoga re-measure when content
-    // height changes after layout (e.g. a block image resolves its box height).
+    // used to force a Yoga re-measure when a block image resolves its box height
     var stateWrapper: StateWrapper? = null
 
     private var contextMenuItemTexts: List<String> = emptyList()

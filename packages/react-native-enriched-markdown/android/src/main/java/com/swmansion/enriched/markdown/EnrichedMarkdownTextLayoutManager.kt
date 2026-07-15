@@ -12,9 +12,6 @@ class EnrichedMarkdownTextLayoutManager(
     val paint = view.paint
     val heightChanged = MeasurementStore.store(view.id, text, paint, view.trailingMarginBottomPx())
     if (!heightChanged) return
-
-    // Content height diverged from what Yoga measured (e.g. a block image
-    // resolved its box height after loading) — force a shadow-node re-measure.
     val stateWrapper = view.stateWrapper ?: return
     val state = Arguments.createMap()
     state.putInt("forceHeightRecalculationCounter", ++forceHeightRecalculationCounter)
