@@ -134,39 +134,38 @@ static NSAttributedStringKey const ENRMAutomaticLinkAttributeName = @"ENRMAutoma
   NSRange localMatch = NSMakeRange(NSNotFound, 0);
   NSString *matchedUrl = [self tryMatchWord:word matchedRange:&localMatch];
 
-  if (matchedUrl != nil && localMatch.location != NSNotFound) {
-    NSRange matchRange = NSMakeRange(wordRange.location + localMatch.location, localMatch.length);
-
-    // A manual link overlapping the matched slice takes precedence — test the
-    // whole slice, not just its first character.
-    ENRMFormattingStore *store = _formattingStore;
-    if (store != nil && [store isStyleActive:ENRMInputStyleTypeLink inRange:matchRange]) {
-      [self clearAutoLinkInRange:wordRange];
-      return nil;
-    }
-
-    NSRange effectiveRange;
-    id existing = [textStorage attribute:ENRMAutomaticLinkAttributeName
-                                 atIndex:matchRange.location
-                          effectiveRange:&effectiveRange];
-    BOOL alreadyApplied = [matchedUrl isEqual:existing] && NSEqualRanges(effectiveRange, matchRange);
-
-    if (!alreadyApplied) {
-      [textStorage beginEditing];
-      [textStorage removeAttribute:ENRMAutomaticLinkAttributeName range:wordRange];
-      [textStorage addAttribute:ENRMAutomaticLinkAttributeName value:matchedUrl range:matchRange];
-      [self applyVisualStylingToRange:matchRange];
-      [textStorage endEditing];
-    }
-
-    if (outMatchedRange != NULL) {
-      *outMatchedRange = localMatch;
-    }
-  } else {
+  if (matchedUrl == nil || localMatch.location == NSNotFound) {
     [self clearAutoLinkInRange:wordRange];
     return nil;
   }
 
+  NSRange matchRange = NSMakeRange(wordRange.location + localMatch.location, localMatch.length);
+
+  // A manual link overlapping the matched slice takes precedence — test the
+  // whole slice, not just its first character.
+  ENRMFormattingStore *store = _formattingStore;
+  if (store != nil && [store isStyleActive:ENRMInputStyleTypeLink inRange:matchRange]) {
+    [self clearAutoLinkInRange:wordRange];
+    return nil;
+  }
+
+  NSRange effectiveRange;
+  id existing = [textStorage attribute:ENRMAutomaticLinkAttributeName
+                               atIndex:matchRange.location
+                        effectiveRange:&effectiveRange];
+  BOOL alreadyApplied = [matchedUrl isEqual:existing] && NSEqualRanges(effectiveRange, matchRange);
+
+  if (!alreadyApplied) {
+    [textStorage beginEditing];
+    [textStorage removeAttribute:ENRMAutomaticLinkAttributeName range:wordRange];
+    [textStorage addAttribute:ENRMAutomaticLinkAttributeName value:matchedUrl range:matchRange];
+    [self applyVisualStylingToRange:matchRange];
+    [textStorage endEditing];
+  }
+
+  if (outMatchedRange != NULL) {
+    *outMatchedRange = localMatch;
+  }
   return matchedUrl;
 }
 
