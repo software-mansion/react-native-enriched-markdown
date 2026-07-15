@@ -263,39 +263,69 @@ export const EnrichedMarkdownText = ({
     [accessibilityLabels]
   );
 
-  const sharedProps = {
-    markdown,
-    markdownStyle: normalizedStyle,
-    onLinkPress: handleLinkPress,
-    onLinkLongPress: handleLinkLongPress,
-    onTaskListItemPress: handleTaskListItemPress,
-    enableLinkPreview: onLinkLongPress == null && (enableLinkPreview ?? true),
-    selectable,
-    md4cFlags: normalizedMd4cFlags,
-    allowFontScaling,
-    maxFontSizeMultiplier,
-    allowTrailingMargin,
-    streamingAnimation,
-    streamingConfig: normalizedStreamingConfig,
-    spoilerOverlay,
-    style: containerStyle,
-    contextMenuItems: nativeContextMenuItems,
-    selectionMenuConfig: normalizedSelectionMenuConfig,
-    accessibilityLabels: resolvedAccessibilityLabels,
-    onContextMenuItemPress: handleContextMenuItemPress,
-    selectionColor,
-    selectionHandleColor,
-    textBreakStrategy,
-    lineBreakStrategyIOS,
-    writingDirection,
-    ...rest,
-  };
+  const enableLinkPreviewResolved =
+    onLinkLongPress == null && (enableLinkPreview ?? true);
+
+  const sharedProps = useMemo(
+    () => ({
+      markdown,
+      markdownStyle: normalizedStyle,
+      onLinkPress: handleLinkPress,
+      onLinkLongPress: handleLinkLongPress,
+      onTaskListItemPress: handleTaskListItemPress,
+      enableLinkPreview: enableLinkPreviewResolved,
+      selectable,
+      md4cFlags: normalizedMd4cFlags,
+      allowFontScaling,
+      maxFontSizeMultiplier,
+      allowTrailingMargin,
+      streamingAnimation,
+      streamingConfig: normalizedStreamingConfig,
+      spoilerOverlay,
+      style: containerStyle,
+      contextMenuItems: nativeContextMenuItems,
+      selectionMenuConfig: normalizedSelectionMenuConfig,
+      accessibilityLabels: resolvedAccessibilityLabels,
+      onContextMenuItemPress: handleContextMenuItemPress,
+      selectionColor,
+      selectionHandleColor,
+      textBreakStrategy,
+      lineBreakStrategyIOS,
+      writingDirection,
+    }),
+    [
+      markdown,
+      normalizedStyle,
+      handleLinkPress,
+      handleLinkLongPress,
+      handleTaskListItemPress,
+      enableLinkPreviewResolved,
+      selectable,
+      normalizedMd4cFlags,
+      allowFontScaling,
+      maxFontSizeMultiplier,
+      allowTrailingMargin,
+      streamingAnimation,
+      normalizedStreamingConfig,
+      spoilerOverlay,
+      containerStyle,
+      nativeContextMenuItems,
+      normalizedSelectionMenuConfig,
+      resolvedAccessibilityLabels,
+      handleContextMenuItemPress,
+      selectionColor,
+      selectionHandleColor,
+      textBreakStrategy,
+      lineBreakStrategyIOS,
+      writingDirection,
+    ]
+  );
 
   if (flavor === 'github') {
-    return <EnrichedMarkdownNativeComponent {...sharedProps} />;
+    return <EnrichedMarkdownNativeComponent {...sharedProps} {...rest} />;
   }
 
-  return <EnrichedMarkdownTextNativeComponent {...sharedProps} />;
+  return <EnrichedMarkdownTextNativeComponent {...sharedProps} {...rest} />;
 };
 
 export default EnrichedMarkdownText;
