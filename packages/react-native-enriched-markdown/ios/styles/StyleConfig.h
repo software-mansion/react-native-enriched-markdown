@@ -208,6 +208,12 @@ NS_ASSUME_NONNULL_BEGIN
 // Image properties
 - (CGFloat)imageHeight;
 - (void)setImageHeight:(CGFloat)newValue;
+- (CGFloat)imageMaxHeight;
+- (void)setImageMaxHeight:(CGFloat)newValue;
+- (CGFloat)imageAspectRatio;
+- (void)setImageAspectRatio:(CGFloat)newValue;
+- (NSString *)imageResizeMode;
+- (void)setImageResizeMode:(NSString *)newValue;
 - (CGFloat)imageBorderRadius;
 - (void)setImageBorderRadius:(CGFloat)newValue;
 - (CGFloat)imageMarginTop;

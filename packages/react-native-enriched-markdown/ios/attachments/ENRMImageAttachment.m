@@ -5,7 +5,7 @@
 #import "StyleConfig.h"
 #import <objc/runtime.h>
 
-#define CACHE_KEY_PROCESSED(url, w, h, r) [NSString stringWithFormat:@"%@_w%.1f_h%.1f_r%.1f", url, w, h, r]
+#define CACHE_KEY_PROCESSED(url, w, h, r, m) [NSString stringWithFormat:@"%@_w%.1f_h%.1f_r%.1f_m%@", url, w, h, r, m]
 
 static inline NSUInteger ENRMImageByteCost(RCTUIImage *image)
 {
@@ -24,6 +24,9 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
 @property (nonatomic, copy) NSString *imageURL;
 @property (nonatomic, assign) BOOL isInline;
 @property (nonatomic, assign) CGFloat cachedHeight;
+@property (nonatomic, assign) CGFloat cachedMaxHeight;
+@property (nonatomic, assign) CGFloat cachedAspectRatio;
+@property (nonatomic, copy) NSString *cachedResizeMode;
 @property (nonatomic, assign) CGFloat cachedBorderRadius;
 @property (nonatomic, weak) NSTextContainer *textContainer;
 @property (nonatomic, weak) ENRMPlatformTextView *textView;
@@ -89,12 +92,45 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
     _isInline = isInline;
 
     _cachedHeight = isInline ? [config inlineImageSize] : [config imageHeight];
+    _cachedMaxHeight = [config imageMaxHeight];
+    _cachedAspectRatio = [config imageAspectRatio];
+    _cachedResizeMode = [config imageResizeMode];
     _cachedBorderRadius = [config imageBorderRadius];
 
     [self setupPlaceholder];
     [self startDownloadingImage];
   }
   return self;
+}
+
+// Resolves the block-image box height for a given container width. Sizing
+// precedence: aspectRatio > maxHeight > height. Returns cachedHeight for the
+// legacy path (no new sizing knobs set), keeping existing behavior unchanged.
+- (CGFloat)resolvedBoxHeightForWidth:(CGFloat)width
+{
+  if (self.cachedAspectRatio > 0 && width > 0) {
+    return width / self.cachedAspectRatio;
+  }
+
+  if (self.cachedMaxHeight > 0) {
+    RCTUIImage *source = self.originalImage;
+    if (source && width > 0 && source.size.width > 0 && source.size.height > 0) {
+      CGFloat fitted = width * source.size.height / source.size.width;
+      return MIN(self.cachedMaxHeight, fitted);
+    }
+    // Intrinsic size not known yet — fall back to the full max height; the box
+    // shrinks once the image loads and layout is invalidated.
+    return self.cachedMaxHeight;
+  }
+
+  return self.cachedHeight;
+}
+
+// True when no new sizing knob is set — the block image uses the exact legacy
+// fill-width path and resizeMode is a no-op (backward compatibility).
+- (BOOL)isLegacyBlockSizing
+{
+  return !self.isInline && self.cachedMaxHeight <= 0 && self.cachedAspectRatio <= 0;
 }
 
 - (CGRect)attachmentBoundsForTextContainer:(NSTextContainer *)textContainer
@@ -105,26 +141,27 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   CGFloat height = self.cachedHeight;
   CGFloat width = self.isInline ? height : (lineFragment.size.width > 0 ? lineFragment.size.width : height);
 
-  if (self.isInline) {
-    UIFont *appliedFont = nil;
-    NSLayoutManager *layoutManager = textContainer.layoutManager;
-    NSTextStorage *textStorage = layoutManager.textStorage;
-
-    if (textStorage && characterIndex < textStorage.length) {
-      appliedFont = [textStorage attribute:NSFontAttributeName atIndex:characterIndex effectiveRange:NULL];
-    }
-
-    CGFloat verticalOffset;
-    if (appliedFont) {
-      verticalOffset = (appliedFont.capHeight - height) / 2.0;
-    } else {
-      verticalOffset = (lineFragment.size.height - height) / 2.0;
-    }
-
-    return CGRectMake(0, verticalOffset, width, height);
+  if (!self.isInline) {
+    height = [self resolvedBoxHeightForWidth:width];
+    return CGRectMake(0, 0, width, height);
   }
 
-  return CGRectMake(0, 0, width, height);
+  UIFont *appliedFont = nil;
+  NSLayoutManager *layoutManager = textContainer.layoutManager;
+  NSTextStorage *textStorage = layoutManager.textStorage;
+
+  if (textStorage && characterIndex < textStorage.length) {
+    appliedFont = [textStorage attribute:NSFontAttributeName atIndex:characterIndex effectiveRange:NULL];
+  }
+
+  CGFloat verticalOffset;
+  if (appliedFont) {
+    verticalOffset = (appliedFont.capHeight - height) / 2.0;
+  } else {
+    verticalOffset = (lineFragment.size.height - height) / 2.0;
+  }
+
+  return CGRectMake(0, verticalOffset, width, height);
 }
 
 - (RCTUIImage *)imageForBounds:(CGRect)imageBounds
@@ -162,7 +199,10 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   if (targetWidth <= 0)
     return;
 
-  NSString *processedKey = CACHE_KEY_PROCESSED(self.imageURL, targetWidth, self.cachedHeight, self.cachedBorderRadius);
+  CGFloat boxHeight = self.isInline ? self.cachedHeight : [self resolvedBoxHeightForWidth:targetWidth];
+
+  NSString *processedKey =
+      CACHE_KEY_PROCESSED(self.imageURL, targetWidth, boxHeight, self.cachedBorderRadius, self.cachedResizeMode);
 
   if ([processedKey isEqualToString:self.lastProcessedKey])
     return;
@@ -186,7 +226,7 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
 
     RCTUIImage *processedImage = [strongSelf createScaledImage:image
                                                        toWidth:targetWidth
-                                                        height:strongSelf.cachedHeight
+                                                        height:boxHeight
                                                   borderRadius:strongSelf.cachedBorderRadius];
 
     if (processedImage) {
@@ -218,30 +258,70 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   if (sourceWidth <= 0 || sourceHeight <= 0)
     return nil;
 
-  CGFloat drawingWidth, drawingHeight;
+  CGSize source = CGSizeMake(sourceWidth, sourceHeight);
+  CGSize box = CGSizeMake(targetWidth, targetHeight);
+  BOOL legacy = [self isLegacyBlockSizing];
 
-  if (!self.isInline) {
-    CGFloat aspectRatioScale = targetWidth / sourceWidth;
-    drawingWidth = targetWidth;
-    drawingHeight = sourceHeight * aspectRatioScale;
+  CGRect drawingRect;
+  if (self.isInline || legacy) {
+    // Existing behavior: inline fills the square box; block fills width preserving
+    // aspect ratio (overflow clipped by the box), centered vertically.
+    CGFloat drawingWidth, drawingHeight;
+    if (!self.isInline) {
+      CGFloat aspectRatioScale = targetWidth / sourceWidth;
+      drawingWidth = targetWidth;
+      drawingHeight = sourceHeight * aspectRatioScale;
+    } else {
+      drawingWidth = targetWidth;
+      drawingHeight = targetHeight;
+    }
+    drawingRect = CGRectMake((targetWidth - drawingWidth) / 2.0, (targetHeight - drawingHeight) / 2.0, drawingWidth,
+                             drawingHeight);
   } else {
-    drawingWidth = targetWidth;
-    drawingHeight = targetHeight;
+    drawingRect = [self drawingRectForResizeMode:self.cachedResizeMode source:source box:box];
   }
 
-  CGRect drawingRect =
-      CGRectMake((targetWidth - drawingWidth) / 2.0, (targetHeight - drawingHeight) / 2.0, drawingWidth, drawingHeight);
-
-  RCTUIGraphicsImageRenderer *renderer = ImageRendererForSize(CGSizeMake(targetWidth, targetHeight));
+  RCTUIGraphicsImageRenderer *renderer = ImageRendererForSize(box);
 
   return [renderer imageWithActions:^(RCTUIGraphicsImageRendererContext *context) {
+    // The renderer canvas is exactly the box, so any overflow (cover/none/center)
+    // is clipped automatically. The explicit clip is only needed to round corners —
+    // always on the VISIBLE image region (box ∩ drawn rect), so letterboxed modes
+    // (contain/center) round the image itself rather than the empty box corners.
     if (radius > 0) {
-      CGRect clippingRect = CGRectIntersection(CGRectMake(0, 0, targetWidth, targetHeight), drawingRect);
-      UIBezierPath *path = UIBezierPathWithRoundedRect(clippingRect, radius);
+      CGRect clipRect = CGRectIntersection(CGRectMake(0, 0, targetWidth, targetHeight), drawingRect);
+      UIBezierPath *path = UIBezierPathWithRoundedRect(clipRect, radius);
       [path addClip];
     }
     [image drawInRect:drawingRect];
   }];
+}
+
+// Computes the destination rect for the source within the box per resizeMode.
+// cover/center/none may exceed the box; the renderer canvas clips the overflow.
+- (CGRect)drawingRectForResizeMode:(NSString *)mode source:(CGSize)source box:(CGSize)box
+{
+  CGFloat sw = source.width, sh = source.height;
+  CGFloat bw = box.width, bh = box.height;
+
+  if ([mode isEqualToString:@"stretch"]) {
+    return CGRectMake(0, 0, bw, bh);
+  }
+
+  CGFloat scale;
+  if ([mode isEqualToString:@"contain"]) {
+    scale = MIN(bw / sw, bh / sh);
+  } else if ([mode isEqualToString:@"center"]) {
+    scale = MIN(1.0, MIN(bw / sw, bh / sh)); // scale-down only, never upscale
+  } else if ([mode isEqualToString:@"none"]) {
+    scale = 1.0;
+  } else { // cover (default)
+    scale = MAX(bw / sw, bh / sh);
+  }
+
+  CGFloat dw = sw * scale;
+  CGFloat dh = sh * scale;
+  return CGRectMake((bw - dw) / 2.0, (bh - dh) / 2.0, dw, dh);
 }
 
 - (void)startDownloadingImage
@@ -265,8 +345,30 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
     [textView.layoutManager invalidateDisplayForCharacterRange:range];
     if (!self.isInline) {
       [textView.layoutManager invalidateLayoutForCharacterRange:range actualCharacterRange:NULL];
+      [self notifyImageLayoutObserver:textView];
     }
   }
+}
+
+// With maxHeight/aspectRatio sizing the box height can settle after the image
+// loads, while the component was measured (and its size cached) with the
+// pre-load fallback. Notify the hosting component so it can re-measure.
+// Dispatched async: refreshDisplay can run mid-layout (imageForBounds) and
+// re-measuring would re-enter the layout manager.
+- (void)notifyImageLayoutObserver:(UITextView *)textView
+{
+  if ([self isLegacyBlockSizing])
+    return;
+
+  RCTUIView *candidate = textView;
+  while (candidate && ![candidate conformsToProtocol:@protocol(ENRMImageLayoutObserver)]) {
+    candidate = candidate.superview;
+  }
+  if (!candidate)
+    return;
+
+  id<ENRMImageLayoutObserver> observer = (id<ENRMImageLayoutObserver>)candidate;
+  dispatch_async(dispatch_get_main_queue(), ^{ [observer imageAttachmentDidResolveLayout]; });
 }
 
 - (ENRMPlatformTextView *)fetchAssociatedTextView

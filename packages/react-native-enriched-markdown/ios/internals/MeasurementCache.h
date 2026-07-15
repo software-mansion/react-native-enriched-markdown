@@ -127,7 +127,9 @@ template <typename StyleStruct> inline size_t computeStyleFingerprint(const Styl
   hashFields(s.highlight.backgroundColor, s.highlight.color);
 
   // Visual/Spacing Elements
-  hashFields(s.image.height, s.image.marginTop, s.image.marginBottom);
+  // maxHeight/aspectRatio change the block image box height and must
+  // invalidate cached measurements (resizeMode only affects fill, not layout).
+  hashFields(s.image.height, s.image.maxHeight, s.image.aspectRatio, s.image.marginTop, s.image.marginBottom);
   hashFields(s.inlineImage.size);
   hashFields(s.thematicBreak.height, s.thematicBreak.marginTop, s.thematicBreak.marginBottom);
 
@@ -214,6 +216,23 @@ public:
       auto &lastEntry = list_.back();
       map_.erase(lastEntry.key);
       list_.pop_back();
+    }
+  }
+
+  // Drops every entry measured for the given markdown, regardless of width or
+  // style. Used when async content (block image intrinsic size) resolves after
+  // measurement and the cached heights are stale. Rare event; linear scan is fine.
+  void removeMatchingMarkdown(const std::string &markdown)
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    for (auto it = list_.begin(); it != list_.end();) {
+      if (it->key.markdown == markdown) {
+        map_.erase(it->key);
+        it = list_.erase(it);
+      } else {
+        ++it;
+      }
     }
   }
 

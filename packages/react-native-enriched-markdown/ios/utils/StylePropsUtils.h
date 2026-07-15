@@ -689,6 +689,21 @@ BOOL applyMarkdownStyleToConfig(StyleConfig *config, const MarkdownStyle &newSty
     changed = YES;
   }
 
+  if (newStyle.image.maxHeight != oldStyle.image.maxHeight) {
+    [config setImageMaxHeight:newStyle.image.maxHeight];
+    changed = YES;
+  }
+
+  if (newStyle.image.aspectRatio != oldStyle.image.aspectRatio) {
+    [config setImageAspectRatio:newStyle.image.aspectRatio];
+    changed = YES;
+  }
+
+  if (newStyle.image.resizeMode != oldStyle.image.resizeMode) {
+    [config setImageResizeMode:@(newStyle.image.resizeMode.c_str())];
+    changed = YES;
+  }
+
   if (newStyle.image.borderRadius != oldStyle.image.borderRadius) {
     [config setImageBorderRadius:newStyle.image.borderRadius];
     changed = YES;
