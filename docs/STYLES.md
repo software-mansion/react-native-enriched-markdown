@@ -392,10 +392,15 @@ Styles for highlighted text (`==text==`). Requires `md4cFlags={{ highlight: true
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `height` | `number` | Image height |
+| `height` | `number` | Fixed image height (default sizing knob). |
+| `maxHeight` | `number` | Maximum height the image is fitted into, preserving aspect ratio. Replaces `height` when set. |
+| `aspectRatio` | `number` | Width / height ratio (e.g. `16 / 9`). Fills available width; height derived from the ratio. Ignores `height`/`maxHeight`. |
+| `resizeMode` | `'contain' \| 'cover' \| 'stretch' \| 'center' \| 'none'` | How the image fills its box (like RN `resizeMode` / CSS `object-fit`). Defaults to `'cover'`; a no-op unless `maxHeight` or `aspectRatio` is set. |
 | `borderRadius` | `number` | Corner radius |
 | `marginTop` | `number` | Top margin |
 | `marginBottom` | `number` | Bottom margin |
+
+> Sizing precedence: `aspectRatio` > `maxHeight` > `height`. `resizeMode` applies independently on top. When neither `maxHeight` nor `aspectRatio` is set, block images keep the legacy fixed-`height` behavior and `resizeMode` has no effect.
 
 ### Inline Image-specific
 
