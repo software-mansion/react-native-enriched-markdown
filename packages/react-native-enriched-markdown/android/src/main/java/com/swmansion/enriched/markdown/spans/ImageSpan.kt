@@ -41,7 +41,7 @@ class ImageSpan(
   AndroidLineHeightSpan {
   private var loadedDrawable: Drawable? = null
   private val height: Int = if (isInline) styleConfig.inlineImageStyle.size.toInt() else styleConfig.imageStyle.height.toInt()
-  private val borderRadiusPx: Int = (styleConfig.imageStyle.borderRadius * context.resources.displayMetrics.density).toInt()
+  private val borderRadiusPx: Int = styleConfig.imageStyle.borderRadius.toInt()
   private val maxHeightPx: Int = if (isInline) 0 else styleConfig.imageStyle.maxHeight.toInt()
   private val aspectRatio: Float = if (isInline) 0f else styleConfig.imageStyle.aspectRatio
   private val resizeMode: String = if (isInline) "" else styleConfig.imageStyle.resizeMode

@@ -207,7 +207,7 @@ function imageStyle(style: MarkdownStyleInternal): CSSProperties {
     return { ...base, height: image.height };
   }
 
-  const objectFit = RESIZE_MODE_TO_OBJECT_FIT[image.resizeMode];
+  const objectFit = RESIZE_MODE_TO_OBJECT_FIT[image.resizeMode] ?? 'cover';
 
   if (image.aspectRatio > 0) {
     return {
