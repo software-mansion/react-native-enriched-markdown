@@ -42,15 +42,18 @@ class ImageSpan(
   private var loadedDrawable: Drawable? = null
   private val height: Int = if (isInline) styleConfig.inlineImageStyle.size.toInt() else styleConfig.imageStyle.height.toInt()
   private val borderRadiusPx: Int = (styleConfig.imageStyle.borderRadius * context.resources.displayMetrics.density).toInt()
-
-  // New sizing knobs (block images only). maxHeight is already px; aspectRatio is unitless.
   private val maxHeightPx: Int = if (isInline) 0 else styleConfig.imageStyle.maxHeight.toInt()
   private val aspectRatio: Float = if (isInline) 0f else styleConfig.imageStyle.aspectRatio
-  private val resizeMode: String = styleConfig.imageStyle.resizeMode
+  private val resizeMode: String = if (isInline) "" else styleConfig.imageStyle.resizeMode
 
-  // True when no new sizing knob is set — resizeMode is a no-op and the exact
-  // legacy fill-width path is used (backward compatibility).
-  private val legacySizing: Boolean = isInline || (maxHeightPx <= 0 && aspectRatio <= 0f)
+  // '' = resizeMode unset — the exact legacy fill-width path is used (backward
+  // compatibility). JS normalization resolves it to 'cover' when maxHeight or
+  // aspectRatio is active, so legacy always implies a fixed height box.
+  private val legacySizing: Boolean = resizeMode.isEmpty()
+
+  // True when the box height depends on width/intrinsic size (maxHeight or
+  // aspectRatio) and can change after measurement or image load.
+  private val dynamicBoxHeight: Boolean = !isInline && (maxHeightPx > 0 || aspectRatio > 0f)
 
   // Resolved box height for the current layout. Starts at the legacy/fallback
   // value and is recomputed once width and (for maxHeight) intrinsic size are known.
@@ -97,7 +100,7 @@ class ImageSpan(
   // registered view and would otherwise keep its pre-load fallback height.
   // No-op for display spans (viewRef set) — they resolve via wrapAndAssignDrawable.
   fun prepareForMeasurement(widthPx: Int) {
-    if (isInline || legacySizing || viewRef != null || widthPx <= 0) return
+    if (!dynamicBoxHeight || viewRef != null || widthPx <= 0) return
     boxHeight = resolveBoxHeight(widthPx)
   }
 
@@ -179,12 +182,12 @@ class ImageSpan(
     notifyBoxHeightMayHaveChanged(view)
   }
 
-  // With the new sizing knobs the box height can change after the image loads
+  // With maxHeight/aspectRatio the box height can change after the image loads
   // (maxHeight fitted, aspectRatio at a late width). The React container height
   // was measured with the pre-load value, so ask the owning component to
   // re-measure; it only propagates when the stored height actually changed.
   private fun notifyBoxHeightMayHaveChanged(view: TextView) {
-    if (legacySizing) return
+    if (!dynamicBoxHeight) return
     if (view is EnrichedMarkdownText) {
       view.layoutManager.invalidateLayout()
       return
@@ -302,7 +305,7 @@ class ImageSpan(
     private val targetHeight: Int,
     private val borderRadius: Int,
     isBlockImage: Boolean,
-    private val resizeMode: String = "cover",
+    private val resizeMode: String = "",
     private val legacySizing: Boolean = true,
     private val cacheKey: CacheKey? = null,
   ) : Drawable() {

@@ -21,7 +21,7 @@ data class ImageStyle(
       val maxHeight = parser.toPixelFromDIP(map.getDouble("maxHeight").toFloat())
       // aspectRatio is a unitless width/height ratio — do not convert to pixels.
       val aspectRatio = map.getDouble("aspectRatio").toFloat()
-      val resizeMode = map.getString("resizeMode") ?: "cover"
+      val resizeMode = map.getString("resizeMode") ?: ""
       val borderRadius = parser.toPixelFromDIP(map.getDouble("borderRadius").toFloat())
       val marginTop = parser.toPixelFromDIP(map.getDouble("marginTop").toFloat())
       val marginBottom = parser.toPixelFromDIP(map.getDouble("marginBottom").toFloat())

@@ -146,7 +146,7 @@ export function toImageStyle(
     // the exact legacy behavior (backward-compat demo).
     ...(controls.maxHeight > 0 ? { maxHeight: controls.maxHeight } : {}),
     ...(controls.aspectRatio > 0 ? { aspectRatio: controls.aspectRatio } : {}),
-    resizeMode: controls.resizeMode,
+    ...(controls.resizeMode ? { resizeMode: controls.resizeMode } : {}),
     borderRadius: controls.borderRadius,
     marginTop: controls.marginTop,
     marginBottom: controls.marginBottom,

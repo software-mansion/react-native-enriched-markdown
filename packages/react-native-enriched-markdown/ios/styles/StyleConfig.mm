@@ -1531,7 +1531,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 
 - (NSString *)imageResizeMode
 {
-  return _imageResizeMode ?: @"cover";
+  return _imageResizeMode ?: @"";
 }
 
 - (void)setImageResizeMode:(NSString *)newValue

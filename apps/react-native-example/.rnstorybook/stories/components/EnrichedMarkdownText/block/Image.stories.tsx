@@ -32,9 +32,9 @@ const argTypes = {
     step: 0.1,
   }),
   resizeMode: {
-    options: ['contain', 'cover', 'stretch', 'center', 'none'] as const,
+    options: ['', 'contain', 'cover', 'stretch', 'center', 'none'] as const,
     control: { type: 'select' as const },
-    description: 'markdownStyle.image.resizeMode (needs maxHeight/aspectRatio)',
+    description: "markdownStyle.image.resizeMode ('' = legacy sizing)",
   },
   borderRadius: numberControl('markdownStyle.image.borderRadius', {
     min: 0,

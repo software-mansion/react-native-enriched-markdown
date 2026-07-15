@@ -126,11 +126,13 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   return self.cachedHeight;
 }
 
-// True when no new sizing knob is set — the block image uses the exact legacy
-// fill-width path and resizeMode is a no-op (backward compatibility).
+// True when resizeMode is unset ('') — the block image uses the exact legacy
+// fill-width path (backward compatibility). JS normalization resolves the mode
+// to 'cover' when maxHeight/aspectRatio is active, so legacy always implies a
+// fixed height box.
 - (BOOL)isLegacyBlockSizing
 {
-  return !self.isInline && self.cachedMaxHeight <= 0 && self.cachedAspectRatio <= 0;
+  return !self.isInline && self.cachedResizeMode.length == 0;
 }
 
 - (CGRect)attachmentBoundsForTextContainer:(NSTextContainer *)textContainer
@@ -357,7 +359,9 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
 // re-measuring would re-enter the layout manager.
 - (void)notifyImageLayoutObserver:(UITextView *)textView
 {
-  if ([self isLegacyBlockSizing])
+  // Only maxHeight/aspectRatio boxes can change height after load; a fixed
+  // height box (legacy or explicit resizeMode) never needs a re-measure.
+  if (self.cachedMaxHeight <= 0 && self.cachedAspectRatio <= 0)
     return;
 
   RCTUIView *candidate = textView;

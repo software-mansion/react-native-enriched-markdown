@@ -130,7 +130,9 @@ export const thematicBreakStyledDefaults: ThematicBreakStyleControls = {
   marginBottom: 24,
 };
 
+// '' = don't forward resizeMode, demoing the legacy sizing path.
 export type ImageResizeMode =
+  | ''
   | 'contain'
   | 'cover'
   | 'stretch'
@@ -151,7 +153,7 @@ export const imageStyledDefaults: ImageStyleControls = {
   height: 200,
   maxHeight: 0,
   aspectRatio: 0,
-  resizeMode: 'cover',
+  resizeMode: '',
   borderRadius: 12,
   marginTop: 8,
   marginBottom: 16,

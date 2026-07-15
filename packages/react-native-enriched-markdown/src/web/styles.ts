@@ -181,9 +181,10 @@ function thematicBreakStyle(style: MarkdownStyleInternal): CSSProperties {
 }
 
 // center is scale-down-only (never upscale) → CSS `scale-down`. none shows at
-// native size. stretch distorts → `fill`.
+// native size. stretch distorts → `fill`. '' = legacy sizing, resolved to
+// 'cover' by normalization whenever maxHeight/aspectRatio is active.
 const RESIZE_MODE_TO_OBJECT_FIT: Record<
-  MarkdownStyleInternal['image']['resizeMode'],
+  Exclude<MarkdownStyleInternal['image']['resizeMode'], ''>,
   NonNullable<CSSProperties['objectFit']>
 > = {
   contain: 'contain',
@@ -203,14 +204,20 @@ function imageStyle(style: MarkdownStyleInternal): CSSProperties {
     display: 'block',
   };
 
-  // aspectRatio > maxHeight > height. resizeMode only engages once a new sizing
-  // knob is set; otherwise emit today's exact CSS for backward compatibility.
+  // Sizing precedence: aspectRatio > maxHeight > height. resizeMode '' means
+  // legacy sizing — emit today's exact CSS for backward compatibility.
+  if (image.resizeMode === '') {
+    return { ...base, height: image.height };
+  }
+
+  const objectFit = RESIZE_MODE_TO_OBJECT_FIT[image.resizeMode];
+
   if (image.aspectRatio > 0) {
     return {
       ...base,
       width: '100%',
       aspectRatio: image.aspectRatio,
-      objectFit: RESIZE_MODE_TO_OBJECT_FIT[image.resizeMode],
+      objectFit,
     };
   }
 
@@ -220,11 +227,11 @@ function imageStyle(style: MarkdownStyleInternal): CSSProperties {
       width: '100%',
       height: 'auto',
       maxHeight: image.maxHeight,
-      objectFit: RESIZE_MODE_TO_OBJECT_FIT[image.resizeMode],
+      objectFit,
     };
   }
 
-  return { ...base, height: image.height };
+  return { ...base, width: '100%', height: image.height, objectFit };
 }
 
 function inlineImageStyle(style: MarkdownStyleInternal): CSSProperties {

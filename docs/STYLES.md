@@ -395,12 +395,12 @@ Styles for highlighted text (`==text==`). Requires `md4cFlags={{ highlight: true
 | `height` | `number` | Fixed image height (default sizing knob). |
 | `maxHeight` | `number` | Maximum height the image is fitted into, preserving aspect ratio. Replaces `height` when set. |
 | `aspectRatio` | `number` | Width / height ratio (e.g. `16 / 9`). Fills available width; height derived from the ratio. Ignores `height`/`maxHeight`. |
-| `resizeMode` | `'contain' \| 'cover' \| 'stretch' \| 'center' \| 'none'` | How the image fills its box (like RN `resizeMode` / CSS `object-fit`). Defaults to `'cover'`; a no-op unless `maxHeight` or `aspectRatio` is set. |
+| `resizeMode` | `'contain' \| 'cover' \| 'stretch' \| 'center' \| 'none'` | How the image fills its box (like RN `resizeMode` / CSS `object-fit`). Applies whenever set explicitly, including with a fixed `height` box. When omitted, defaults to `'cover'` if `maxHeight` or `aspectRatio` is set; otherwise block images keep the legacy fill-width behavior. |
 | `borderRadius` | `number` | Corner radius |
 | `marginTop` | `number` | Top margin |
 | `marginBottom` | `number` | Bottom margin |
 
-> Sizing precedence: `aspectRatio` > `maxHeight` > `height`. `resizeMode` applies independently on top. When neither `maxHeight` nor `aspectRatio` is set, block images keep the legacy fixed-`height` behavior and `resizeMode` has no effect.
+> Sizing precedence: `aspectRatio` > `maxHeight` > `height`. `resizeMode` applies independently on top. When no new knob is set (`resizeMode`, `maxHeight`, or `aspectRatio`), block images keep the exact legacy fixed-`height` behavior.
 
 ### Inline Image-specific
 

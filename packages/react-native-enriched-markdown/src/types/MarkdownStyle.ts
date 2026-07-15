@@ -124,8 +124,10 @@ interface ImageStyle {
   aspectRatio?: number;
   /**
    * How the image fills its box, analogous to React Native `resizeMode` / CSS
-   * `object-fit`. Applies independently on top of the sizing knobs above.
-   * Defaults to `'cover'`, and is a no-op unless `maxHeight` or `aspectRatio` is set.
+   * `object-fit`. Applies whenever set explicitly, including with a fixed
+   * `height` box. When omitted, block images keep the legacy fill-width
+   * behavior, unless `maxHeight` or `aspectRatio` is set — then it defaults
+   * to `'cover'`.
    */
   resizeMode?: ImageResizeMode;
   borderRadius?: number;

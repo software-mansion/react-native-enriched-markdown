@@ -149,7 +149,7 @@ const DEFAULT_NORMALIZED_STYLE: MarkdownStyleInternal = Object.freeze({
     height: 200,
     maxHeight: 0,
     aspectRatio: 0,
-    resizeMode: 'cover' as const,
+    resizeMode: '' as const,
     borderRadius: 8,
     marginTop: 0,
     marginBottom: 16,
@@ -273,6 +273,12 @@ export const normalizeMarkdownStyle = (
     (result.taskList as { checkboxSize: number }).checkboxSize = Math.round(
       listSize * 0.9
     );
+  }
+
+  // maxHeight/aspectRatio sizing is resize-mode driven; default to 'cover'.
+  const image = result.image as MarkdownStyleInternal['image'];
+  if (!image.resizeMode && (image.maxHeight > 0 || image.aspectRatio > 0)) {
+    (result.image as { resizeMode: string }).resizeMode = 'cover';
   }
 
   if (!style.highlight?.color) {
