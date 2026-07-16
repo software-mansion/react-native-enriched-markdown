@@ -580,11 +580,26 @@
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
   }
 #else
-  // TODO: Implement horizontalOverflow support for macOS (NSScrollView contentInsets).
-  // For NSScrollView+documentView, the scrollable content area is determined by
-  // the documentView's frame. No contentSize property to set.
+  CGFloat overflow = MAX(self.config.tableHorizontalOverflow, 0);
+  CGFloat containerWidth = self.bounds.size.width;
+  CGFloat originalWidth = containerWidth - overflow * 2;
+  BOOL needsEdgeToEdge = (overflow > 0 && _totalTableWidth > originalWidth);
+
   if (_totalTableWidth > 0 && _totalTableHeight > 0) {
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
+  }
+
+  if (needsEdgeToEdge) {
+    NSEdgeInsets inset = NSEdgeInsetsMake(0, overflow, 0, overflow);
+    NSScrollView *scrollView = (NSScrollView *)_scrollView;
+    scrollView.automaticallyAdjustsContentInsets = NO;
+    scrollView.contentInsets = inset;
+    [scrollView.contentView scrollToPoint:NSMakePoint(-overflow, 0)];
+  } else if (overflow > 0) {
+    NSScrollView *scrollView = (NSScrollView *)_scrollView;
+    scrollView.automaticallyAdjustsContentInsets = NO;
+    scrollView.contentInsets = NSEdgeInsetsZero;
+    _gridContainer.frame = CGRectMake(overflow, 0, _totalTableWidth, _totalTableHeight);
   }
 #endif
 }
