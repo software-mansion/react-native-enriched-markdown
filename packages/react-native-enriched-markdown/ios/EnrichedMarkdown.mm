@@ -249,25 +249,25 @@ static char kENRMSegmentFadeAnimatorKey;
     return CGSizeZero;
 
   if (applyFrames) {
-    CGFloat overflow = MAX(_config.tableHorizontalOverflow, 0);
-    BOOL needsOverflow = NO;
-    if (overflow > 0) {
+    CGFloat overhang = MAX(_config.tableHorizontalOverflow, 0);
+    BOOL needsOverhang = NO;
+    if (overhang > 0) {
       for (RCTUIView *seg in _segmentViews) {
         if ([seg isKindOfClass:[TableContainerView class]]) {
-          needsOverflow = YES;
+          needsOverhang = YES;
           break;
         }
       }
     }
 #if TARGET_OS_OSX
     BOOL isClipping = self.layer.masksToBounds;
-    if (isClipping && needsOverflow)
+    if (isClipping && needsOverhang)
       self.layer.masksToBounds = NO;
-    else if (!isClipping && !needsOverflow)
+    else if (!isClipping && !needsOverhang)
       self.layer.masksToBounds = YES;
 #else
-    if (self.clipsToBounds != !needsOverflow)
-      self.clipsToBounds = !needsOverflow;
+    if (self.clipsToBounds != !needsOverhang)
+      self.clipsToBounds = !needsOverhang;
 #endif
   }
 
@@ -306,10 +306,10 @@ static char kENRMSegmentFadeAnimatorKey;
       CGFloat segmentX = 0;
       CGFloat segmentWidth = width;
       if (isTable) {
-        CGFloat overflow = MAX(_config.tableHorizontalOverflow, 0);
-        if (overflow > 0) {
-          segmentX = -overflow;
-          segmentWidth = width + overflow * 2;
+        CGFloat overhang = MAX(_config.tableHorizontalOverflow, 0);
+        if (overhang > 0) {
+          segmentX = -overhang;
+          segmentWidth = width + overhang * 2;
         }
       }
       CGRect segmentFrame = CGRectMake(segmentX, yOffset, segmentWidth, segmentHeight);

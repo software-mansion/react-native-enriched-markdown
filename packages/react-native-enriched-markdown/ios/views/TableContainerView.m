@@ -554,44 +554,35 @@
   [super layoutSubviews];
   _scrollView.frame = self.bounds;
 #if !TARGET_OS_OSX
-  CGFloat overflow = MAX(self.config.tableHorizontalOverflow, 0);
+  CGFloat overhang = MAX(self.config.tableHorizontalOverflow, 0);
   CGFloat containerWidth = self.bounds.size.width;
-  CGFloat originalWidth = containerWidth - overflow * 2;
-  BOOL needsEdgeToEdge = (overflow > 0 && _totalTableWidth > originalWidth);
+  BOOL tableOverflows = (overhang > 0 && _totalTableWidth > containerWidth);
 
-  if (needsEdgeToEdge && _totalTableWidth > containerWidth) {
-    UIEdgeInsets inset = UIEdgeInsetsMake(0, overflow, 0, overflow);
+  if (tableOverflows) {
+    UIEdgeInsets inset = UIEdgeInsetsMake(0, overhang, 0, overhang);
     if (!UIEdgeInsetsEqualToEdgeInsets(_scrollView.contentInset, inset)) {
       _scrollView.contentInset = inset;
-      _scrollView.contentOffset = CGPointMake(-overflow, 0);
+      _scrollView.contentOffset = CGPointMake(-overhang, 0);
     }
     _scrollView.contentSize = CGSizeMake(_totalTableWidth, _totalTableHeight);
     _scrollView.scrollEnabled = YES;
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
-  } else if (overflow > 0) {
-    _scrollView.contentInset = UIEdgeInsetsZero;
-    _scrollView.contentOffset = CGPointZero;
-    _scrollView.contentSize = CGSizeMake(containerWidth, _totalTableHeight);
-    _scrollView.scrollEnabled = NO;
-    _gridContainer.frame = CGRectMake(overflow, 0, _totalTableWidth, _totalTableHeight);
   } else {
     _scrollView.contentInset = UIEdgeInsetsZero;
     _scrollView.contentOffset = CGPointZero;
     _scrollView.contentSize = CGSizeMake(MAX(_totalTableWidth, containerWidth), _totalTableHeight);
     _scrollView.scrollEnabled = (_totalTableWidth > containerWidth);
-    _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
+    _gridContainer.frame = CGRectMake(overhang, 0, _totalTableWidth, _totalTableHeight);
   }
 #else
-  CGFloat overflow = MAX(self.config.tableHorizontalOverflow, 0);
+  CGFloat overhang = MAX(self.config.tableHorizontalOverflow, 0);
   CGFloat containerWidth = self.bounds.size.width;
-  BOOL needsEdgeToEdge = (overflow > 0 && _totalTableWidth > containerWidth);
+  BOOL tableOverflows = (overhang > 0 && _totalTableWidth > containerWidth);
 
-  if (needsEdgeToEdge) {
+  if (tableOverflows) {
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
-  } else if (overflow > 0) {
-    _gridContainer.frame = CGRectMake(overflow, 0, _totalTableWidth, _totalTableHeight);
   } else if (_totalTableWidth > 0 && _totalTableHeight > 0) {
-    _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
+    _gridContainer.frame = CGRectMake(overhang, 0, _totalTableWidth, _totalTableHeight);
   }
 #endif
 }

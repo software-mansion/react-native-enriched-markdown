@@ -328,26 +328,18 @@ class TableContainerView(
     bottom: Int,
   ) {
     val viewWidth = right - left
-    val overflow = max(ceil(tableStyle.horizontalOverflow.toDouble()).toInt(), 0)
-    val needsEdgeToEdge = overflow > 0 && totalTableWidth > viewWidth
+    val overhang = max(ceil(tableStyle.horizontalOverflow.toDouble()).toInt(), 0)
+    val contentWidth = viewWidth - overhang * 2
+    val tableOverflows = totalTableWidth > contentWidth
 
-    if (needsEdgeToEdge) {
-      scrollView.setPadding(overflow, 0, overflow, 0)
-      scrollView.clipToPadding = false
-      scrollView.isHorizontalScrollBarEnabled = true
-    } else if (overflow > 0) {
-      scrollView.setPadding(overflow, 0, overflow, 0)
-      scrollView.clipToPadding = true
-      scrollView.isHorizontalScrollBarEnabled = false
-    } else {
-      scrollView.setPadding(0, 0, 0, 0)
-      scrollView.isHorizontalScrollBarEnabled = totalTableWidth > viewWidth
-    }
+    scrollView.setPadding(overhang, 0, overhang, 0)
+    scrollView.clipToPadding = !tableOverflows
+    scrollView.isHorizontalScrollBarEnabled = tableOverflows
 
     scrollView.layout(0, 0, viewWidth, bottom - top)
 
     if (isRtl) {
-      val effectiveWidth = if (needsEdgeToEdge) (viewWidth - overflow * 2).toFloat() else viewWidth.toFloat()
+      val effectiveWidth = if (tableOverflows) contentWidth.toFloat() else viewWidth.toFloat()
       if (totalTableWidth > effectiveWidth) {
         scrollView.scrollTo((totalTableWidth - effectiveWidth).toInt(), 0)
       }

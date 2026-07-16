@@ -572,13 +572,13 @@ class EnrichedMarkdown
       val containerWidth = width
       if (containerWidth <= 0) return
 
-      val needsOverflow =
+      val needsOverhang =
         segmentViews.any { view ->
           view is TableContainerView &&
             ceil(view.tableStyle.horizontalOverflow.toDouble()).toInt() > 0
         }
-      if (clipChildren == needsOverflow) {
-        clipChildren = !needsOverflow
+      if (clipChildren == needsOverhang) {
+        clipChildren = !needsOverhang
       }
 
       var currentY = 0
@@ -592,18 +592,18 @@ class EnrichedMarkdown
 
         currentY += segment?.segmentMarginTop ?: 0
 
-        val tableOverflow =
+        val overhang =
           if (view is TableContainerView) {
             max(ceil(view.tableStyle.horizontalOverflow.toDouble()).toInt(), 0)
           } else {
             0
           }
 
-        if (tableOverflow > 0) {
-          val extendedWidth = containerWidth + tableOverflow * 2
+        if (overhang > 0) {
+          val extendedWidth = containerWidth + overhang * 2
           val extWidthSpec = MeasureSpec.makeMeasureSpec(extendedWidth, MeasureSpec.EXACTLY)
           view.measure(extWidthSpec, heightSpec)
-          view.layout(-tableOverflow, currentY, containerWidth + tableOverflow, currentY + view.measuredHeight)
+          view.layout(-overhang, currentY, containerWidth + overhang, currentY + view.measuredHeight)
         } else {
           view.measure(widthSpec, heightSpec)
           view.layout(0, currentY, containerWidth, currentY + view.measuredHeight)
