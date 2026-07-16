@@ -134,6 +134,7 @@ fun EnrichedMarkdownText(
   modifier: Modifier = Modifier,
   style: MarkdownStyle = MarkdownTheme.style,
   selectable: Boolean = true,
+  imageRequestHeaders: Map<String, String> = emptyMap(),
   onLinkPress: ((String) -> Unit)? = null,
   onLinkLongPress: ((String) -> Unit)? = null,
 )
@@ -144,6 +145,7 @@ fun EnrichedMarkdownText(
 | `markdown` | Markdown source string |
 | `style` | Per-instance style override |
 | `selectable` | Enable text selection |
+| `imageRequestHeaders` | HTTP headers attached to remote image requests (e.g. `Referer`) |
 | `onLinkPress` | Called when a link is tapped |
 | `onLinkLongPress` | Called when a link is long-pressed |
 
