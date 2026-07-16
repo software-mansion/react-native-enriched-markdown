@@ -21,6 +21,12 @@ const MARKDOWN = `| col1 | col2 | looooooooong col | a |
 | the | one | piece is | real
 | third | Row | to test trailing | symbols | |asdf|||||blabla|`;
 
+const WIDE_MARKDOWN = `| Product | Category | Q1 Revenue | Q2 Revenue | Q3 Revenue | Q4 Revenue | Total |
+| --- | --- | --- | --- | --- | --- | --- |
+| Widget Pro | Hardware | $12,400 | $15,200 | $14,800 | $18,100 | $60,500 |
+| Cloud Suite | Software | $8,900 | $9,300 | $11,700 | $12,000 | $41,900 |
+| Support Plan | Services | $4,200 | $4,500 | $4,800 | $5,100 | $18,600 |`;
+
 const argTypes = {
   ...githubFlavorArgTypes('Tables require flavor="github" (GFM).'),
   fontSize: numberControl('markdownStyle.table.fontSize', {
@@ -88,6 +94,11 @@ const argTypes = {
     'markdownStyle.table.cellPaddingVertical',
     { min: 4, max: 24, step: 2 }
   ),
+  horizontalOverflow: numberControl('markdownStyle.table.horizontalOverflow', {
+    min: 0,
+    max: 48,
+    step: 2,
+  }),
 };
 
 export default storyMeta('Block', 'Table');
@@ -105,6 +116,27 @@ export const Default: TextStory<TableStyleControls> = {
       <EnrichedMarkdownTextStory
         title="Table"
         description="GFM tables. Use the controls to tune markdownStyle.table."
+        {...rest}
+        style={{ table: toTableStyle(controls) }}
+      />
+    );
+  },
+};
+
+export const HorizontalOverflow: TextStory<TableStyleControls> = {
+  args: {
+    markdown: WIDE_MARKDOWN,
+    flavor: 'github',
+    ...tableStyledDefaults,
+    horizontalOverflow: 10,
+  },
+  argTypes,
+  render: (args) => {
+    const { controls, rest } = splitStyleControls(args, tableStyledDefaults);
+    return (
+      <EnrichedMarkdownTextStory
+        title="Table Horizontal Overflow"
+        description="Scrollable tables extend beyond the markdown container by markdownStyle.table.horizontalOverflow on each side (edge-to-edge layout). Set it to the parent's horizontal padding; here 10 matches the output box padding."
         {...rest}
         style={{ table: toTableStyle(controls) }}
       />

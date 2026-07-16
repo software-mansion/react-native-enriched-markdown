@@ -171,6 +171,7 @@ export function toTableStyle(
     borderRadius: controls.borderRadius,
     cellPaddingHorizontal: controls.cellPaddingHorizontal,
     cellPaddingVertical: controls.cellPaddingVertical,
+    horizontalOverflow: controls.horizontalOverflow,
   };
 }
 
