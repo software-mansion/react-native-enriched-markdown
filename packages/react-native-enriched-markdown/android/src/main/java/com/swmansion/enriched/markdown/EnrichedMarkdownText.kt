@@ -78,6 +78,7 @@ class EnrichedMarkdownText
     private var allowFontScaling: Boolean = true
     private var maxFontSizeMultiplier: Float = 0f
     private var allowTrailingMargin: Boolean = false
+    private var imageRequestHeaders: Map<String, String> = emptyMap()
 
     private var streamingAnimation: Boolean = false
     private var previousTextLength: Int = 0
@@ -116,10 +117,18 @@ class EnrichedMarkdownText
       // Register font scaling settings when style is set (view should have ID by now)
       updateMeasurementStoreFontScaling()
       val newStyle = style?.let { StyleConfig(it, context, allowFontScaling, maxFontSizeMultiplier) }
+      newStyle?.imageRequestHeaders = imageRequestHeaders
       if (markdownStyle == newStyle) return
       markdownStyle = newStyle
       updateJustificationMode(newStyle)
       scheduleRender()
+    }
+
+    fun setImageRequestHeaders(headers: Map<String, String>) {
+      if (imageRequestHeaders == headers) return
+      imageRequestHeaders = headers
+      markdownStyle?.imageRequestHeaders = headers
+      scheduleRenderIfNeeded()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -189,7 +198,10 @@ class EnrichedMarkdownText
 
     private fun recreateStyleConfig() {
       markdownStyleMap?.let { styleMap ->
-        markdownStyle = StyleConfig(styleMap, context, allowFontScaling, maxFontSizeMultiplier)
+        markdownStyle =
+          StyleConfig(styleMap, context, allowFontScaling, maxFontSizeMultiplier).also {
+            it.imageRequestHeaders = imageRequestHeaders
+          }
         updateJustificationMode(markdownStyle)
       }
     }

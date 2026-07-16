@@ -166,6 +166,8 @@ class StyleConfig(
     ImageStyle.fromReadableMap(map, styleParser)
   }
 
+  var imageRequestHeaders: Map<String, String> = emptyMap()
+
   val inlineImageStyle: InlineImageStyle by lazy {
     val map =
       requireNotNull(style.getMap("inlineImage")) {

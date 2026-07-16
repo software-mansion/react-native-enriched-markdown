@@ -79,6 +79,7 @@ class EnrichedMarkdown
     private var allowFontScaling: Boolean = true
     private var maxFontSizeMultiplier: Float = 0f
     private var allowTrailingMargin: Boolean = false
+    private var imageRequestHeaders: Map<String, String> = emptyMap()
     private var selectable: Boolean = true
     private var selectionColor: Int? = null
     private var selectionHandleColor: Int? = null
@@ -109,10 +110,19 @@ class EnrichedMarkdown
     fun setMarkdownStyle(style: ReadableMap?) {
       markdownStyleMap = style
       val newConfig = style?.let { StyleConfig(it, context, allowFontScaling, maxFontSizeMultiplier) }
+      newConfig?.imageRequestHeaders = imageRequestHeaders
       if (markdownStyle == newConfig) return
       markdownStyle = newConfig
       dirtyFlags += DirtyFlag.RECREATE_SEGMENTS
       dirtyFlags += DirtyFlag.FORCE_HEIGHT
+      renderPending = true
+    }
+
+    fun setImageRequestHeaders(headers: Map<String, String>) {
+      if (imageRequestHeaders == headers) return
+      imageRequestHeaders = headers
+      markdownStyle?.imageRequestHeaders = headers
+      dirtyFlags += DirtyFlag.RECREATE_SEGMENTS
       renderPending = true
     }
 
@@ -292,7 +302,10 @@ class EnrichedMarkdown
 
     private fun recreateStyleConfig() {
       markdownStyleMap?.let {
-        markdownStyle = StyleConfig(it, context, allowFontScaling, maxFontSizeMultiplier)
+        markdownStyle =
+          StyleConfig(it, context, allowFontScaling, maxFontSizeMultiplier).also { config ->
+            config.imageRequestHeaders = imageRequestHeaders
+          }
       }
     }
 
