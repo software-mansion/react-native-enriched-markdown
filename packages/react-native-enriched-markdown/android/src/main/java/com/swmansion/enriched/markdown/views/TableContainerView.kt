@@ -43,7 +43,7 @@ class TableContainerView(
   private val styleConfig: StyleConfig,
 ) : FrameLayout(context),
   BlockSegmentView {
-  private val tableStyle: TableStyle = styleConfig.tableStyle
+  internal val tableStyle: TableStyle = styleConfig.tableStyle
 
   override val segmentMarginTop: Int get() = tableStyle.marginTop.toInt()
   override val segmentMarginBottom: Int get() = tableStyle.marginBottom.toInt()
@@ -327,12 +327,31 @@ class TableContainerView(
     right: Int,
     bottom: Int,
   ) {
-    scrollView.layout(0, 0, right - left, bottom - top)
     val viewWidth = right - left
-    scrollView.isHorizontalScrollBarEnabled = totalTableWidth > viewWidth
+    val overflow = max(tableStyle.horizontalOverflow.toInt(), 0)
+    val originalWidth = viewWidth - overflow * 2
+    val needsEdgeToEdge = overflow > 0 && totalTableWidth > originalWidth
 
-    if (isRtl && totalTableWidth > viewWidth) {
-      scrollView.scrollTo((totalTableWidth - viewWidth).toInt(), 0)
+    if (needsEdgeToEdge) {
+      scrollView.setPadding(overflow, 0, overflow, 0)
+      scrollView.clipToPadding = false
+      scrollView.isHorizontalScrollBarEnabled = true
+    } else if (overflow > 0) {
+      scrollView.setPadding(overflow, 0, overflow, 0)
+      scrollView.clipToPadding = true
+      scrollView.isHorizontalScrollBarEnabled = false
+    } else {
+      scrollView.setPadding(0, 0, 0, 0)
+      scrollView.isHorizontalScrollBarEnabled = totalTableWidth > viewWidth
+    }
+
+    scrollView.layout(0, 0, viewWidth, bottom - top)
+
+    if (isRtl) {
+      val effectiveWidth = if (needsEdgeToEdge) originalWidth.toFloat() else viewWidth.toFloat()
+      if (totalTableWidth > effectiveWidth) {
+        scrollView.scrollTo((totalTableWidth - effectiveWidth).toInt(), 0)
+      }
     }
   }
 

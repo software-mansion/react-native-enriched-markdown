@@ -135,6 +135,7 @@ interface TableStyle extends BaseBlockStyle {
   borderRadius?: number;
   cellPaddingHorizontal?: number;
   cellPaddingVertical?: number;
+  horizontalOverflow?: number;
 }
 
 interface TaskListStyle {

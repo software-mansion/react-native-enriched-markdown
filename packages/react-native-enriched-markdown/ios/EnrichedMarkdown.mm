@@ -257,6 +257,7 @@ static char kENRMSegmentFadeAnimatorKey;
     const BOOL shouldAddBottomMargin = (!isLast || _allowTrailingMargin);
 
     CGFloat segmentHeight = 0;
+    const BOOL isTable = [segment isKindOfClass:[TableContainerView class]];
 
     if ([segment isKindOfClass:[EnrichedMarkdownInternalText class]]) {
       EnrichedMarkdownInternalText *textView = (EnrichedMarkdownInternalText *)segment;
@@ -265,7 +266,7 @@ static char kENRMSegmentFadeAnimatorKey;
       segmentHeight = textSize.height;
       maxContentWidth = MAX(maxContentWidth, textSize.width);
 
-    } else if ([segment isKindOfClass:[TableContainerView class]]) {
+    } else if (isTable) {
       yOffset += _config.tableMarginTop;
       segmentHeight = [(TableContainerView *)segment measureHeight:width];
       maxContentWidth = width;
@@ -279,7 +280,16 @@ static char kENRMSegmentFadeAnimatorKey;
 #endif
 
     if (applyFrames) {
-      CGRect segmentFrame = CGRectMake(0, yOffset, width, segmentHeight);
+      CGFloat segmentX = 0;
+      CGFloat segmentWidth = width;
+      if (isTable) {
+        CGFloat overflow = MAX(_config.tableHorizontalOverflow, 0);
+        if (overflow > 0) {
+          segmentX = -overflow;
+          segmentWidth = width + overflow * 2;
+        }
+      }
+      CGRect segmentFrame = CGRectMake(segmentX, yOffset, segmentWidth, segmentHeight);
       segment.frame = segmentFrame;
 #if TARGET_OS_OSX
       if ([segment isKindOfClass:[EnrichedMarkdownInternalText class]]) {

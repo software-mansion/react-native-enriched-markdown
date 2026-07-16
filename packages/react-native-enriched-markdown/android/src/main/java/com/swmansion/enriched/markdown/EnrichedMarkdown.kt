@@ -32,6 +32,7 @@ import com.swmansion.enriched.markdown.views.TableContainerView
 import java.util.EnumSet
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 class EnrichedMarkdown
   @JvmOverloads
@@ -580,9 +581,24 @@ class EnrichedMarkdown
         val shouldAddBottomMargin = index != lastIndex || allowTrailingMargin
 
         currentY += segment?.segmentMarginTop ?: 0
-        view.measure(widthSpec, heightSpec)
 
-        view.layout(0, currentY, containerWidth, currentY + view.measuredHeight)
+        val tableOverflow =
+          if (view is TableContainerView) {
+            max(view.tableStyle.horizontalOverflow.toInt(), 0)
+          } else {
+            0
+          }
+
+        if (tableOverflow > 0) {
+          if (clipChildren) clipChildren = false
+          val extendedWidth = containerWidth + tableOverflow * 2
+          val extWidthSpec = MeasureSpec.makeMeasureSpec(extendedWidth, MeasureSpec.EXACTLY)
+          view.measure(extWidthSpec, heightSpec)
+          view.layout(-tableOverflow, currentY, containerWidth + tableOverflow, currentY + view.measuredHeight)
+        } else {
+          view.measure(widthSpec, heightSpec)
+          view.layout(0, currentY, containerWidth, currentY + view.measuredHeight)
+        }
         currentY += view.measuredHeight
 
         if (shouldAddBottomMargin) {

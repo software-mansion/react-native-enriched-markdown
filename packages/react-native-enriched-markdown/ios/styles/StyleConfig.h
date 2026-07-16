@@ -348,6 +348,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setTableCellPaddingHorizontal:(CGFloat)newValue;
 - (CGFloat)tableCellPaddingVertical;
 - (void)setTableCellPaddingVertical:(CGFloat)newValue;
+- (CGFloat)tableHorizontalOverflow;
+- (void)setTableHorizontalOverflow:(CGFloat)newValue;
 // Task list checkbox properties
 - (RCTUIColor *)taskListCheckedColor;
 - (void)setTaskListCheckedColor:(RCTUIColor *)newValue;

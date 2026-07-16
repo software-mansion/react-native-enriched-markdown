@@ -428,6 +428,7 @@ Table styles only apply when `flavor="github"` is set. Tables inherit the base b
 | `borderRadius` | `number` | Corner radius of the table container |
 | `cellPaddingHorizontal` | `number` | Horizontal padding inside cells |
 | `cellPaddingVertical` | `number` | Vertical padding inside cells |
+| `horizontalOverflow` | `number` | When set, scrollable tables extend beyond the markdown container by this amount on each side (edge-to-edge / "bleed" layout). Set to the parent's horizontal padding to make wide tables reach the screen edges. Has no effect on tables that fit within the container width. Default: `0` |
 
 ### Task List-specific
 
