@@ -288,6 +288,29 @@ Controls how spoiler text (`||hidden text||`) is displayed before being revealed
 
 Both modes support tap-to-reveal.
 
+### `imageRequestHeaders`
+
+HTTP headers attached to remote image requests, e.g. a `Referer` required by CDN hotlink protection or an `Authorization` token.
+
+| Type                     | Default Value | Platform |
+| ------------------------ | ------------- | -------- |
+| `Record<string, string>` | -             | Both     |
+
+Headers participate in image cache identity, so the same URL requested with different headers is fetched and cached separately — see [Image Caching](./IMAGE_CACHING.md).
+
+> **Web**: Not supported — browsers don't allow custom headers on `<img>` requests.
+
+**Example:**
+
+```tsx
+<EnrichedMarkdownText
+  markdown={markdown}
+  imageRequestHeaders={{
+    Referer: 'https://example.com',
+  }}
+/>
+```
+
 ### `contextMenuItems`
 
 Custom items to add to the text selection context menu. Items appear before the system actions (Copy, etc.). Items with `visible: false` are hidden from the menu.
