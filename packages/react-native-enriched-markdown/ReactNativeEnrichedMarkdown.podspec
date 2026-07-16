@@ -24,7 +24,7 @@ Pod::Spec.new do |s|
     s.private_header_files = "ios/**/*.h", "cpp/**/*.{h,hpp}"
     s.source_files = "ios/**/*.{h,m,mm,cpp,swift}", "cpp/md4c/*.{c,h}", "cpp/parser/*.{hpp,cpp}"
   end
-# TEMPORARY COMMENT TO TRIGGER IOS BUILD
+
   # To disable LaTeX math rendering (RaTeX, iOS only), add ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] = '0' to your Podfile.
   # When math is enabled, consumers must use `use_frameworks! :linkage => :dynamic` (required for SPM interop).
   enable_math = ENV['ENRICHED_MARKDOWN_ENABLE_MATH'] != '0'

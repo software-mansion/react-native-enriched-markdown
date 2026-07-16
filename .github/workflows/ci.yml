@@ -169,7 +169,7 @@ jobs:
             --dry=json | jq -r '.tasks[0].cache.status')
 
           if [[ $TURBO_CACHE_STATUS == "HIT" ]]; then
-            echo "turbo_cache_hit=0" >> $GITHUB_ENV
+            echo "turbo_cache_hit=1" >> $GITHUB_ENV
           fi
 
       - name: Restore cocoapods
