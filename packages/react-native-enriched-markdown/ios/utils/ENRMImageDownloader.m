@@ -1,5 +1,6 @@
 #import "ENRMImageDownloader.h"
 #import "ENRMImageAttachment.h"
+#import <CommonCrypto/CommonDigest.h>
 #include <TargetConditionals.h>
 
 static const NSUInteger kDiskCacheMemoryCapacity = 10 * 1024 * 1024;
@@ -19,11 +20,18 @@ NSString *ENRMImageCacheKey(NSString *url, NSDictionary<NSString *, NSString *> 
     return url;
   }
   NSArray<NSString *> *names = [headers.allKeys sortedArrayUsingSelector:@selector(compare:)];
-  NSMutableString *key = [NSMutableString stringWithString:url];
+  NSMutableString *joined = [NSMutableString string];
   for (NSString *name in names) {
-    [key appendFormat:@"|%@:%@", name, headers[name]];
+    [joined appendFormat:@"%@:%@\n", name, headers[name]];
   }
-  return [key copy];
+  NSData *data = [joined dataUsingEncoding:NSUTF8StringEncoding];
+  unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+  CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
+  NSMutableString *hash = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
+  for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
+    [hash appendFormat:@"%02x", digest[i]];
+  }
+  return [NSString stringWithFormat:@"%@|%@", url, hash];
 }
 
 @implementation ENRMImageDownloader {

@@ -462,7 +462,6 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 
   if (ENRMImageRequestHeadersChanged(oldViewProps.imageRequestHeaders, newViewProps.imageRequestHeaders)) {
     [_config setImageRequestHeaders:ENRMImageRequestHeadersFromProps(newViewProps.imageRequestHeaders)];
-    [ENRMImageAttachment clearAttachmentRegistry];
     _dirtyFlags |= ENRMDirtyRender;
   }
 

@@ -239,6 +239,7 @@ object MeasurementStore {
     val styleMap = props.getMapOrNull("markdownStyle")
     val md4cFlagsMap = props.getMapOrNull("md4cFlags")
     val allowTrailingMargin = props.getBooleanOrDefault("allowTrailingMargin", false)
+    val imageRequestHeaders = parseImageRequestHeaders(props.getArrayOrNull("imageRequestHeaders"))
     var result = markdown.hashCode()
     result = 31 * result + (styleMap?.hashCode() ?: 0)
     result = 31 * result + (md4cFlagsMap?.hashCode() ?: 0)
@@ -246,6 +247,7 @@ object MeasurementStore {
     result = 31 * result + allowFontScaling.hashCode()
     result = 31 * result + maxFontSizeMultiplier.toBits()
     result = 31 * result + allowTrailingMargin.hashCode()
+    result = 31 * result + imageRequestHeaders.hashCode()
     return result
   }
 

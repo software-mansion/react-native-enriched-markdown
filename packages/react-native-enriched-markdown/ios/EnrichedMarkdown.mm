@@ -754,7 +754,6 @@ static char kENRMSegmentFadeAnimatorKey;
 
   if (ENRMImageRequestHeadersChanged(oldViewProps.imageRequestHeaders, newViewProps.imageRequestHeaders)) {
     [_config setImageRequestHeaders:ENRMImageRequestHeadersFromProps(newViewProps.imageRequestHeaders)];
-    [ENRMImageAttachment clearAttachmentRegistry];
     _dirtyFlags |= ENRMDirtyRender;
     if (!markdownChanged) {
       _dirtyFlags |= ENRMDirtyRecreateSegments;
