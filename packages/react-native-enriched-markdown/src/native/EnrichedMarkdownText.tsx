@@ -121,6 +121,7 @@ export const EnrichedMarkdownText = ({
   streamingConfig,
   spoilerOverlay = 'particles',
   contextMenuItems,
+  imageRequestHeaders,
   selectionMenuConfig,
   accessibilityLabels,
   selectionColor,
@@ -170,6 +171,16 @@ export const EnrichedMarkdownText = ({
         ?.filter((item) => item.visible !== false)
         .map((item) => ({ text: item.text, icon: item.icon })),
     [contextMenuItems]
+  );
+
+  const nativeImageRequestHeaders = useMemo(
+    () =>
+      imageRequestHeaders
+        ? Object.entries(imageRequestHeaders)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+        : undefined,
+    [imageRequestHeaders]
   );
 
   const handleContextMenuItemPress = useCallback(
@@ -280,6 +291,7 @@ export const EnrichedMarkdownText = ({
     spoilerOverlay,
     style: containerStyle,
     contextMenuItems: nativeContextMenuItems,
+    imageRequestHeaders: nativeImageRequestHeaders,
     selectionMenuConfig: normalizedSelectionMenuConfig,
     accessibilityLabels: resolvedAccessibilityLabels,
     onContextMenuItemPress: handleContextMenuItemPress,

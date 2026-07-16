@@ -227,6 +227,11 @@ export interface ContextMenuItemConfig {
   icon?: string;
 }
 
+export interface ImageRequestHeaderInternal {
+  name: string;
+  value: string;
+}
+
 export interface SelectionMenuConfig {
   copyAsMarkdown: boolean;
   copyImageUrl: boolean;
@@ -425,6 +430,10 @@ export interface NativeProps extends ViewProps {
    * Custom items to show in the text selection context menu.
    */
   contextMenuItems?: ReadonlyArray<Readonly<ContextMenuItemConfig>>;
+  /**
+   * HTTP headers attached to remote image requests, as name/value pairs.
+   */
+  imageRequestHeaders?: ReadonlyArray<Readonly<ImageRequestHeaderInternal>>;
   /**
    * Built-in items to show in the text selection context menu.
    */

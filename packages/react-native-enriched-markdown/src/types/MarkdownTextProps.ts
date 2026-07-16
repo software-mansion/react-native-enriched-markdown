@@ -255,6 +255,18 @@ export interface EnrichedMarkdownTextProps extends Omit<ViewProps, 'style'> {
    */
   contextMenuItems?: ContextMenuItem[];
   /**
+   * HTTP headers to attach to remote image requests, e.g. a `Referer`
+   * required by CDN hotlink protection or an `Authorization` token.
+   *
+   * Headers participate in image cache identity, so the same URL requested
+   * with different headers is fetched and cached separately.
+   *
+   * Not supported on web — browsers don't allow custom headers on `<img>`
+   * requests.
+   * @platform ios, android
+   */
+  imageRequestHeaders?: Record<string, string>;
+  /**
    * Controls the built-in items added to the native text selection menu and
    * lets you localize their labels. Custom app-provided actions are controlled
    * separately with `contextMenuItems`.
