@@ -248,6 +248,29 @@ static char kENRMSegmentFadeAnimatorKey;
   if (_segmentViews.count == 0)
     return CGSizeZero;
 
+  if (applyFrames) {
+    CGFloat overflow = MAX(_config.tableHorizontalOverflow, 0);
+    BOOL needsOverflow = NO;
+    if (overflow > 0) {
+      for (RCTUIView *seg in _segmentViews) {
+        if ([seg isKindOfClass:[TableContainerView class]]) {
+          needsOverflow = YES;
+          break;
+        }
+      }
+    }
+#if TARGET_OS_OSX
+    BOOL isClipping = self.layer.masksToBounds;
+    if (isClipping && needsOverflow)
+      self.layer.masksToBounds = NO;
+    else if (!isClipping && !needsOverflow)
+      self.layer.masksToBounds = YES;
+#else
+    if (self.clipsToBounds != !needsOverflow)
+      self.clipsToBounds = !needsOverflow;
+#endif
+  }
+
   __block CGFloat yOffset = 0.0;
   __block CGFloat maxContentWidth = 0.0;
   const NSUInteger lastIndex = _segmentViews.count - 1;

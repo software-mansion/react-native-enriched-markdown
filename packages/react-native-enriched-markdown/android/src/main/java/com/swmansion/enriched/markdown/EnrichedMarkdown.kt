@@ -32,6 +32,7 @@ import com.swmansion.enriched.markdown.views.TableContainerView
 import java.util.EnumSet
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.ceil
 import kotlin.math.max
 
 class EnrichedMarkdown
@@ -571,6 +572,15 @@ class EnrichedMarkdown
       val containerWidth = width
       if (containerWidth <= 0) return
 
+      val needsOverflow =
+        segmentViews.any { view ->
+          view is TableContainerView &&
+            ceil(view.tableStyle.horizontalOverflow.toDouble()).toInt() > 0
+        }
+      if (clipChildren == needsOverflow) {
+        clipChildren = !needsOverflow
+      }
+
       var currentY = 0
       val lastIndex = segmentViews.lastIndex
       val widthSpec = MeasureSpec.makeMeasureSpec(containerWidth, MeasureSpec.EXACTLY)
@@ -584,13 +594,12 @@ class EnrichedMarkdown
 
         val tableOverflow =
           if (view is TableContainerView) {
-            max(view.tableStyle.horizontalOverflow.toInt(), 0)
+            max(ceil(view.tableStyle.horizontalOverflow.toDouble()).toInt(), 0)
           } else {
             0
           }
 
         if (tableOverflow > 0) {
-          if (clipChildren) clipChildren = false
           val extendedWidth = containerWidth + tableOverflow * 2
           val extWidthSpec = MeasureSpec.makeMeasureSpec(extendedWidth, MeasureSpec.EXACTLY)
           view.measure(extWidthSpec, heightSpec)

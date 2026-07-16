@@ -559,7 +559,7 @@
   CGFloat originalWidth = containerWidth - overflow * 2;
   BOOL needsEdgeToEdge = (overflow > 0 && _totalTableWidth > originalWidth);
 
-  if (needsEdgeToEdge) {
+  if (needsEdgeToEdge && _totalTableWidth > containerWidth) {
     UIEdgeInsets inset = UIEdgeInsetsMake(0, overflow, 0, overflow);
     if (!UIEdgeInsetsEqualToEdgeInsets(_scrollView.contentInset, inset)) {
       _scrollView.contentInset = inset;
@@ -570,11 +570,13 @@
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
   } else if (overflow > 0) {
     _scrollView.contentInset = UIEdgeInsetsZero;
+    _scrollView.contentOffset = CGPointZero;
     _scrollView.contentSize = CGSizeMake(containerWidth, _totalTableHeight);
     _scrollView.scrollEnabled = NO;
     _gridContainer.frame = CGRectMake(overflow, 0, _totalTableWidth, _totalTableHeight);
   } else {
     _scrollView.contentInset = UIEdgeInsetsZero;
+    _scrollView.contentOffset = CGPointZero;
     _scrollView.contentSize = CGSizeMake(MAX(_totalTableWidth, containerWidth), _totalTableHeight);
     _scrollView.scrollEnabled = (_totalTableWidth > containerWidth);
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
@@ -582,24 +584,14 @@
 #else
   CGFloat overflow = MAX(self.config.tableHorizontalOverflow, 0);
   CGFloat containerWidth = self.bounds.size.width;
-  CGFloat originalWidth = containerWidth - overflow * 2;
-  BOOL needsEdgeToEdge = (overflow > 0 && _totalTableWidth > originalWidth);
-
-  if (_totalTableWidth > 0 && _totalTableHeight > 0) {
-    _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
-  }
+  BOOL needsEdgeToEdge = (overflow > 0 && _totalTableWidth > containerWidth);
 
   if (needsEdgeToEdge) {
-    NSEdgeInsets inset = NSEdgeInsetsMake(0, overflow, 0, overflow);
-    NSScrollView *scrollView = (NSScrollView *)_scrollView;
-    scrollView.automaticallyAdjustsContentInsets = NO;
-    scrollView.contentInsets = inset;
-    [scrollView.contentView scrollToPoint:NSMakePoint(-overflow, 0)];
+    _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
   } else if (overflow > 0) {
-    NSScrollView *scrollView = (NSScrollView *)_scrollView;
-    scrollView.automaticallyAdjustsContentInsets = NO;
-    scrollView.contentInsets = NSEdgeInsetsZero;
     _gridContainer.frame = CGRectMake(overflow, 0, _totalTableWidth, _totalTableHeight);
+  } else if (_totalTableWidth > 0 && _totalTableHeight > 0) {
+    _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
   }
 #endif
 }

@@ -328,9 +328,8 @@ class TableContainerView(
     bottom: Int,
   ) {
     val viewWidth = right - left
-    val overflow = max(tableStyle.horizontalOverflow.toInt(), 0)
-    val originalWidth = viewWidth - overflow * 2
-    val needsEdgeToEdge = overflow > 0 && totalTableWidth > originalWidth
+    val overflow = max(ceil(tableStyle.horizontalOverflow.toDouble()).toInt(), 0)
+    val needsEdgeToEdge = overflow > 0 && totalTableWidth > viewWidth
 
     if (needsEdgeToEdge) {
       scrollView.setPadding(overflow, 0, overflow, 0)
@@ -348,7 +347,7 @@ class TableContainerView(
     scrollView.layout(0, 0, viewWidth, bottom - top)
 
     if (isRtl) {
-      val effectiveWidth = if (needsEdgeToEdge) originalWidth.toFloat() else viewWidth.toFloat()
+      val effectiveWidth = if (needsEdgeToEdge) (viewWidth - overflow * 2).toFloat() else viewWidth.toFloat()
       if (totalTableWidth > effectiveWidth) {
         scrollView.scrollTo((totalTableWidth - effectiveWidth).toInt(), 0)
       }
