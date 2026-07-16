@@ -10,6 +10,7 @@
 #import "ENRMTextViewSetup.h"
 #import "ENRMUIKit.h"
 #import "EditMenuUtils.h"
+#import "ImageRequestHeaderUtils.h"
 
 #import "ENRMFeatureFlags.h"
 
@@ -746,6 +747,15 @@ static char kENRMSegmentFadeAnimatorKey;
   if (applyMarkdownStyleToConfig(_config, newViewProps.markdownStyle, oldViewProps.markdownStyle)) {
     [ENRMImageAttachment clearAttachmentRegistry];
     _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
+    if (!markdownChanged) {
+      _dirtyFlags |= ENRMDirtyRecreateSegments;
+    }
+  }
+
+  if (ENRMImageRequestHeadersChanged(oldViewProps.imageRequestHeaders, newViewProps.imageRequestHeaders)) {
+    [_config setImageRequestHeaders:ENRMImageRequestHeadersFromProps(newViewProps.imageRequestHeaders)];
+    [ENRMImageAttachment clearAttachmentRegistry];
+    _dirtyFlags |= ENRMDirtyRender;
     if (!markdownChanged) {
       _dirtyFlags |= ENRMDirtyRecreateSegments;
     }

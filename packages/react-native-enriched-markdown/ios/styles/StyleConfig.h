@@ -214,6 +214,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setImageMarginTop:(CGFloat)newValue;
 - (CGFloat)imageMarginBottom;
 - (void)setImageMarginBottom:(CGFloat)newValue;
+- (nullable NSDictionary<NSString *, NSString *> *)imageRequestHeaders;
+- (void)setImageRequestHeaders:(nullable NSDictionary<NSString *, NSString *> *)newValue;
 // Inline image properties
 - (CGFloat)inlineImageSize;
 - (void)setInlineImageSize:(CGFloat)newValue;

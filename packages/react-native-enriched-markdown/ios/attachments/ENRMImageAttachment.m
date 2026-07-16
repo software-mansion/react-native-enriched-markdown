@@ -22,6 +22,8 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
 @interface ENRMImageAttachment ()
 
 @property (nonatomic, copy) NSString *imageURL;
+@property (nonatomic, copy, nullable) NSDictionary<NSString *, NSString *> *requestHeaders;
+@property (nonatomic, copy) NSString *cacheKey;
 @property (nonatomic, assign) BOOL isInline;
 @property (nonatomic, assign) CGFloat cachedHeight;
 @property (nonatomic, assign) CGFloat cachedBorderRadius;
@@ -66,7 +68,8 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
 
 + (instancetype)attachmentForURL:(NSString *)imageURL config:(StyleConfig *)config isInline:(BOOL)isInline
 {
-  NSString *key = [NSString stringWithFormat:@"%@_%d", imageURL, isInline];
+  NSString *key =
+      [NSString stringWithFormat:@"%@_%d", ENRMImageCacheKey(imageURL, [config imageRequestHeaders]), isInline];
   ENRMImageAttachment *existing = [[self attachmentRegistry] objectForKey:key];
   if (existing && existing.loadedImage) {
     return existing;
@@ -86,6 +89,8 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   self = [super init];
   if (self) {
     _imageURL = imageURL;
+    _requestHeaders = [[config imageRequestHeaders] copy];
+    _cacheKey = ENRMImageCacheKey(imageURL, _requestHeaders);
     _isInline = isInline;
 
     _cachedHeight = isInline ? [config inlineImageSize] : [config imageHeight];
@@ -162,7 +167,7 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   if (targetWidth <= 0)
     return;
 
-  NSString *processedKey = CACHE_KEY_PROCESSED(self.imageURL, targetWidth, self.cachedHeight, self.cachedBorderRadius);
+  NSString *processedKey = CACHE_KEY_PROCESSED(self.cacheKey, targetWidth, self.cachedHeight, self.cachedBorderRadius);
 
   if ([processedKey isEqualToString:self.lastProcessedKey])
     return;
@@ -251,6 +256,7 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
 
   __weak typeof(self) weakSelf = self;
   [[ENRMImageDownloader shared] downloadURL:self.imageURL
+                                    headers:self.requestHeaders
                                  completion:^(RCTUIImage *image) { [weakSelf handleLoadedImage:image]; }];
 }
 
