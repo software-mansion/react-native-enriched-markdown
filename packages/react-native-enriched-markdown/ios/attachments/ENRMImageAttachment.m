@@ -147,6 +147,12 @@ static NSMapTable<NSString *, ENRMImageAttachment *> *_attachmentRegistry;
   if (!image)
     return;
 
+  // The downloader completes synchronously on cache hits, which can happen on the render queue
+  if (!NSThread.isMainThread) {
+    dispatch_async(dispatch_get_main_queue(), ^{ [self handleLoadedImage:image]; });
+    return;
+  }
+
   self.originalImage = image;
   // UIKit reads the plain image property for save/drag/copy — it must hold the original
   self.image = image;
