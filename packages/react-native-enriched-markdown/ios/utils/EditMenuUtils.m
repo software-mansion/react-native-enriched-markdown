@@ -49,11 +49,32 @@ static UIAction *_Nullable createCopyImageURLAction(NSArray<NSString *> *imageUR
 
 static UIMenu *createEnhancedStandardEditMenu(UIMenu *originalMenu, UIAction *copyAction)
 {
+  // Preserve the system menu's children, swapping only the standard Copy command
+  // for our enhanced version. Dropping the other items would remove Select All,
+  // which on iOS 16+ is the only way to start a selection from the long-press
+  // edit menu of a non-editable text view.
+  NSMutableArray<UIMenuElement *> *children = [NSMutableArray arrayWithCapacity:originalMenu.children.count];
+  BOOL replacedCopy = NO;
+
+  for (UIMenuElement *element in originalMenu.children) {
+    if (!replacedCopy && [element isKindOfClass:[UICommand class]] &&
+        ((UICommand *)element).action == @selector(copy:)) {
+      [children addObject:copyAction];
+      replacedCopy = YES;
+      continue;
+    }
+    [children addObject:element];
+  }
+
+  if (!replacedCopy) {
+    [children insertObject:copyAction atIndex:0];
+  }
+
   return [UIMenu menuWithTitle:originalMenu.title
                          image:originalMenu.image
                     identifier:originalMenu.identifier
                        options:originalMenu.options
-                      children:@[ copyAction ]];
+                      children:children];
 }
 
 static void addOptionalAction(NSMutableArray<UIMenuElement *> *array, UIAction *_Nullable action)
