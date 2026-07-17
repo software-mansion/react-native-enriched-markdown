@@ -13,6 +13,7 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View.OnFocusChangeListener
+import android.view.ViewConfiguration
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
@@ -43,6 +44,8 @@ import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
 import com.swmansion.enriched.markdown.input.model.StyleType
 import com.swmansion.enriched.markdown.input.toolbar.InputContextMenu
 import com.swmansion.enriched.markdown.utils.input.AutoCapitalizeUtils
+import com.swmansion.enriched.markdown.utils.text.view.charOffsetAt
+import kotlin.math.abs
 import kotlin.math.ceil
 
 private fun Char.isLineBreak(): Boolean = this == '\n' || this == '\r' || this == '\u0085' || this == '\u2028' || this == '\u2029'
@@ -72,6 +75,7 @@ class EnrichedMarkdownTextInputView(
   private var preEditSelectionEnd = 0
 
   var emitMarkdown = false
+  var isOnLinkPressSet = false
   var autoFocusRequested = false
   var stateWrapper: StateWrapper? = null
   val layoutManager = InputLayoutManager(this)
@@ -89,6 +93,9 @@ class EnrichedMarkdownTextInputView(
   private var textWatcher: MarkdownTextWatcher? = null
   private var inputMethodManager: InputMethodManager? = null
   private var detectScrollMovement = false
+  private var isLinkTapCandidate = false
+  private var linkTapDownX = 0f
+  private var linkTapDownY = 0f
   var scrollEnabled: Boolean = true
 
   private var mentionIndicators: LinkedHashSet<String> = linkedSetOf()
@@ -188,9 +195,18 @@ class EnrichedMarkdownTextInputView(
       MotionEvent.ACTION_DOWN -> {
         detectScrollMovement = true
         parent?.requestDisallowInterceptTouchEvent(true)
+        isLinkTapCandidate = isOnLinkPressSet && !isFocused
+        linkTapDownX = ev.x
+        linkTapDownY = ev.y
       }
 
       MotionEvent.ACTION_MOVE -> {
+        if (isLinkTapCandidate) {
+          val slop = ViewConfiguration.get(context).scaledTouchSlop
+          if (abs(ev.x - linkTapDownX) > slop || abs(ev.y - linkTapDownY) > slop) {
+            isLinkTapCandidate = false
+          }
+        }
         if (detectScrollMovement) {
           if (!canScrollVertically(-1) && !canScrollVertically(1) &&
             !canScrollHorizontally(-1) && !canScrollHorizontally(1)
@@ -200,8 +216,38 @@ class EnrichedMarkdownTextInputView(
           detectScrollMovement = false
         }
       }
+
+      MotionEvent.ACTION_UP -> {
+        if (isLinkTapCandidate) {
+          isLinkTapCandidate = false
+          val isTap = ev.eventTime - ev.downTime < ViewConfiguration.getLongPressTimeout()
+          val url = if (isTap && !isFocused) linkUrlAtTouch(ev) else null
+          if (url != null) {
+            // Super never sees this UP; a CANCEL clears the pressed state and the
+            // click/long-press callbacks scheduled on ACTION_DOWN, so the input
+            // neither focuses nor shows the keyboard.
+            val cancel = MotionEvent.obtain(ev)
+            cancel.action = MotionEvent.ACTION_CANCEL
+            super.onTouchEvent(cancel)
+            cancel.recycle()
+            eventEmitter.emitLinkPress(url)
+            return true
+          }
+        }
+      }
+
+      MotionEvent.ACTION_CANCEL -> {
+        isLinkTapCandidate = false
+      }
     }
     return super.onTouchEvent(ev)
+  }
+
+  private fun linkUrlAtTouch(event: MotionEvent): String? {
+    val offset = charOffsetAt(this, event) ?: return null
+    return allFormattingRangesForSerialization()
+      .firstOrNull { it.type == StyleType.LINK && offset >= it.start && offset < it.end }
+      ?.url
   }
 
   override fun performClick(): Boolean = super.performClick()
