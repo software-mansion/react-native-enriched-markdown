@@ -32,6 +32,7 @@ export type {
   InputSelectionMenuConfig,
   FormatMenuConfig,
   OnLinkDetected,
+  OnLinkPressEvent,
   OnStartMentionEvent,
   OnChangeMentionEvent,
   OnEndMentionEvent,
