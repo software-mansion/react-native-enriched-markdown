@@ -208,6 +208,7 @@
 #if !TARGET_OS_OSX
     _scrollView.frame = self.bounds;
     _scrollView.contentSize = self.bounds.size;
+    _scrollView.contentOffset = CGPointZero;
     _scrollView.scrollEnabled = NO;
 #endif
     _mathView.frame = CGRectMake(padding, padding, MAX(self.bounds.size.width - padding * 2, 1),

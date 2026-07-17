@@ -1,6 +1,9 @@
 #import "ENRMMathFallback.h"
 
-NSAttributedString *ENRMMathFallbackString(NSString *latex, NSString *delimiter, CGFloat fontSize, RCTUIColor *color)
+NS_ASSUME_NONNULL_BEGIN
+
+NSAttributedString *ENRMMathFallbackString(NSString *_Nullable latex, NSString *delimiter, CGFloat fontSize,
+                                           RCTUIColor *_Nullable color)
 {
   CGFloat size = fontSize > 0 ? fontSize : kENRMMathFallbackDefaultFontSize;
   UIFont *font = [UIFont systemFontOfSize:size];
@@ -11,3 +14,5 @@ NSAttributedString *ENRMMathFallbackString(NSString *latex, NSString *delimiter,
                                            NSForegroundColorAttributeName : color ?: [RCTUIColor blackColor],
                                          }];
 }
+
+NS_ASSUME_NONNULL_END
