@@ -121,6 +121,7 @@ interface TableStyleInternal extends BaseBlockStyleInternal {
   borderRadius: CodegenTypes.Float;
   cellPaddingHorizontal: CodegenTypes.Float;
   cellPaddingVertical: CodegenTypes.Float;
+  horizontalOverflow: CodegenTypes.Float;
 }
 
 interface TaskListStyleInternal {

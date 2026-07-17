@@ -162,6 +162,7 @@ export type TableStyleControls = {
   borderRadius: number;
   cellPaddingHorizontal: number;
   cellPaddingVertical: number;
+  horizontalOverflow: number;
 };
 
 export const tableStyledDefaults: TableStyleControls = {
@@ -182,6 +183,7 @@ export const tableStyledDefaults: TableStyleControls = {
   borderRadius: 8,
   cellPaddingHorizontal: 12,
   cellPaddingVertical: 8,
+  horizontalOverflow: 0,
 };
 
 export type TaskListStyleControls = {

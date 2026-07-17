@@ -120,6 +120,7 @@ interface TableStyleInternal extends BaseBlockStyleInternal {
   borderRadius: number;
   cellPaddingHorizontal: number;
   cellPaddingVertical: number;
+  horizontalOverflow: number;
 }
 
 interface TaskListStyleInternal {

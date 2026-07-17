@@ -991,6 +991,11 @@ BOOL applyMarkdownStyleToConfig(StyleConfig *config, const MarkdownStyle &newSty
     changed = YES;
   }
 
+  if (newStyle.table.horizontalOverflow != oldStyle.table.horizontalOverflow) {
+    [config setTableHorizontalOverflow:newStyle.table.horizontalOverflow];
+    changed = YES;
+  }
+
   // ── Task List ───────────────────────────────────────────────────────────────
 
   if (newStyle.taskList.checkedColor != oldStyle.taskList.checkedColor) {

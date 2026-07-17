@@ -248,6 +248,29 @@ static char kENRMSegmentFadeAnimatorKey;
   if (_segmentViews.count == 0)
     return CGSizeZero;
 
+  if (applyFrames) {
+    CGFloat overhang = MAX(_config.tableHorizontalOverflow, 0);
+    BOOL needsOverhang = NO;
+    if (overhang > 0) {
+      for (RCTUIView *seg in _segmentViews) {
+        if ([seg isKindOfClass:[TableContainerView class]]) {
+          needsOverhang = YES;
+          break;
+        }
+      }
+    }
+#if TARGET_OS_OSX
+    BOOL isClipping = self.layer.masksToBounds;
+    if (isClipping && needsOverhang)
+      self.layer.masksToBounds = NO;
+    else if (!isClipping && !needsOverhang)
+      self.layer.masksToBounds = YES;
+#else
+    if (self.clipsToBounds != !needsOverhang)
+      self.clipsToBounds = !needsOverhang;
+#endif
+  }
+
   __block CGFloat yOffset = 0.0;
   __block CGFloat maxContentWidth = 0.0;
   const NSUInteger lastIndex = _segmentViews.count - 1;
@@ -257,6 +280,7 @@ static char kENRMSegmentFadeAnimatorKey;
     const BOOL shouldAddBottomMargin = (!isLast || _allowTrailingMargin);
 
     CGFloat segmentHeight = 0;
+    const BOOL isTable = [segment isKindOfClass:[TableContainerView class]];
 
     if ([segment isKindOfClass:[EnrichedMarkdownInternalText class]]) {
       EnrichedMarkdownInternalText *textView = (EnrichedMarkdownInternalText *)segment;
@@ -265,7 +289,7 @@ static char kENRMSegmentFadeAnimatorKey;
       segmentHeight = textSize.height;
       maxContentWidth = MAX(maxContentWidth, textSize.width);
 
-    } else if ([segment isKindOfClass:[TableContainerView class]]) {
+    } else if (isTable) {
       yOffset += _config.tableMarginTop;
       segmentHeight = [(TableContainerView *)segment measureHeight:width];
       maxContentWidth = width;
@@ -279,7 +303,16 @@ static char kENRMSegmentFadeAnimatorKey;
 #endif
 
     if (applyFrames) {
-      CGRect segmentFrame = CGRectMake(0, yOffset, width, segmentHeight);
+      CGFloat segmentX = 0;
+      CGFloat segmentWidth = width;
+      if (isTable) {
+        CGFloat overhang = MAX(_config.tableHorizontalOverflow, 0);
+        if (overhang > 0) {
+          segmentX = -overhang;
+          segmentWidth = width + overhang * 2;
+        }
+      }
+      CGRect segmentFrame = CGRectMake(segmentX, yOffset, segmentWidth, segmentHeight);
       segment.frame = segmentFrame;
 #if TARGET_OS_OSX
       if ([segment isKindOfClass:[EnrichedMarkdownInternalText class]]) {

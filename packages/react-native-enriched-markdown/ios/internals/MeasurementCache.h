@@ -134,7 +134,7 @@ template <typename StyleStruct> inline size_t computeStyleFingerprint(const Styl
   // Complex Components
   hashTextLayout(s.table);
   hashFields(s.table.headerFontFamily, s.table.cellPaddingHorizontal, s.table.cellPaddingVertical, s.table.borderWidth,
-             s.table.borderRadius);
+             s.table.borderRadius, s.table.horizontalOverflow);
   hashFields(s.math.fontSize, s.math.padding, s.math.marginTop, s.math.marginBottom, s.math.textAlign);
   hashFields(s.taskList.checkboxSize, s.taskList.checkboxBorderRadius);
 
