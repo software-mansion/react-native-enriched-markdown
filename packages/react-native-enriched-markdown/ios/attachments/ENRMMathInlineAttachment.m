@@ -10,6 +10,14 @@
 
 @implementation ENRMMathInlineAttachment
 
+- (CGFloat)boxHeight
+{
+#if !TARGET_OS_OSX
+  [self prepareIfNeeded];
+#endif
+  return _cachedSize.height;
+}
+
 #if !TARGET_OS_OSX
 
 - (void)prepareIfNeeded

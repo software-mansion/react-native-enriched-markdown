@@ -1,4 +1,5 @@
 #import "ListItemRenderer.h"
+#import "BlockquoteBorder.h"
 #import "ENRMUIKit.h"
 #import "LastElementUtils.h"
 #import "MarkdownASTNode.h"
@@ -51,8 +52,11 @@ NSString *const TaskIndexAttribute = @"TaskIndex";
                                   : (context.listType == ListTypeOrdered) ? [_config effectiveListMarginLeftForNumber]
                                                                           : [_config effectiveListMarginLeftForBullet];
 
-  const CGFloat totalIndent =
-      baseMarkerWidth + [_config effectiveListGapWidth] + (nestingLevel * [_config listStyleMarginLeft]);
+  const CGFloat blockquoteIndent =
+      blockquoteIndentForDepth(context.blockquoteDepth, [_config blockquoteBorderWidth] + [_config blockquoteGapWidth]);
+
+  const CGFloat totalIndent = blockquoteIndent + baseMarkerWidth + [_config effectiveListGapWidth] +
+                              (nestingLevel * [_config listStyleMarginLeft]);
 
   const NSUInteger startLocation = output.length;
 

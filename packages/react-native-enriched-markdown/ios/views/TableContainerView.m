@@ -554,14 +554,35 @@
   [super layoutSubviews];
   _scrollView.frame = self.bounds;
 #if !TARGET_OS_OSX
-  _scrollView.contentSize = CGSizeMake(MAX(_totalTableWidth, self.bounds.size.width), _totalTableHeight);
-  _scrollView.scrollEnabled = (_totalTableWidth > self.bounds.size.width);
-  _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
-#else
-  // For NSScrollView+documentView, the scrollable content area is determined by
-  // the documentView's frame. No contentSize property to set.
-  if (_totalTableWidth > 0 && _totalTableHeight > 0) {
+  CGFloat overhang = MAX(self.config.tableHorizontalOverflow, 0);
+  CGFloat containerWidth = self.bounds.size.width;
+  BOOL tableOverflows = (overhang > 0 && _totalTableWidth > containerWidth);
+
+  if (tableOverflows) {
+    UIEdgeInsets inset = UIEdgeInsetsMake(0, overhang, 0, overhang);
+    if (!UIEdgeInsetsEqualToEdgeInsets(_scrollView.contentInset, inset)) {
+      _scrollView.contentInset = inset;
+      _scrollView.contentOffset = CGPointMake(-overhang, 0);
+    }
+    _scrollView.contentSize = CGSizeMake(_totalTableWidth, _totalTableHeight);
+    _scrollView.scrollEnabled = YES;
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
+  } else {
+    _scrollView.contentInset = UIEdgeInsetsZero;
+    _scrollView.contentOffset = CGPointZero;
+    _scrollView.contentSize = CGSizeMake(MAX(_totalTableWidth, containerWidth), _totalTableHeight);
+    _scrollView.scrollEnabled = (_totalTableWidth > containerWidth);
+    _gridContainer.frame = CGRectMake(overhang, 0, _totalTableWidth, _totalTableHeight);
+  }
+#else
+  CGFloat overhang = MAX(self.config.tableHorizontalOverflow, 0);
+  CGFloat containerWidth = self.bounds.size.width;
+  BOOL tableOverflows = (overhang > 0 && _totalTableWidth > containerWidth);
+
+  if (tableOverflows) {
+    _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
+  } else if (_totalTableWidth > 0 && _totalTableHeight > 0) {
+    _gridContainer.frame = CGRectMake(overhang, 0, _totalTableWidth, _totalTableHeight);
   }
 #endif
 }

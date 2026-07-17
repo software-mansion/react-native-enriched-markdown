@@ -92,6 +92,15 @@ fun parseMd4cFlags(flags: ReadableMap?): Md4cFlags =
 fun parseContextMenuItems(value: ReadableArray?): List<String> =
   (0 until (value?.size() ?: 0)).mapNotNull { value?.getMap(it)?.getString("text") }
 
+fun parseImageRequestHeaders(value: ReadableArray?): Map<String, String> =
+  (0 until (value?.size() ?: 0))
+    .mapNotNull { index ->
+      val header = value?.getMap(index) ?: return@mapNotNull null
+      val name = header.getString("name") ?: return@mapNotNull null
+      val headerValue = header.getString("value") ?: return@mapNotNull null
+      name to headerValue
+    }.toMap()
+
 fun parseSelectionMenuConfig(value: ReadableMap?): SelectionMenuConfig {
   if (value == null) return SelectionMenuConfig()
   return SelectionMenuConfig(

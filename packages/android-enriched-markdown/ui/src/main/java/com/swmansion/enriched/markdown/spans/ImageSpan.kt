@@ -31,6 +31,7 @@ class ImageSpan(
   styleConfig: StyleConfig,
   val isInline: Boolean = false,
   val altText: String = "",
+  private val requestHeaders: Map<String, String> = emptyMap(),
 ) : AndroidImageSpan(
     Color.TRANSPARENT.toDrawable(),
     imageUrl,
@@ -40,6 +41,7 @@ class ImageSpan(
   private var loadedDrawable: Drawable? = null
   private val height: Int = if (isInline) styleConfig.inlineImageStyle.size.toInt() else styleConfig.imageStyle.height.toInt()
   private val borderRadiusPx: Int = (styleConfig.imageStyle.borderRadius * context.resources.displayMetrics.density).toInt()
+  private val requestKey: String = ImageCache.requestKey(imageUrl, requestHeaders)
 
   private var cachedWidth: Int = 0
   private var viewRef: WeakReference<TextView>? = null
@@ -51,7 +53,7 @@ class ImageSpan(
 
   private fun loadImage() {
     if (imageUrl.startsWith("http")) {
-      ImageDownloader.download(context, imageUrl) { bitmap ->
+      ImageDownloader.download(context, imageUrl, requestHeaders) { bitmap ->
         if (bitmap != null) {
           sourceDrawable = bitmap.toDrawable(context.resources)
           wrapAndAssignDrawable()
@@ -83,7 +85,7 @@ class ImageSpan(
         available.coerceAtLeast(0)
       }
 
-    val cachedBitmap = ImageCache.getProcessed(imageUrl, targetWidth, height, borderRadiusPx)
+    val cachedBitmap = ImageCache.getProcessed(requestKey, targetWidth, height, borderRadiusPx)
     if (cachedBitmap != null) {
       loadedDrawable =
         cachedBitmap.toDrawable(context.resources).apply {
@@ -97,7 +99,7 @@ class ImageSpan(
           targetHeight = height,
           borderRadius = borderRadiusPx,
           isBlockImage = !isInline,
-          cacheKey = CacheKey(imageUrl, targetWidth, height, borderRadiusPx),
+          cacheKey = CacheKey(requestKey, targetWidth, height, borderRadiusPx),
         )
     }
     requestReflow()

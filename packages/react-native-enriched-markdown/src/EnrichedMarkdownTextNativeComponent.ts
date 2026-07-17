@@ -125,6 +125,7 @@ interface TableStyleInternal extends BaseBlockStyleInternal {
   borderRadius: CodegenTypes.Float;
   cellPaddingHorizontal: CodegenTypes.Float;
   cellPaddingVertical: CodegenTypes.Float;
+  horizontalOverflow: CodegenTypes.Float;
 }
 
 interface TaskListStyleInternal {
@@ -229,6 +230,11 @@ export interface TaskListItemPressEvent {
 export interface ContextMenuItemConfig {
   text: string;
   icon?: string;
+}
+
+export interface ImageRequestHeaderInternal {
+  name: string;
+  value: string;
 }
 
 export interface SelectionMenuConfig {
@@ -429,6 +435,10 @@ export interface NativeProps extends ViewProps {
    * Custom items to show in the text selection context menu.
    */
   contextMenuItems?: ReadonlyArray<Readonly<ContextMenuItemConfig>>;
+  /**
+   * HTTP headers attached to remote image requests, as name/value pairs.
+   */
+  imageRequestHeaders?: ReadonlyArray<Readonly<ImageRequestHeaderInternal>>;
   /**
    * Built-in items to show in the text selection context menu.
    */

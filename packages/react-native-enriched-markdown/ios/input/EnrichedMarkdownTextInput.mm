@@ -226,10 +226,42 @@ using namespace facebook::react;
   _placeholderLabel = ENRMCreatePlaceholderLabel(_textView, _formatterStyle.baseFont);
 #if !TARGET_OS_OSX
   _placeholderLabel.adjustsFontForContentSizeCategory = YES;
+  _placeholderLabel.accessibilityElementsHidden = YES;
+  _placeholderLabel.isAccessibilityElement = NO;
 #endif
 
   [self resetBaseTypingAttributes];
 }
+
+#if !TARGET_OS_OSX
+#pragma mark - Accessibility
+
+// The custom TextKit 1 stack leaves the inner UITextView invisible to VoiceOver, so
+// the host vends the content itself as one readable element.
+- (BOOL)isAccessibilityElement
+{
+  return YES;
+}
+
+- (NSString *)accessibilityValue
+{
+  NSString *text = ENRMGetPlainText(_textView);
+  if (text.length > 0) {
+    return text;
+  }
+  if (_placeholderLabel.text.length > 0) {
+    return _placeholderLabel.text;
+  }
+  return [super accessibilityValue];
+}
+
+- (BOOL)accessibilityActivate
+{
+  ENRMFocusTextView(_textView);
+  [super accessibilityActivate];
+  return YES;
+}
+#endif
 
 #pragma mark - State
 

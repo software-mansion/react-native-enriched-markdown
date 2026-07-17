@@ -15,6 +15,12 @@ inline folly::dynamic toDynamic(const EnrichedMarkdownTextProps &props) {
   serializedProps["allowTrailingMargin"] = props.allowTrailingMargin;
   serializedProps["streamingAnimation"] = props.streamingAnimation;
 
+  folly::dynamic imageRequestHeaders = folly::dynamic::array();
+  for (const auto &header : props.imageRequestHeaders) {
+    imageRequestHeaders.push_back(toDynamic(header));
+  }
+  serializedProps["imageRequestHeaders"] = std::move(imageRequestHeaders);
+
   return serializedProps;
 }
 
@@ -25,6 +31,12 @@ inline folly::dynamic toDynamic(const EnrichedMarkdownProps &props) {
   serializedProps["md4cFlags"] = toDynamic(props.md4cFlags);
   serializedProps["allowTrailingMargin"] = props.allowTrailingMargin;
   serializedProps["streamingAnimation"] = props.streamingAnimation;
+
+  folly::dynamic imageRequestHeaders = folly::dynamic::array();
+  for (const auto &header : props.imageRequestHeaders) {
+    imageRequestHeaders.push_back(toDynamic(header));
+  }
+  serializedProps["imageRequestHeaders"] = std::move(imageRequestHeaders);
 
   return serializedProps;
 }

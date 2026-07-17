@@ -61,6 +61,18 @@ Pod::Spec.new do |s|
     'DEFINES_MODULE' => 'YES'
   }
 
+  if enable_math
+    # Xcode materializes the RaTeX binary target's module.modulemap into BOTH
+    # the platform-wide products dir and this pod's own build dir, and both are
+    # on this target's search paths. Xcode 26's default explicit-modules
+    # dependency scanner hard-errors on the duplicate ("redefinition of module
+    # 'RaTeXFFI'"); stripping the modulemap from a script phase races the
+    # scanner (loses on Xcode 26.3, happens to win on 26.6). Implicit modules
+    # tolerate the duplicate definition, so opt this target out of explicit
+    # modules instead of patching build products mid-build.
+    pod_xcconfig['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+  end
+
   # Detect Apple Silicon on the host running `pod install`. `sysctl hw.optional.arm64`
   # reports the real hardware even under a Rosetta-translated Ruby, unlike `uname -m`.
   apple_silicon = `sysctl -n hw.optional.arm64 2>/dev/null`.strip == '1'
@@ -81,22 +93,13 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig = pod_xcconfig
 
   if enable_math
-    # React Native's spm_dependency generates a module.modulemap at
-    # ${BUILT_PRODUCTS_DIR}/include/ that re-declares RaTeXFFI, but the RaTeX
-    # XCFramework already ships its own definition. Strip the duplicate to
-    # prevent "redefinition of module 'RaTeXFFI'" during compilation.
+    # NOTE: the RaTeXFFI duplicate-modulemap problem is handled via
+    # SWIFT_ENABLE_EXPLICIT_MODULES=NO in pod_xcconfig above. The previous
+    # approach (a before_compile script sed-stripping the duplicate out of the
+    # platform products dir) mutated a build product mid-build and raced the
+    # explicit-modules dependency scanner: on Xcode 26.3 the scanner reads the
+    # modulemap before the script phase's edit and the build fails anyway.
     s.script_phases = [
-      {
-        name: 'Fix RaTeXFFI Module Redefinition',
-        script: <<~'SCRIPT',
-          # The shared module.modulemap lives in the platform build-products dir,
-          # one level above the per-target BUILT_PRODUCTS_DIR that CocoaPods sets.
-          MODULEMAP="${BUILT_PRODUCTS_DIR}/../include/module.modulemap"
-          [ -f "$MODULEMAP" ] || exit 0
-          sed -i '' -E '/^(framework )?module RaTeXFFI /,/^\}/d' "$MODULEMAP"
-        SCRIPT
-        execution_position: :before_compile
-      },
       {
         name: 'Dedupe RaTeX XCFramework Signature',
         script: <<~'SCRIPT',

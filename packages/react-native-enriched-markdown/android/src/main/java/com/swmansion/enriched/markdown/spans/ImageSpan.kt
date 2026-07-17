@@ -41,6 +41,7 @@ class ImageSpan(
   AndroidLineHeightSpan {
   private var loadedDrawable: Drawable? = null
   private val height: Int = if (isInline) styleConfig.inlineImageStyle.size.toInt() else styleConfig.imageStyle.height.toInt()
+
   private val borderRadiusPx: Int = styleConfig.imageStyle.borderRadius.toInt()
   private val maxHeightPx: Int = if (isInline) 0 else styleConfig.imageStyle.maxHeight.toInt()
   private val aspectRatio: Float = if (isInline) 0f else styleConfig.imageStyle.aspectRatio
@@ -57,6 +58,10 @@ class ImageSpan(
       maxHeightPx > 0 -> maxHeightPx
       else -> height
     }
+
+  private val requestHeaders: Map<String, String> = styleConfig.imageRequestHeaders
+  private val requestKey: String = ImageCache.requestKey(imageUrl, requestHeaders)
+
 
   private var cachedWidth: Int = 0
   private var viewRef: WeakReference<TextView>? = null
@@ -97,7 +102,7 @@ class ImageSpan(
 
   private fun loadImage() {
     if (imageUrl.startsWith("http")) {
-      ImageDownloader.download(context, imageUrl) { bitmap ->
+      ImageDownloader.download(context, imageUrl, requestHeaders) { bitmap ->
         if (bitmap != null) {
           sourceDrawable = bitmap.toDrawable(context.resources)
           wrapAndAssignDrawable()
@@ -131,7 +136,8 @@ class ImageSpan(
 
     boxHeight = resolveBoxHeight(targetWidth)
 
-    val cachedBitmap = ImageCache.getProcessed(imageUrl, targetWidth, boxHeight, borderRadiusPx, resizeMode)
+    val cachedBitmap = ImageCache.getProcessed(requestKey, targetWidth, boxHeight, borderRadiusPx, resizeMode)
+
     if (cachedBitmap != null) {
       loadedDrawable =
         cachedBitmap.toDrawable(context.resources).apply {
@@ -147,7 +153,7 @@ class ImageSpan(
           isBlockImage = !isInline,
           resizeMode = resizeMode,
           legacySizing = legacySizing,
-          cacheKey = CacheKey(imageUrl, targetWidth, boxHeight, borderRadiusPx, resizeMode),
+          cacheKey = CacheKey(requestKey, targetWidth, boxHeight, borderRadiusPx, resizeMode),
         )
     }
     requestReflow()

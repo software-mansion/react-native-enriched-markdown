@@ -140,6 +140,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _imageBorderRadius;
   CGFloat _imageMarginTop;
   CGFloat _imageMarginBottom;
+  NSDictionary<NSString *, NSString *> *_imageRequestHeaders;
   // Inline image properties
   CGFloat _inlineImageSize;
   // Blockquote properties
@@ -211,6 +212,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _tableBorderRadius;
   CGFloat _tableCellPaddingHorizontal;
   CGFloat _tableCellPaddingVertical;
+  CGFloat _tableHorizontalOverflow;
   // Task list checkbox
   RCTUIColor *_taskListCheckedColor;
   RCTUIColor *_taskListBorderColor;
@@ -415,6 +417,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_imageBorderRadius = _imageBorderRadius;
   copy->_imageMarginTop = _imageMarginTop;
   copy->_imageMarginBottom = _imageMarginBottom;
+  copy->_imageRequestHeaders = [_imageRequestHeaders copy];
   copy->_inlineImageSize = _inlineImageSize;
   copy->_blockquoteFontSize = _blockquoteFontSize;
   copy->_blockquoteFontFamily = [_blockquoteFontFamily copy];
@@ -474,6 +477,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_tableBorderRadius = _tableBorderRadius;
   copy->_tableCellPaddingHorizontal = _tableCellPaddingHorizontal;
   copy->_tableCellPaddingVertical = _tableCellPaddingVertical;
+  copy->_tableHorizontalOverflow = _tableHorizontalOverflow;
   copy->_taskListCheckedColor = [_taskListCheckedColor copy];
   copy->_taskListBorderColor = [_taskListBorderColor copy];
   copy->_taskListCheckboxSize = _taskListCheckboxSize;
@@ -1569,6 +1573,16 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   _imageMarginBottom = newValue;
 }
 
+- (NSDictionary<NSString *, NSString *> *)imageRequestHeaders
+{
+  return _imageRequestHeaders;
+}
+
+- (void)setImageRequestHeaders:(NSDictionary<NSString *, NSString *> *)newValue
+{
+  _imageRequestHeaders = [newValue copy];
+}
+
 - (CGFloat)inlineImageSize
 {
   return _inlineImageSize;
@@ -2308,6 +2322,16 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setTableCellPaddingVertical:(CGFloat)newValue
 {
   _tableCellPaddingVertical = newValue;
+}
+
+- (CGFloat)tableHorizontalOverflow
+{
+  return _tableHorizontalOverflow;
+}
+
+- (void)setTableHorizontalOverflow:(CGFloat)newValue
+{
+  _tableHorizontalOverflow = newValue;
 }
 
 // Task list

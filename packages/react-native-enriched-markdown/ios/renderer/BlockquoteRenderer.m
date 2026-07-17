@@ -1,6 +1,8 @@
 #import "BlockquoteRenderer.h"
 #import "BlockquoteBorder.h"
 #import "FontUtils.h"
+#import "LastElementUtils.h"
+#import "ListItemRenderer.h"
 #import "MarkdownASTNode.h"
 #import "ParagraphStyleUtils.h"
 #import "RendererFactory.h"
@@ -106,20 +108,27 @@ static NSString *const kNestedInfoRangeKey = @"range";
                  backgroundColor:(RCTUIColor *)backgroundColor
                       lineHeight:(CGFloat)lineHeight
 {
-  NSMutableParagraphStyle *paragraphStyle = getOrCreateParagraphStyle(output, blockquoteRange.location);
-  CGFloat totalIndent = [self calculateIndentForDepth:currentDepth levelSpacing:levelSpacing];
-  paragraphStyle.firstLineHeadIndent = totalIndent;
-  paragraphStyle.headIndent = totalIndent;
+  CGFloat totalIndent = blockquoteIndentForDepth(currentDepth + 1, levelSpacing);
 
-  NSMutableDictionary *newAttributes =
-      [NSMutableDictionary dictionaryWithObjectsAndKeys:paragraphStyle, NSParagraphStyleAttributeName, @(currentDepth),
-                                                        BlockquoteDepthAttributeName, nil];
+  // Depth and background cover the whole range so the border renders behind list content.
+  NSMutableDictionary *depthAttributes =
+      [NSMutableDictionary dictionaryWithObjectsAndKeys:@(currentDepth), BlockquoteDepthAttributeName, nil];
   if (backgroundColor) {
-    newAttributes[BlockquoteBackgroundColorAttributeName] = backgroundColor;
+    depthAttributes[BlockquoteBackgroundColorAttributeName] = backgroundColor;
   }
-  [output addAttributes:newAttributes range:blockquoteRange];
+  [output addAttributes:depthAttributes range:blockquoteRange];
 
-  applyLineHeight(output, blockquoteRange, lineHeight);
+  // List items bake the blockquote indent into their own paragraph style; only non-list content is stamped here.
+  [self enumerateNonListRangesIn:output
+                           range:blockquoteRange
+                      usingBlock:^(NSRange nonListRange) {
+                        NSMutableParagraphStyle *paragraphStyle =
+                            getOrCreateParagraphStyle(output, nonListRange.location);
+                        paragraphStyle.firstLineHeadIndent = totalIndent;
+                        paragraphStyle.headIndent = totalIndent;
+                        [output addAttribute:NSParagraphStyleAttributeName value:paragraphStyle range:nonListRange];
+                        applyLineHeight(output, nonListRange, lineHeight);
+                      }];
 }
 
 - (void)reapplyNestedStyles:(NSMutableAttributedString *)output
@@ -131,24 +140,59 @@ static NSString *const kNestedInfoRangeKey = @"range";
   for (NSDictionary *info in nestedInfo) {
     NSRange nestedRange = [info[kNestedInfoRangeKey] rangeValue];
     NSInteger nestedDepth = [info[kNestedInfoDepthKey] integerValue];
-    NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, nestedRange.location);
+    CGFloat indent = blockquoteIndentForDepth(nestedDepth + 1, levelSpacing);
 
-    CGFloat indent = [self calculateIndentForDepth:nestedDepth levelSpacing:levelSpacing];
-    style.firstLineHeadIndent = indent;
-    style.headIndent = indent;
-    style.tailIndent = 0;
+    [output addAttribute:BlockquoteDepthAttributeName value:info[kNestedInfoDepthKey] range:nestedRange];
 
-    [output
-        addAttributes:@{NSParagraphStyleAttributeName : style, BlockquoteDepthAttributeName : info[kNestedInfoDepthKey]}
-                range:nestedRange];
+    [self enumerateNonListRangesIn:output
+                             range:nestedRange
+                        usingBlock:^(NSRange nonListRange) {
+                          NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, nonListRange.location);
+                          style.firstLineHeadIndent = indent;
+                          style.headIndent = indent;
+                          style.tailIndent = 0;
+                          [output addAttribute:NSParagraphStyleAttributeName value:style range:nonListRange];
+                        }];
   }
 }
 
-#pragma mark - Helper Methods
-
-- (CGFloat)calculateIndentForDepth:(NSInteger)depth levelSpacing:(CGFloat)levelSpacing
+- (void)enumerateNonListRangesIn:(NSMutableAttributedString *)output
+                           range:(NSRange)range
+                      usingBlock:(void (^)(NSRange nonListRange))block
 {
-  return (depth + 1) * levelSpacing;
+  // List items — and code blocks nested inside them (which carry a list-derived
+  // indent instead of ListDepthAttribute) — already bake the correct indent in.
+  NSMutableArray<NSValue *> *listRanges = [NSMutableArray array];
+  void (^collectRanges)(NSString *) = ^(NSString *attribute) {
+    [output enumerateAttribute:attribute
+                       inRange:range
+                       options:0
+                    usingBlock:^(id value, NSRange subRange, BOOL *stop) {
+                      if (value) {
+                        [listRanges addObject:[NSValue valueWithRange:subRange]];
+                      }
+                    }];
+  };
+  collectRanges(ListDepthAttribute);
+  collectRanges(CodeBlockIndentAttributeName);
+  [listRanges sortUsingComparator:^NSComparisonResult(NSValue *a, NSValue *b) {
+    NSUInteger la = [a rangeValue].location;
+    NSUInteger lb = [b rangeValue].location;
+    return la < lb ? NSOrderedAscending : (la > lb ? NSOrderedDescending : NSOrderedSame);
+  }];
+
+  NSUInteger pos = range.location;
+  const NSUInteger end = NSMaxRange(range);
+  for (NSValue *val in listRanges) {
+    NSRange listRange = [val rangeValue];
+    if (pos < listRange.location) {
+      block(NSMakeRange(pos, listRange.location - pos));
+    }
+    pos = MAX(pos, NSMaxRange(listRange));
+  }
+  if (pos < end) {
+    block(NSMakeRange(pos, end - pos));
+  }
 }
 
 @end

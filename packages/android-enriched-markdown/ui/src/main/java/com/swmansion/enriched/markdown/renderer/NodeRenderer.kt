@@ -19,6 +19,7 @@ interface NodeRenderer {
 
 data class RendererConfig(
   val style: StyleConfig,
+  val imageRequestHeaders: Map<String, String> = emptyMap(),
 )
 
 class RendererFactory(
@@ -68,6 +69,7 @@ class RendererFactory(
       styleConfig = config.style,
       isInline = isInline,
       altText = altText,
+      requestHeaders = config.imageRequestHeaders,
     )
 
   private val textRenderer = TextRenderer()

@@ -34,6 +34,8 @@ import com.swmansion.enriched.markdown.views.TableContainerView
 import java.util.EnumSet
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.ceil
+import kotlin.math.max
 
 class EnrichedMarkdown
   @JvmOverloads
@@ -85,6 +87,7 @@ class EnrichedMarkdown
     private var allowFontScaling: Boolean = true
     private var maxFontSizeMultiplier: Float = 0f
     private var allowTrailingMargin: Boolean = false
+    private var imageRequestHeaders: Map<String, String> = emptyMap()
     private var selectable: Boolean = true
     private var selectionColor: Int? = null
     private var selectionHandleColor: Int? = null
@@ -115,10 +118,19 @@ class EnrichedMarkdown
     fun setMarkdownStyle(style: ReadableMap?) {
       markdownStyleMap = style
       val newConfig = style?.let { StyleConfig(it, context, allowFontScaling, maxFontSizeMultiplier) }
+      newConfig?.imageRequestHeaders = imageRequestHeaders
       if (markdownStyle == newConfig) return
       markdownStyle = newConfig
       dirtyFlags += DirtyFlag.RECREATE_SEGMENTS
       dirtyFlags += DirtyFlag.FORCE_HEIGHT
+      renderPending = true
+    }
+
+    fun setImageRequestHeaders(headers: Map<String, String>) {
+      if (imageRequestHeaders == headers) return
+      imageRequestHeaders = headers
+      markdownStyle?.imageRequestHeaders = headers
+      dirtyFlags += DirtyFlag.RECREATE_SEGMENTS
       renderPending = true
     }
 
@@ -298,7 +310,10 @@ class EnrichedMarkdown
 
     private fun recreateStyleConfig() {
       markdownStyleMap?.let {
-        markdownStyle = StyleConfig(it, context, allowFontScaling, maxFontSizeMultiplier)
+        markdownStyle =
+          StyleConfig(it, context, allowFontScaling, maxFontSizeMultiplier).also { config ->
+            config.imageRequestHeaders = imageRequestHeaders
+          }
       }
     }
 
@@ -588,6 +603,15 @@ class EnrichedMarkdown
       val containerWidth = width
       if (containerWidth <= 0) return
 
+      val needsOverhang =
+        segmentViews.any { view ->
+          view is TableContainerView &&
+            ceil(view.tableStyle.horizontalOverflow.toDouble()).toInt() > 0
+        }
+      if (clipChildren == needsOverhang) {
+        clipChildren = !needsOverhang
+      }
+
       var currentY = 0
       val lastIndex = segmentViews.lastIndex
       val widthSpec = MeasureSpec.makeMeasureSpec(containerWidth, MeasureSpec.EXACTLY)
@@ -598,9 +622,23 @@ class EnrichedMarkdown
         val shouldAddBottomMargin = index != lastIndex || allowTrailingMargin
 
         currentY += segment?.segmentMarginTop ?: 0
-        view.measure(widthSpec, heightSpec)
 
-        view.layout(0, currentY, containerWidth, currentY + view.measuredHeight)
+        val overhang =
+          if (view is TableContainerView) {
+            max(ceil(view.tableStyle.horizontalOverflow.toDouble()).toInt(), 0)
+          } else {
+            0
+          }
+
+        if (overhang > 0) {
+          val extendedWidth = containerWidth + overhang * 2
+          val extWidthSpec = MeasureSpec.makeMeasureSpec(extendedWidth, MeasureSpec.EXACTLY)
+          view.measure(extWidthSpec, heightSpec)
+          view.layout(-overhang, currentY, containerWidth + overhang, currentY + view.measuredHeight)
+        } else {
+          view.measure(widthSpec, heightSpec)
+          view.layout(0, currentY, containerWidth, currentY + view.measuredHeight)
+        }
         currentY += view.measuredHeight
 
         if (shouldAddBottomMargin) {

@@ -17,6 +17,7 @@
 #import "FontScaleObserver.h"
 #import "FontUtils.h"
 #import "HeightUpdateUtils.h"
+#import "ImageRequestHeaderUtils.h"
 #import "LinkTapUtils.h"
 #import "MarkdownASTNode.h"
 #import "MarkdownAccessibilityElementBuilder.h"
@@ -46,6 +47,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 };
 
 @interface EnrichedMarkdownText () <RCTEnrichedMarkdownTextViewProtocol, UITextViewDelegate, ENRMImageLayoutObserver>
++ (ENRMMd4cFlags *)flagsFromProps:(const EnrichedMarkdownTextMd4cFlagsStruct &)props;
 - (void)setupTextView;
 - (void)renderMarkdownContent:(NSString *)markdownString;
 - (void)applyRenderedText:(NSMutableAttributedString *)attributedText;
@@ -115,6 +117,17 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 + (ComponentDescriptorProvider)componentDescriptorProvider
 {
   return concreteComponentDescriptorProvider<EnrichedMarkdownTextComponentDescriptor>();
+}
+
++ (ENRMMd4cFlags *)flagsFromProps:(const EnrichedMarkdownTextMd4cFlagsStruct &)props
+{
+  ENRMMd4cFlags *flags = [ENRMMd4cFlags defaultFlags];
+  flags.underline = props.underline;
+  flags.superscript = props.superscript;
+  flags.subscript = props.subscript;
+  flags.latexMath = props.latexMath;
+  flags.highlight = props.highlight;
+  return flags;
 }
 
 #pragma mark - Measuring and State
@@ -202,7 +215,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 
     self.backgroundColor = [RCTUIColor clearColor];
     _parser = [[ENRMMarkdownParser alloc] init];
-    _md4cFlags = [ENRMMd4cFlags defaultFlags];
+    _md4cFlags = [EnrichedMarkdownText flagsFromProps:defaultProps->md4cFlags];
 
     _renderCoordinator =
         [[ENRMAsyncRenderCoordinator alloc] initWithQueueLabel:"com.swmansion.enriched.markdown.render"];
@@ -476,6 +489,11 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
     _dirtyFlags |= ENRMDirtyRender;
   }
 
+  if (ENRMImageRequestHeadersChanged(oldViewProps.imageRequestHeaders, newViewProps.imageRequestHeaders)) {
+    [_config setImageRequestHeaders:ENRMImageRequestHeadersFromProps(newViewProps.imageRequestHeaders)];
+    _dirtyFlags |= ENRMDirtyRender;
+  }
+
   NSLayoutManager *layoutManager = _textView.layoutManager;
   if ([layoutManager isKindOfClass:[TextViewLayoutManager class]]) {
     StyleConfig *currentConfig = [layoutManager valueForKey:@"config"];
@@ -520,28 +538,12 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
     _dirtyFlags |= ENRMDirtyRender;
   }
 
-  if (newViewProps.md4cFlags.underline != oldViewProps.md4cFlags.underline) {
-    _md4cFlags.underline = newViewProps.md4cFlags.underline;
-    _forceHeightUpdateOnNextRender = YES;
-    _dirtyFlags |= ENRMDirtyRender;
-  }
-  if (newViewProps.md4cFlags.superscript != oldViewProps.md4cFlags.superscript) {
-    _md4cFlags.superscript = newViewProps.md4cFlags.superscript;
-    _forceHeightUpdateOnNextRender = YES;
-    _dirtyFlags |= ENRMDirtyRender;
-  }
-  if (newViewProps.md4cFlags.subscript != oldViewProps.md4cFlags.subscript) {
-    _md4cFlags.subscript = newViewProps.md4cFlags.subscript;
-    _forceHeightUpdateOnNextRender = YES;
-    _dirtyFlags |= ENRMDirtyRender;
-  }
-  if (newViewProps.md4cFlags.latexMath != oldViewProps.md4cFlags.latexMath) {
-    _md4cFlags.latexMath = newViewProps.md4cFlags.latexMath;
-    _forceHeightUpdateOnNextRender = YES;
-    _dirtyFlags |= ENRMDirtyRender;
-  }
-  if (newViewProps.md4cFlags.highlight != oldViewProps.md4cFlags.highlight) {
-    _md4cFlags.highlight = newViewProps.md4cFlags.highlight;
+  if (newViewProps.md4cFlags.underline != oldViewProps.md4cFlags.underline ||
+      newViewProps.md4cFlags.superscript != oldViewProps.md4cFlags.superscript ||
+      newViewProps.md4cFlags.subscript != oldViewProps.md4cFlags.subscript ||
+      newViewProps.md4cFlags.latexMath != oldViewProps.md4cFlags.latexMath ||
+      newViewProps.md4cFlags.highlight != oldViewProps.md4cFlags.highlight) {
+    _md4cFlags = [EnrichedMarkdownText flagsFromProps:newViewProps.md4cFlags];
     _forceHeightUpdateOnNextRender = YES;
     _dirtyFlags |= ENRMDirtyRender;
   }
@@ -646,7 +648,8 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 
 - (void)prepareForRecycle
 {
-  _props = std::make_shared<const EnrichedMarkdownTextProps>();
+  const auto resetProps = std::make_shared<const EnrichedMarkdownTextProps>();
+  _props = resetProps;
   [_renderCoordinator invalidate];
 
   [_fadeAnimator cancel];
@@ -656,10 +659,24 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
   _forceHeightUpdateOnNextRender = NO;
   _cachedMarkdown = nil;
   _renderedMarkdown = nil;
+  _config = nil;
+  _md4cFlags = [EnrichedMarkdownText flagsFromProps:resetProps->md4cFlags];
+  _maxFontSizeMultiplier = 0;
+  _lastElementMarginBottom = 0;
+  _allowTrailingMargin = NO;
+  _lineBreakStrategy = NSLineBreakStrategyNone;
+  _writingDirectionMode = ENRMWritingDirectionModeFirstStrong;
+  _renderedStyleFingerprint = 0;
+  _pendingStyleFingerprint = 0;
+  _contextMenuItemTexts = nil;
+  _contextMenuItemIcons = nil;
+  _fontScaleObserver.allowFontScaling = resetProps->allowFontScaling;
+  _accessibilityLabels = nil;
   _accessibilityElements = nil;
   _accessibilityInfo = nil;
   _accessibilityNeedsRebuild = NO;
   [_spoilerManager removeAllOverlays];
+  _spoilerManager = nil;
   if (_textView != nil) {
     ENRMSetAttributedText(_textView, [[NSAttributedString alloc] initWithString:@""]);
     _textView.hidden = YES;
