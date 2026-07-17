@@ -148,7 +148,7 @@ jobs:
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
-          xcode-version: '26.3'
+          xcode-version: '26.6'
 
       - name: Reset build folder and pods
         run: rm -rf apps/react-native-example/build apps/react-native-example/ios/Pods apps/react-native-example/ios/Podfile.lock
