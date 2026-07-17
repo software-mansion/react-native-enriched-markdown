@@ -67,6 +67,7 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 static char kENRMSegmentFadeAnimatorKey;
 
 @interface EnrichedMarkdown () <RCTEnrichedMarkdownViewProtocol, UITextViewDelegate>
++ (ENRMMd4cFlags *)flagsFromProps:(const EnrichedMarkdownMd4cFlagsStruct &)props;
 - (void)emitLinkPress:(NSString *)url;
 - (void)emitLinkLongPress:(NSString *)url;
 - (void)emitTaskListItemPress:(NSInteger)index checked:(BOOL)checked text:(NSString *)text;
@@ -123,6 +124,17 @@ static char kENRMSegmentFadeAnimatorKey;
   return concreteComponentDescriptorProvider<EnrichedMarkdownComponentDescriptor>();
 }
 
++ (ENRMMd4cFlags *)flagsFromProps:(const EnrichedMarkdownMd4cFlagsStruct &)props
+{
+  ENRMMd4cFlags *flags = [ENRMMd4cFlags defaultFlags];
+  flags.underline = props.underline;
+  flags.superscript = props.superscript;
+  flags.subscript = props.subscript;
+  flags.latexMath = props.latexMath;
+  flags.highlight = props.highlight;
+  return flags;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if (self = [super initWithFrame:frame]) {
@@ -131,7 +143,7 @@ static char kENRMSegmentFadeAnimatorKey;
 
     self.backgroundColor = [RCTUIColor clearColor];
     _parser = [[ENRMMarkdownParser alloc] init];
-    _md4cFlags = [ENRMMd4cFlags defaultFlags];
+    _md4cFlags = [EnrichedMarkdown flagsFromProps:defaultProps->md4cFlags];
     _segmentViews = [NSMutableArray array];
     _segmentSignatures = [NSMutableArray array];
     _dirtyFlags = ENRMDirtyNone;
@@ -816,24 +828,12 @@ static char kENRMSegmentFadeAnimatorKey;
     _dirtyFlags |= ENRMDirtyRecreateSegments | ENRMDirtyForceHeight | ENRMDirtyRender;
   }
 
-  if (newViewProps.md4cFlags.underline != oldViewProps.md4cFlags.underline) {
-    _md4cFlags.underline = newViewProps.md4cFlags.underline;
-    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
-  }
-  if (newViewProps.md4cFlags.superscript != oldViewProps.md4cFlags.superscript) {
-    _md4cFlags.superscript = newViewProps.md4cFlags.superscript;
-    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
-  }
-  if (newViewProps.md4cFlags.subscript != oldViewProps.md4cFlags.subscript) {
-    _md4cFlags.subscript = newViewProps.md4cFlags.subscript;
-    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
-  }
-  if (newViewProps.md4cFlags.latexMath != oldViewProps.md4cFlags.latexMath) {
-    _md4cFlags.latexMath = newViewProps.md4cFlags.latexMath;
-    _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
-  }
-  if (newViewProps.md4cFlags.highlight != oldViewProps.md4cFlags.highlight) {
-    _md4cFlags.highlight = newViewProps.md4cFlags.highlight;
+  if (newViewProps.md4cFlags.underline != oldViewProps.md4cFlags.underline ||
+      newViewProps.md4cFlags.superscript != oldViewProps.md4cFlags.superscript ||
+      newViewProps.md4cFlags.subscript != oldViewProps.md4cFlags.subscript ||
+      newViewProps.md4cFlags.latexMath != oldViewProps.md4cFlags.latexMath ||
+      newViewProps.md4cFlags.highlight != oldViewProps.md4cFlags.highlight) {
+    _md4cFlags = [EnrichedMarkdown flagsFromProps:newViewProps.md4cFlags];
     _dirtyFlags |= ENRMDirtyForceHeight | ENRMDirtyRender;
   }
 
@@ -964,7 +964,8 @@ static char kENRMSegmentFadeAnimatorKey;
 
 - (void)prepareForRecycle
 {
-  _props = std::make_shared<const EnrichedMarkdownProps>();
+  const auto resetProps = std::make_shared<const EnrichedMarkdownProps>();
+  _props = resetProps;
   [_renderCoordinator invalidate];
 
   for (RCTUIView *segment in _segmentViews) {
@@ -982,8 +983,22 @@ static char kENRMSegmentFadeAnimatorKey;
 
   _cachedMarkdown = nil;
   _renderedMarkdown = nil;
+  _config = nil;
+  _md4cFlags = [EnrichedMarkdown flagsFromProps:resetProps->md4cFlags];
+  _maxFontSizeMultiplier = 0;
+  _allowTrailingMargin = NO;
   _streamingAnimation = NO;
   _tableStreamingMode = ENRMTableStreamingModeProgressive;
+  _lineBreakStrategy = NSLineBreakStrategyNone;
+  _writingDirectionMode = ENRMWritingDirectionModeFirstStrong;
+  _renderedStyleFingerprint = 0;
+  _pendingStyleFingerprint = 0;
+  _contextMenuItemTexts = nil;
+  _contextMenuItemIcons = nil;
+  _fontScaleObserver.allowFontScaling = resetProps->allowFontScaling;
+  _accessibilityLabels = nil;
+  _spoilerOverlay =
+      ENRMSpoilerOverlayFromString([[NSString alloc] initWithUTF8String:resetProps->spoilerOverlay.c_str()]);
   _dirtyFlags = ENRMDirtyNone;
 
   [super prepareForRecycle];
