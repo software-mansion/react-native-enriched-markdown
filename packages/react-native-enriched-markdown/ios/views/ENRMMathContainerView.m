@@ -4,6 +4,7 @@
 #include <TargetConditionals.h>
 
 #if ENRICHED_MARKDOWN_MATH
+#import "ENRMMathFallback.h"
 #import "PasteboardUtils.h"
 #if __has_include("ReactNativeEnrichedMarkdown-Swift.h")
 #import "ReactNativeEnrichedMarkdown-Swift.h"
@@ -19,8 +20,8 @@
 
 @interface ENRMRaTeXCanvasView : RCTUIView
 @property (nonatomic, strong, nullable) ENRMRaTeXRenderResult *renderResult;
-// Visible-source fallback when RaTeX cannot parse the block: the original
-// `$$…$$` source, drawn wrapped, instead of an invisible zero-height bar.
+// Visible-source fallback when RaTeX cannot parse the block, drawn wrapped;
+// see ENRMMathFallback.h.
 @property (nonatomic, strong, nullable) NSAttributedString *fallbackSource;
 @end
 
@@ -103,22 +104,7 @@
                                                 fontSize:config.mathFontSize
                                                    color:config.mathColor];
   _mathView.renderResult = result;
-  if (!result) {
-    // RaTeX parse failure: keep the block visible — typeset the original
-    // source with its delimiters (wrapped in layoutSubviews/measureHeight)
-    // instead of collapsing into a zero-height bar.
-    CGFloat fontSize = config.mathFontSize > 0 ? config.mathFontSize : 16.0;
-    UIFont *font = [UIFont systemFontOfSize:fontSize];
-    NSString *source = [NSString stringWithFormat:@"$$%@$$", latex ?: @""];
-    _mathView.fallbackSource = [[NSAttributedString alloc]
-        initWithString:source
-            attributes:@{
-              NSFontAttributeName : font,
-              NSForegroundColorAttributeName : config.mathColor ?: [RCTUIColor blackColor],
-            }];
-  } else {
-    _mathView.fallbackSource = nil;
-  }
+  _mathView.fallbackSource = result ? nil : ENRMMathFallbackString(latex, @"$$", config.mathFontSize, config.mathColor);
 
   CGFloat padding = config.mathPadding;
   _mathView.frame = CGRectMake(padding, padding, ceil(result.width), ceil(result.totalHeight));

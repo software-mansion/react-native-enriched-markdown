@@ -1,3 +1,4 @@
+#import "ENRMMathFallback.h"
 #import "ENRMMathInlineAttachmentShared.h"
 
 #if ENRICHED_MARKDOWN_MATH
@@ -20,17 +21,8 @@
   RCTUIColor *color = self.mathTextColor ?: [RCTUIColor blackColor];
   ENRMRaTeXRenderResult *result = [ENRMRaTeXBridge parse:self.latex displayMode:NO fontSize:self.fontSize color:color];
   if (!result) {
-    // RaTeX parse failure: fall back to the original source, delimiters
-    // included, in body style — the formula stays visible and copyable
-    // instead of collapsing into an invisible zero-size box.
-    CGFloat size = self.fontSize > 0 ? self.fontSize : 16.0;
-    UIFont *font = [UIFont systemFontOfSize:size];
-    NSString *source = [NSString stringWithFormat:@"$%@$", self.latex ?: @""];
-    _fallbackSource = [[NSAttributedString alloc] initWithString:source
-                                                      attributes:@{
-                                                        NSFontAttributeName : font,
-                                                        NSForegroundColorAttributeName : color,
-                                                      }];
+    _fallbackSource = ENRMMathFallbackString(self.latex, @"$", self.fontSize, color);
+    UIFont *font = [_fallbackSource attribute:NSFontAttributeName atIndex:0 effectiveRange:NULL];
     CGRect bounds = [_fallbackSource boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX)
                                                   options:NSStringDrawingUsesLineFragmentOrigin
                                                   context:nil];
