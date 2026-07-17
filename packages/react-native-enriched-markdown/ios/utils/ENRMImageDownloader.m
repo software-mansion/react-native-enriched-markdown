@@ -20,10 +20,11 @@ NSString *ENRMImageCacheKey(NSString *url, NSDictionary<NSString *, NSString *> 
     return url;
   }
   NSArray<NSString *> *names = [headers.allKeys sortedArrayUsingSelector:@selector(compare:)];
-  NSMutableString *joined = [NSMutableString string];
+  NSMutableArray<NSString *> *pairs = [NSMutableArray arrayWithCapacity:names.count];
   for (NSString *name in names) {
-    [joined appendFormat:@"%@:%@\n", name, headers[name]];
+    [pairs addObject:[NSString stringWithFormat:@"%@:%@", name, headers[name]]];
   }
+  NSString *joined = [pairs componentsJoinedByString:@"\n"];
   NSData *data = [joined dataUsingEncoding:NSUTF8StringEncoding];
   unsigned char digest[CC_SHA256_DIGEST_LENGTH];
   CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
