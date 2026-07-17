@@ -962,6 +962,10 @@ static char kENRMSegmentFadeAnimatorKey;
   _pendingStyleFingerprint = 0;
   _contextMenuItemTexts = nil;
   _contextMenuItemIcons = nil;
+  _fontScaleObserver.allowFontScaling = resetProps->allowFontScaling;
+  _accessibilityLabels = nil;
+  _spoilerOverlay =
+      ENRMSpoilerOverlayFromString([[NSString alloc] initWithUTF8String:resetProps->spoilerOverlay.c_str()]);
   _dirtyFlags = ENRMDirtyNone;
 
   [super prepareForRecycle];

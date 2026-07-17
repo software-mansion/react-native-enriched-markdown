@@ -647,6 +647,8 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
   _pendingStyleFingerprint = 0;
   _contextMenuItemTexts = nil;
   _contextMenuItemIcons = nil;
+  _fontScaleObserver.allowFontScaling = resetProps->allowFontScaling;
+  _accessibilityLabels = nil;
   _accessibilityElements = nil;
   _accessibilityInfo = nil;
   _accessibilityNeedsRebuild = NO;
