@@ -73,7 +73,7 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
   UIView *view = [super hitTest:point withEvent:event];
-  if (view != nil && event.type == UIEventTypeTouches && self.markdownTextInput != nil) {
+  if (view != nil && event != nil && event.type == UIEventTypeTouches && self.markdownTextInput != nil) {
     [self.markdownTextInput trackTouchDownAtPoint:point];
   }
   return view;

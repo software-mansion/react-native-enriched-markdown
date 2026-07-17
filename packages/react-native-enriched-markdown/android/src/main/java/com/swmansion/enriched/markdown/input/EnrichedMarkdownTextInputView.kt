@@ -248,6 +248,7 @@ class EnrichedMarkdownTextInputView(
     return allFormattingRangesForSerialization()
       .firstOrNull { it.type == StyleType.LINK && offset >= it.start && offset < it.end }
       ?.url
+      ?.takeIf { it.isNotEmpty() }
   }
 
   override fun performClick(): Boolean = super.performClick()
