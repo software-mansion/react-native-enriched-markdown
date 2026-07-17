@@ -132,7 +132,7 @@ jobs:
   rn-build-ios:
     needs: changes
     if: needs.changes.outputs.react-native == 'true'
-    runs-on: macos-latest-xlarge
+    runs-on: macos-latest
     env:
       TURBO_CACHE_DIR: .turbo/ios
     steps:
