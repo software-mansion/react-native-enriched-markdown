@@ -1,5 +1,6 @@
 #import "ENRMInputLayoutManager.h"
 #import "ENRMInputBlockType.h"
+#import "ParagraphStyleUtils.h"
 #import <UIKit/UIKit.h>
 
 @implementation ENRMInputLayoutManager
@@ -60,6 +61,28 @@
   NSDictionary *attrs = @{NSFontAttributeName : font, NSForegroundColorAttributeName : color};
   CGSize size = [label sizeWithAttributes:attrs];
   [label drawAtPoint:CGPointMake(markerRight - size.width, baselineY - font.ascender) withAttributes:attrs];
+}
+
+/// RTL counterpart of drawOrderedMarkerEndingAtX:: draws ".3" left-aligned from
+/// `markerLeft` so the dot sits a small pad after the (right-anchored) text
+/// column. Mirrors the readonly renderer's ListMarkerDrawer.
+- (void)drawOrderedMarkerStartingAtX:(CGFloat)markerLeft
+                           baselineY:(CGFloat)baselineY
+                             ordinal:(NSInteger)ordinal
+                                font:(UIFont *)font
+                               color:(UIColor *)color
+{
+  NSString *label = [NSString stringWithFormat:@".%ld", (long)MAX(ordinal, (NSInteger)1)];
+  NSDictionary *attrs = @{NSFontAttributeName : font, NSForegroundColorAttributeName : color};
+  [label drawAtPoint:CGPointMake(markerLeft, baselineY - font.ascender) withAttributes:attrs];
+}
+
+/// Marker anchor for an RTL list line: the text column is anchored a head
+/// indent from the trailing (right) edge, so the marker mirrors past it.
+/// `leadingOffset` is the same padding+indent that positions the LTR column.
+static CGFloat ENRMTrailingMarkerX(CGPoint origin, NSTextContainer *container, CGFloat leadingOffset)
+{
+  return origin.x + container.size.width - leadingOffset;
 }
 
 - (void)drawGlyphsForGlyphRange:(NSRange)glyphsToShow atPoint:(CGPoint)origin
@@ -162,15 +185,42 @@
                                                                 ? self.listItemSpacing + font.ascender
                                                                 : [self locationForGlyphAtIndex:glyphRange.location].y;
                                    CGFloat baselineY = origin.y + rect.origin.y + baselineOffset;
-                                   if (isOrdered) {
-                                     CGFloat markerRight = origin.x + usedRect.origin.x - kENRMListBulletGap / 2.0;
-                                     [self drawOrderedMarkerEndingAtX:markerRight
-                                                            baselineY:baselineY
-                                                              ordinal:ordinal
-                                                                 font:font
-                                                                color:color];
+
+                                   // An RTL paragraph anchors its text column to the trailing edge, so
+                                   // the marker mirrors to the right of the column (and an ordered
+                                   // marker flips to ".N"), matching the readonly ListMarkerDrawer.
+                                   BOOL isRTL;
+                                   if (isEmptyListLine) {
+                                     isRTL = self.emptyBulletRTL;
                                    } else {
-                                     CGFloat markerX = origin.x + usedRect.origin.x - kENRMListBulletGap;
+                                     isRTL = ENRMParagraphIsRTL([storage attribute:NSParagraphStyleAttributeName
+                                                                           atIndex:charRange.location
+                                                                    effectiveRange:NULL]);
+                                   }
+                                   CGFloat leadingOffset =
+                                       container.lineFragmentPadding + (depth + 1) * kENRMListIndentPerDepth;
+
+                                   if (isOrdered) {
+                                     if (isRTL) {
+                                       CGFloat markerLeft = ENRMTrailingMarkerX(origin, container, leadingOffset) +
+                                                            kENRMListBulletGap / 2.0;
+                                       [self drawOrderedMarkerStartingAtX:markerLeft
+                                                                baselineY:baselineY
+                                                                  ordinal:ordinal
+                                                                     font:font
+                                                                    color:color];
+                                     } else {
+                                       CGFloat markerRight = origin.x + usedRect.origin.x - kENRMListBulletGap / 2.0;
+                                       [self drawOrderedMarkerEndingAtX:markerRight
+                                                              baselineY:baselineY
+                                                                ordinal:ordinal
+                                                                   font:font
+                                                                  color:color];
+                                     }
+                                   } else {
+                                     CGFloat markerX = isRTL ? ENRMTrailingMarkerX(origin, container, leadingOffset) +
+                                                                   kENRMListBulletGap
+                                                             : origin.x + usedRect.origin.x - kENRMListBulletGap;
                                      CGFloat centerY = baselineY - (font.xHeight + font.capHeight) / 4.0;
                                      [self drawBulletAtX:markerX centerY:centerY depth:depth font:font color:color];
                                    }
@@ -184,8 +234,11 @@
     UIFont *font = self.emptyBulletFont ?: [UIFont systemFontOfSize:16];
     UIColor *color = self.emptyBulletColor ?: [UIColor labelColor];
     CGRect used = self.extraLineFragmentUsedRect;
-    CGFloat markerX = origin.x + used.origin.x - kENRMListBulletGap;
-    CGFloat markerRight = origin.x + used.origin.x - kENRMListBulletGap / 2.0;
+    NSTextContainer *extraContainer = self.extraLineFragmentTextContainer;
+    BOOL isRTL = self.emptyBulletRTL;
+    CGFloat leadingOffset = extraContainer.lineFragmentPadding + (self.emptyBulletDepth + 1) * kENRMListIndentPerDepth;
+    CGFloat trailingX = ENRMTrailingMarkerX(origin, extraContainer, leadingOffset);
+    CGFloat markerX = isRTL ? trailingX + kENRMListBulletGap : origin.x + used.origin.x - kENRMListBulletGap;
     // Use the same optical center as the in-text marker (baseline minus half the
     // cap/x-height), not the geometric line-box center (font.lineHeight / 2): the
     // two diverge by a font-dependent amount, so a geometric center would shift
@@ -193,11 +246,19 @@
     // (visible with fonts whose ascender/descender are asymmetric).
     CGFloat baselineY = origin.y + used.origin.y + font.ascender;
     if (self.emptyBulletOrdered) {
-      [self drawOrderedMarkerEndingAtX:markerRight
-                             baselineY:baselineY
-                               ordinal:self.emptyBulletOrdinal
-                                  font:font
-                                 color:color];
+      if (isRTL) {
+        [self drawOrderedMarkerStartingAtX:trailingX + kENRMListBulletGap / 2.0
+                                 baselineY:baselineY
+                                   ordinal:self.emptyBulletOrdinal
+                                      font:font
+                                     color:color];
+      } else {
+        [self drawOrderedMarkerEndingAtX:origin.x + used.origin.x - kENRMListBulletGap / 2.0
+                               baselineY:baselineY
+                                 ordinal:self.emptyBulletOrdinal
+                                    font:font
+                                   color:color];
+      }
     } else {
       CGFloat centerY = baselineY - (font.xHeight + font.capHeight) / 4.0;
       [self drawBulletAtX:markerX centerY:centerY depth:self.emptyBulletDepth font:font color:color];
@@ -214,19 +275,31 @@
   UIColor *color = self.emptyBulletColor ?: [UIColor labelColor];
   // Text for a depth-d item starts at (d + 1) * kENRMListIndentPerDepth from the
   // leading edge (see the list block handler); the marker sits a gap before that.
+  // In RTL the leading edge is the container's right side, so mirror the anchor.
   CGFloat headIndent = (self.emptyBulletDepth + 1) * kENRMListIndentPerDepth;
-  CGFloat markerX = inset.left + headIndent - kENRMListBulletGap;
+  NSTextContainer *container = self.textContainers.firstObject;
+  BOOL isRTL = self.emptyBulletRTL && container != nil;
+  CGFloat trailingX = inset.left + (container ? container.size.width : 0) - headIndent;
+  CGFloat markerX = isRTL ? trailingX + kENRMListBulletGap : inset.left + headIndent - kENRMListBulletGap;
   // Optical center (baseline minus half the cap/x-height) to match the in-text
   // marker, rather than the geometric line-box center; see the extra-line-fragment
   // path. TextKit doesn't apply paragraphSpacingBefore to the first paragraph, so
   // no spacing offset here.
   CGFloat baselineY = inset.top + font.ascender;
   if (self.emptyBulletOrdered) {
-    [self drawOrderedMarkerEndingAtX:(markerX + kENRMListBulletGap / 2.0)
-                           baselineY:baselineY
-                             ordinal:self.emptyBulletOrdinal
-                                font:font
-                               color:color];
+    if (isRTL) {
+      [self drawOrderedMarkerStartingAtX:(trailingX + kENRMListBulletGap / 2.0)
+                               baselineY:baselineY
+                                 ordinal:self.emptyBulletOrdinal
+                                    font:font
+                                   color:color];
+    } else {
+      [self drawOrderedMarkerEndingAtX:(markerX + kENRMListBulletGap / 2.0)
+                             baselineY:baselineY
+                               ordinal:self.emptyBulletOrdinal
+                                  font:font
+                                 color:color];
+    }
     return;
   }
   CGFloat centerY = baselineY - (font.xHeight + font.capHeight) / 4.0;

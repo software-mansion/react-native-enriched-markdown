@@ -683,8 +683,9 @@ class EnrichedMarkdownTextInputView(
 
   /**
    * Toggles a list of [type] on the cursor's paragraph(s): turns the touched lines
-   * into depth-0 items (replacing an item of the other list type), or clears them
-   * back to plain paragraphs when the cursor's line already carries [type].
+   * into depth-0 items (an item of the other list type is replaced keeping its
+   * depth), or clears them back to plain paragraphs when the cursor's line already
+   * carries [type].
    */
   private fun toggleListType(type: BlockType) {
     val editable = text ?: return
@@ -692,7 +693,11 @@ class EnrichedMarkdownTextInputView(
     if (turningOff) {
       forEachSelectedLine { ls, le -> blockStore.removeBlock(ls, le, editable) }
     } else {
-      setListBlockOnLines(type, 0)
+      forEachSelectedLine { ls, le ->
+        // Switching unordered <-> ordered keeps each line's nesting depth.
+        val existing = blockStore.allRanges.firstOrNull { it.start == ls && it.type in BlockType.LIST_ITEMS }
+        blockStore.setBlock(type, existing?.level ?: 0, ls, le, editable)
+      }
     }
     blockStore.normalizeToLineBounds(editable)
     applyFormattingAndEmit()
@@ -727,17 +732,6 @@ class EnrichedMarkdownTextInputView(
     blockStore.normalizeToLineBounds(editable)
     applyFormattingAndEmit()
     syncEmptyListAnchor()
-  }
-
-  /** Sets a [type] list block at [depth] on every line the selection touches. */
-  private fun setListBlockOnLines(
-    type: BlockType,
-    depth: Int,
-  ) {
-    val editable = text ?: return
-    forEachSelectedLine { ls, le ->
-      blockStore.setBlock(type, depth, ls, le, editable)
-    }
   }
 
   /** Runs [action] with the `[lineStart, lineEnd)` content bounds of each line the selection touches. */

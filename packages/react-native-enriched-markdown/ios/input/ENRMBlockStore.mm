@@ -222,9 +222,14 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
       memset(counters, 0, sizeof(counters));
       memset(counterTypes, 0, sizeof(counterTypes));
     }
-    NSInteger maxDepth = adjacent ? prevDepth + 1 : 0;
+    // Coerce into [0, kENRMMaxListDepth] before ancestry-clamping: parser and
+    // indent commands cap their depths, but this pass indexes the counter
+    // arrays by depth, so an out-of-bounds level must never survive it.
+    NSInteger maxDepth = MIN(adjacent ? prevDepth + 1 : 0, kENRMMaxListDepth);
     if (blockRange.level > maxDepth) {
       blockRange.level = maxDepth;
+    } else if (blockRange.level < 0) {
+      blockRange.level = 0;
     }
     NSInteger depth = blockRange.level;
     for (NSInteger i = depth + 1; i <= kENRMMaxListDepth + 1; i++) {

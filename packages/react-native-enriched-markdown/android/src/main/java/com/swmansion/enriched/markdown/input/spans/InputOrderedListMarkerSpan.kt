@@ -44,11 +44,13 @@ class InputOrderedListMarkerSpan(
     // line where this span actually begins.
     if (text is Spanned && text.getSpanStart(this) != start) return
 
-    val label = "$ordinal."
+    // RTL (dir < 0) mirrors the marker to the trailing side and flips the label
+    // to ".3", matching the readonly renderer's OrderedListSpan.
+    val label = if (dir < 0) ".$ordinal" else "$ordinal."
     val originalAlign = paint.textAlign
-    paint.textAlign = Paint.Align.RIGHT
-    val markerRight = x + (depth * indentPerDepth + markerWidth - markerGap) * dir
-    canvas.drawText(label, markerRight, baseline.toFloat(), paint)
+    paint.textAlign = if (dir < 0) Paint.Align.LEFT else Paint.Align.RIGHT
+    val markerEdge = x + (depth * indentPerDepth + markerWidth - markerGap) * dir
+    canvas.drawText(label, markerEdge, baseline.toFloat(), paint)
     paint.textAlign = originalAlign
   }
 

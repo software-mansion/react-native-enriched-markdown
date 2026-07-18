@@ -193,7 +193,12 @@ static int onEnterBlock(MD_BLOCKTYPE blockType, void *detail, void *userdata)
     BlockInfo blockInfo;
     BOOL ordered = !context->listContainerStack.empty() && context->listContainerStack.back();
     blockInfo.type = ordered ? ENRMInputBlockTypeOrderedListItem : ENRMInputBlockTypeUnorderedListItem;
-    blockInfo.level = context->listContainerStack.empty() ? 0 : (NSInteger)context->listContainerStack.size() - 1;
+    // Clamp to the shared max depth (matches Android's parser): markdown can
+    // nest deeper than the editor represents, and downstream metadata passes
+    // size their counters by kENRMMaxListDepth.
+    blockInfo.level = context->listContainerStack.empty()
+                          ? 0
+                          : MIN((NSInteger)context->listContainerStack.size() - 1, kENRMMaxListDepth);
     context->openBlockStack.push_back(blockInfo);
     return 0;
   }
