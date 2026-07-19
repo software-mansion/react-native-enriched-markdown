@@ -569,7 +569,7 @@ Style configuration for formatted text in the input.
 
 ### `listItemSpacing`
 
-Vertical spacing (points) added above each bullet list item so items read as separate rows. iOS applies it via `paragraphSpacingBefore`; Android via a `LineHeightSpan`.
+Vertical spacing (points) added above each list item (bullet and numbered alike) so items read as separate rows. iOS applies it via `paragraphSpacingBefore`; Android via a `LineHeightSpan`.
 
 | Type     | Default Value | Platform |
 | -------- | ------------- | -------- |
@@ -934,11 +934,11 @@ Toggles a heading of the given level (`1`–`6`) on the cursor's paragraph. Call
 
 ### `toggleUnorderedList()`
 
-Turns the cursor's paragraph(s) into bullet list items, or back into regular paragraphs if they already are. Operates on the whole paragraph.
+Turns the cursor's paragraph(s) into bullet list items, or back into regular paragraphs if they already are. Operates on the whole paragraph. List items are single-line — each item is exactly one paragraph, and Markdown imported with multi-paragraph (loose) items keeps only each item's first line as a list item.
 
 ### `toggleOrderedList()`
 
-Turns the cursor's paragraph(s) into numbered list items, or back into regular paragraphs if they already are. Numbering derives from an item's position among its adjacent same-depth siblings. Toggling one list type on a line carrying the other replaces it.
+Turns the cursor's paragraph(s) into numbered list items, or back into regular paragraphs if they already are. Numbering derives from an item's position among its adjacent same-depth siblings. Toggling one list type on a line carrying the other replaces it, keeping the item's nesting depth.
 
 ### `indentList()`
 

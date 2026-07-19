@@ -72,7 +72,6 @@ using namespace facebook::react;
   ENRMPlaceholderLabel *_placeholderLabel;
 
   NSUInteger _lastTextLength;
-  NSUInteger _lastLineCount;
   NSRange _lastSelectedRange;
   NSRange _preEditSelectedRange;
 
@@ -91,6 +90,10 @@ using namespace facebook::react;
   ENRMInputBlockType _preEditBlockType;
   NSInteger _preEditBlockLevel;
   BOOL _preEditParagraphWasEmpty;
+  // Whether the replaced range contained a line break, captured before the edit
+  // applies (the deleted characters are gone afterwards). Drives the full-vs-
+  // scoped reformat decision in handleTextChanged.
+  BOOL _preEditReplacedNewline;
 
   std::optional<CGRect> _prevCaretRect;
 
@@ -940,7 +943,12 @@ using namespace facebook::react;
       [storage endEditing];
     }
   } else if (paragraphRange.length == 0) {
-    [_blockStore setBlockType:type level:level forParagraphRange:paragraphRange inText:text];
+    // Switching unordered <-> ordered keeps the item's nesting depth.
+    NSInteger resolvedLevel = level;
+    if (ENRMBlockTypeIsListItem(type) && current != nil && ENRMBlockTypeIsListItem(current.type)) {
+      resolvedLevel = current.level;
+    }
+    [_blockStore setBlockType:type level:resolvedLevel forParagraphRange:paragraphRange inText:text];
   } else {
     // Blocks are single-paragraph: set one range per paragraph the selection
     // touches, not one range spanning them all — otherwise the next edit's
@@ -949,8 +957,16 @@ using namespace facebook::react;
         enumerateSubstringsInRange:paragraphRange
                            options:NSStringEnumerationByParagraphs | NSStringEnumerationSubstringNotRequired
                         usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+                          // Switching unordered <-> ordered keeps each line's nesting depth.
+                          NSInteger paragraphLevel = level;
+                          if (ENRMBlockTypeIsListItem(type)) {
+                            ENRMBlockRange *existing = [self listBlockForParagraphAtPosition:substringRange.location];
+                            if (existing != nil) {
+                              paragraphLevel = existing.level;
+                            }
+                          }
                           [self->_blockStore setBlockType:type
-                                                    level:level
+                                                    level:paragraphLevel
                                         forParagraphRange:substringRange
                                                    inText:text];
                         }];
@@ -1008,14 +1024,32 @@ using namespace facebook::react;
     return;
   }
 
-  NSInteger newDepth = MIN(MAX(listBlock.level + delta, (NSInteger)0), kENRMMaxListDepth);
-  if (newDepth == listBlock.level) {
-    return;
-  }
-
   NSString *text = ENRMGetPlainText(_textView);
   NSRange paragraphRange = [text paragraphRangeForRange:_textView.selectedRange];
-  [_blockStore setBlockType:listBlock.type level:newDepth forParagraphRange:paragraphRange inText:text];
+
+  // Adjust every selected paragraph that is a list item, each clamped from its
+  // own depth (mirrors Android's forEachSelectedLine and toggleBlockType's
+  // paragraph enumeration — one range per line, so normalize can't clip the
+  // block to the selection's first line).
+  if (paragraphRange.length == 0) {
+    NSInteger newDepth = MIN(MAX(listBlock.level + delta, (NSInteger)0), kENRMMaxListDepth);
+    [_blockStore setBlockType:listBlock.type level:newDepth forParagraphRange:paragraphRange inText:text];
+  } else {
+    [text
+        enumerateSubstringsInRange:paragraphRange
+                           options:NSStringEnumerationByParagraphs | NSStringEnumerationSubstringNotRequired
+                        usingBlock:^(NSString *substring, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+                          ENRMBlockRange *block = [self listBlockForParagraphAtPosition:substringRange.location];
+                          if (block == nil) {
+                            return;
+                          }
+                          NSInteger newDepth = MIN(MAX(block.level + delta, (NSInteger)0), kENRMMaxListDepth);
+                          [self->_blockStore setBlockType:block.type
+                                                    level:newDepth
+                                        forParagraphRange:substringRange
+                                                   inText:text];
+                        }];
+  }
 
   [_blockStore normalizeToLineBoundsInText:text];
   [self applyFormatting];
@@ -1075,6 +1109,19 @@ using namespace facebook::react;
       return;
     }
   }
+}
+
+/// Whether `range` of the current (pre-edit) text contains a line break. Scans
+/// only the replaced run, mirroring Android's editTouchedNewline.
+- (BOOL)replacedRangeTouchesNewline:(NSRange)range
+{
+  NSString *text = _textView.textStorage.string;
+  if (range.length == 0 || range.location >= text.length) {
+    return NO;
+  }
+  NSRange clamped = NSMakeRange(range.location, MIN(range.length, text.length - range.location));
+  return [text rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet] options:0 range:clamped].location !=
+         NSNotFound;
 }
 
 /// Whether the caret's paragraph had no glyph content at the start of the edit
@@ -1257,6 +1304,7 @@ using namespace facebook::react;
   _layoutManager.emptyBulletLocation = location;
   _layoutManager.emptyBulletFont = _formatterStyle.baseFont;
   _layoutManager.emptyBulletColor = _formatterStyle.baseTextColor;
+  _layoutManager.emptyBulletRTL = [self emptyListLineIsRTL];
   _layoutManager.listItemSpacing = _formatterStyle.listItemSpacing;
 
   // An empty editor never runs the formatter (it early-returns at length 0), so
@@ -1269,6 +1317,24 @@ using namespace facebook::react;
 
   // The empty-editor bullet would otherwise overlap the placeholder.
   [self updatePlaceholderVisibility];
+}
+
+/// Writing direction the empty list line resolves to, for mirroring its marker.
+/// An empty line has no strong character, so Auto and FirstStrong fall back the
+/// same way the formatter's direction pass would.
+- (BOOL)emptyListLineIsRTL
+{
+  switch (_writingDirectionMode) {
+    case ENRMWritingDirectionModeLTR:
+      return NO;
+    case ENRMWritingDirectionModeRTL:
+      return YES;
+    case ENRMWritingDirectionModeFirstStrong:
+      return _resolvedLayoutDirection == NSWritingDirectionRightToLeft;
+    case ENRMWritingDirectionModeAuto:
+    default:
+      return ENRMParagraphIsRTL(nil);
+  }
 }
 
 /// Heading level (1-6, or 0) of the caret's paragraph, matched by line start so
@@ -2142,6 +2208,9 @@ using namespace facebook::react;
     // lists arrive via replaceTextInRange:.)
     if (!insertedHasGlyphContent && insertedLength == 1) {
       [self reconcileBlockContinuationAfterNewlineAt:editLocation previousItemWasEmpty:_preEditParagraphWasEmpty];
+      // Continuation re-seeds fresh block ranges whose ordinal defaults to 1;
+      // normalize again so the list-metadata pass renumbers the adjacent run.
+      [_blockStore normalizeToLineBoundsInText:plainText];
     }
   }
 
@@ -2159,16 +2228,25 @@ using namespace facebook::react;
 
   // An edit that adds or removes lines can shift the depth clamp and ordered
   // numbering of items far below the edited line; re-stamp the whole document
-  // in that case. Same-line typing keeps the scoped per-keystroke path.
-  NSString *postEditText = ENRMGetPlainText(_textView);
-  NSUInteger lineCount = 1;
-  for (NSUInteger i = 0; i < postEditText.length; i++) {
-    if ([postEditText characterAtIndex:i] == '\n') {
-      lineCount++;
+  // in that case. Same-line typing keeps the scoped per-keystroke path. Like
+  // Android's editTouchedNewline, only the edited runs are scanned — O(edit
+  // size), not O(document): the inserted run in the post-edit text here, and
+  // the replaced run when the change was intercepted (the deleted characters
+  // are gone by now, so shouldChangeTextInRange captured that half).
+  BOOL touchedNewline = _preEditReplacedNewline;
+  _preEditReplacedNewline = NO;
+  if (!touchedNewline && insertedLength > 0) {
+    NSString *postEditText = ENRMGetPlainText(_textView);
+    NSUInteger insertedEnd = MIN(editLocation + insertedLength, postEditText.length);
+    if (editLocation < insertedEnd) {
+      NSRange insertedRun = NSMakeRange(editLocation, insertedEnd - editLocation);
+      touchedNewline = [postEditText rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]
+                                                     options:0
+                                                       range:insertedRun]
+                           .location != NSNotFound;
     }
   }
-  if (lineCount != _lastLineCount) {
-    _lastLineCount = lineCount;
+  if (touchedNewline) {
     [self applyFormatting];
   } else {
     [self applyFormattingScopedToEditAtLocation:editLocation insertedLength:insertedLength];
@@ -2275,6 +2353,7 @@ using namespace facebook::react;
   _preEditSelectedRange = _lastSelectedRange;
   [self capturePreEditBlockForRange:range];
   _preEditParagraphWasEmpty = [self preEditParagraphWasEmpty:range];
+  _preEditReplacedNewline = [self replacedRangeTouchesNewline:range];
   _isTextChanging = YES;
   [self stripLinkTypingAttributes];
   return YES;
@@ -2386,6 +2465,7 @@ using namespace facebook::react;
     return nil;
   }
   _preEditSelectedRange = _lastSelectedRange;
+  _preEditReplacedNewline = [self replacedRangeTouchesNewline:range];
   _isTextChanging = YES;
   return text;
 }

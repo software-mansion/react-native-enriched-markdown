@@ -85,7 +85,7 @@ Behavior notes:
 
 Heading font sizes, weights, and colors are configurable per level — see [Customizing Styles](#customizing-enrichedmarkdowntextinput--styles).
 
-## Bullet Lists
+## Lists
 
 `EnrichedMarkdownTextInput` supports nested unordered (bullet) and ordered (numbered) lists, serialized to Markdown as `- ` / `1. ` with three spaces of indentation per nesting level. Ordered items are numbered by their position among adjacent same-depth siblings, so numbering stays correct as items are added, removed, or reordered. Like headings, list items are block-level — they apply to whole paragraphs. Manage them through the component ref:
 
@@ -102,10 +102,11 @@ Behavior notes:
 - **Backspace at the start of an item** outdents it; at depth 0 it removes the bullet.
 - An emptied list line stays a list item (its bullet keeps showing) until you toggle it off or Backspace out of it, so text you type next continues in the list.
 - The bullet marker exists only in the serialized Markdown and the rendered glyph — it is never part of the editor's text, so it won't collide with `-`-prefixed text such as mentions.
+- **List items are single-line.** Each item is exactly one paragraph. Importing or pasting Markdown with *loose* list items (an item containing multiple paragraphs) keeps only the item's first line as a list item — continuation paragraphs become regular paragraphs, not list-styled blocks.
 
 Whether the cursor's paragraph is a list item, and its nesting depth, are reported through the [`onChangeState`](API_REFERENCE.md#onchangestate) payload as `unorderedList` / `orderedList` (`{ isActive, depth }`), so you can highlight the list buttons in your toolbar.
 
-Use the [`listItemSpacing`](API_REFERENCE.md#listitemspacing) prop to add vertical spacing between items so they read as separate rows.
+Use the [`listItemSpacing`](API_REFERENCE.md#listitemspacing) prop to add vertical spacing between list items (bullet and numbered alike) so they read as separate rows.
 
 ## Links
 

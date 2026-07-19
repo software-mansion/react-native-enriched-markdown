@@ -28,6 +28,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, nullable) UIFont *emptyBulletFont;
 @property (nonatomic, strong, nullable) UIColor *emptyBulletColor;
 
+/// Whether the empty list line lays out right-to-left (no character to resolve
+/// the paragraph direction from), so its marker mirrors to the trailing edge.
+@property (nonatomic, assign) BOOL emptyBulletRTL;
+
 /// Leading spacing (points) applied above list items, so the empty-line marker's
 /// baseline can account for the spacing that pushes the text down in the fragment.
 @property (nonatomic, assign) CGFloat listItemSpacing;
