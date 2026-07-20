@@ -64,7 +64,7 @@
   "bugs": {
     "url": "https://github.com/software-mansion/react-native-enriched-markdown/issues"
   },
-  "homepage": "https://github.com/software-mansion/react-native-enriched-markdown#readme",
+  "homepage": "https://enriched.swmansion.com/markdown",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
