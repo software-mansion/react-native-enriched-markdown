@@ -177,6 +177,7 @@ export function toTableStyle(
     cellPaddingHorizontal: controls.cellPaddingHorizontal,
     cellPaddingVertical: controls.cellPaddingVertical,
     horizontalOverflow: controls.horizontalOverflow,
+    align: controls.align,
   };
 }
 
