@@ -486,10 +486,12 @@ object MeasurementStore {
     text: CharSequence?,
     widthPx: Int,
   ) {
+    // widthPx == 1 is the coerceAtLeast(1) fallback for a not-yet-measured view
+    if (widthPx <= 1) return
     val spanned = text as? android.text.Spanned ?: return
     spanned
       .getSpans(0, spanned.length, com.swmansion.enriched.markdown.spans.ImageSpan::class.java)
-      .forEach { it.prepareForMeasurement(widthPx) }
+      .forEach { it.prepareForMeasurement(spanned, widthPx) }
   }
 
   private fun createStaticLayout(

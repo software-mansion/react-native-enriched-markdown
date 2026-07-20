@@ -62,7 +62,6 @@ class ImageSpan(
   private val requestHeaders: Map<String, String> = styleConfig.imageRequestHeaders
   private val requestKey: String = ImageCache.requestKey(imageUrl, requestHeaders)
 
-
   private var cachedWidth: Int = 0
   private var viewRef: WeakReference<TextView>? = null
   private var sourceDrawable: Drawable? = null
@@ -91,9 +90,13 @@ class ImageSpan(
     return height
   }
 
-  fun prepareForMeasurement(widthPx: Int) {
-    if (!dynamicBoxHeight || viewRef != null || widthPx <= 0) return
-    boxHeight = resolveBoxHeight(widthPx)
+  fun prepareForMeasurement(
+    text: Spanned,
+    widthPx: Int,
+  ) {
+    if (!dynamicBoxHeight || widthPx <= 0) return
+    val available = availableWidthIn(text, widthPx)
+    if (available > 0) boxHeight = resolveBoxHeight(available)
   }
 
   init {
@@ -209,12 +212,27 @@ class ImageSpan(
     cachedWidth = newWidth
     if (sourceDrawable != null) {
       wrapAndAssignDrawable()
+      return
+    }
+    if (dynamicBoxHeight) {
+      val newBoxHeight = resolveBoxHeight(newWidth)
+      if (newBoxHeight != boxHeight) {
+        boxHeight = newBoxHeight
+        requestReflow()
+      }
     }
   }
 
   private fun getAvailableWidth(view: TextView): Int {
     val baseWidth = (view.layout?.width ?: view.width).coerceAtLeast(0)
     val text = view.text as? Spanned ?: return baseWidth
+    return availableWidthIn(text, baseWidth)
+  }
+
+  private fun availableWidthIn(
+    text: Spanned,
+    baseWidth: Int,
+  ): Int {
     val start = text.getSpanStart(this).takeIf { it >= 0 } ?: return baseWidth
     val end = text.getSpanEnd(this).coerceAtLeast(start)
     // Subtract leading margins (list bullet/indent, blockquote bar) that consume
