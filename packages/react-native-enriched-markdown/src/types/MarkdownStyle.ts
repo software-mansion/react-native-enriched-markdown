@@ -158,6 +158,12 @@ interface TableStyle extends BaseBlockStyle {
   cellPaddingHorizontal?: number;
   cellPaddingVertical?: number;
   horizontalOverflow?: number;
+  /**
+   * Horizontal alignment of the whole table within the container. Only applies
+   * when the table is narrower than the container; tables that overflow and
+   * scroll always start at the table's beginning. Default: left-aligned.
+   */
+  align?: 'left' | 'center' | 'right';
 }
 
 interface TaskListStyle {

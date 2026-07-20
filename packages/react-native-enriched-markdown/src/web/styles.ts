@@ -446,11 +446,20 @@ export function tableBodyRowStyle(
 
 function tableWrapperStyle(style: MarkdownStyleInternal): CSSProperties {
   const table = style.table;
+  const alignment: CSSProperties = table.align
+    ? {
+        width: 'fit-content',
+        maxWidth: '100%',
+        marginLeft: table.align === 'left' ? 0 : 'auto',
+        marginRight: table.align === 'right' ? 0 : 'auto',
+      }
+    : {};
   return {
     overflowX: 'auto',
     overflowY: 'hidden',
     marginTop: table.marginTop,
     marginBottom: table.marginBottom,
+    ...alignment,
     // borderRadius must live on the wrapper, not the <table> — border-collapse:
     // collapse causes browsers to ignore border-radius on the table element itself.
     borderRadius: table.borderRadius,
