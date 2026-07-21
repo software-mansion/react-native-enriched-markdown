@@ -228,6 +228,7 @@ export function toListStyle(
       : {}),
     gapWidth: controls.gapWidth,
     marginLeft: controls.marginLeft,
+    itemSpacing: controls.itemSpacing,
   };
 }
 

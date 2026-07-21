@@ -258,6 +258,7 @@ export type ListStyleControls = {
   markerFontWeight: string;
   gapWidth: number;
   marginLeft: number;
+  itemSpacing: number;
 };
 
 export const listStyledDefaults: ListStyleControls = {
@@ -275,6 +276,7 @@ export const listStyledDefaults: ListStyleControls = {
   markerFontWeight: '',
   gapWidth: 8,
   marginLeft: 24,
+  itemSpacing: 0,
 };
 
 export type StrongStyleControls = {
