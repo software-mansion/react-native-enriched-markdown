@@ -171,6 +171,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   NSString *_listStyleMarkerFontWeight;
   CGFloat _listStyleGapWidth;
   CGFloat _listStyleMarginLeft;
+  CGFloat _listStyleItemSpacing;
   ENRMFontSlot *_listMarkerFont;
   ENRMFontSlot *_listStyleFont;
   // Code block properties
@@ -444,6 +445,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_listStyleMarkerFontWeight = [_listStyleMarkerFontWeight copy];
   copy->_listStyleGapWidth = _listStyleGapWidth;
   copy->_listStyleMarginLeft = _listStyleMarginLeft;
+  copy->_listStyleItemSpacing = _listStyleItemSpacing;
   copy->_codeBlockFontSize = _codeBlockFontSize;
   copy->_codeBlockFontFamily = [_codeBlockFontFamily copy];
   copy->_codeBlockFontWeight = [_codeBlockFontWeight copy];
@@ -1873,6 +1875,16 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
 - (void)setListStyleMarginLeft:(CGFloat)newValue
 {
   _listStyleMarginLeft = newValue;
+}
+
+- (CGFloat)listStyleItemSpacing
+{
+  return _listStyleItemSpacing;
+}
+
+- (void)setListStyleItemSpacing:(CGFloat)newValue
+{
+  _listStyleItemSpacing = newValue;
 }
 
 - (UIFont *)listMarkerFont

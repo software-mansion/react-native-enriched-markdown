@@ -804,6 +804,11 @@ BOOL applyMarkdownStyleToConfig(StyleConfig *config, const MarkdownStyle &newSty
     changed = YES;
   }
 
+  if (newStyle.list.itemSpacing != oldStyle.list.itemSpacing) {
+    [config setListStyleItemSpacing:newStyle.list.itemSpacing];
+    changed = YES;
+  }
+
   // ── Code Block ─────────────────────────────────────────────────────────────
 
   if (newStyle.codeBlock.fontSize != oldStyle.codeBlock.fontSize) {

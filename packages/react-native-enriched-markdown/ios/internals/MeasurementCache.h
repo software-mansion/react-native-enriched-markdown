@@ -116,7 +116,8 @@ template <typename StyleStruct> inline size_t computeStyleFingerprint(const Styl
   hashFields(s.blockquote.borderWidth, s.blockquote.gapWidth);
 
   hashTextLayout(s.list);
-  hashFields(s.list.bulletSize, s.list.markerMinWidth, s.list.markerFontWeight, s.list.gapWidth, s.list.marginLeft);
+  hashFields(s.list.bulletSize, s.list.markerMinWidth, s.list.markerFontWeight, s.list.gapWidth, s.list.marginLeft,
+             s.list.itemSpacing);
 
   // Code & Inlines
   hashFields(s.codeBlock.fontFamily, s.codeBlock.fontSize, s.codeBlock.fontWeight, s.codeBlock.marginTop,

@@ -278,6 +278,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setListStyleGapWidth:(CGFloat)newValue;
 - (CGFloat)listStyleMarginLeft;
 - (void)setListStyleMarginLeft:(CGFloat)newValue;
+- (CGFloat)listStyleItemSpacing;
+- (void)setListStyleItemSpacing:(CGFloat)newValue;
 - (UIFont *)listMarkerFont;
 - (UIFont *)listStyleFont;
 - (CGFloat)effectiveListGapWidth;
