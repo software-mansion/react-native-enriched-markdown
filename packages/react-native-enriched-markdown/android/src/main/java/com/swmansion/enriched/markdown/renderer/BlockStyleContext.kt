@@ -44,8 +44,6 @@ class BlockStyleContext {
   var taskItemCount = 0
   var accumulatedIndent = 0
 
-  // Buffer positions where rendered list items start; consumed by the
-  // root-level ListRenderer to insert vertical spacing between items.
   val listItemStarts = mutableListOf<Int>()
 
   private val orderedListItemNumbers = ArrayDeque<Int>()

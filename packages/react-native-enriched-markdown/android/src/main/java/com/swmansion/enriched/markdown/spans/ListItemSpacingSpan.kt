@@ -23,8 +23,6 @@ class ListItemSpacingSpan(
     lineHeight: Int,
     fm: Paint.FontMetricsInt,
   ) {
-    // chooseHeight runs for every line of the paragraphs this span touches;
-    // only the line terminated by the spanned newline gets the extra space.
     val spanEnd = (text as? Spanned)?.getSpanEnd(this) ?: return
     if (end != spanEnd) return
 
