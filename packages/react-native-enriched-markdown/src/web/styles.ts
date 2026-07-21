@@ -561,7 +561,7 @@ export function buildStyles(style: MarkdownStyleInternal): Styles {
       ...listStyle(style),
       // A nested list sits directly under its parent item's text; itemSpacing
       // (not the list's outer margins) controls that gap, like on native.
-      marginTop: style.list.itemSpacing,
+      marginTop: Math.max(0, style.list.itemSpacing),
       marginBottom: 0,
     },
     listTask: listStyle(style, true),

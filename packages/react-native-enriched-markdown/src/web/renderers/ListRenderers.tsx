@@ -86,7 +86,7 @@ function ListItemRenderer({
     : null;
 
   return (
-    <li style={listItemStyle(style, isTask, index === 0)}>
+    <li style={listItemStyle(style, isTask, (index ?? 0) === 0)}>
       <span style={checkedStyle}>
         {isTask && (
           <input
