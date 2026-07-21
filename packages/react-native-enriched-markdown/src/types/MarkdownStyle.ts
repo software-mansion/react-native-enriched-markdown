@@ -161,7 +161,10 @@ interface TableStyle extends BaseBlockStyle {
   /**
    * Horizontal alignment of the whole table within the container. Only applies
    * when the table is narrower than the container; tables that overflow and
-   * scroll always start at the table's beginning. Default: left-aligned.
+   * scroll always start at the table's beginning. When unset, tables keep the
+   * legacy start-aligned placement. On web, setting any value (including
+   * 'left') also makes the table shrink to fit its content instead of filling
+   * the container width.
    */
   align?: 'left' | 'center' | 'right';
 }

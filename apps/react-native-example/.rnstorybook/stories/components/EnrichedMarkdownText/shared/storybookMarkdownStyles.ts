@@ -179,7 +179,7 @@ export type TableStyleControls = {
   cellPaddingHorizontal: number;
   cellPaddingVertical: number;
   horizontalOverflow: number;
-  align: TableAlign;
+  align: TableAlign | '';
 };
 
 export const tableStyledDefaults: TableStyleControls = {
@@ -201,7 +201,7 @@ export const tableStyledDefaults: TableStyleControls = {
   cellPaddingHorizontal: 12,
   cellPaddingVertical: 8,
   horizontalOverflow: 0,
-  align: 'left',
+  align: '',
 };
 
 export type TaskListStyleControls = {
@@ -555,10 +555,11 @@ export function mathTextAlignControl(description: string) {
 }
 
 const TABLE_ALIGN_OPTIONS = [
+  '',
   'left',
   'center',
   'right',
-] as const satisfies readonly TableAlign[];
+] as const satisfies readonly (TableAlign | '')[];
 
 export function tableAlignControl(description: string) {
   return {

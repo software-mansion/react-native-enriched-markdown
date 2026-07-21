@@ -105,7 +105,9 @@ const argTypes = {
     max: 48,
     step: 2,
   }),
-  align: tableAlignControl('markdownStyle.table.align'),
+  align: tableAlignControl(
+    "markdownStyle.table.align ('' = unset, legacy full-width table on web)"
+  ),
 };
 
 export default storyMeta('Block', 'Table');
