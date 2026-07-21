@@ -1,0 +1,10 @@
+{
+  "name": "enriched-markdown-ios-example",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "xcodebuild -project EnrichedMarkdownExample/EnrichedMarkdownExample.xcodeproj -scheme EnrichedMarkdownExample -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build build",
+    "start": "yarn build && xcrun simctl boot 'iPhone 17' 2>/dev/null || true && open -a Simulator && APP=$(find build -name 'EnrichedMarkdownExample.app' -path '*Debug-iphonesimulator*' | head -1) && xcrun simctl install booted \"$APP\" && xcrun simctl launch booted swmansion.enriched.markdown.ios.example",
+    "clean": "rm -rf build"
+  }
+}
