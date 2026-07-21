@@ -282,8 +282,6 @@ void applyLineHeight(NSMutableAttributedString *output, NSRange range, CGFloat l
                   }];
 #endif
 
-  // A block image's line must grow to the image box height; keep the minimum so
-  // surrounding text lines still get the configured line height.
   BOOL hasBlockImage = ENRMRangeContainsBlockImage(output, range);
 
   NSMutableParagraphStyle *style = getOrCreateParagraphStyle(output, range.location);
@@ -374,7 +372,6 @@ void applyBaselineOffset(NSMutableAttributedString *output, NSRange range)
                     if (existingOffset != nil) {
                       return;
                     }
-                    // Keep block image attachments anchored to their baseline.
                     [output enumerateAttribute:NSAttachmentAttributeName
                                        inRange:subrange
                                        options:0
