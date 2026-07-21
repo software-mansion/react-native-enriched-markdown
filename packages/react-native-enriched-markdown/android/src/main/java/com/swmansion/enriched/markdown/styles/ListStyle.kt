@@ -17,6 +17,7 @@ data class ListStyle(
   val markerFontWeight: String,
   val gapWidth: Float,
   val marginLeft: Float,
+  val itemSpacing: Float,
 ) : BaseBlockStyle {
   fun effectiveMarkerWidth(naturalWidth: Float): Float = naturalWidth.coerceAtLeast(markerMinWidth)
 
@@ -40,6 +41,7 @@ data class ListStyle(
       val markerFontWeight = parser.parseString(map, "markerFontWeight", "normal")
       val gapWidth = parser.toPixelFromDIP(map.getDouble("gapWidth").toFloat())
       val marginLeft = parser.toPixelFromDIP(map.getDouble("marginLeft").toFloat())
+      val itemSpacing = parser.toPixelFromDIP(map.getDouble("itemSpacing").toFloat().coerceAtLeast(0f))
 
       return ListStyle(
         fontSize,
@@ -56,6 +58,7 @@ data class ListStyle(
         markerFontWeight,
         gapWidth,
         marginLeft,
+        itemSpacing,
       )
     }
   }
