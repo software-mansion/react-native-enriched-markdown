@@ -304,6 +304,7 @@ function App() {
 | `markerFontWeight` | `string` | Number marker font weight |
 | `gapWidth` | `number` | Gap between marker and text |
 | `marginLeft` | `number` | Left margin for nesting |
+| `itemSpacing` | `number` | Vertical spacing between consecutive items, including nested ones (default: `0`) |
 
 ### Code Block-specific
 
