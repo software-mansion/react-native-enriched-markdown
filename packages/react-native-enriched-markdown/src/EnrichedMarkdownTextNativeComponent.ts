@@ -39,6 +39,7 @@ interface ListStyleInternal extends BaseBlockStyleInternal {
   markerFontWeight: string;
   gapWidth: CodegenTypes.Float;
   marginLeft: CodegenTypes.Float;
+  itemSpacing: CodegenTypes.Float;
 }
 
 interface CodeBlockStyleInternal extends BaseBlockStyleInternal {

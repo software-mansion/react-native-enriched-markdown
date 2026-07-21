@@ -108,6 +108,7 @@ const DEFAULT_NORMALIZED_STYLE: MarkdownStyleInternal = Object.freeze({
     markerFontWeight: '500',
     gapWidth: 12,
     marginLeft: 24,
+    itemSpacing: 0,
   },
   codeBlock: {
     fontSize: 14,

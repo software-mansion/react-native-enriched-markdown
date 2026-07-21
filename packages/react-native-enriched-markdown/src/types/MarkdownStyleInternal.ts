@@ -49,6 +49,7 @@ interface ListStyleInternal extends BaseBlockStyleInternal {
   markerFontWeight: string;
   gapWidth: number;
   marginLeft: number;
+  itemSpacing: number;
 }
 
 interface CodeBlockStyleInternal extends BaseBlockStyleInternal {

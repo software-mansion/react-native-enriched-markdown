@@ -39,6 +39,13 @@ interface ListStyle extends BaseBlockStyle {
   markerFontWeight?: string;
   gapWidth?: number;
   marginLeft?: number;
+  /**
+   * Vertical spacing between consecutive list items, including nested ones.
+   * Adds no space above the first item or below the last one — the outer
+   * edges are still controlled by `marginTop`/`marginBottom`.
+   * @default 0
+   */
+  itemSpacing?: number;
 }
 
 interface CodeBlockStyle extends BaseBlockStyle {
