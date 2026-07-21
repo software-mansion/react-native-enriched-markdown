@@ -82,6 +82,8 @@ export interface RendererProps {
   style: MarkdownStyleInternal;
   styles: Styles;
   parentType?: NodeType;
+  /** Position among the parent node's children. */
+  index?: number;
   callbacks: RendererCallbacks;
   capabilities: RenderCapabilities;
   renderChildren: (node: ASTNode) => ReactNode;

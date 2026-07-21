@@ -44,6 +44,7 @@ function ListItemRenderer({
   node,
   style,
   styles,
+  index,
   callbacks,
   renderChildren,
 }: RendererProps) {
@@ -85,7 +86,7 @@ function ListItemRenderer({
     : null;
 
   return (
-    <li style={listItemStyle(isTask)}>
+    <li style={listItemStyle(style, isTask, index === 0)}>
       <span style={checkedStyle}>
         {isTask && (
           <input

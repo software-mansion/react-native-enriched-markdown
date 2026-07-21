@@ -403,8 +403,17 @@ function tableStyle(style: MarkdownStyleInternal): CSSProperties {
   };
 }
 
-export function listItemStyle(isTask: boolean): CSSProperties | undefined {
-  return isTask ? { listStyle: 'none' } : undefined;
+export function listItemStyle(
+  style: MarkdownStyleInternal,
+  isTask: boolean,
+  isFirstChild: boolean
+): CSSProperties | undefined {
+  const { itemSpacing } = style.list;
+  const marginTop = !isFirstChild && itemSpacing > 0 ? itemSpacing : undefined;
+  if (isTask) {
+    return { listStyle: 'none', marginTop };
+  }
+  return marginTop !== undefined ? { marginTop } : undefined;
 }
 
 export function checkedTaskTextStyle(
@@ -548,7 +557,13 @@ export function buildStyles(style: MarkdownStyleInternal): Styles {
     h6: headingStyle(style, '6'),
     blockquote: blockquoteStyle(style),
     list: listStyle(style),
-    listNested: { ...listStyle(style), marginBottom: 0 },
+    listNested: {
+      ...listStyle(style),
+      // A nested list sits directly under its parent item's text; itemSpacing
+      // (not the list's outer margins) controls that gap, like on native.
+      marginTop: style.list.itemSpacing,
+      marginBottom: 0,
+    },
     listTask: listStyle(style, true),
     codeBlock,
     codeBlockFont: { fontFamily: codeBlock.fontFamily },
