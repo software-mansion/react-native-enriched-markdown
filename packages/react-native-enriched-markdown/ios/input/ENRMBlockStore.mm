@@ -32,6 +32,24 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
   return [_ranges copy];
 }
 
+- (nullable ENRMBlockRange *)blockStartingAtLocation:(NSUInteger)location
+{
+  NSInteger lo = 0;
+  NSInteger hi = (NSInteger)_ranges.count - 1;
+  while (lo <= hi) {
+    NSInteger mid = (lo + hi) / 2;
+    NSUInteger start = _ranges[(NSUInteger)mid].range.location;
+    if (start < location) {
+      lo = mid + 1;
+    } else if (start > location) {
+      hi = mid - 1;
+    } else {
+      return _ranges[(NSUInteger)mid];
+    }
+  }
+  return nil;
+}
+
 // Incoming ranges are trusted to be non-overlapping and line-scoped — the
 // parser owns that invariant (md4c block structure never overlaps at the same
 // nesting level, and nested containers are not yet mapped). Revisit enforcement
@@ -188,6 +206,11 @@ static NSRange paragraphBoundsForRange(NSRange range, NSString *text)
     BOOL emptyLine = lineRange.length == 0;
     if ((emptyLine && !ENRMBlockTypePersistsWhenEmpty(blockRange.type)) ||
         (NSInteger)lineRange.location <= previousEnd) {
+      // Dedup: drop a range that resolves to an already-claimed paragraph. This is a
+      // legitimate self-heal path (a heading anchor and the block it merges into can
+      // briefly share a start after a line-join), so it is deliberately silent — it
+      // cannot distinguish that benign case from genuine corruption, so it does not
+      // assert here.
       [indexesToRemove addIndex:idx];
       continue;
     }

@@ -12,6 +12,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, readonly) NSArray<ENRMBlockRange *> *allRanges;
 
+/// Returns the block whose paragraph starts exactly at `location`, or nil.
+/// Ranges are kept sorted by start, so this is an O(log n) binary search — the
+/// single lookup callers use instead of linearly scanning `allRanges`. Relies on
+/// the one-block-per-paragraph invariant (paragraph starts are unique).
+- (nullable ENRMBlockRange *)blockStartingAtLocation:(NSUInteger)location;
+
 - (void)setRanges:(NSArray<ENRMBlockRange *> *)ranges;
 - (void)clearAll;
 

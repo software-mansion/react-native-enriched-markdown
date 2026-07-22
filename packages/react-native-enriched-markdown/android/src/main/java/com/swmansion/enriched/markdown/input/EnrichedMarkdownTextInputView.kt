@@ -463,7 +463,7 @@ class EnrichedMarkdownTextInputView(
     var prevLineStart = prevLineEnd
     while (prevLineStart > 0 && editable[prevLineStart - 1] != '\n') prevLineStart--
 
-    val prevBlock = blockStore.allRanges.firstOrNull { it.start == prevLineStart } ?: return
+    val prevBlock = blockStore.blockStartingAt(prevLineStart) ?: return
     val handler = formatter.handlerForBlock(prevBlock.type) ?: return
     if (!handler.continuesOnNewline) return
 
@@ -701,7 +701,7 @@ class EnrichedMarkdownTextInputView(
     } else {
       forEachSelectedLine { ls, le ->
         // Switching unordered <-> ordered keeps each line's nesting depth.
-        val existing = blockStore.allRanges.firstOrNull { it.start == ls && it.type in BlockType.LIST_ITEMS }
+        val existing = listBlockStartingAt(ls)
         blockStore.setBlock(type, existing?.level ?: 0, ls, le, editable)
       }
     }
@@ -729,7 +729,7 @@ class EnrichedMarkdownTextInputView(
     }
     val editable = text ?: return
     forEachSelectedLine { ls, le ->
-      val block = blockStore.allRanges.firstOrNull { it.start == ls && it.type in BlockType.LIST_ITEMS }
+      val block = listBlockStartingAt(ls)
       if (block != null) {
         val newDepth = (block.level + delta).coerceIn(0, MAX_LIST_DEPTH)
         blockStore.setBlock(block.type, newDepth, ls, le, editable)
@@ -763,6 +763,19 @@ class EnrichedMarkdownTextInputView(
    * @param restamp re-apply block formatting here (selection/command paths); the
    *   text-change pass passes false and stamps once afterwards.
    * @return true if an anchor was inserted or stripped (text/ranges mutated).
+   *
+   * When called from `onAfterTextChanged` this mutates the [Editable] from inside
+   * the text-change callback — normally an Android hazard around IME composition,
+   * undo/redo, and accessibility. It is safe here, and deliberately synchronous,
+   * because: every buffer mutation is wrapped in [runAsATransaction] (which sets
+   * `isDuringTransaction`, so [MarkdownTextWatcher] early-returns and the edit does
+   * not re-enter this pass), the whole `onAfterTextChanged` body holds
+   * `isProcessingTextChange`, and [isManagingAnchor] blocks re-entry via the
+   * selection-change path. The mutation must stay synchronous: the single-stamp
+   * ordering above, the caret placement past the anchor, and `lastProcessedText`
+   * all depend on the buffer reaching its final state within this same callback —
+   * deferring the insert/delete (e.g. via `post`) would run it outside every guard
+   * and reintroduce the double-bullet and stale-caret bugs.
    */
   private fun syncEmptyListAnchor(restamp: Boolean = true): Boolean {
     if (isManagingAnchor) return false
@@ -786,7 +799,7 @@ class EnrichedMarkdownTextInputView(
             val ls = lineStartOf(editable, i)
             val le = lineEndOf(editable, i)
             val onlyZwsp = le - ls == 1 && editable[ls] == ZWSP
-            val isEmptyListLine = onlyZwsp && blockStore.allRanges.any { it.start == ls && it.type in BlockType.LIST_ITEMS }
+            val isEmptyListLine = onlyZwsp && listBlockStartingAt(ls) != null
             if (!isEmptyListLine) {
               runAsATransaction { editable.delete(i, i + 1) }
               blockStore.adjustForEdit(i, 1, 0)
@@ -805,7 +818,7 @@ class EnrichedMarkdownTextInputView(
       if (selectionStart == selectionEnd) {
         val ls = lineStartOf(editable, caret)
         val le = lineEndOf(editable, caret)
-        val block = blockStore.allRanges.firstOrNull { it.start == ls && it.type in BlockType.LIST_ITEMS }
+        val block = listBlockStartingAt(ls)
         if (block != null && le == ls) {
           runAsATransaction { editable.insert(ls, ZWSP.toString()) }
           blockStore.adjustForEdit(ls, 0, 1)
@@ -1033,8 +1046,18 @@ class EnrichedMarkdownTextInputView(
     val cursor = pos.coerceIn(0, editable.length)
     var lineStart = cursor
     while (lineStart > 0 && !editable[lineStart - 1].isLineBreak()) lineStart--
-    return blockStore.allRanges.firstOrNull { it.start == lineStart }
+    return blockStore.blockStartingAt(lineStart)
   }
+
+  /**
+   * The list-item block whose paragraph starts exactly at [lineStart], or null.
+   * Line-start counterpart to [listBlockAtCursor] for the per-line loops
+   * (toggle / indent / anchor sync) that already hold a resolved line start.
+   * Routes through [BlockStore.blockStartingAt]'s O(log n) lookup instead of the
+   * linear `allRanges.firstOrNull { it.start == ls }` scans these sites repeated.
+   */
+  private fun listBlockStartingAt(lineStart: Int): BlockRange? =
+    blockStore.blockStartingAt(lineStart)?.takeIf { it.type in BlockType.LIST_ITEMS }
 
   /** Heading level (1-6) of the cursor's paragraph, or 0 when it is a plain paragraph. */
   fun headingLevelAtCursor(): Int {

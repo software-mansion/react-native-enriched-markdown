@@ -3,12 +3,18 @@
 #import "ParagraphStyleUtils.h"
 #import <UIKit/UIKit.h>
 
-@implementation ENRMInputLayoutManager
+@implementation ENRMInputLayoutManager {
+  // Reused across draw passes so a marker isn't drawn twice for a wrapped line's
+  // continuation fragments. Cleared at the start of each pass instead of freshly
+  // allocated, keeping the hot scroll path allocation-free.
+  NSMutableSet<NSNumber *> *_drawnParagraphLocations;
+}
 
 - (instancetype)init
 {
   if (self = [super init]) {
     _emptyBulletDepth = -1;
+    _drawnParagraphLocations = [NSMutableSet set];
   }
   return self;
 }
@@ -85,13 +91,53 @@ static CGFloat ENRMTrailingMarkerX(CGPoint origin, NSTextContainer *container, C
   return origin.x + container.size.width - leadingOffset;
 }
 
+/// Draws the list marker (ordered "N." / RTL ".N", or a depth-styled bullet) for
+/// one list line, resolving its horizontal anchor from the paragraph direction.
+/// Shared by the in-text fragment pass and the trailing empty-line pass so the
+/// RTL/ordered placement math lives in exactly one place.
+- (void)drawListMarkerOrdered:(BOOL)isOrdered
+                        depth:(NSInteger)depth
+                      ordinal:(NSInteger)ordinal
+                          rtl:(BOOL)isRTL
+                    baselineY:(CGFloat)baselineY
+                       origin:(CGPoint)origin
+                     usedRect:(CGRect)usedRect
+                    container:(NSTextContainer *)container
+                         font:(UIFont *)font
+                        color:(UIColor *)color
+{
+  CGFloat leadingOffset = container.lineFragmentPadding + (depth + 1) * kENRMListIndentPerDepth;
+  if (isOrdered) {
+    if (isRTL) {
+      [self
+          drawOrderedMarkerStartingAtX:ENRMTrailingMarkerX(origin, container, leadingOffset) + kENRMListBulletGap / 2.0
+                             baselineY:baselineY
+                               ordinal:ordinal
+                                  font:font
+                                 color:color];
+    } else {
+      [self drawOrderedMarkerEndingAtX:origin.x + usedRect.origin.x - kENRMListBulletGap / 2.0
+                             baselineY:baselineY
+                               ordinal:ordinal
+                                  font:font
+                                 color:color];
+    }
+  } else {
+    CGFloat markerX = isRTL ? ENRMTrailingMarkerX(origin, container, leadingOffset) + kENRMListBulletGap
+                            : origin.x + usedRect.origin.x - kENRMListBulletGap;
+    CGFloat centerY = baselineY - (font.xHeight + font.capHeight) / 4.0;
+    [self drawBulletAtX:markerX centerY:centerY depth:depth font:font color:color];
+  }
+}
+
 - (void)drawGlyphsForGlyphRange:(NSRange)glyphsToShow atPoint:(CGPoint)origin
 {
   [super drawGlyphsForGlyphRange:glyphsToShow atPoint:origin];
 
   NSTextStorage *storage = self.textStorage;
   NSString *string = storage.string;
-  NSMutableSet<NSNumber *> *drawnParagraphs = [NSMutableSet set];
+  NSMutableSet<NSNumber *> *drawnParagraphs = _drawnParagraphLocations;
+  [drawnParagraphs removeAllObjects];
 
   [self enumerateLineFragmentsForGlyphRange:glyphsToShow
                                  usingBlock:^(CGRect rect, CGRect usedRect, NSTextContainer *container,
@@ -197,33 +243,17 @@ static CGFloat ENRMTrailingMarkerX(CGPoint origin, NSTextContainer *container, C
                                                                            atIndex:charRange.location
                                                                     effectiveRange:NULL]);
                                    }
-                                   CGFloat leadingOffset =
-                                       container.lineFragmentPadding + (depth + 1) * kENRMListIndentPerDepth;
 
-                                   if (isOrdered) {
-                                     if (isRTL) {
-                                       CGFloat markerLeft = ENRMTrailingMarkerX(origin, container, leadingOffset) +
-                                                            kENRMListBulletGap / 2.0;
-                                       [self drawOrderedMarkerStartingAtX:markerLeft
-                                                                baselineY:baselineY
-                                                                  ordinal:ordinal
-                                                                     font:font
-                                                                    color:color];
-                                     } else {
-                                       CGFloat markerRight = origin.x + usedRect.origin.x - kENRMListBulletGap / 2.0;
-                                       [self drawOrderedMarkerEndingAtX:markerRight
-                                                              baselineY:baselineY
-                                                                ordinal:ordinal
-                                                                   font:font
-                                                                  color:color];
-                                     }
-                                   } else {
-                                     CGFloat markerX = isRTL ? ENRMTrailingMarkerX(origin, container, leadingOffset) +
-                                                                   kENRMListBulletGap
-                                                             : origin.x + usedRect.origin.x - kENRMListBulletGap;
-                                     CGFloat centerY = baselineY - (font.xHeight + font.capHeight) / 4.0;
-                                     [self drawBulletAtX:markerX centerY:centerY depth:depth font:font color:color];
-                                   }
+                                   [self drawListMarkerOrdered:isOrdered
+                                                         depth:depth
+                                                       ordinal:ordinal
+                                                           rtl:isRTL
+                                                     baselineY:baselineY
+                                                        origin:origin
+                                                      usedRect:usedRect
+                                                     container:container
+                                                          font:font
+                                                         color:color];
                                  }];
 
   // The trailing empty line (including a wholly empty editor) has no glyph
@@ -235,34 +265,22 @@ static CGFloat ENRMTrailingMarkerX(CGPoint origin, NSTextContainer *container, C
     UIColor *color = self.emptyBulletColor ?: [UIColor labelColor];
     CGRect used = self.extraLineFragmentUsedRect;
     NSTextContainer *extraContainer = self.extraLineFragmentTextContainer;
-    BOOL isRTL = self.emptyBulletRTL;
-    CGFloat leadingOffset = extraContainer.lineFragmentPadding + (self.emptyBulletDepth + 1) * kENRMListIndentPerDepth;
-    CGFloat trailingX = ENRMTrailingMarkerX(origin, extraContainer, leadingOffset);
-    CGFloat markerX = isRTL ? trailingX + kENRMListBulletGap : origin.x + used.origin.x - kENRMListBulletGap;
     // Use the same optical center as the in-text marker (baseline minus half the
     // cap/x-height), not the geometric line-box center (font.lineHeight / 2): the
     // two diverge by a font-dependent amount, so a geometric center would shift
     // the empty-line bullet relative to where the first typed glyph's bullet lands
     // (visible with fonts whose ascender/descender are asymmetric).
     CGFloat baselineY = origin.y + used.origin.y + font.ascender;
-    if (self.emptyBulletOrdered) {
-      if (isRTL) {
-        [self drawOrderedMarkerStartingAtX:trailingX + kENRMListBulletGap / 2.0
-                                 baselineY:baselineY
-                                   ordinal:self.emptyBulletOrdinal
-                                      font:font
-                                     color:color];
-      } else {
-        [self drawOrderedMarkerEndingAtX:origin.x + used.origin.x - kENRMListBulletGap / 2.0
-                               baselineY:baselineY
-                                 ordinal:self.emptyBulletOrdinal
-                                    font:font
-                                   color:color];
-      }
-    } else {
-      CGFloat centerY = baselineY - (font.xHeight + font.capHeight) / 4.0;
-      [self drawBulletAtX:markerX centerY:centerY depth:self.emptyBulletDepth font:font color:color];
-    }
+    [self drawListMarkerOrdered:self.emptyBulletOrdered
+                          depth:self.emptyBulletDepth
+                        ordinal:self.emptyBulletOrdinal
+                            rtl:self.emptyBulletRTL
+                      baselineY:baselineY
+                         origin:origin
+                       usedRect:used
+                      container:extraContainer
+                           font:font
+                          color:color];
   }
 }
 

@@ -17,6 +17,28 @@ class BlockStore {
   val allRanges: List<BlockRange> get() = Collections.unmodifiableList(ranges)
 
   /**
+   * Returns the block whose paragraph starts exactly at [lineStart], or null.
+   * [ranges] is kept sorted by `start`, so this is an O(log n) binary search —
+   * the single lookup the view funnels through instead of the linear
+   * `allRanges.firstOrNull { it.start == lineStart }` scans it used to repeat.
+   * Relies on the one-block-per-paragraph invariant (starts are unique).
+   */
+  fun blockStartingAt(lineStart: Int): BlockRange? {
+    var lo = 0
+    var hi = ranges.size - 1
+    while (lo <= hi) {
+      val mid = (lo + hi) ushr 1
+      val start = ranges[mid].start
+      when {
+        start < lineStart -> lo = mid + 1
+        start > lineStart -> hi = mid - 1
+        else -> return ranges[mid]
+      }
+    }
+    return null
+  }
+
+  /**
    * Incoming ranges are trusted to be non-overlapping and line-scoped — the
    * parser owns that invariant (md4c block structure never overlaps at the same
    * nesting level, and nested containers are not yet mapped). Revisit
@@ -139,6 +161,9 @@ class BlockStore {
       val (lineStart, lineEnd) = paragraphBounds(range.start, range.start, text)
       val isEmptyLine = lineEnd == lineStart
       if ((isEmptyLine && range.type !in BlockType.ANCHORED) || lineStart <= previousEnd) {
+        // Dedup: drop a range that resolves to an already-claimed paragraph. This is
+        // a legitimate self-heal path (a heading anchor and the block it merges into
+        // can briefly share a start after a line-join), so it is deliberately silent.
         iterator.remove()
         continue
       }
