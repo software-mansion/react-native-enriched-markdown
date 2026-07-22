@@ -11,7 +11,9 @@ import com.swmansion.enriched.markdown.input.spans.InputListItemSpacingSpan
  * nesting depth — the 0-based depth rides in [BlockRange.level] and drives the
  * indent, marker glyph, and serialized indentation.
  */
-class UnorderedListBlockHandler : BlockHandler {
+class UnorderedListBlockHandler(
+  private val density: Float,
+) : BlockHandler {
   override val blockType: BlockType = BlockType.UNORDERED_LIST_ITEM
 
   override val continuesOnNewline: Boolean = true
@@ -20,9 +22,10 @@ class UnorderedListBlockHandler : BlockHandler {
     blockRange: BlockRange,
     style: InputFormatterStyle,
   ): List<Any> {
-    val spans = mutableListOf<Any>(InputBulletSpan(blockRange.level, style.displayDensity))
-    if (style.listItemSpacingPx > 0) {
-      spans.add(InputListItemSpacingSpan(style.listItemSpacingPx))
+    val spans = mutableListOf<Any>(InputBulletSpan(blockRange.level, density))
+    val spacingPx = (style.listItemSpacing * density).toInt()
+    if (spacingPx > 0) {
+      spans.add(InputListItemSpacingSpan(spacingPx))
     }
     return spans
   }

@@ -43,7 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Vertical spacing (points) added above each list item via the paragraph
 /// style's paragraphSpacingBefore, so bullets read as separate rows. Configured
-/// from the `listItemSpacing` prop; defaults to 0 (items pack tightly).
+/// from the `markdownStyle.list.itemSpacing` prop; defaults to 0 (items pack tightly).
 @property (nonatomic, assign) CGFloat listItemSpacing;
 
 /// Per-level heading config, indexed by level 1-6. A nil/0 entry means the level

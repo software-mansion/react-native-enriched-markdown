@@ -60,7 +60,7 @@ class EnrichedMarkdownTextInputView(
 
   val formattingStore = FormattingStore()
   val blockStore = BlockStore()
-  val formatter = InputFormatter()
+  val formatter = InputFormatter(resources.displayMetrics.density)
   val pendingStyles = mutableSetOf<StyleType>()
   val pendingStyleRemovals = mutableSetOf<StyleType>()
 
@@ -110,10 +110,16 @@ class EnrichedMarkdownTextInputView(
   // insert/delete + setSelection would otherwise loop back through the callbacks).
   private var isManagingAnchor = false
 
+  // Number of ZWSP empty-list anchors believed live in the buffer. Bumped on insert,
+  // made exact on every strip scan (which recounts what it keeps), and reset when the
+  // buffer is replaced. Incoming markdown is scrubbed of U+200B at parse time, so in
+  // practice only syncEmptyListAnchor's own inserts raise it. When it is 0 there is
+  // nothing to strip, letting syncEmptyListAnchor skip its O(document) backward scan
+  // on every caret move.
+  private var zwspAnchorCount = 0
+
   // The consumer-set placeholder, hidden while a bullet is drawn on an empty editor.
   private var userHint: CharSequence? = null
-
-  private var listItemSpacingPx = 0
 
   init {
     setupDetectorPipeline()
@@ -764,21 +770,34 @@ class EnrichedMarkdownTextInputView(
     isManagingAnchor = true
     var anchorChanged = false
     try {
-      // Strip every stale ZWSP first (a line that gained content or stopped being a list).
-      var i = editable.length - 1
-      while (i >= 0) {
-        if (editable[i] == ZWSP) {
-          val ls = lineStartOf(editable, i)
-          val le = lineEndOf(editable, i)
-          val onlyZwsp = le - ls == 1 && editable[ls] == ZWSP
-          val isEmptyListLine = onlyZwsp && blockStore.allRanges.any { it.start == ls && it.type in BlockType.LIST_ITEMS }
-          if (!isEmptyListLine) {
-            runAsATransaction { editable.delete(i, i + 1) }
-            blockStore.adjustForEdit(i, 1, 0)
-            anchorChanged = true
+      // Strip every stale ZWSP first (a line that gained content or stopped being a
+      // list). Skip the full-document scan when we've inserted no anchors — there is
+      // nothing to strip, so a caret move in a document with no empty list lines is
+      // O(1) instead of O(document length). When the scan does run it recounts the
+      // anchors it keeps, so the count is exact afterwards — a prior overcount (an
+      // anchor the user deleted directly) or an undercount (a foreign ZWSP that stole
+      // a decrement) self-heals rather than disabling the fast path or leaking a
+      // stale anchor.
+      if (zwspAnchorCount > 0) {
+        var keptAnchors = 0
+        var i = editable.length - 1
+        while (i >= 0) {
+          if (editable[i] == ZWSP) {
+            val ls = lineStartOf(editable, i)
+            val le = lineEndOf(editable, i)
+            val onlyZwsp = le - ls == 1 && editable[ls] == ZWSP
+            val isEmptyListLine = onlyZwsp && blockStore.allRanges.any { it.start == ls && it.type in BlockType.LIST_ITEMS }
+            if (!isEmptyListLine) {
+              runAsATransaction { editable.delete(i, i + 1) }
+              blockStore.adjustForEdit(i, 1, 0)
+              anchorChanged = true
+            } else {
+              keptAnchors++
+            }
           }
+          i--
         }
-        i--
+        zwspAnchorCount = keptAnchors
       }
 
       // Anchor the caret's line if it is an empty list item with no ZWSP yet.
@@ -792,6 +811,7 @@ class EnrichedMarkdownTextInputView(
           blockStore.adjustForEdit(ls, 0, 1)
           blockStore.normalizeToLineBounds(editable)
           setSelection(ls + 1)
+          zwspAnchorCount++
           anchorChanged = true
         }
       }
@@ -1164,33 +1184,15 @@ class EnrichedMarkdownTextInputView(
     autoLinkDetector.style = style
   }
 
-  // The markdownStyle prop, kept so density + listItemSpacing (sourced outside the
-  // prop) can be folded into the formatter style whenever any of them changes.
-  private var baseStyle: InputFormatterStyle? = null
-
   /**
-   * Applies the parsed `markdownStyle`, folding in the display density and the current
-   * `listItemSpacing` so block handlers can build density-correct, spacing-aware spans.
-   * Returns true if the effective style changed (caller re-applies formatting).
+   * Applies the parsed `markdownStyle` (which now carries `list.itemSpacing`).
+   * Display density is folded in at [InputFormatter] construction, so the style is
+   * handed to the formatter as-is. Returns true if the effective style changed
+   * (caller re-applies formatting).
    */
   fun setMarkdownStyleFromProps(style: InputFormatterStyle): Boolean {
-    baseStyle = style
     setAutoLinkStyle(style)
-    return applyComposedStyle()
-  }
-
-  private fun applyComposedStyle(): Boolean {
-    val base = baseStyle ?: return false
-    val composed = base.copy(displayDensity = resources.displayMetrics.density, listItemSpacingPx = listItemSpacingPx)
-    return formatter.updateStyle(composed)
-  }
-
-  /** Sets the vertical spacing (dp) above each list item, re-stamping list spans. */
-  fun setListItemSpacingFromProps(spacingDp: Float) {
-    val px = if (spacingDp > 0f) PixelUtil.toPixelFromDIP(spacingDp).toInt() else 0
-    if (px == listItemSpacingPx) return
-    listItemSpacingPx = px
-    if (applyComposedStyle()) applyFormatting()
+    return formatter.updateStyle(style)
   }
 
   fun allFormattingRangesForSerialization(): List<FormattingRange> {
@@ -1211,6 +1213,8 @@ class EnrichedMarkdownTextInputView(
         setText(parsed.plainText)
         setSelection(text?.length ?: 0)
       }
+      // Parsed markdown never contains the ZWSP anchor, so the fresh document has none.
+      zwspAnchorCount = 0
       applyFormatting()
       forceScrollToSelection()
       layoutManager.invalidateLayout()

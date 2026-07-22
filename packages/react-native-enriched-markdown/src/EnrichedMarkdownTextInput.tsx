@@ -87,6 +87,15 @@ export interface MarkdownTextInputStyle {
   h4?: HeadingStyle;
   h5?: HeadingStyle;
   h6?: HeadingStyle;
+  /** List styling shared by bullet and numbered lists. */
+  list?: {
+    /**
+     * Vertical spacing (points) added above each list item so items read as
+     * separate rows. iOS uses `paragraphSpacingBefore`; Android a `LineHeightSpan`.
+     * @default 0
+     */
+    itemSpacing?: number;
+  };
 }
 
 export interface StyleState {
@@ -248,12 +257,6 @@ export interface EnrichedMarkdownTextInputProps extends Omit<
    * @platform ios
    */
   writingDirection?: 'auto' | 'ltr' | 'rtl' | 'first-strong';
-  /**
-   * Vertical spacing (points) above each bullet list item so items read as
-   * separate rows. iOS uses `paragraphSpacingBefore`; Android a `LineHeightSpan`.
-   * @default 0
-   */
-  listItemSpacing?: number;
 }
 
 type PendingRequest<T> = {
@@ -301,7 +304,6 @@ export const EnrichedMarkdownTextInput = ({
   formatMenuConfig,
   linkRegex: _linkRegex,
   writingDirection = 'first-strong',
-  listItemSpacing = 0,
   ...rest
 }: EnrichedMarkdownTextInputProps) => {
   const nativeRef = useRef<NativeRef | null>(null);
@@ -618,7 +620,6 @@ export const EnrichedMarkdownTextInput = ({
       multiline={multiline}
       cursorColor={cursorColor}
       selectionColor={selectionColor}
-      listItemSpacing={listItemSpacing}
       isOnChangeMarkdownSet={onChangeMarkdown !== undefined}
       onChangeText={handleChangeText as NativeProps['onChangeText']}
       onChangeMarkdown={handleChangeMarkdown as NativeProps['onChangeMarkdown']}

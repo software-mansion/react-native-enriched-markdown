@@ -26,7 +26,15 @@ import com.swmansion.enriched.markdown.input.styles.UnorderedListBlockHandler
  */
 interface MarkdownSpan
 
-class InputFormatter {
+/**
+ * @property displayDensity px-per-dp of the host display, handed to the list block
+ *   handlers so they can build density-correct spans without a Context. This is a
+ *   platform constant, not style data, which is why it lives here rather than in
+ *   [InputFormatterStyle].
+ */
+class InputFormatter(
+  private val displayDensity: Float = 1f,
+) {
   val handlers: Map<StyleType, StyleHandler> =
     mapOf(
       StyleType.BOLD to BoldStyleHandler(),
@@ -47,8 +55,8 @@ class InputFormatter {
     buildMap {
       val heading = HeadingBlockHandler()
       for (type in BlockType.HEADINGS) put(type, heading)
-      put(BlockType.UNORDERED_LIST_ITEM, UnorderedListBlockHandler())
-      put(BlockType.ORDERED_LIST_ITEM, OrderedListBlockHandler())
+      put(BlockType.UNORDERED_LIST_ITEM, UnorderedListBlockHandler(displayDensity))
+      put(BlockType.ORDERED_LIST_ITEM, OrderedListBlockHandler(displayDensity))
     }
 
   fun handlerForBlock(type: BlockType): BlockHandler? = blockHandlers[type]

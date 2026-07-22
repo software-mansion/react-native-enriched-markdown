@@ -47,6 +47,12 @@ interface MarkdownTextInputStyleInternal {
   h4: HeadingStyleInternal;
   h5: HeadingStyleInternal;
   h6: HeadingStyleInternal;
+  list: {
+    // Vertical spacing (points) added above each list item. iOS applies it via
+    // paragraphSpacingBefore; Android via a LineHeightSpan. Float for parity with
+    // every other spacing value in the library.
+    itemSpacing: CodegenTypes.Float;
+  };
 }
 
 interface TargetedEvent {
@@ -275,14 +281,6 @@ export interface NativeProps extends ViewProps {
    * @platform ios
    */
   writingDirection?: CodegenTypes.WithDefault<string, 'first-strong'>;
-
-  /**
-   * Vertical spacing (points) added above each bullet list item so items read as
-   * separate rows. iOS applies it via paragraphSpacingBefore; Android via a
-   * LineHeightSpan.
-   * @default 0
-   */
-  listItemSpacing?: CodegenTypes.WithDefault<CodegenTypes.Int32, 0>;
 
   // Events
   onChangeText?: CodegenTypes.DirectEventHandler<OnChangeTextEvent>;

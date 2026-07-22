@@ -21,7 +21,12 @@ object InputParser {
   // A source paragraph break: a newline followed by one or more blank lines.
   private val PARAGRAPH_BREAK_RE = Regex("\\n[ \\t]*(?:\\n[ \\t]*)+")
 
-  fun parseToPlainTextAndRanges(markdown: String): ParseResult {
+  fun parseToPlainTextAndRanges(rawMarkdown: String): ParseResult {
+    // U+200B is the editor's reserved empty-list anchor and is stripped from every
+    // output path; strip it from incoming markdown too (web paste, JS-supplied
+    // values) so a foreign copy can't seed a stray anchor into the buffer. Done
+    // before parsing so plain-text offsets and ranges stay consistent.
+    val markdown = MarkdownSerializer.stripZwsp(rawMarkdown)
     if (markdown.isEmpty()) {
       return ParseResult("", emptyList(), emptyList())
     }

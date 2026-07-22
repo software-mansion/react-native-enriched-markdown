@@ -14,6 +14,14 @@ object MarkdownSerializer {
   private const val ZWSP = "\u200B"
 
   /**
+   * Single choke point for scrubbing the empty-line ZWSP anchor out of anything
+   * bound for JS (serialized markdown here, plain text in `InputEventEmitter`).
+   * Route new output paths through this rather than scattering `replace(ZWSP, "")`
+   * calls, so the anchor can never leak because one path forgot to strip.
+   */
+  fun stripZwsp(text: String): String = text.replace(ZWSP, "")
+
+  /**
    * Block-aware serialization: serializes inline styles exactly as the inline-only
    * overload, then prepends each line's block prefix. [blockPrefixProvider] is
    * asked, per block range, for the markdown line marker (e.g. `"# "`, `"- "`);
@@ -26,9 +34,16 @@ object MarkdownSerializer {
     ranges: List<FormattingRange>,
     blockRanges: List<BlockRange>,
     blockPrefixProvider: (BlockRange) -> String,
+  ): String = stripZwsp(serializeWithAnchors(text, ranges, blockRanges, blockPrefixProvider))
+
+  private fun serializeWithAnchors(
+    text: String,
+    ranges: List<FormattingRange>,
+    blockRanges: List<BlockRange>,
+    blockPrefixProvider: (BlockRange) -> String,
   ): String {
     val inlineMarkdown = serialize(text, ranges)
-    if (blockRanges.isEmpty()) return inlineMarkdown.replace(ZWSP, "")
+    if (blockRanges.isEmpty()) return inlineMarkdown
 
     // Block prefixes attach per line. Inline serialization only inserts inline
     // delimiters (never newlines), so the serialized output has the same line
@@ -43,7 +58,7 @@ object MarkdownSerializer {
     // not crash the host app over lost block prefixes.
     if (plainLines.size != markdownLines.size) {
       Log.e(TAG, "Block serialization line-count invariant violated: plain=${plainLines.size} markdown=${markdownLines.size}")
-      return inlineMarkdown.replace(ZWSP, "")
+      return inlineMarkdown
     }
 
     // Plain-text character offset at the start of each line.
@@ -68,13 +83,13 @@ object MarkdownSerializer {
           // A marker-only list line ("- " with no content) re-parses as a setext
           // underline for the previous line; emit an empty list line bare. An
           // empty "# " heading is valid ATX and keeps its prefix.
-          if (isListItem && plainLines[lineIndex].replace(ZWSP, "").isEmpty()) continue
+          if (isListItem && stripZwsp(plainLines[lineIndex]).isEmpty()) continue
           markdownLines[lineIndex] = prefix + markdownLines[lineIndex]
         }
       }
     }
 
-    return markdownLines.joinToString("\n").replace(ZWSP, "")
+    return markdownLines.joinToString("\n")
   }
 
   fun serialize(

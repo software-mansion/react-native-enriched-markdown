@@ -169,8 +169,8 @@ BOOL applyInputStyleProps(ENRMInputFormatterStyle *style, const InputProps &newP
     changed = YES;
   }
 
-  if (newProps.listItemSpacing != oldProps.listItemSpacing) {
-    style.listItemSpacing = newProps.listItemSpacing;
+  if (newProps.markdownStyle.list.itemSpacing != oldProps.markdownStyle.list.itemSpacing) {
+    style.listItemSpacing = newProps.markdownStyle.list.itemSpacing;
     changed = YES;
   }
 
