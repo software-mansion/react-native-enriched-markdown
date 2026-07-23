@@ -224,7 +224,6 @@ static void ENRMTableComputeLayout(NSArray<NSArray<TableCellData *> *> *rows, NS
   NSMutableArray<NSNumber *> *_rowHeights;
   CGFloat _totalTableWidth;
   CGFloat _totalTableHeight;
-  CGFloat _borderWidth;
 
   NSString *_cachedMarkdown;
 
@@ -236,7 +235,6 @@ static void ENRMTableComputeLayout(NSArray<NSArray<TableCellData *> *> *rows, NS
   self = [super initWithFrame:CGRectZero];
   if (self) {
     _config = config;
-    _borderWidth = config.tableBorderWidth;
     _allowFontScaling = YES;
     _maxFontSizeMultiplier = 0;
     _enableLinkPreview = YES;
@@ -337,8 +335,8 @@ static void ENRMTableComputeLayout(NSArray<NSArray<TableCellData *> *> *rows, NS
   NSMutableArray<NSNumber *> *rowHeights = nil;
   CGFloat totalWidth = 0;
   CGFloat totalHeight = 0;
-  ENRMTableComputeLayout(_rows, _colCount, self.config, _borderWidth, &colWidths, &rowHeights, &totalWidth,
-                         &totalHeight);
+  ENRMTableComputeLayout(_rows, _colCount, self.config, self.config.tableBorderWidth, &colWidths, &rowHeights,
+                         &totalWidth, &totalHeight);
   _colWidths = colWidths;
   _rowHeights = rowHeights;
   _totalTableWidth = totalWidth;
@@ -417,7 +415,7 @@ static void ENRMTableComputeLayout(NSArray<NSArray<TableCellData *> *> *rows, NS
                columnWidths:_colWidths
                  rowHeights:_rowHeights
                 borderColor:self.config.tableBorderColor
-                borderWidth:_borderWidth
+                borderWidth:self.config.tableBorderWidth
       horizontalCellPadding:self.config.tableCellPaddingHorizontal
         verticalCellPadding:self.config.tableCellPaddingVertical
                cornerRadius:self.config.tableBorderRadius];
@@ -452,7 +450,7 @@ static void ENRMTableComputeLayout(NSArray<NSArray<TableCellData *> *> *rows, NS
                columnWidths:_colWidths
                  rowHeights:_rowHeights
                 borderColor:self.config.tableBorderColor
-                borderWidth:_borderWidth
+                borderWidth:self.config.tableBorderWidth
       horizontalCellPadding:self.config.tableCellPaddingHorizontal
         verticalCellPadding:self.config.tableCellPaddingVertical
                cornerRadius:self.config.tableBorderRadius];
