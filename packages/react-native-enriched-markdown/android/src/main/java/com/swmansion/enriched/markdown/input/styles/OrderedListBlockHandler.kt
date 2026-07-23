@@ -11,7 +11,9 @@ import com.swmansion.enriched.markdown.input.spans.InputOrderedListMarkerSpan
  * the 0-based depth rides in [BlockRange.level] and the displayed number in
  * [BlockRange.ordinal], both maintained by the block store.
  */
-class OrderedListBlockHandler : BlockHandler {
+class OrderedListBlockHandler(
+  private val density: Float,
+) : BlockHandler {
   override val blockType: BlockType = BlockType.ORDERED_LIST_ITEM
 
   override val continuesOnNewline: Boolean = true
@@ -20,9 +22,10 @@ class OrderedListBlockHandler : BlockHandler {
     blockRange: BlockRange,
     style: InputFormatterStyle,
   ): List<Any> {
-    val spans = mutableListOf<Any>(InputOrderedListMarkerSpan(blockRange.level, blockRange.ordinal, style.displayDensity))
-    if (style.listItemSpacingPx > 0) {
-      spans.add(InputListItemSpacingSpan(style.listItemSpacingPx))
+    val spans = mutableListOf<Any>(InputOrderedListMarkerSpan(blockRange.level, blockRange.ordinal, density))
+    val spacingPx = (style.listItemSpacing * density).toInt()
+    if (spacingPx > 0) {
+      spans.add(InputListItemSpacingSpan(spacingPx))
     }
     return spans
   }

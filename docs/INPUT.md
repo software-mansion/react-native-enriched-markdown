@@ -106,7 +106,7 @@ Behavior notes:
 
 Whether the cursor's paragraph is a list item, and its nesting depth, are reported through the [`onChangeState`](API_REFERENCE.md#onchangestate) payload as `unorderedList` / `orderedList` (`{ isActive, depth }`), so you can highlight the list buttons in your toolbar.
 
-Use the [`listItemSpacing`](API_REFERENCE.md#listitemspacing) prop to add vertical spacing between list items (bullet and numbered alike) so they read as separate rows.
+Use [`markdownStyle.list.itemSpacing`](API_REFERENCE.md#markdownstyle) to add vertical spacing between list items (bullet and numbered alike) so they read as separate rows.
 
 ## Links
 

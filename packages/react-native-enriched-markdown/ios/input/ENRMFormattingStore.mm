@@ -218,6 +218,31 @@
   if (emptyIndexes.count > 0) {
     ENRMRemoveIndexesInReverse(_ranges, emptyIndexes);
   }
+
+  [self coalesceAdjacentSameTypeRanges];
+}
+
+/// Merge same-type (and same-url) ranges left adjacent or overlapping by an
+/// edit — e.g. deleting the space in "**foo** **bar**" leaves two touching
+/// bold ranges that would serialize as "**foo****bar**". `addRange:` keeps
+/// this invariant on insert; the edit path must too.
+- (void)coalesceAdjacentSameTypeRanges
+{
+  for (NSUInteger idx = 0; idx < _ranges.count; idx++) {
+    ENRMFormattingRange *current = _ranges[idx];
+    NSUInteger next = idx + 1;
+    while (next < _ranges.count && _ranges[next].range.location <= NSMaxRange(current.range)) {
+      ENRMFormattingRange *candidate = _ranges[next];
+      BOOL sameUrl = (current.url == candidate.url) || [current.url isEqualToString:candidate.url];
+      if (candidate.type == current.type && sameUrl) {
+        NSUInteger mergedEnd = MAX(NSMaxRange(current.range), NSMaxRange(candidate.range));
+        current.range = NSMakeRange(current.range.location, mergedEnd - current.range.location);
+        [_ranges removeObjectAtIndex:next];
+      } else {
+        next++;
+      }
+    }
+  }
 }
 
 @end

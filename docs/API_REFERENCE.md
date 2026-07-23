@@ -566,14 +566,7 @@ Style configuration for formatted text in the input.
 - `spoiler.color` — text color for spoiler text.
 - `spoiler.backgroundColor` — background color for spoiler text.
 - `h1`–`h6` — per-level heading styling, each accepting `fontSize`, `fontWeight`, and `color`. Defaults match the read-only renderer (sizes `30/24/20/18/16/14`, bold).
-
-### `listItemSpacing`
-
-Vertical spacing (points) added above each list item (bullet and numbered alike) so items read as separate rows. iOS applies it via `paragraphSpacingBefore`; Android via a `LineHeightSpan`.
-
-| Type     | Default Value | Platform |
-| -------- | ------------- | -------- |
-| `number` | `0`           | Both     |
+- `list.itemSpacing` — vertical spacing (points) added above each list item (bullet and numbered alike) so items read as separate rows; defaults to `0`. iOS applies it via `paragraphSpacingBefore`; Android via a `LineHeightSpan`.
 
 ### `mentionIndicators`
 
@@ -637,6 +630,10 @@ interface StyleState {
   link: { isActive: boolean };
   // Heading level of the cursor's paragraph: 0 = none, 1-6 = H1-H6.
   heading: { isActive: boolean; level: number };
+  // `depth` is the 0-based nesting level while `isActive` is true, and is
+  // always `0` when `isActive` is false (i.e. the cursor is not in a list).
+  // This differs from `heading.level`, where `0` is itself a meaningful value
+  // (no heading); read `depth` only when `isActive` is true.
   unorderedList: { isActive: boolean; depth: number };
   orderedList: { isActive: boolean; depth: number };
 }

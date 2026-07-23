@@ -204,14 +204,6 @@ class EnrichedMarkdownTextInputManager :
     }
   }
 
-  @ReactProp(name = "listItemSpacing", defaultInt = 0)
-  override fun setListItemSpacing(
-    view: EnrichedMarkdownTextInputView?,
-    value: Int,
-  ) {
-    view?.setListItemSpacingFromProps(value.toFloat())
-  }
-
   @ReactProp(name = "color", customType = "Color")
   override fun setColor(
     view: EnrichedMarkdownTextInputView?,

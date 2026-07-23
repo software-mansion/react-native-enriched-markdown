@@ -120,5 +120,30 @@ class FormattingStore {
     insertedLength: Int,
   ) {
     RangeEditAdjustment.adjustForEdit(ranges, editLocation, deletedLength, insertedLength)
+    coalesceAdjacentSameTypeRanges()
+  }
+
+  /**
+   * Merge same-type (and same-url) ranges left adjacent or overlapping by an
+   * edit — e.g. deleting the space in "**foo** **bar**" leaves two touching
+   * bold ranges that would serialize as "**foo****bar**". [addRange] keeps
+   * this invariant on insert; the edit path must too.
+   */
+  private fun coalesceAdjacentSameTypeRanges() {
+    var idx = 0
+    while (idx < ranges.size) {
+      val current = ranges[idx]
+      var next = idx + 1
+      while (next < ranges.size && ranges[next].start <= current.end) {
+        val candidate = ranges[next]
+        if (candidate.type == current.type && candidate.url == current.url) {
+          current.end = maxOf(current.end, candidate.end)
+          ranges.removeAt(next)
+        } else {
+          next++
+        }
+      }
+      idx++
+    }
   }
 }

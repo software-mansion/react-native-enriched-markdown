@@ -23,9 +23,6 @@ import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.CaretRect
 import com.swmansion.enriched.markdown.input.model.StyleType
 
-/** Empty-list-line anchor character; see EnrichedMarkdownTextInputView's ZWSP. */
-private const val ZWSP = "\u200B"
-
 class InputEventEmitter(
   private val view: EnrichedMarkdownTextInputView,
 ) {
@@ -37,8 +34,9 @@ class InputEventEmitter(
 
   fun emitChangeText() {
     // The empty-list-line ZWSP anchor is an internal editing detail — never leak
-    // it to JS (the markdown serializer already strips it from that payload).
-    val plainText = (view.text?.toString() ?: "").replace(ZWSP, "")
+    // it to JS. Both output paths (plain text here, markdown) funnel through the
+    // same MarkdownSerializer.stripZwsp choke point.
+    val plainText = MarkdownSerializer.stripZwsp(view.text?.toString() ?: "")
     dispatch(OnChangeTextEvent(surfaceId(), view.id, plainText))
   }
 

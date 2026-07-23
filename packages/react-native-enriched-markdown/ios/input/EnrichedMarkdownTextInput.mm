@@ -922,19 +922,15 @@ using namespace facebook::react;
 
   // Match by line start, not containment: an empty block line carries a
   // zero-length anchor that a containment check would miss.
-  ENRMBlockRange *current = nil;
-  for (ENRMBlockRange *blockRange in _blockStore.allRanges) {
-    if (blockRange.range.location == paragraphRange.location) {
-      current = blockRange;
-      break;
-    }
-  }
+  ENRMBlockRange *current = [_blockStore blockStartingAtLocation:paragraphRange.location];
   BOOL alreadyActive = current != nil && current.type == type;
 
   if (alreadyActive) {
     [_blockStore removeBlockInParagraphRange:paragraphRange inText:text];
-    // Strip the stored block paragraph style so a removed bullet de-indents to a
-    // plain paragraph (applyFormatting re-stamps base style below).
+    // Strip the stored block paragraph style directly: an empty item's line has no
+    // stamped block-marker attribute (zero-length ranges are never stamped), so the
+    // applyFormatting reset below — which is keyed off that marker — cannot reach it.
+    // The manual strip de-indents the line to a plain paragraph regardless.
     NSTextStorage *storage = _textView.textStorage;
     NSRange clamped = NSIntersectionRange(paragraphRange, NSMakeRange(0, storage.length));
     if (clamped.length > 0) {
@@ -1067,17 +1063,21 @@ using namespace facebook::react;
 
 - (nullable ENRMBlockRange *)listBlockForParagraphAtPosition:(NSUInteger)position
 {
+  ENRMBlockRange *block = [self blockForParagraphAtPosition:position];
+  return (block != nil && ENRMBlockTypeIsListItem(block.type)) ? block : nil;
+}
+
+/// The block (of any type) whose line starts at the paragraph containing
+/// `position`, or nil. Single choke point over the store's O(log n) lookup —
+/// callers that want only a list item or only a heading filter the result.
+- (nullable ENRMBlockRange *)blockForParagraphAtPosition:(NSUInteger)position
+{
   NSString *text = _textView.textStorage.string;
   if (position > text.length) {
     return nil;
   }
   NSRange paragraph = [text paragraphRangeForRange:NSMakeRange(position, 0)];
-  for (ENRMBlockRange *block in _blockStore.allRanges) {
-    if (ENRMBlockTypeIsListItem(block.type) && block.range.location == paragraph.location) {
-      return block;
-    }
-  }
-  return nil;
+  return [_blockStore blockStartingAtLocation:paragraph.location];
 }
 
 /// Whether the caret's paragraph is a list item of `type`, writing its depth
@@ -1097,18 +1097,9 @@ using namespace facebook::react;
 /// in-line replacement (autocorrect/paste) that wipes the line can heal it.
 - (void)capturePreEditBlockForRange:(NSRange)range
 {
-  _preEditBlockType = ENRMInputBlockTypeParagraph;
-  _preEditBlockLevel = 0;
-
-  NSString *text = _textView.textStorage.string;
-  NSRange paragraph = [text paragraphRangeForRange:range];
-  for (ENRMBlockRange *block in _blockStore.allRanges) {
-    if (block.range.location == paragraph.location) {
-      _preEditBlockType = block.type;
-      _preEditBlockLevel = block.level;
-      return;
-    }
-  }
+  ENRMBlockRange *block = [self blockForParagraphAtPosition:range.location];
+  _preEditBlockType = block != nil ? block.type : ENRMInputBlockTypeParagraph;
+  _preEditBlockLevel = block != nil ? block.level : 0;
 }
 
 /// Whether `range` of the current (pre-edit) text contains a line break. Scans
@@ -1232,8 +1223,11 @@ using namespace facebook::react;
   NSRange newParagraph = [text paragraphRangeForRange:NSMakeRange(newLineLocation, 0)];
 
   if (previousWasEmpty) {
-    // Exit: drop the block from both lines and strip their stored list paragraph
-    // style so they render without leftover indent.
+    // Exit: drop the block from both lines and strip their list paragraph style.
+    // These lines are empty, so they carry no stamped block-marker attribute for
+    // the applyFormatting reset to key off (and the exited line's paragraph style
+    // rode in on the newline's typing attributes) — the manual strip is the only
+    // thing that clears the leftover indent/spacing here.
     [_blockStore removeBlockInParagraphRange:originalParagraph inText:text];
     [_blockStore removeBlockInParagraphRange:newParagraph inText:text];
 
@@ -1341,15 +1335,8 @@ using namespace facebook::react;
 /// line-end carets and empty-line anchors register (mirrors inline isActive).
 - (NSInteger)headingLevelForCursorParagraph
 {
-  NSString *text = _textView.textStorage.string;
-  NSRange paragraph = [text paragraphRangeForRange:_textView.selectedRange];
-  for (ENRMBlockRange *block in _blockStore.allRanges) {
-    NSInteger level = ENRMHeadingLevelForBlockType(block.type);
-    if (level > 0 && block.range.location == paragraph.location) {
-      return level;
-    }
-  }
-  return 0;
+  ENRMBlockRange *block = [self blockForParagraphAtPosition:_textView.selectedRange.location];
+  return block != nil ? ENRMHeadingLevelForBlockType(block.type) : 0;
 }
 
 /// Syncs typing attributes so text typed at the caret on a block-styled line
@@ -2212,6 +2199,13 @@ using namespace facebook::react;
       // normalize again so the list-metadata pass renumbers the adjacent run.
       [_blockStore normalizeToLineBoundsInText:plainText];
     }
+    // Pre-edit block state is consumed once, by the newline continuation above.
+    // Clear it immediately so a later edit that reaches reconciliation without a
+    // fresh capture (e.g. a programmatic mutation) can never act on stale state
+    // from a previous edit — it falls back to "plain paragraph, no continuation".
+    _preEditBlockType = ENRMInputBlockTypeParagraph;
+    _preEditBlockLevel = 0;
+    _preEditParagraphWasEmpty = NO;
   }
 
   _lastTextLength = newLength;
@@ -2465,6 +2459,10 @@ using namespace facebook::react;
     return nil;
   }
   _preEditSelectedRange = _lastSelectedRange;
+  // Capture the same pre-edit block state the iOS path does — otherwise these
+  // ivars carry stale values from a previous edit into reconcileBlockContinuation.
+  [self capturePreEditBlockForRange:range];
+  _preEditParagraphWasEmpty = [self preEditParagraphWasEmpty:range];
   _preEditReplacedNewline = [self replacedRangeTouchesNewline:range];
   _isTextChanging = YES;
   return text;
