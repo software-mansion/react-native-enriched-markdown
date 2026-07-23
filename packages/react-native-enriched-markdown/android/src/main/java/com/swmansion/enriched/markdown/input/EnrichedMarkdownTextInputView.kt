@@ -167,10 +167,20 @@ class EnrichedMarkdownTextInputView(
     return InputConnectionWrapper(base, this)
   }
 
+  // Plain Tab is consumed before the platform's focus navigation so it inserts
+  // a tab character and emits onKeyPress, matching iOS. Shift/Ctrl+Tab still
+  // navigate focus.
   override fun onKeyDown(
     keyCode: Int,
     event: KeyEvent?,
   ): Boolean {
+    if (keyCode == KeyEvent.KEYCODE_TAB && event?.hasNoModifiers() != false) {
+      eventEmitter.emitKeyPress("Tab")
+      val start = minOf(selectionStart, selectionEnd).coerceAtLeast(0)
+      val end = maxOf(selectionStart, selectionEnd).coerceAtLeast(0)
+      text?.replace(start, end, "\t")
+      return true
+    }
     if (keyCode == KeyEvent.KEYCODE_DEL && deleteLinkBeforeCursor()) {
       return true
     }

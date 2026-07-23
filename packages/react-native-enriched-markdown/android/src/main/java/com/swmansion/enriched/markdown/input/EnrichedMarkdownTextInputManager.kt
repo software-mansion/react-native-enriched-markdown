@@ -25,6 +25,7 @@ import com.swmansion.enriched.markdown.input.events.OnContextMenuItemPressEvent
 import com.swmansion.enriched.markdown.input.events.OnEndMentionEvent
 import com.swmansion.enriched.markdown.input.events.OnInputBlurEvent
 import com.swmansion.enriched.markdown.input.events.OnInputFocusEvent
+import com.swmansion.enriched.markdown.input.events.OnInputKeyPressEvent
 import com.swmansion.enriched.markdown.input.events.OnLinkDetectedEvent
 import com.swmansion.enriched.markdown.input.events.OnRequestCaretRectResultEvent
 import com.swmansion.enriched.markdown.input.events.OnRequestMarkdownResultEvent
@@ -91,6 +92,7 @@ class EnrichedMarkdownTextInputManager :
       OnChangeMarkdownEvent.EVENT_NAME,
       OnChangeSelectionEvent.EVENT_NAME,
       OnChangeStateEvent.EVENT_NAME,
+      OnInputKeyPressEvent.EVENT_NAME,
       OnRequestMarkdownResultEvent.EVENT_NAME,
       OnRequestCaretRectResultEvent.EVENT_NAME,
       OnCaretRectChangeEvent.EVENT_NAME,
