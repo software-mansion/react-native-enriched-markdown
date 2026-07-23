@@ -1461,6 +1461,37 @@ using namespace facebook::react;
   emitter->onChangeText({.value = std::string([plainText UTF8String] ?: "")});
 }
 
+/// Maps the replacement text of a pending edit to RN TextInput's
+/// `onKeyPress` key names: empty text means deletion ("Backspace"), and
+/// leading \n, \t and ESC map to "Enter", "Tab" and "Escape".
+- (void)emitOnKeyPress:(NSString *)text
+{
+  auto emitter = [self getEventEmitter];
+  if (emitter == nullptr) {
+    return;
+  }
+  NSString *key;
+  if (text.length == 0) {
+    key = @"Backspace";
+  } else {
+    switch ([text characterAtIndex:0]) {
+      case '\n':
+        key = @"Enter";
+        break;
+      case '\t':
+        key = @"Tab";
+        break;
+      case 0x1B:
+        key = @"Escape";
+        break;
+      default:
+        key = text;
+        break;
+    }
+  }
+  emitter->onInputKeyPress({.key = std::string([key UTF8String] ?: "")});
+}
+
 - (void)emitOnChangeMarkdown
 {
   auto emitter = [self getEventEmitter];
@@ -1839,6 +1870,7 @@ using namespace facebook::react;
 
 - (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text
 {
+  [self emitOnKeyPress:text];
   if ([self deleteLinkForReplacementRange:range replacementText:text]) {
     return NO;
   }
@@ -1949,6 +1981,7 @@ using namespace facebook::react;
 
 - (nullable NSString *)textInputShouldChangeText:(NSString *)text inRange:(NSRange)range
 {
+  [self emitOnKeyPress:text];
   if ([self deleteLinkForReplacementRange:range replacementText:text]) {
     return nil;
   }
