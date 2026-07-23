@@ -38,6 +38,7 @@ class LinkLongPressMovementMethod : ArrowKeyMovementMethod() {
 
   var isLinkTouchActive: Boolean = false
     private set
+  private var isTouchWithinTextBounds: Boolean = true
 
   override fun onTouchEvent(
     widget: TextView,
@@ -51,6 +52,7 @@ class LinkLongPressMovementMethod : ArrowKeyMovementMethod() {
 
         pressedLink = findLinkSpan(widget, buffer, event)
         isLinkTouchActive = pressedLink != null
+        isTouchWithinTextBounds = charOffsetAt(widget, event) != null
         pressedLink?.let { scheduleLongPress(widget, it) }
       }
 
@@ -87,6 +89,10 @@ class LinkLongPressMovementMethod : ArrowKeyMovementMethod() {
       }
     }
 
+    if (!isTouchWithinTextBounds) {
+      return false
+    }
+
     return super.onTouchEvent(widget, buffer, event)
   }
 
@@ -116,10 +122,21 @@ class LinkLongPressMovementMethod : ArrowKeyMovementMethod() {
     widget: TextView,
     event: MotionEvent,
   ): Int? {
-    val x = event.x.toInt() - widget.totalPaddingLeft + widget.scrollX
-    val y = event.y.toInt() - widget.totalPaddingTop + widget.scrollY
+    val x = event.x - widget.totalPaddingLeft + widget.scrollX
+    val y = event.y - widget.totalPaddingTop + widget.scrollY
     val layout = widget.layout ?: return null
-    return layout.getOffsetForHorizontal(layout.getLineForVertical(y), x.toFloat())
+
+    if (y < 0f || y > layout.height) {
+      return null
+    }
+
+    val line = layout.getLineForVertical(y.toInt())
+
+    if (x < layout.getLineLeft(line) || x > layout.getLineRight(line)) {
+      return null
+    }
+
+    return layout.getOffsetForHorizontal(line, x)
   }
 
   private fun findLinkSpan(
