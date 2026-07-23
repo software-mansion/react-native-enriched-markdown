@@ -18,7 +18,7 @@ namespace {
 #define ENRICHEDMARKDOWN_LOG_TAG "EnrichedMarkdownJNI"
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, ENRICHEDMARKDOWN_LOG_TAG, __VA_ARGS__)
 
-static_assert(static_cast<int>(NodeType::Highlight) == 29,
+static_assert(static_cast<int>(NodeType::SoftBreak) == 30,
               "NodeType enum must stay in sync with Kotlin MarkdownASTNode.NodeType");
 
 local_ref<JMarkdownASTNode> createJavaNode(const std::shared_ptr<MarkdownASTNode> &node) {

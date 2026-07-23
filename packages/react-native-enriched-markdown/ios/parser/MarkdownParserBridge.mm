@@ -104,6 +104,9 @@ static MarkdownASTNode *convertCppASTToObjC(std::shared_ptr<Markdown::MarkdownAS
     case Markdown::NodeType::Highlight:
       objcType = MarkdownNodeTypeHighlight;
       break;
+    case Markdown::NodeType::SoftBreak:
+      objcType = MarkdownNodeTypeSoftBreak;
+      break;
   }
 
   MarkdownASTNode *objcNode = [[MarkdownASTNode alloc] initWithType:objcType];

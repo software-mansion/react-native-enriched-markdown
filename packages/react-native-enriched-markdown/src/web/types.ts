@@ -15,6 +15,7 @@ export type NodeType =
   | 'Link'
   | 'Heading'
   | 'LineBreak'
+  | 'SoftBreak'
   | 'Strong'
   | 'Emphasis'
   | 'Strikethrough'
@@ -63,7 +64,7 @@ export interface ASTNode {
   content?: string;
   /** Present on nodes that carry structural metadata (Heading, Link, etc.). */
   attributes?: NodeAttributes;
-  /** Child nodes; absent on leaf nodes (Text, LineBreak, ThematicBreak). */
+  /** Child nodes; absent on leaf nodes (Text, LineBreak, SoftBreak, ThematicBreak). */
   children?: ASTNode[];
 }
 

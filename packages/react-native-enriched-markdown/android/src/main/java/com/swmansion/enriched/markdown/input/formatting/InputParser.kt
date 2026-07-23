@@ -72,7 +72,7 @@ object InputParser {
 
     if (node.type == NodeType.Text) {
       plainText.append(node.content)
-    } else if (node.type == NodeType.LineBreak) {
+    } else if (node.type == NodeType.LineBreak || node.type == NodeType.SoftBreak) {
       plainText.append("\n")
     }
 

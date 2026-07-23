@@ -72,6 +72,8 @@ static jint nodeTypeToJavaOrdinal(NodeType type) {
       return 28;
     case NodeType::Highlight:
       return 29;
+    case NodeType::SoftBreak:
+      return 30;
     default:
       return 0;
   }
