@@ -68,10 +68,19 @@ class InputConnectionWrapper(
       if (cursorMovedBackwardsOrAtBeginningOfInput || (!noPreviousSelection && cursorDidNotMove)) {
         BACKSPACE_KEY_VALUE
       } else {
-        editText.text?.get(currentSelectionStart - 1).toString()
+        codePointBeforeCursor(currentSelectionStart)
       }
-    dispatchKeyPressOrEnqueue(key)
+    if (key.isNotEmpty()) {
+      dispatchKeyPressOrEnqueue(key)
+    }
     return consumed
+  }
+
+  private fun codePointBeforeCursor(cursor: Int): String {
+    val content = editText.text ?: return ""
+    val end = cursor.coerceAtMost(content.length)
+    if (end < 1) return ""
+    return String(Character.toChars(Character.codePointBefore(content, end)))
   }
 
   override fun commitText(
