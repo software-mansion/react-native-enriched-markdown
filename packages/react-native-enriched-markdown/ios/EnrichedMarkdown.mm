@@ -2,6 +2,7 @@
 #import "ContextMenuUtils.h"
 #import "ENRMAccessibilityLabels.h"
 #import "ENRMAsyncRenderCoordinator.h"
+#import "ENRMAtomicSize.h"
 #import "ENRMImageAttachment.h"
 #import "ENRMMarkdownParser.h"
 #import "ENRMTailFadeInAnimator.h"
@@ -67,7 +68,6 @@ typedef NS_OPTIONS(NSUInteger, ENRMDirtyFlags) {
 
 static char kENRMSegmentFadeAnimatorKey;
 
-
 @interface EnrichedMarkdown () <RCTEnrichedMarkdownViewProtocol, UITextViewDelegate, ENRMImageLayoutObserver>
 + (ENRMMd4cFlags *)flagsFromProps:(const EnrichedMarkdownMd4cFlagsStruct &)props;
 - (void)emitLinkPress:(NSString *)url;
@@ -119,6 +119,8 @@ static char kENRMSegmentFadeAnimatorKey;
 
   ENRMWritingDirectionMode _writingDirectionMode;
   NSWritingDirection _resolvedLayoutDirection;
+
+  ENRMAtomicSize _lastCommittedSize;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -367,6 +369,11 @@ static char kENRMSegmentFadeAnimatorKey;
   return CGSizeMake(measuredWidth, measuredHeight);
 }
 
+- (CGSize)lastCommittedLayoutSize
+{
+  return _lastCommittedSize.load();
+}
+
 - (BOOL)hasRenderedMarkdown:(NSString *)markdown
 {
   return _renderedMarkdown != nil && [_renderedMarkdown isEqualToString:markdown];
@@ -409,6 +416,8 @@ static char kENRMSegmentFadeAnimatorKey;
            oldLayoutMetrics:(const LayoutMetrics &)oldLayoutMetrics
 {
   [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
+
+  _lastCommittedSize.store(CGSizeMake(layoutMetrics.frame.size.width, layoutMetrics.frame.size.height));
 
   NSWritingDirection resolved = _resolvedLayoutDirection;
   if (layoutMetrics.layoutDirection == LayoutDirection::RightToLeft) {
