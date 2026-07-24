@@ -12,21 +12,12 @@ import kotlin.math.abs
 
 /**
  * Movement method that adds link tap / long-press handling on top of
- * [ArrowKeyMovementMethod], the method `setTextIsSelectable` installs.
+ * [ArrowKeyMovementMethod], the method [setTextIsSelectable] installs.
  *
- * This class must never mutate the buffer's Selection spans. It previously
- * extended LinkMovementMethod, which removes the Selection on every touch that
- * does not land on a link. That deleted the selection the platform Editor was
- * concurrently building during a long-press gesture, so the Editor observed
- * getSelectionStart()/getSelectionEnd() == -1 mid-gesture. AOSP tolerates that
- * state, but Samsung's One UI Editor caches the offsets during the gesture and
- * replays them after select-word via semSetSelection ->
- * Selection.setSelection(spannable, -1, -1), crashing with
- * "IndexOutOfBoundsException: setSpan (-1 ... -1) starts before 0".
- * Link clicks are therefore dispatched from touch offsets here instead of
- * relying on LinkMovementMethod's selection-based implementation, and
- * [ArrowKeyMovementMethod] keeps text selection behavior identical to a plain
- * selectable TextView.
+ * Must never mutate the buffer's Selection spans — the platform Editor
+ * manages them during long-press gestures, and removing or overwriting
+ * them mid-gesture crashes on some OEM skins.
+ * See: https://github.com/software-mansion/react-native-enriched-markdown/issues/580
  */
 class LinkLongPressMovementMethod : ArrowKeyMovementMethod() {
   private val handler = Handler(Looper.getMainLooper())
