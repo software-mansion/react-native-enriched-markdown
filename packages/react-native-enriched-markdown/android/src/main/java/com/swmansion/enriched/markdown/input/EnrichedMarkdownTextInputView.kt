@@ -40,10 +40,16 @@ import com.swmansion.enriched.markdown.input.model.BlockRange
 import com.swmansion.enriched.markdown.input.model.BlockType
 import com.swmansion.enriched.markdown.input.model.FormattingRange
 import com.swmansion.enriched.markdown.input.model.InputFormatterStyle
+import com.swmansion.enriched.markdown.input.model.MAX_LIST_DEPTH
 import com.swmansion.enriched.markdown.input.model.StyleType
 import com.swmansion.enriched.markdown.input.toolbar.InputContextMenu
 import com.swmansion.enriched.markdown.utils.input.AutoCapitalizeUtils
 import kotlin.math.ceil
+
+// Zero-width space: anchors an empty bullet line so the marker draws and the caret
+// indents (Android won't apply a LeadingMarginSpan's indent to an empty paragraph).
+// Stripped during serialization, so it never reaches the Markdown output.
+private const val ZWSP = '\u200B'
 
 private fun Char.isLineBreak(): Boolean = this == '\n' || this == '\r' || this == '\u0085' || this == '\u2028' || this == '\u2029'
 
@@ -54,7 +60,7 @@ class EnrichedMarkdownTextInputView(
 
   val formattingStore = FormattingStore()
   val blockStore = BlockStore()
-  val formatter = InputFormatter()
+  val formatter = InputFormatter(resources.displayMetrics.density)
   val pendingStyles = mutableSetOf<StyleType>()
   val pendingStyleRemovals = mutableSetOf<StyleType>()
 
@@ -99,6 +105,21 @@ class EnrichedMarkdownTextInputView(
 
   private var headingOverrideBaseSizePx: Float? = null
   private var baseHintColor: Int? = null
+
+  // Guards re-entrancy while the empty-list-line ZWSP anchor is managed (its
+  // insert/delete + setSelection would otherwise loop back through the callbacks).
+  private var isManagingAnchor = false
+
+  // Number of ZWSP empty-list anchors believed live in the buffer. Bumped on insert,
+  // made exact on every strip scan (which recounts what it keeps), and reset when the
+  // buffer is replaced. Incoming markdown is scrubbed of U+200B at parse time, so in
+  // practice only syncEmptyListAnchor's own inserts raise it. When it is 0 there is
+  // nothing to strip, letting syncEmptyListAnchor skip its O(document) backward scan
+  // on every caret move.
+  private var zwspAnchorCount = 0
+
+  // The consumer-set placeholder, hidden while a bullet is drawn on an empty editor.
+  private var userHint: CharSequence? = null
 
   init {
     setupDetectorPipeline()
@@ -174,7 +195,45 @@ class EnrichedMarkdownTextInputView(
     if (keyCode == KeyEvent.KEYCODE_DEL && deleteLinkBeforeCursor()) {
       return true
     }
+    if (handleListKey(keyCode, event)) {
+      return true
+    }
     return super.onKeyDown(keyCode, event)
+  }
+
+  /**
+   * Hardware-keyboard list editing: Tab indents the current item, Shift+Tab outdents,
+   * and Backspace at the start of an item (or on an empty/ZWSP-anchored item) outdents,
+   * then un-lists at depth 0. Only fires on a list line; returns true when handled.
+   */
+  private fun handleListKey(
+    keyCode: Int,
+    event: KeyEvent?,
+  ): Boolean {
+    val listBlock = listBlockAtCursor() ?: return false
+    val depth = listBlock.level
+    when (keyCode) {
+      KeyEvent.KEYCODE_TAB -> {
+        if (event?.isShiftPressed == true) outdentList() else indentList()
+        return true
+      }
+
+      KeyEvent.KEYCODE_DEL -> {
+        if (selectionStart == selectionEnd) {
+          val editable = text ?: return false
+          val ls = lineStartOf(editable, selectionStart)
+          val le = lineEndOf(editable, selectionStart)
+          val content = editable.subSequence(ls, le).toString()
+          // At the item's start, or on an empty/ZWSP-anchored item (the caret sits
+          // after the anchor, not at the line start).
+          if (selectionStart == ls || content.isEmpty() || content == ZWSP.toString()) {
+            if (depth > 0) outdentList() else toggleListType(listBlock.type)
+            return true
+          }
+        }
+      }
+    }
+    return false
   }
 
   // Prevents TextView from deferring its internal layout when a Fabric
@@ -256,9 +315,30 @@ class EnrichedMarkdownTextInputView(
 
     isProcessingTextChange = true
     try {
-      adjustStoresForEdit(editStart, deletedLength, insertedLength)
+      formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
+      blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
+      pruneOrphanedAnchors()
+      handleNewlineBlockContinuation(editStart, deletedLength, insertedLength)
+      text?.let { blockStore.normalizeToLineBounds(it) }
       applyPendingStyles(editStart, insertedLength)
-      applyFormattingScopedToEdit(editStart, insertedLength)
+      // Settle the empty-bullet ZWSP anchor (insert/strip the char and re-snap ranges)
+      // BEFORE stamping spans, so block formatting runs exactly once over the final
+      // text/ranges — otherwise a pre-ZWSP anchor span and the post-ZWSP span would
+      // both land on the empty line (the "double bullet" bug).
+      val anchorChanged = syncEmptyListAnchor(restamp = false)
+      // A newline insert/delete (list continuation/exit) or a ZWSP anchor change can
+      // move spans across lines, where a per-line scoped re-stamp would miss a stale
+      // bullet span. Re-stamp the whole document in those cases; scope to the edited
+      // line for ordinary typing to keep per-keystroke work bounded.
+      val touchedNewline =
+        anchorChanged ||
+          editTouchedNewline(editStart, deletedLength, insertedLength, currentText)
+      applyInlineFormatting()
+      if (touchedNewline) {
+        text?.let { formatter.applyBlockFormatting(it, blockStore.allRanges) }
+      } else {
+        applyBlockFormattingScopedToEdit(editStart, insertedLength)
+      }
 
       val editable = text
       if (editable != null) {
@@ -273,7 +353,9 @@ class EnrichedMarkdownTextInputView(
       eventEmitter.emitCaretRectChangeIfNeeded()
       isTextChanging = false
       didTextChangeRecently = true
-      lastProcessedText = currentText
+      // Record the post-pass text (block continuation / ZWSP sync may have mutated it),
+      // so the next change detects equality correctly and doesn't reprocess.
+      lastProcessedText = text?.toString() ?: currentText
     } finally {
       isProcessingTextChange = false
     }
@@ -299,6 +381,12 @@ class EnrichedMarkdownTextInputView(
         pendingStyles.clear()
         pendingStyleRemovals.clear()
       }
+    }
+
+    if (!isTextChanging && !isProcessingTextChange) {
+      // The caret moving on/off an empty bullet line toggles the ZWSP anchor and the
+      // placeholder visibility; skip during a text-change pass (handled there).
+      syncEmptyListAnchor()
     }
 
     eventEmitter.emitSelection(selStart, selEnd)
@@ -337,20 +425,62 @@ class EnrichedMarkdownTextInputView(
   }
 
   /**
-   * Drops heading ranges no longer anchored at a line start (e.g. Backspace merged
-   * their line into the previous one). Must run BEFORE [BlockStore.normalizeToLineBounds]
-   * so a merged range is judged on its unsnapped anchor and can't grow over the line
-   * it merged into.
+   * Drops anchored blocks (headings, list items) no longer anchored at a line start
+   * (e.g. Backspace merged their line into the previous one). Must run BEFORE
+   * [BlockStore.normalizeToLineBounds] so a merged range is judged on its unsnapped
+   * anchor and can't grow over the line it merged into.
    */
-  private fun pruneOrphanedHeadingAnchors() {
+  private fun pruneOrphanedAnchors() {
     val editable = text ?: return
     val orphans =
       blockStore.allRanges.filter { range ->
-        range.type in BlockType.HEADINGS && !isAtLineStart(editable, range.start)
+        range.type in BlockType.ANCHORED && !isAtLineStart(editable, range.start)
       }
     for (orphan in orphans) {
       blockStore.removeBlock(orphan.start, orphan.start, editable)
     }
+  }
+
+  /**
+   * After a newline insertion, continues a block whose handler reports
+   * [com.swmansion.enriched.markdown.input.styles.BlockHandler.continuesOnNewline]
+   * (a list item) onto the new line as a sibling at the same depth, or exits the
+   * block when the emptied item gets a second Enter.
+   */
+  private fun handleNewlineBlockContinuation(
+    editStart: Int,
+    deletedLength: Int,
+    insertedLength: Int,
+  ) {
+    val editable = text ?: return
+    if (deletedLength != 0 || insertedLength <= 0) return
+    val insertedEnd = (editStart + insertedLength).coerceAtMost(editable.length)
+    val insertedNewline = (editStart until insertedEnd).any { editable[it] == '\n' }
+    if (!insertedNewline) return
+
+    // The line the Enter was pressed on ends at the inserted newline.
+    val prevLineEnd = editStart
+    var prevLineStart = prevLineEnd
+    while (prevLineStart > 0 && editable[prevLineStart - 1] != '\n') prevLineStart--
+
+    val prevBlock = blockStore.blockStartingAt(prevLineStart) ?: return
+    val handler = formatter.handlerForBlock(prevBlock.type) ?: return
+    if (!handler.continuesOnNewline) return
+
+    val prevContentLength = (prevLineStart until prevLineEnd).count { editable[it] != ZWSP }
+    if (prevContentLength == 0) {
+      // Exit: clear the block AND delete the just-inserted newline so the empty
+      // item collapses in place instead of leaving an extra indented blank line.
+      blockStore.removeBlock(prevLineStart, prevLineEnd, editable)
+      val newlineEnd = (editStart + insertedLength).coerceAtMost(editable.length)
+      runAsATransaction { editable.delete(editStart, newlineEnd) }
+      blockStore.adjustForEdit(editStart, insertedLength, 0)
+      setSelection(prevLineStart.coerceAtMost(editable.length))
+      return
+    }
+
+    val newLineStart = (editStart + insertedLength).coerceAtMost(editable.length)
+    blockStore.setBlock(prevBlock.type, prevBlock.level, newLineStart, newLineStart, editable)
   }
 
   /** True when [pos] is the first character of a line (document start or just after a line break). */
@@ -364,9 +494,9 @@ class EnrichedMarkdownTextInputView(
 
   /**
    * Adjusts both [formattingStore] and [blockStore] for a text edit, then prunes
-   * orphaned heading anchors and normalizes block ranges to line bounds. Every
-   * code path that mutates the text buffer must call this so block ranges stay in
-   * sync — mirrors iOS's `replaceTextInRange:withText:formattingRanges:blockRanges:`.
+   * orphaned anchors and normalizes block ranges to line bounds. Every code path
+   * that mutates the text buffer must call this so block ranges stay in sync —
+   * mirrors iOS's `replaceTextInRange:withText:formattingRanges:blockRanges:`.
    */
   private fun adjustStoresForEdit(
     editStart: Int,
@@ -375,7 +505,7 @@ class EnrichedMarkdownTextInputView(
   ) {
     formattingStore.adjustForEdit(editStart, deletedLength, insertedLength)
     blockStore.adjustForEdit(editStart, deletedLength, insertedLength)
-    pruneOrphanedHeadingAnchors()
+    pruneOrphanedAnchors()
     text?.let { blockStore.normalizeToLineBounds(it) }
   }
 
@@ -405,24 +535,29 @@ class EnrichedMarkdownTextInputView(
     formatter.applyBlockFormatting(editable, blockStore.allRanges)
   }
 
+  /** Re-applies inline (character) formatting across the whole document. */
+  private fun applyInlineFormatting() {
+    val editable = text ?: return
+    formatter.applyFormatting(editable, formattingStore.allRanges)
+  }
+
   /**
-   * Re-applies inline formatting across the document, but re-normalizes block spans
-   * only on the paragraph(s) touched by an edit at `[editStart, editStart + insertedLength)`.
-   * Heading sizing is paragraph-scoped, so re-stamping only the edited line keeps
-   * per-keystroke work bounded instead of re-spanning the whole document.
+   * Re-stamps block spans only on the paragraph(s) touched by an edit at
+   * `[editStart, editStart + insertedLength)`. A block span covers its whole line, so
+   * re-stamping only the edited line keeps per-keystroke work bounded instead of
+   * re-spanning the whole document. Safe only for edits that stay within a line; a
+   * newline-crossing edit must re-stamp the whole document (see [onAfterTextChanged]).
    */
-  private fun applyFormattingScopedToEdit(
+  private fun applyBlockFormattingScopedToEdit(
     editStart: Int,
     insertedLength: Int,
   ) {
     val editable = text ?: return
-    formatter.applyFormatting(editable, formattingStore.allRanges)
-
     val length = editable.length
     val rawStart = editStart.coerceIn(0, length)
     val rawEnd = (editStart + insertedLength).coerceIn(rawStart, length)
 
-    // Expand the edit span to whole-line bounds: a heading span covers its line, so
+    // Expand the edit span to whole-line bounds: a block span covers its line, so
     // re-stamping must cover every line the edit touched, edge-to-edge.
     var lineStart = rawStart
     while (lineStart > 0 && editable[lineStart - 1] != '\n') lineStart--
@@ -430,6 +565,29 @@ class EnrichedMarkdownTextInputView(
     while (lineEnd < length && editable[lineEnd] != '\n') lineEnd++
 
     formatter.applyBlockFormatting(editable, blockStore.allRanges, lineStart, lineEnd)
+  }
+
+  /**
+   * True when the edit inserted or deleted a line break (so block spans may need to
+   * move across lines). Checks the inserted run in the current text and the deleted run
+   * in the pre-edit text.
+   */
+  private fun editTouchedNewline(
+    editStart: Int,
+    deletedLength: Int,
+    insertedLength: Int,
+    preEditText: String,
+  ): Boolean {
+    val editable = text
+    if (editable != null && insertedLength > 0) {
+      val end = (editStart + insertedLength).coerceAtMost(editable.length)
+      if ((editStart until end).any { editable[it].isLineBreak() }) return true
+    }
+    if (deletedLength > 0) {
+      val end = (editStart + deletedLength).coerceAtMost(preEditText.length)
+      if ((editStart until end).any { preEditText[it].isLineBreak() }) return true
+    }
+    return false
   }
 
   private fun applyFormattingAndEmit() {
@@ -512,6 +670,214 @@ class EnrichedMarkdownTextInputView(
     }
   }
 
+  /** The list block owning the caret's paragraph, or null. */
+  private fun listBlockAtCursor(): BlockRange? = blockOnParagraphAt(selectionStart)?.takeIf { it.type in BlockType.LIST_ITEMS }
+
+  /**
+   * List state of the cursor's paragraph for [type]: whether it is such an item and,
+   * if so, its 0-based nesting depth. The orchestrator side of the
+   * `onChangeState.unorderedList` / `orderedList` payloads.
+   */
+  fun listStateAtCursor(type: BlockType): Pair<Boolean, Int> {
+    val block = listBlockAtCursor() ?: return false to 0
+    return if (block.type == type) true to block.level else false to 0
+  }
+
+  fun toggleUnorderedList() = toggleListType(BlockType.UNORDERED_LIST_ITEM)
+
+  fun toggleOrderedList() = toggleListType(BlockType.ORDERED_LIST_ITEM)
+
+  /**
+   * Toggles a list of [type] on the cursor's paragraph(s): turns the touched lines
+   * into depth-0 items (an item of the other list type is replaced keeping its
+   * depth), or clears them back to plain paragraphs when the cursor's line already
+   * carries [type].
+   */
+  private fun toggleListType(type: BlockType) {
+    val editable = text ?: return
+    val turningOff = listBlockAtCursor()?.type == type
+    if (turningOff) {
+      forEachSelectedLine { ls, le -> blockStore.removeBlock(ls, le, editable) }
+    } else {
+      forEachSelectedLine { ls, le ->
+        // Switching unordered <-> ordered keeps each line's nesting depth.
+        val existing = listBlockStartingAt(ls)
+        blockStore.setBlock(type, existing?.level ?: 0, ls, le, editable)
+      }
+    }
+    blockStore.normalizeToLineBounds(editable)
+    applyFormattingAndEmit()
+    syncEmptyListAnchor()
+  }
+
+  /** Increases the nesting depth of the selected list item(s). QoL: indenting a plain paragraph starts a list. */
+  fun indentList() = changeListDepthBy(1)
+
+  /** Decreases the nesting depth; outdenting at depth 0 removes the list marker. */
+  fun outdentList() = changeListDepthBy(-1)
+
+  private fun changeListDepthBy(delta: Int) {
+    val cursorBlock = listBlockAtCursor()
+    if (cursorBlock == null) {
+      // Indent on a plain paragraph starts a bullet list; headings/outdent are ignored.
+      if (delta > 0 && blockOnParagraphAt(selectionStart) == null) toggleUnorderedList()
+      return
+    }
+    if (delta < 0 && cursorBlock.level == 0) {
+      toggleListType(cursorBlock.type)
+      return
+    }
+    val editable = text ?: return
+    forEachSelectedLine { ls, le ->
+      val block = listBlockStartingAt(ls)
+      if (block != null) {
+        val newDepth = (block.level + delta).coerceIn(0, MAX_LIST_DEPTH)
+        blockStore.setBlock(block.type, newDepth, ls, le, editable)
+      }
+    }
+    blockStore.normalizeToLineBounds(editable)
+    applyFormattingAndEmit()
+    syncEmptyListAnchor()
+  }
+
+  /** Runs [action] with the `[lineStart, lineEnd)` content bounds of each line the selection touches. */
+  private inline fun forEachSelectedLine(action: (lineStart: Int, lineEnd: Int) -> Unit) {
+    val editable = text ?: return
+    val selEnd = selectionEnd.coerceIn(0, editable.length)
+    var cursor = selectionStart.coerceIn(0, editable.length)
+    while (cursor > 0 && !editable[cursor - 1].isLineBreak()) cursor--
+    while (cursor <= editable.length) {
+      var le = cursor
+      while (le < editable.length && !editable[le].isLineBreak()) le++
+      action(cursor, le)
+      if (le >= selEnd) break
+      cursor = le + 1
+    }
+  }
+
+  /**
+   * Keeps an empty bullet line anchored by a ZWSP so its marker draws and the caret
+   * indents (a [android.text.style.LeadingMarginSpan] doesn't indent an empty
+   * paragraph). Inserts the ZWSP on the caret's empty list line, strips stale ones.
+   *
+   * @param restamp re-apply block formatting here (selection/command paths); the
+   *   text-change pass passes false and stamps once afterwards.
+   * @return true if an anchor was inserted or stripped (text/ranges mutated).
+   *
+   * When called from `onAfterTextChanged` this mutates the [Editable] from inside
+   * the text-change callback — normally an Android hazard around IME composition,
+   * undo/redo, and accessibility. It is safe here, and deliberately synchronous,
+   * because: every buffer mutation is wrapped in [runAsATransaction] (which sets
+   * `isDuringTransaction`, so [MarkdownTextWatcher] early-returns and the edit does
+   * not re-enter this pass), the whole `onAfterTextChanged` body holds
+   * `isProcessingTextChange`, and [isManagingAnchor] blocks re-entry via the
+   * selection-change path. The mutation must stay synchronous: the single-stamp
+   * ordering above, the caret placement past the anchor, and `lastProcessedText`
+   * all depend on the buffer reaching its final state within this same callback —
+   * deferring the insert/delete (e.g. via `post`) would run it outside every guard
+   * and reintroduce the double-bullet and stale-caret bugs.
+   */
+  private fun syncEmptyListAnchor(restamp: Boolean = true): Boolean {
+    if (isManagingAnchor) return false
+    val editable = text ?: return false
+    isManagingAnchor = true
+    var anchorChanged = false
+    try {
+      // Strip every stale ZWSP first (a line that gained content or stopped being a
+      // list). Skip the full-document scan when we've inserted no anchors — there is
+      // nothing to strip, so a caret move in a document with no empty list lines is
+      // O(1) instead of O(document length). When the scan does run it recounts the
+      // anchors it keeps, so the count is exact afterwards — a prior overcount (an
+      // anchor the user deleted directly) or an undercount (a foreign ZWSP that stole
+      // a decrement) self-heals rather than disabling the fast path or leaking a
+      // stale anchor.
+      if (zwspAnchorCount > 0) {
+        var keptAnchors = 0
+        var i = editable.length - 1
+        while (i >= 0) {
+          if (editable[i] == ZWSP) {
+            val ls = lineStartOf(editable, i)
+            val le = lineEndOf(editable, i)
+            val onlyZwsp = le - ls == 1 && editable[ls] == ZWSP
+            val isEmptyListLine = onlyZwsp && listBlockStartingAt(ls) != null
+            if (!isEmptyListLine) {
+              runAsATransaction { editable.delete(i, i + 1) }
+              blockStore.adjustForEdit(i, 1, 0)
+              anchorChanged = true
+            } else {
+              keptAnchors++
+            }
+          }
+          i--
+        }
+        zwspAnchorCount = keptAnchors
+      }
+
+      // Anchor the caret's line if it is an empty list item with no ZWSP yet.
+      val caret = selectionStart
+      if (selectionStart == selectionEnd) {
+        val ls = lineStartOf(editable, caret)
+        val le = lineEndOf(editable, caret)
+        val block = listBlockStartingAt(ls)
+        if (block != null && le == ls) {
+          runAsATransaction { editable.insert(ls, ZWSP.toString()) }
+          blockStore.adjustForEdit(ls, 0, 1)
+          blockStore.normalizeToLineBounds(editable)
+          setSelection(ls + 1)
+          zwspAnchorCount++
+          anchorChanged = true
+        }
+      }
+
+      if (anchorChanged) {
+        // Re-snap any range left zero-length by a strip so the next stamp is exact.
+        blockStore.normalizeToLineBounds(editable)
+        if (restamp) applyFormatting()
+        lastProcessedText = editable.toString()
+        if (emitMarkdown) eventEmitter.emitChangeMarkdown()
+      }
+      syncHintVisibility()
+      return anchorChanged
+    } finally {
+      isManagingAnchor = false
+    }
+  }
+
+  /**
+   * The hint shows only on a truly empty editor with no block range — a bullet's
+   * ZWSP anchor counts as content, so the hint never overlaps a marker. Mirrors iOS.
+   */
+  private fun syncHintVisibility() {
+    val content = text
+    val hasRealText = content != null && content.any { it != ZWSP }
+    val hasBlock = blockStore.allRanges.isNotEmpty()
+    val target: CharSequence? = if (hasRealText || hasBlock) "" else userHint
+    if (hint != target) super.setHint(target)
+  }
+
+  fun setUserHint(value: CharSequence?) {
+    userHint = value
+    syncHintVisibility()
+  }
+
+  private fun lineStartOf(
+    editable: CharSequence,
+    pos: Int,
+  ): Int {
+    var s = pos.coerceIn(0, editable.length)
+    while (s > 0 && !editable[s - 1].isLineBreak()) s--
+    return s
+  }
+
+  private fun lineEndOf(
+    editable: CharSequence,
+    pos: Int,
+  ): Int {
+    var e = pos.coerceIn(0, editable.length)
+    while (e < editable.length && !editable[e].isLineBreak()) e++
+    return e
+  }
+
   // Copies the whole input as markdown without disturbing the current selection,
   // tagged so paste restores formatting and block ranges — mirrors iOS, which
   // stores markdown under its custom pasteboard type.
@@ -537,6 +903,13 @@ class EnrichedMarkdownTextInputView(
     if (id == android.R.id.paste) {
       MarkdownClipboard.markdownFromClipboard(context)?.let { markdown ->
         pasteMarkdown(markdown)
+        return true
+      }
+      // External plain text is treated as markdown so pasted syntax ("- ", "#",
+      // "**") formats instead of landing literal; syntax-free text is unchanged.
+      // "Paste as plain text" (pasteAsPlainText) keeps the literal default.
+      plainTextFromClipboard()?.let { plainText ->
+        pasteMarkdown(plainText)
         return true
       }
     }
@@ -589,6 +962,12 @@ class EnrichedMarkdownTextInputView(
     return MarkdownSerializer.serialize(selectedText, clippedRanges, clippedBlockRanges) { blockRange ->
       formatter.handlerForBlock(blockRange.type)?.markdownLinePrefix(blockRange) ?: ""
     }
+  }
+
+  private fun plainTextFromClipboard(): String? {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return null
+    val item = clipboard.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0) ?: return null
+    return item.coerceToText(context)?.toString()?.takeIf { it.isNotEmpty() }
   }
 
   /**
@@ -653,6 +1032,7 @@ class EnrichedMarkdownTextInputView(
       }
     }
 
+    blockStore.normalizeToLineBounds(editable)
     applyFormattingAndEmit()
     syncCursorSizeWithBlock()
   }
@@ -666,8 +1046,18 @@ class EnrichedMarkdownTextInputView(
     val cursor = pos.coerceIn(0, editable.length)
     var lineStart = cursor
     while (lineStart > 0 && !editable[lineStart - 1].isLineBreak()) lineStart--
-    return blockStore.allRanges.firstOrNull { it.start == lineStart }
+    return blockStore.blockStartingAt(lineStart)
   }
+
+  /**
+   * The list-item block whose paragraph starts exactly at [lineStart], or null.
+   * Line-start counterpart to [listBlockAtCursor] for the per-line loops
+   * (toggle / indent / anchor sync) that already hold a resolved line start.
+   * Routes through [BlockStore.blockStartingAt]'s O(log n) lookup instead of the
+   * linear `allRanges.firstOrNull { it.start == ls }` scans these sites repeated.
+   */
+  private fun listBlockStartingAt(lineStart: Int): BlockRange? =
+    blockStore.blockStartingAt(lineStart)?.takeIf { it.type in BlockType.LIST_ITEMS }
 
   /** Heading level (1-6) of the cursor's paragraph, or 0 when it is a plain paragraph. */
   fun headingLevelAtCursor(): Int {
@@ -817,6 +1207,17 @@ class EnrichedMarkdownTextInputView(
     autoLinkDetector.style = style
   }
 
+  /**
+   * Applies the parsed `markdownStyle` (which now carries `list.itemSpacing`).
+   * Display density is folded in at [InputFormatter] construction, so the style is
+   * handed to the formatter as-is. Returns true if the effective style changed
+   * (caller re-applies formatting).
+   */
+  fun setMarkdownStyleFromProps(style: InputFormatterStyle): Boolean {
+    setAutoLinkStyle(style)
+    return formatter.updateStyle(style)
+  }
+
   fun allFormattingRangesForSerialization(): List<FormattingRange> {
     val editable = text ?: return formattingStore.allRanges
     val transientRanges = detectorPipeline.allTransientFormattingRanges(editable)
@@ -835,6 +1236,8 @@ class EnrichedMarkdownTextInputView(
         setText(parsed.plainText)
         setSelection(text?.length ?: 0)
       }
+      // Parsed markdown never contains the ZWSP anchor, so the fresh document has none.
+      zwspAnchorCount = 0
       applyFormatting()
       forceScrollToSelection()
       layoutManager.invalidateLayout()

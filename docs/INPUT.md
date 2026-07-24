@@ -85,6 +85,29 @@ Behavior notes:
 
 Heading font sizes, weights, and colors are configurable per level — see [Customizing Styles](#customizing-enrichedmarkdowntextinput--styles).
 
+## Lists
+
+`EnrichedMarkdownTextInput` supports nested unordered (bullet) and ordered (numbered) lists, serialized to Markdown as `- ` / `1. ` with three spaces of indentation per nesting level. Ordered items are numbered by their position among adjacent same-depth siblings, so numbering stays correct as items are added, removed, or reordered. Like headings, list items are block-level — they apply to whole paragraphs. Manage them through the component ref:
+
+- [`toggleUnorderedList()`](API_REFERENCE.md#toggleunorderedlist) — turns the cursor's paragraph(s) into bullet items, or back into regular paragraphs if they already are.
+- [`toggleOrderedList()`](API_REFERENCE.md#toggleorderedlist) — same for numbered items; toggling one list type on the other replaces it.
+- [`indentList()`](API_REFERENCE.md#indentlist) — nests the current item one level deeper. On a non-list paragraph it starts a bullet list.
+- [`outdentList()`](API_REFERENCE.md#outdentlist) — lifts the current item out one level. Outdenting a top-level (depth 0) item removes the bullet.
+
+On a hardware keyboard, **Tab** and **Shift+Tab** indent and outdent the current item.
+
+Behavior notes:
+
+- **Return continues the list** — pressing Return inside an item starts a new bullet at the same depth on the next line. Pressing Return on an empty item exits the list (the line becomes a regular paragraph).
+- **Backspace at the start of an item** outdents it; at depth 0 it removes the bullet.
+- An emptied list line stays a list item (its bullet keeps showing) until you toggle it off or Backspace out of it, so text you type next continues in the list.
+- The bullet marker exists only in the serialized Markdown and the rendered glyph — it is never part of the editor's text, so it won't collide with `-`-prefixed text such as mentions.
+- **List items are single-line.** Each item is exactly one paragraph. Importing or pasting Markdown with *loose* list items (an item containing multiple paragraphs) keeps only the item's first line as a list item — continuation paragraphs become regular paragraphs, not list-styled blocks.
+
+Whether the cursor's paragraph is a list item, and its nesting depth, are reported through the [`onChangeState`](API_REFERENCE.md#onchangestate) payload as `unorderedList` / `orderedList` (`{ isActive, depth }`), so you can highlight the list buttons in your toolbar.
+
+Use [`markdownStyle.list.itemSpacing`](API_REFERENCE.md#markdownstyle) to add vertical spacing between list items (bullet and numbered alike) so they read as separate rows.
+
 ## Links
 
 Links are a piece of text with a URL attributed to it. They can be managed by calling methods on the input ref:
@@ -224,7 +247,7 @@ No setup is required. Both platforms autodetect direction per paragraph out of t
 
 - **Placeholder** follows the host view's layout direction, not the prop. If you need an RTL placeholder, wrap the input in `<View style={{ direction: 'rtl' }}>` or set `I18nManager.forceRTL(true)`.
 - **Mixed paragraphs while typing** — newly inserted characters in an empty paragraph briefly inherit the previous paragraph's direction; the first-strong pass corrects this on the next input event.
-- **Code blocks, tables, blockquotes, lists** are not supported in the input (it's a flat inline-formatting surface). For those, use [`EnrichedMarkdownText`](TEXT.md).
+- **Code blocks, tables, blockquotes** are not supported in the input. Headings and bullet lists are; other block elements require [`EnrichedMarkdownText`](TEXT.md).
 
 See [RTL Support](RTL.md) for the full per-element behavior on the rendered output side.
 

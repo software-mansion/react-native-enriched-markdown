@@ -38,6 +38,11 @@ typedef struct {
 - (void)toggleSpoiler;
 - (void)toggleInlineStyle:(ENRMInputStyleType)type;
 - (void)toggleHeading:(NSInteger)level;
+- (void)toggleUnorderedList;
+- (void)toggleOrderedList;
+- (void)indentList;
+- (void)outdentList;
+- (BOOL)handleBackspaceAtDocumentStart;
 - (void)showLinkPrompt;
 
 - (BOOL)isEffectiveStyleActive:(ENRMInputStyleType)type atPosition:(NSUInteger)position;

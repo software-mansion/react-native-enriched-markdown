@@ -87,6 +87,15 @@ export interface MarkdownTextInputStyle {
   h4?: HeadingStyle;
   h5?: HeadingStyle;
   h6?: HeadingStyle;
+  /** List styling shared by bullet and numbered lists. */
+  list?: {
+    /**
+     * Vertical spacing (points) added above each list item so items read as
+     * separate rows. iOS uses `paragraphSpacingBefore`; Android a `LineHeightSpan`.
+     * @default 0
+     */
+    itemSpacing?: number;
+  };
 }
 
 export interface StyleState {
@@ -97,6 +106,8 @@ export interface StyleState {
   spoiler: { isActive: boolean };
   link: { isActive: boolean };
   heading: { isActive: boolean; level: HeadingLevel };
+  unorderedList: { isActive: boolean; depth: number };
+  orderedList: { isActive: boolean; depth: number };
 }
 
 export interface ContextMenuItem {
@@ -131,6 +142,10 @@ export interface EnrichedMarkdownTextInputInstance {
   toggleStrikethrough: () => void;
   toggleSpoiler: () => void;
   toggleHeading: (level: HeadingLevel) => void;
+  toggleUnorderedList: () => void;
+  toggleOrderedList: () => void;
+  indentList: () => void;
+  outdentList: () => void;
   setLink: (url: string) => void;
   insertLink: (text: string, url: string) => void;
   insertMention: (displayText: string, url: string) => void;
@@ -428,8 +443,17 @@ export const EnrichedMarkdownTextInput = ({
 
   const handleChangeState = useCallback(
     (e: NativeSyntheticEvent<OnChangeStateEvent>) => {
-      const { bold, italic, underline, strikethrough, spoiler, link, heading } =
-        e.nativeEvent;
+      const {
+        bold,
+        italic,
+        underline,
+        strikethrough,
+        spoiler,
+        link,
+        heading,
+        unorderedList,
+        orderedList,
+      } = e.nativeEvent;
       onChangeState?.({
         bold,
         italic,
@@ -438,6 +462,8 @@ export const EnrichedMarkdownTextInput = ({
         spoiler,
         link,
         heading: { ...heading, level: toHeadingLevel(heading.level) },
+        unorderedList,
+        orderedList,
       });
     },
     [onChangeState]
@@ -550,6 +576,10 @@ export const EnrichedMarkdownTextInput = ({
       toggleStrikethrough: () => Commands.toggleStrikethrough(commandRef),
       toggleSpoiler: () => Commands.toggleSpoiler(commandRef),
       toggleHeading: (level) => Commands.toggleHeading(commandRef, level),
+      toggleUnorderedList: () => Commands.toggleUnorderedList(commandRef),
+      toggleOrderedList: () => Commands.toggleOrderedList(commandRef),
+      indentList: () => Commands.indentList(commandRef),
+      outdentList: () => Commands.outdentList(commandRef),
       setLink: (url) => Commands.setLink(commandRef, url),
       insertLink: (text, url) => Commands.insertLink(commandRef, text, url),
       insertMention: (displayText, url) =>

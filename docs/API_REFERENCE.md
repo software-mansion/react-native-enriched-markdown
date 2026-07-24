@@ -589,6 +589,7 @@ Style configuration for formatted text in the input.
 - `spoiler.color` — text color for spoiler text.
 - `spoiler.backgroundColor` — background color for spoiler text.
 - `h1`–`h6` — per-level heading styling, each accepting `fontSize`, `fontWeight`, and `color`. Defaults match the read-only renderer (sizes `30/24/20/18/16/14`, bold).
+- `list.itemSpacing` — vertical spacing (points) added above each list item (bullet and numbered alike) so items read as separate rows; defaults to `0`. iOS applies it via `paragraphSpacingBefore`; Android via a `LineHeightSpan`.
 
 ### `mentionIndicators`
 
@@ -634,7 +635,7 @@ Fires when the text selection changes.
 
 ### `onChangeState`
 
-Fires when the active style state changes. The payload provides a nested object for each style with an `isActive` property; `heading` additionally carries the cursor paragraph's `level` (`0` when it is not a heading).
+Fires when the active style state changes. The payload provides a nested object for each style with an `isActive` property; `heading` additionally carries the cursor paragraph's `level` (`0` when it is not a heading) and `unorderedList` / `orderedList` their 0-based nesting `depth`.
 
 | Type                              | Default Value | Platform |
 | --------------------------------- | ------------- | -------- |
@@ -652,6 +653,12 @@ interface StyleState {
   link: { isActive: boolean };
   // Heading level of the cursor's paragraph: 0 = none, 1-6 = H1-H6.
   heading: { isActive: boolean; level: number };
+  // `depth` is the 0-based nesting level while `isActive` is true, and is
+  // always `0` when `isActive` is false (i.e. the cursor is not in a list).
+  // This differs from `heading.level`, where `0` is itself a meaningful value
+  // (no heading); read `depth` only when `isActive` is true.
+  unorderedList: { isActive: boolean; depth: number };
+  orderedList: { isActive: boolean; depth: number };
 }
 ```
 
@@ -944,6 +951,22 @@ Toggles spoiler on the current selection or cursor.
 ### `toggleHeading(level: number)`
 
 Toggles a heading of the given level (`1`–`6`) on the cursor's paragraph. Calling it with the level already applied turns the paragraph back into regular text. Unlike the inline `toggle*` methods, this operates on the whole paragraph, not a character range.
+
+### `toggleUnorderedList()`
+
+Turns the cursor's paragraph(s) into bullet list items, or back into regular paragraphs if they already are. Operates on the whole paragraph. List items are single-line — each item is exactly one paragraph, and Markdown imported with multi-paragraph (loose) items keeps only each item's first line as a list item.
+
+### `toggleOrderedList()`
+
+Turns the cursor's paragraph(s) into numbered list items, or back into regular paragraphs if they already are. Numbering derives from an item's position among its adjacent same-depth siblings. Toggling one list type on a line carrying the other replaces it, keeping the item's nesting depth.
+
+### `indentList()`
+
+Nests the current list item one level deeper (up to a maximum depth). Called on a non-list paragraph, it starts a bullet list at depth 0. Equivalent to pressing **Tab** with a hardware keyboard.
+
+### `outdentList()`
+
+Lifts the current list item out one nesting level. Outdenting a depth-0 item removes the bullet, turning it back into a regular paragraph. Equivalent to **Shift+Tab**.
 
 ### `setLink(url: string)`
 
