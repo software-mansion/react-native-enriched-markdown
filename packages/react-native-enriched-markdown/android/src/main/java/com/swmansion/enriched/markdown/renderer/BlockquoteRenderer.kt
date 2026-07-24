@@ -4,10 +4,9 @@ import android.text.SpannableStringBuilder
 import com.swmansion.enriched.markdown.parser.MarkdownASTNode
 import com.swmansion.enriched.markdown.spans.BlockquoteSpan
 import com.swmansion.enriched.markdown.utils.text.span.SPAN_FLAGS_CONTAINER_BACKGROUND
-import com.swmansion.enriched.markdown.utils.text.span.SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE
+import com.swmansion.enriched.markdown.utils.text.span.applyLineHeightSkippingImages
 import com.swmansion.enriched.markdown.utils.text.span.applyMarginBottom
 import com.swmansion.enriched.markdown.utils.text.span.applyMarginTop
-import com.swmansion.enriched.markdown.utils.text.span.createLineHeightSpan
 
 class BlockquoteRenderer(
   private val config: RendererConfig,
@@ -60,8 +59,9 @@ class BlockquoteRenderer(
       SPAN_FLAGS_CONTAINER_BACKGROUND,
     )
 
-    // Apply styling only to segments that are NOT nested quotes
-    applySpansExcludingNested(builder, nestedRanges, start, end, createLineHeightSpan(style.lineHeight))
+    // Apply line height only to segments that are NOT nested quotes, skipping
+    // block images so their expanded line metrics aren't re-clamped
+    applyLineHeightExcludingNested(builder, nestedRanges, start, end, style.lineHeight)
 
     // Margins are only applied by the outermost (root) quote
     if (depth == 0) {
@@ -70,22 +70,22 @@ class BlockquoteRenderer(
     }
   }
 
-  private fun applySpansExcludingNested(
+  private fun applyLineHeightExcludingNested(
     builder: SpannableStringBuilder,
     nestedRanges: List<Pair<Int, Int>>,
     start: Int,
     end: Int,
-    span: Any,
+    lineHeight: Float,
   ) {
     var currentPos = start
     for ((nestedStart, nestedEnd) in nestedRanges) {
       if (currentPos < nestedStart) {
-        builder.setSpan(span, currentPos, nestedStart, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
+        applyLineHeightSkippingImages(builder, currentPos, nestedStart, lineHeight)
       }
       currentPos = nestedEnd
     }
     if (currentPos < end) {
-      builder.setSpan(span, currentPos, end, SPAN_FLAGS_EXCLUSIVE_EXCLUSIVE)
+      applyLineHeightSkippingImages(builder, currentPos, end, lineHeight)
     }
   }
 }
