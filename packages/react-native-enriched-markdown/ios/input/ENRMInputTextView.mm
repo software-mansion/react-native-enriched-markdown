@@ -1,9 +1,7 @@
 #import "ENRMInputTextView.h"
+#import "EnrichedMarkdownTextInput+Internal.h"
 #import "EnrichedMarkdownTextInput.h"
 #import "PasteboardUtils.h"
-#if TARGET_OS_OSX
-#import "EnrichedMarkdownTextInput+Internal.h"
-#endif
 
 NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.markdown";
 
@@ -66,6 +64,19 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
     }
   }
   return [super canPerformAction:action withSender:sender];
+}
+
+// UITextInteraction's internal recognizers delay raw touch delivery, so
+// touchesBegan never fires here for a focusing tap. Hit-testing is the one
+// synchronous step UIKit cannot skip for a new touch — track the touch-down
+// point for the unfocused link-press check from it instead.
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+  UIView *view = [super hitTest:point withEvent:event];
+  if (view != nil && event != nil && event.type == UIEventTypeTouches && self.markdownTextInput != nil) {
+    [self.markdownTextInput trackTouchDownAtPoint:point];
+  }
+  return view;
 }
 
 - (void)layoutSubviews
@@ -138,6 +149,10 @@ NSString *const kENRMMarkdownPasteboardType = @"com.swmansion.enriched-markdown.
 
 - (void)mouseDown:(NSEvent *)event
 {
+  if (self.window.firstResponder != self && self.markdownTextInput != nil &&
+      [self.markdownTextInput handleLinkPressForMouseDownEvent:event]) {
+    return;
+  }
   if (self.window != nil) {
     [self.window makeFirstResponder:self];
   }
