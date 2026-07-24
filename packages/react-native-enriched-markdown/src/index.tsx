@@ -31,6 +31,7 @@ export type {
   ContextMenuItem,
   InputSelectionMenuConfig,
   FormatMenuConfig,
+  OnKeyPressEvent,
   OnLinkDetected,
   OnStartMentionEvent,
   OnChangeMentionEvent,

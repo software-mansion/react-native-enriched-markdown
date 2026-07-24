@@ -195,6 +195,7 @@ You can find some examples in the [usage section](#usage) or in the example app.
 - [onChangeText](API_REFERENCE.md#onchangetext) - returns the input's plain text (without Markdown syntax) anytime it changes.
 - [onChangeMarkdown](API_REFERENCE.md#onchangemarkdown) - returns the Markdown string parsed from current input text and styles anytime it would change. As parsing the Markdown on each input change can be expensive, not assigning the event's callback will skip the serialization for better performance.
 - [onChangeSelection](API_REFERENCE.md#onchangeselection) - returns `{ start, end }` of the current selection, useful for working with [links](#links).
+- [onKeyPress](API_REFERENCE.md#onkeypress) - returns `{ nativeEvent: { key } }` for every keystroke before it is applied to the content, mirroring React Native TextInput's `onKeyPress`.
 
 ## RTL Support
 

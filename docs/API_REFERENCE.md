@@ -655,6 +655,24 @@ interface StyleState {
 }
 ```
 
+### `onKeyPress`
+
+Fires on every keystroke, before the change is applied to the input content — mirroring React Native TextInput's `onKeyPress`. `nativeEvent.key` is the pressed character, or a named key: `Backspace`, `Enter`, `Tab` (iOS additionally reports `Escape`). On Android the key reported for soft keyboard input may lag actual typing when autocomplete suggestions are involved. Paste operations do not fire the event.
+
+| Type                                                          | Default Value | Platform |
+| ------------------------------------------------------------- | ------------- | -------- |
+| `(e: NativeSyntheticEvent<{ key: string }>) => void`          | -             | Both     |
+
+**Example:**
+
+```tsx
+<EnrichedMarkdownTextInput
+  onKeyPress={({ nativeEvent: { key } }) => {
+    console.log('Pressed key:', key);
+  }}
+/>
+```
+
 ### `onCaretRectChange`
 
 Fires when the caret's pixel position changes (typing, selection change, content reflow). The rect is relative to the input's top-left corner, in density-independent pixels. The native side diffs the rect before emitting, so redundant events are suppressed.
