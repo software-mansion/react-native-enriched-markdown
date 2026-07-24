@@ -214,6 +214,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   CGFloat _tableCellPaddingHorizontal;
   CGFloat _tableCellPaddingVertical;
   CGFloat _tableHorizontalOverflow;
+  NSString *_tableAlign;
   // Task list checkbox
   RCTUIColor *_taskListCheckedColor;
   RCTUIColor *_taskListBorderColor;
@@ -480,6 +481,7 @@ static inline NSString *normalizedFontWeight(NSString *fontWeight)
   copy->_tableCellPaddingHorizontal = _tableCellPaddingHorizontal;
   copy->_tableCellPaddingVertical = _tableCellPaddingVertical;
   copy->_tableHorizontalOverflow = _tableHorizontalOverflow;
+  copy->_tableAlign = [_tableAlign copy];
   copy->_taskListCheckedColor = [_taskListCheckedColor copy];
   copy->_taskListBorderColor = [_taskListBorderColor copy];
   copy->_taskListCheckboxSize = _taskListCheckboxSize;
@@ -2344,6 +2346,16 @@ static const CGFloat kDefaultMinGap = 4.0;
 - (void)setTableHorizontalOverflow:(CGFloat)newValue
 {
   _tableHorizontalOverflow = newValue;
+}
+
+- (NSString *)tableAlign
+{
+  return _tableAlign ?: @"";
+}
+
+- (void)setTableAlign:(NSString *)newValue
+{
+  _tableAlign = newValue;
 }
 
 // Task list

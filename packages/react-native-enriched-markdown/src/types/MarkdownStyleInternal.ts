@@ -6,6 +6,9 @@ export type BlockTextAlign = 'auto' | 'left' | 'right' | 'center' | 'justify';
 // Mirrors the public fontStyle values; empty string means "inherit / no override".
 export type EmphasisFontStyle = 'normal' | 'italic' | 'oblique' | '';
 
+// empty string means "no table alignment set" (legacy start-aligned placement).
+export type TableAlign = 'left' | 'center' | 'right' | '';
+
 // empty string means "legacy sizing" (fill width, no resize-mode handling).
 // resolves to 'cover' when maxHeight/aspectRatio is present.
 export type ImageResizeMode =
@@ -135,6 +138,7 @@ interface TableStyleInternal extends BaseBlockStyleInternal {
   cellPaddingHorizontal: number;
   cellPaddingVertical: number;
   horizontalOverflow: number;
+  align: TableAlign;
 }
 
 interface TaskListStyleInternal {

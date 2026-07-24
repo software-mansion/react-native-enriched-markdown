@@ -1016,6 +1016,11 @@ BOOL applyMarkdownStyleToConfig(StyleConfig *config, const MarkdownStyle &newSty
     changed = YES;
   }
 
+  if (newStyle.table.align != oldStyle.table.align) {
+    [config setTableAlign:@(newStyle.table.align.c_str())];
+    changed = YES;
+  }
+
   // ── Task List ───────────────────────────────────────────────────────────────
 
   if (newStyle.taskList.checkedColor != oldStyle.taskList.checkedColor) {

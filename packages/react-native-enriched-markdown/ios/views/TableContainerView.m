@@ -549,6 +549,18 @@
   return _totalTableHeight;
 }
 
+- (CGFloat)alignOffsetForFreeSpace:(CGFloat)freeSpace
+{
+  if (freeSpace <= 0)
+    return 0;
+  NSString *align = self.config.tableAlign;
+  if ([align isEqualToString:@"center"])
+    return freeSpace / 2;
+  if ([align isEqualToString:@"right"])
+    return freeSpace;
+  return 0;
+}
+
 - (void)layoutSubviews
 {
   [super layoutSubviews];
@@ -568,11 +580,12 @@
     _scrollView.scrollEnabled = YES;
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
   } else {
+    CGFloat alignOffset = [self alignOffsetForFreeSpace:containerWidth - overhang * 2 - _totalTableWidth];
     _scrollView.contentInset = UIEdgeInsetsZero;
     _scrollView.contentOffset = CGPointZero;
     _scrollView.contentSize = CGSizeMake(MAX(_totalTableWidth, containerWidth), _totalTableHeight);
     _scrollView.scrollEnabled = (_totalTableWidth > containerWidth);
-    _gridContainer.frame = CGRectMake(overhang, 0, _totalTableWidth, _totalTableHeight);
+    _gridContainer.frame = CGRectMake(overhang + alignOffset, 0, _totalTableWidth, _totalTableHeight);
   }
 #else
   CGFloat overhang = MAX(self.config.tableHorizontalOverflow, 0);
@@ -582,7 +595,8 @@
   if (tableOverflows) {
     _gridContainer.frame = CGRectMake(0, 0, _totalTableWidth, _totalTableHeight);
   } else if (_totalTableWidth > 0 && _totalTableHeight > 0) {
-    _gridContainer.frame = CGRectMake(overhang, 0, _totalTableWidth, _totalTableHeight);
+    CGFloat alignOffset = [self alignOffsetForFreeSpace:containerWidth - overhang * 2 - _totalTableWidth];
+    _gridContainer.frame = CGRectMake(overhang + alignOffset, 0, _totalTableWidth, _totalTableHeight);
   }
 #endif
 }
