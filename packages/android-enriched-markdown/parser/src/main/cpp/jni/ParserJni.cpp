@@ -20,6 +20,8 @@ namespace {
 
 static_assert(static_cast<int>(NodeType::Highlight) == 29,
               "NodeType enum must stay in sync with Kotlin MarkdownASTNode.NodeType");
+static_assert(static_cast<int>(NodeType::SoftBreak) == 30,
+              "NodeType enum must stay in sync with Kotlin MarkdownASTNode.NodeType");
 
 local_ref<JMarkdownASTNode> createJavaNode(const std::shared_ptr<MarkdownASTNode> &node) {
   if (!node) {
