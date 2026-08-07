@@ -39,6 +39,16 @@ Token colors are set through `codeBlock.syntaxColors`. The 14 token types are: `
 `variable`, `property`, `tag`, `attribute`, `embedded`. Any type left unset is drawn in the normal
 code color.
 
+## Copy button
+
+With `flavor="github"`, each code block's header shows a copy button (and a long-press context
+menu with **Copy** / **Copy as Markdown**). The CommonMark flavor renders code blocks inline with
+no header, so it has no copy button. To observe when a user copies code, pass
+[`onCopyPress`](./API_REFERENCE.md#oncopypress) — it fires with the copied `code` and its
+`language` for the header button, the context-menu **Copy** action, and the VoiceOver copy action.
+The copy label shown to assistive technologies is configurable via
+[`selectionMenuConfig`](./COPY_OPTIONS.md).
+
 ## Supported languages
 
 Fence info strings map to a grammar (for example `js`, `jsx` -> JavaScript). The **curated default
