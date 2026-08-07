@@ -7,7 +7,6 @@ import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.PixelFormat
-import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
@@ -119,7 +118,10 @@ class CodeBlockContainerView(
       background = null
       scaleType = ImageView.ScaleType.CENTER
       setImageDrawable(
-        CopyIconDrawable(secondaryColor(codeBlockStyle.color), ceil(codeBlockStyle.fontSize).toInt()),
+        CopyIconDrawable(
+          secondaryColor(codeBlockStyle.color),
+          ceil(codeBlockStyle.fontSize * HEADER_ICON_SCALE).toInt(),
+        ),
       )
       setOnClickListener { copyCode() }
     }
@@ -254,16 +256,16 @@ class CodeBlockContainerView(
     private val paint =
       Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = size / 12f
+        strokeWidth = size / 20f
         strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
         this.color = color
       }
 
+    private val glyph = CopyGlyph()
+
     override fun draw(canvas: Canvas) {
-      val u = bounds.width() / 24f
-      canvas.drawRoundRect(RectF(8 * u, 2 * u, 22 * u, 16 * u), 2 * u, 2 * u, paint)
-      canvas.drawRoundRect(RectF(2 * u, 8 * u, 16 * u, 22 * u), 2 * u, 2 * u, paint)
+      glyph.draw(canvas, bounds.width().toFloat(), paint)
     }
 
     override fun getIntrinsicWidth() = size
@@ -284,6 +286,12 @@ class CodeBlockContainerView(
 
   companion object {
     private const val HEADER_LABEL_SCALE = 0.85f
+
+    // Drawable box for the copy glyph, as a multiple of the code font size.
+    // iOS sizes the SF Symbol by point size (kENRMHeaderIconScale = 0.72) but
+    // the symbol renders roughly half again as tall as its point size; this box
+    // is scaled up to land the drawn glyph at the same on-screen size.
+    private const val HEADER_ICON_SCALE = 1.08f
 
     private val headerTypeface: Typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
 
