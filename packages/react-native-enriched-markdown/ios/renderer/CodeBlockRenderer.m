@@ -1,6 +1,7 @@
 #import "CodeBlockRenderer.h"
 #import "CodeBlockBackground.h"
 #import "ENRMCodeBlockContent.h"
+#import "ENRMCodeBlockHighlighter.h"
 #import "LastElementUtils.h"
 #import "MarkdownASTNode.h"
 #import "ParagraphStyleUtils.h"
@@ -54,6 +55,8 @@
   NSRange contentRange = NSMakeRange(contentStart, contentEnd - contentStart);
 
   ENRMApplyCodeBlockTextAttributes(output, contentRange, _config);
+
+  ENRMApplyHighlightTokens(output, contentRange, ENRMCodeBlockExtractCode(node), ENRMCodeBlockLanguage(node), _config);
 
   // Horizontal padding is paragraph indentation in this flavor; the shared
   // helper already forced the LTR left-aligned base style.
