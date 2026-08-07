@@ -5,79 +5,146 @@ import { githubFlavorArgTypes } from '../shared/storybookMarkdownStyles';
 import { splitStyleControls } from '../shared/storybookStyleBuilders';
 import type { TextStory } from '../shared/storyTypes';
 
+// A per-language sample split into two labelled sections so a tester can verify
+// language coverage at a glance (see docs/TESTING_CODE_HIGHLIGHT_VENDORING.md,
+// step 4): the "Defaults" section lists every language in the default registry,
+// which highlights out of the box; the "Extended List" section lists the
+// non-default grammars, which stay plain unless a build opts them in via the
+// language-subset override (steps 4a/5a). One short block per language.
 const MARKDOWN = [
+  '## Defaults',
+  '',
   '```javascript',
-  'const greet = (name) => `hi ${name}`; // arrow fn',
-  'export default greet(42);',
+  'const sum = (a, b) => a + b; // add two numbers',
   '```',
   '',
   '```typescript',
-  'type Pair<T> = { left: T; right: T };',
-  'function swap<T>(p: Pair<T>): Pair<T> {',
-  '  return { left: p.right, right: p.left };',
-  '}',
+  'const id: number = 7; type Name = string;',
+  '```',
+  '',
+  '```tsx',
+  'const El = () => <View title="x" id={7} />;',
   '```',
   '',
   '```python',
-  'def fib(n: int) -> int:',
-  '    return n if n < 2 else fib(n - 1) + fib(n - 2)  # recursion',
+  'def greet(name): return f"hi {name}"  # f-string',
   '```',
   '',
   '```json',
-  '{ "id": 7, "tags": ["a", "b"], "active": true }',
+  '{ "id": 7, "tags": ["a"], "active": true }',
   '```',
   '',
-  '```go',
-  'package main',
-  'func main() { println("hello") }',
-  '```',
-  '',
-  '```rust',
-  'fn main() { let x: u32 = 3; println!("{x}"); }',
-  '```',
-  '',
-  '```c',
-  '#include <stdio.h>',
-  'int main(void) { return 0; }',
-  '```',
-  '',
-  '```java',
-  'record Point(int x, int y) {}',
+  '```yaml',
+  'name: demo',
+  'port: 8080  # comment',
   '```',
   '',
   '```bash',
-  'for f in *.ts; do echo "$f"; done',
+  'echo "hi $USER"  # greet',
   '```',
   '',
-  '```css',
-  '.title { color: #cf222e; font-weight: 600; }',
+  '```go',
+  'func main() { x := 3; _ = x }',
+  '```',
+  '',
+  '```java',
+  'class A { int x = 3; }',
+  '```',
+  '',
+  '```c',
+  'int main(void) { return 0; }',
+  '```',
+  '',
+  '```rust',
+  'fn main() { let x: u32 = 3; }',
   '```',
   '',
   '```html',
   '<a href="/x" class="link">go</a>',
   '```',
   '',
-  '```yaml',
-  'name: build',
-  'on: [push]',
+  '```css',
+  '.title { color: #cf222e; }',
+  '```',
+  '',
+  '```markdown',
+  '# Heading with **bold** and _em_ [link](/x)',
+  '```',
+  '',
+  '## Extended List',
+  '',
+  '```cpp',
+  'int main() { auto x = 3; return x; }',
+  '```',
+  '',
+  '```swift',
+  'let x: Int = 3; print(x)',
+  '```',
+  '',
+  '```php',
+  '<?php echo "hi $name"; ?>',
+  '```',
+  '',
+  '```ruby',
+  'def greet(name) = "hi #{name}"',
+  '```',
+  '',
+  '```csharp',
+  'class A { int X = 3; }',
   '```',
 ].join('\n');
 
+// Two blocks that together exercise every token type except embedded (which
+// needs language injection, unsupported by the single-grammar highlighter). The
+// Rust block covers comment, attribute (#[derive]), keyword, type, function,
+// property (fields), variable, number, string, constant, operator and
+// punctuation; the HTML block adds tag and attribute (plus doctype -> constant).
+const MARKDOWN_ALL_TOKENS = [
+  '```rust',
+  '// distance between two points',
+  '#[derive(Debug, Clone)]',
+  'struct Point {',
+  '    x: f64,',
+  '    y: f64,',
+  '}',
+  '',
+  'impl Point {',
+  '    fn dist(&self, other: &Point) -> f64 {',
+  '        let dx = self.x - other.x;',
+  '        (dx * dx).sqrt()',
+  '    }',
+  '}',
+  '',
+  'fn main() {',
+  '    const SCALE: u32 = 2;',
+  '    let p = Point { x: 1.5, y: 3.0 };',
+  '    println!("dist = {}", p.dist(&p) * SCALE as f64);',
+  '}',
+  '```',
+  '',
+  '```html',
+  '<!doctype html>',
+  '<!-- a labelled link -->',
+  '<a href="/x" class="link" data-id="7">go</a>',
+  '```',
+].join('\n');
+
+// GitHub-dark palette; the four "inherit" tokens use the code block base color.
 const BASE_TEXT_COLOR = '#f3f4f6';
 const syntaxColorDefaults = {
-  keyword: '#cf222e',
+  keyword: '#ff7b72',
   operatorColor: BASE_TEXT_COLOR,
   punctuation: BASE_TEXT_COLOR,
-  string: '#0a3069',
-  number: '#0550ae',
-  constant: '#0550ae',
-  comment: '#6e7781',
-  function: '#8250df',
-  type: '#953800',
+  string: '#a5d6ff',
+  number: '#79c0ff',
+  constant: '#79c0ff',
+  comment: '#8b949e',
+  function: '#d2a8ff',
+  type: '#ffa657',
   variable: BASE_TEXT_COLOR,
-  property: '#0550ae',
-  tag: '#116329',
-  attribute: '#0550ae',
+  property: '#79c0ff',
+  tag: '#7ee787',
+  attribute: '#79c0ff',
   embedded: BASE_TEXT_COLOR,
 };
 
@@ -122,7 +189,27 @@ export const Default: TextStory<SyntaxColorControls> = {
     return (
       <EnrichedMarkdownTextStory
         title="Code Highlight"
-        description="Per-token syntax colors via markdownStyle.codeBlock.syntaxColors. Colors render only when the optional highlighting module is compiled in; otherwise code blocks stay plain. Retheme any token with the color controls, and switch flavor to compare the block and inline renderers."
+        description="Per-token syntax colors via markdownStyle.codeBlock.syntaxColors. The Defaults section lists every language in the default registry (highlighted out of the box); the Extended List section lists non-default grammars that stay plain unless a build opts them in via the language-subset override. Colors render only when the optional highlighting module is compiled in; otherwise code blocks stay plain. Retheme any token with the color controls, and switch flavor to compare the block and inline renderers."
+        {...rest}
+        style={{ codeBlock: { syntaxColors: controls } }}
+      />
+    );
+  },
+};
+
+export const AllTokens: TextStory<SyntaxColorControls> = {
+  args: {
+    markdown: MARKDOWN_ALL_TOKENS,
+    flavor: 'github',
+    ...syntaxColorDefaults,
+  },
+  argTypes,
+  render: (args) => {
+    const { controls, rest } = splitStyleControls(args, syntaxColorDefaults);
+    return (
+      <EnrichedMarkdownTextStory
+        title="Code Highlight — All Tokens"
+        description="A Rust block plus an HTML block that together exercise every syntax token type except embedded (which needs language injection), each rethemable with its own color control below. Colors render only when the optional highlighting module is compiled in with the rust and html grammars; otherwise the code blocks stay plain."
         {...rest}
         style={{ codeBlock: { syntaxColors: controls } }}
       />
